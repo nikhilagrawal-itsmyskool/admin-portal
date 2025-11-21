@@ -1,0 +1,15 @@
+{
+    "units": [
+    "Box",
+    "Bottle",
+    "Tube",
+    "Vial",
+    "Each",
+    "Roll",
+    "Packet",
+    "Strip",
+    "Tablet",
+    "Capsule",
+    "Sachet"
+  ]
+}
