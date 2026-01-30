@@ -1,31 +1,39 @@
 {
-    "name": "itsmyskool",
+    "name": "admin-portal",
     "private": true,
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-      "dev": "vite",
-      "build": "vite build",
-      "preview": "vite preview"
+        "start": "vite --mode localhost",
+        "build:prod": "vite build --mode production",
+        "preview:prod": "vite preview --port 8080",
+        "serve:prod": "vite build --mode production && vite preview --port 8080",
+        "test": "playwright test",
+        "test:ui": "playwright test --ui",
+        "test:headed": "cross-env HEADED=1 playwright test --headed"
     },
     "dependencies": {
-      "@emotion/react": "^11.11.4",
-      "@emotion/styled": "^11.11.0",
-      "@mui/icons-material": "^5.15.14",
-      "@mui/material": "^5.15.14",
-      "@mui/x-data-grid": "^7.1.0",
-      "react": "^18.2.0",
-      "react-dom": "^18.2.0",
-      "react-router-dom": "^6.22.3"
+        "@emotion/react": "^11.11.4",
+        "@emotion/styled": "^11.11.0",
+        "@mui/icons-material": "^5.15.14",
+        "@mui/material": "^5.15.14",
+        "@mui/x-data-grid": "^7.1.0",
+        "axios": "^1.7.7",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-router-dom": "^6.22.3"
     },
     "devDependencies": {
-      "@types/react": "^18.2.66",
-      "@types/react-dom": "^18.2.22",
-      "@vitejs/plugin-react": "^4.2.1",
-      "eslint": "^8.57.0",
-      "eslint-plugin-react": "^7.34.1",
-      "eslint-plugin-react-hooks": "^4.6.0",
-      "eslint-plugin-react-refresh": "^0.4.6",
-      "vite": "^5.2.0"
+        "@playwright/test": "^1.48.0",
+        "@types/react": "^18.2.66",
+        "@types/react-dom": "^18.2.22",
+        "@vitejs/plugin-react": "^4.2.1",
+        "cross-env": "^10.1.0",
+        "dotenv": "^16.4.5",
+        "eslint": "^8.57.0",
+        "eslint-plugin-react": "^7.34.1",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "eslint-plugin-react-refresh": "^0.4.6",
+        "vite": "^5.2.0"
     }
-  }
+}

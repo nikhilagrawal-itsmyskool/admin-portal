@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs cat:*)",
+      "Bash(npm install)",
+      "Bash(npx playwright install chromium)",
+      "Bash(npm run test:headed:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(timeout:*)",
+      "Bash(npx playwright show-report)"
+    ]
+  }
+}

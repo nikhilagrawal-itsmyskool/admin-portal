@@ -1,12 +1,24 @@
 # package directories
 node_modules
 
+# Build output
+dist
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Serverless directories
 .serverless
 
 # Webpack directories
 .webpack
+# Environment files
 .env
+.env.localhost
+.env.*.local
 .vscode/launch.json
 
 lib

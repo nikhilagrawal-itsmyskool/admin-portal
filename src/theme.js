@@ -1,26 +1,55 @@
-// src/theme.js
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2', // A standard blue
+      main: '#3366ff',
+      light: '#598bff',
+      dark: '#274bdb',
     },
     secondary: {
-      main: '#dc004e', // A standard pink
+      main: '#ff3d71',
     },
-    success: {
-        main: '#4caf50', // Green for Add
+    background: {
+      default: '#edf1f7',
+      paper: '#ffffff',
     },
-    error: {
-        main: '#f44336', // Red for Delete
-    }
+    sidebar: {
+      background: '#222b45',
+      text: '#8f9bb3',
+      textActive: '#ffffff',
+      hover: '#1a2138',
+    },
   },
   typography: {
+    fontFamily: '"Open Sans", "Roboto", "Helvetica", "Arial", sans-serif',
     h4: {
       fontWeight: 600,
-      marginBottom: '1rem',
-    }
+    },
+    h5: {
+      fontWeight: 600,
+    },
+    h6: {
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          boxShadow: '0 0.5rem 1rem 0 rgba(44, 51, 73, 0.1)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 4,
+        },
+      },
+    },
   },
 });
 

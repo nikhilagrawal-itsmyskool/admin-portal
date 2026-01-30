@@ -1,32 +1,44 @@
-// src/App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MainLayout from './components/layout/main-layout';
-import StockList from './pages/stock/stock-list';
-import AddStock from './pages/stock/add-stock';
-import EditStock from './pages/stock/edit-stock';
-import PurchaseLogList from './pages/purchase-log/purchase-log-list';
-import AddPurchaseLog from './pages/purchase-log/add-purchase-log';
-import EditPurchaseLog from './pages/purchase-log/edit-purchase-log';
-import Dashboard from './pages/dashboard';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import MainLayout from './layouts/MainLayout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import MedicalDashboard from './pages/medical/MedicalDashboard';
+import ItemList from './pages/medical/items/ItemList';
+import ItemForm from './pages/medical/items/ItemForm';
+import PurchaseList from './pages/medical/purchases/PurchaseList';
+import PurchaseForm from './pages/medical/purchases/PurchaseForm';
+import IssueList from './pages/medical/issues/IssueList';
+import IssueForm from './pages/medical/issues/IssueForm';
 
-function App() {
+export default function App() {
   return (
-    <Router>
-      <MainLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          
-          <Route path="/stock" element={<StockList />} />
-          <Route path="/stock/add" element={<AddStock />} />
-          <Route path="/stock/edit/:id" element={<EditStock />} />
-          <Route path="/purchases" element={<PurchaseLogList />} />
-          <Route path="/purchases/add" element={<AddPurchaseLog />} />
-          <Route path="/purchases/edit/:id" element={<EditPurchaseLog />} />
-        </Routes>
-      </MainLayout>
-    </Router>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="medical" element={<MedicalDashboard />} />
+        <Route path="medical/items" element={<ItemList />} />
+        <Route path="medical/items/add" element={<ItemForm />} />
+        <Route path="medical/items/:id/edit" element={<ItemForm />} />
+        <Route path="medical/purchases" element={<PurchaseList />} />
+        <Route path="medical/purchases/add" element={<PurchaseForm />} />
+        <Route path="medical/purchases/:id/edit" element={<PurchaseForm />} />
+        <Route path="medical/issues" element={<IssueList />} />
+        <Route path="medical/issues/add" element={<IssueForm />} />
+        <Route path="medical/issues/:id/edit" element={<IssueForm />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
-
-export default App;
