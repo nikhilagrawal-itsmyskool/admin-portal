@@ -4,8 +4,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 
 export function getSchoolCode() {
   const hostname = window.location.hostname;
-  if (hostname.includes('.admin.itsmyskool.com')) {
-    return hostname.split('.')[0];
+  // Match dbpasn.admin.itsmyskool.com or dbpasn.itsmyskool.com
+  if (hostname.includes('.admin.itsmyskool.com') || hostname.endsWith('.itsmyskool.com')) {
+    const subdomain = hostname.split('.')[0];
+    // Ignore www or empty subdomains
+    if (subdomain && subdomain !== 'www' && subdomain !== 'api') {
+      return subdomain;
+    }
   }
   return import.meta.env.VITE_SCHOOL_CODE || 'demo';
 }

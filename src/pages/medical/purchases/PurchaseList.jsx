@@ -17,7 +17,6 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
@@ -160,12 +159,6 @@ export default function PurchaseList() {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
-            <IconButton
-              size="small"
-              onClick={() => navigate(`/medical/purchases/${params.row.uuid}/edit`)}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
             {!isDeleted && (
               <IconButton
                 size="small"
