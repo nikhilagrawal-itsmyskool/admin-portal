@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { PersonSearch as PersonSearchIcon } from '@mui/icons-material';
 import { medicalService } from '../../../services/medicalService';
+import { useAuth } from '../../../context/AuthContext';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
 
@@ -27,6 +28,7 @@ export default function IssueForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     itemId: '',
@@ -36,6 +38,7 @@ export default function IssueForm() {
     quantity: '',
     remarks: '',
     parentConsent: false,
+    issuedById: '',
     status: 'active',
   });
   const [items, setItems] = useState([]);
@@ -48,6 +51,15 @@ export default function IssueForm() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [studentSearchOpen, setStudentSearchOpen] = useState(false);
   const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
+  const [issuedByEmployee, setIssuedByEmployee] = useState(null);
+  const [issuedBySearchOpen, setIssuedBySearchOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isEdit && user) {
+      setFormData((prev) => ({ ...prev, issuedById: user.id }));
+      setIssuedByEmployee({ uuid: user.id, name: user.displayName });
+    }
+  }, [user, isEdit]);
 
   useEffect(() => {
     const init = async () => {
@@ -86,8 +98,16 @@ export default function IssueForm() {
         quantity: issue.quantity || '',
         remarks: issue.remarks || '',
         parentConsent: issue.parentConsent || false,
+        issuedById: issue.issuedById || '',
         status: issue.status || 'active',
       });
+
+      if (issue.issuedById) {
+        setIssuedByEmployee({
+          uuid: issue.issuedById,
+          name: issue.issuedByName || 'Unknown',
+        });
+      }
       const item = itemsData.find((i) => i.uuid === issue.itemId);
       if (item) setSelectedItem(item);
 
@@ -334,6 +354,28 @@ export default function IssueForm() {
                   helperText={selectedItem ? `Available: ${selectedItem.currentStock}` : ''}
                 />
               </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Issued By"
+                  value={issuedByEmployee ? `${issuedByEmployee.name}` : ''}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setIssuedBySearchOpen(true)}
+                          edge="end"
+                        >
+                          <PersonSearchIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText="Defaults to logged-in user. Click search to change."
+                  placeholder="Click search to select..."
+                />
+              </Grid>
               {formData.entityType === 'student' && (
                 <Grid item xs={12}>
                   <Alert severity="warning" sx={{ mb: 2 }}>
@@ -411,6 +453,15 @@ export default function IssueForm() {
         open={employeeSearchOpen}
         onClose={() => setEmployeeSearchOpen(false)}
         onSelect={handleEmployeeSelect}
+      />
+
+      <EmployeeSearchDialog
+        open={issuedBySearchOpen}
+        onClose={() => setIssuedBySearchOpen(false)}
+        onSelect={(employee) => {
+          setIssuedByEmployee(employee);
+          setFormData((prev) => ({ ...prev, issuedById: employee.uuid }));
+        }}
       />
     </Box>
   );

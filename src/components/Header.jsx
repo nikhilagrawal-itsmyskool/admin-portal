@@ -15,6 +15,7 @@ import {
   AccountCircle,
   Logout as LogoutIcon,
   Person as PersonIcon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { DRAWER_WIDTH } from './Sidebar';
@@ -24,7 +25,7 @@ const getFirstName = (displayName) => {
   return displayName.split(' ')[0];
 };
 
-export default function Header() {
+export default function Header({ onMenuClick, isDesktop }) {
   const { user, logout, schoolCode } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -50,14 +51,24 @@ export default function Header() {
       position="fixed"
       elevation={0}
       sx={{
-        width: `calc(100% - ${DRAWER_WIDTH}px)`,
-        ml: `${DRAWER_WIDTH}px`,
+        width: isDesktop ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%',
+        ml: isDesktop ? `${DRAWER_WIDTH}px` : 0,
         backgroundColor: '#fff',
         borderBottom: '1px solid #e4e9f2',
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {!isDesktop && (
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={onMenuClick}
+              sx={{ color: '#222b45' }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
           <Typography variant="body2" sx={{ color: '#8f9bb3', textTransform: 'uppercase', letterSpacing: 1 }}>
             {schoolCode}
           </Typography>

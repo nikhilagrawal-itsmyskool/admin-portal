@@ -42,7 +42,7 @@ const menuItems = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState({ Medical: true });
@@ -56,6 +56,13 @@ export default function Sidebar() {
     return location.pathname.startsWith(path);
   };
 
+  const handleNavigate = (path) => {
+    navigate(path);
+    if (!isDesktop) {
+      onClose();
+    }
+  };
+
   const sidebarStyles = {
     background: '#222b45',
     text: '#8f9bb3',
@@ -63,20 +70,8 @@ export default function Sidebar() {
     hover: '#1a2138',
   };
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: DRAWER_WIDTH,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: DRAWER_WIDTH,
-          boxSizing: 'border-box',
-          backgroundColor: sidebarStyles.background,
-          borderRight: 'none',
-        },
-      }}
-    >
+  const drawerContent = (
+    <>
       <Box sx={{ p: 3, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <Typography
           variant="h6"
@@ -122,7 +117,7 @@ export default function Sidebar() {
                     {item.children.map((child) => (
                       <ListItemButton
                         key={child.path}
-                        onClick={() => navigate(child.path)}
+                        onClick={() => handleNavigate(child.path)}
                         sx={{
                           pl: 6,
                           py: 1,
@@ -164,7 +159,7 @@ export default function Sidebar() {
             ) : (
               <ListItem disablePadding>
                 <ListItemButton
-                  onClick={() => navigate(item.path)}
+                  onClick={() => handleNavigate(item.path)}
                   sx={{
                     px: 3,
                     py: 1.5,
@@ -203,6 +198,27 @@ export default function Sidebar() {
           </React.Fragment>
         ))}
       </List>
+    </>
+  );
+
+  return (
+    <Drawer
+      variant={isDesktop ? 'permanent' : 'temporary'}
+      open={isDesktop ? true : open}
+      onClose={onClose}
+      ModalProps={{ keepMounted: true }}
+      sx={{
+        width: DRAWER_WIDTH,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: DRAWER_WIDTH,
+          boxSizing: 'border-box',
+          backgroundColor: sidebarStyles.background,
+          borderRight: 'none',
+        },
+      }}
+    >
+      {drawerContent}
     </Drawer>
   );
 }

@@ -229,6 +229,19 @@ export default function PurchaseForm() {
                   inputProps={{ step: '0.01', min: 0 }}
                 />
               </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Total Cost"
+                  value={
+                    formData.quantity && formData.costPerUnit
+                      ? (parseFloat(formData.quantity) * parseFloat(formData.costPerUnit)).toFixed(2)
+                      : ''
+                  }
+                  InputProps={{ readOnly: true }}
+                  helperText="Computed: Quantity x Cost per Unit"
+                />
+              </Grid>
               {isEdit && (
                 <Grid item xs={12} md={6}>
                   <TextField

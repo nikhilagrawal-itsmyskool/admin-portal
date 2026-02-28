@@ -151,6 +151,13 @@ export default function PurchaseList() {
       valueFormatter: (value) => formatCurrency(value),
     },
     {
+      field: 'totalCost',
+      headerName: 'Total Cost',
+      width: 120,
+      valueGetter: (value, row) => row.quantity * parseFloat(row.costPerUnit || 0),
+      valueFormatter: (value) => formatCurrency(value),
+    },
+    {
       field: 'actions',
       headerName: 'Actions',
       width: 120,

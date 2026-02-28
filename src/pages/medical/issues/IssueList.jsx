@@ -179,6 +179,7 @@ export default function IssueList() {
       ),
     },
     { field: 'entityName', headerName: 'Name', width: 150 },
+    { field: 'issuedByName', headerName: 'Issued By', width: 150 },
     { field: 'remarks', headerName: 'Remarks', flex: 1, minWidth: 150 },
     {
       field: 'parentConsent',
