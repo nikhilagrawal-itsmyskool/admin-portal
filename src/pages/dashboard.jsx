@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import {
   LocalHospital as MedicalIcon,
+  Science as ScienceIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,6 +26,13 @@ const modules = [
     icon: MedicalIcon,
     path: '/medical',
     color: '#3366ff',
+  },
+  {
+    title: 'Laboratory',
+    description: 'Manage lab inventory, purchases, issues, and breakages',
+    icon: ScienceIcon,
+    path: '/lab',
+    color: '#00b887',
   },
 ];
 

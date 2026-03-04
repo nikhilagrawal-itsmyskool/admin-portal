@@ -20,6 +20,8 @@ import {
   ShoppingCart as PurchaseIcon,
   Assignment as IssueIcon,
   Assessment as OverviewIcon,
+  Science as ScienceIcon,
+  BrokenImage as BrokenImageIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -40,12 +42,24 @@ const menuItems = [
       { title: 'Issue Log', icon: IssueIcon, path: '/medical/issues' },
     ],
   },
+  {
+    title: 'Laboratory',
+    icon: ScienceIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/lab' },
+      { title: 'Labs', icon: ScienceIcon, path: '/lab/labs' },
+      { title: 'Inventory Items', icon: InventoryIcon, path: '/lab/items' },
+      { title: 'Purchase Log', icon: PurchaseIcon, path: '/lab/purchases' },
+      { title: 'Issue Log', icon: IssueIcon, path: '/lab/issues' },
+      { title: 'Breakage Log', icon: BrokenImageIcon, path: '/lab/breakages' },
+    ],
+  },
 ];
 
 export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState({ Medical: true });
+  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false });
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));
