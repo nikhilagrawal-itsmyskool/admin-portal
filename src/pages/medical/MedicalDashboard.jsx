@@ -8,7 +8,16 @@ import {
   CardContent,
   CardActionArea,
   CircularProgress,
+  LinearProgress,
   Alert,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from '@mui/material';
 import {
   Inventory as InventoryIcon,
@@ -17,6 +26,14 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { medicalService } from '../../services/medicalService';
+
+const formatDate = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  return d.toLocaleDateString('en-GB');
+};
+
+const DAY_OPTIONS = [30, 60, 90];
 
 export default function MedicalDashboard() {
   const navigate = useNavigate();
@@ -27,9 +44,31 @@ export default function MedicalDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [expiryDays, setExpiryDays] = useState(60);
+  const [expiringItems, setExpiringItems] = useState([]);
+  const [expiryLoading, setExpiryLoading] = useState(false);
+  const [expiryError, setExpiryError] = useState('');
+
   useEffect(() => {
     loadStats();
   }, []);
+
+  useEffect(() => {
+    loadExpiringItems(expiryDays);
+  }, [expiryDays]);
+
+  const loadExpiringItems = async (days) => {
+    setExpiryLoading(true);
+    setExpiryError('');
+    try {
+      const data = await medicalService.getExpiringPurchases(days);
+      setExpiringItems(data.items || []);
+    } catch (err) {
+      setExpiryError('Failed to load expiring items');
+    } finally {
+      setExpiryLoading(false);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -131,6 +170,72 @@ export default function MedicalDashboard() {
           </Grid>
         ))}
       </Grid>
+
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Typography variant="h6">Expiring Items</Typography>
+          {DAY_OPTIONS.map((d) => (
+            <Chip
+              key={d}
+              label={`${d} days`}
+              onClick={() => setExpiryDays(d)}
+              color={expiryDays === d ? 'primary' : 'default'}
+              variant={expiryDays === d ? 'filled' : 'outlined'}
+              size="small"
+            />
+          ))}
+        </Box>
+        {expiryError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {expiryError}
+          </Alert>
+        )}
+        <Paper variant="outlined">
+          {expiryLoading && <LinearProgress />}
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ '& th': { fontWeight: 600 } }}>
+                  <TableCell>Item Name</TableCell>
+                  <TableCell>Batch No</TableCell>
+                  <TableCell>Expiry Date</TableCell>
+                  <TableCell>Days Left</TableCell>
+                  <TableCell align="right">Qty</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {!expiryLoading && expiringItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ color: '#8f9bb3', py: 3 }}>
+                      No items expiring within {expiryDays} days
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  expiringItems.map((item) => {
+                    const urgency =
+                      item.daysUntilExpiry <= 14
+                        ? 'error.main'
+                        : item.daysUntilExpiry <= 30
+                          ? 'warning.main'
+                          : 'text.primary';
+                    return (
+                      <TableRow key={item.uuid} hover>
+                        <TableCell>{item.itemName}</TableCell>
+                        <TableCell>{item.batchNo || '—'}</TableCell>
+                        <TableCell>{formatDate(item.expiryDate)}</TableCell>
+                        <TableCell sx={{ color: urgency, fontWeight: item.daysUntilExpiry <= 30 ? 600 : 400 }}>
+                          {item.daysUntilExpiry}
+                        </TableCell>
+                        <TableCell align="right">{item.quantity}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      </Box>
 
       <Typography variant="h6" sx={{ mb: 2 }}>
         Quick Links

@@ -11,175 +11,187 @@ import {
   TextField,
   Autocomplete,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TablePagination,
+  Tooltip,
+  CircularProgress,
+  LinearProgress,
   FormControlLabel,
   Checkbox,
+  Chip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  AttachFile as AttachFileIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { medicalService } from '../../../services/medicalService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
+const formatDate = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${day}/${month}/${d.getUTCFullYear()}`;
+};
+
+const formatCurrency = (v) => (v != null && v !== '' ? parseFloat(v).toFixed(2) : '—');
+
+function getAcademicYearStart() {
+  const today = new Date();
+  const year = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+  return `${year}-04-01`;
+}
+
 export default function PurchaseList() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [purchases, setPurchases] = useState([]);
-  const [items, setItems] = useState([]);
+  const [searchParams] = useSearchParams();
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [startDate, setStartDate] = useState(getAcademicYearStart());
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [itemOptions, setItemOptions] = useState([]);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
-  // Filter state
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [includeDeleted, setIncludeDeleted] = useState(false);
+  // Bill viewer
+  const [billDialog, setBillDialog] = useState({ open: false, url: null, mimeType: null, fileName: null });
+
+  // Pagination
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Expandable rows
+  const [expandedRows, setExpandedRows] = useState(new Set());
+  const [batchItemsCache, setBatchItemsCache] = useState({});
+  const [expandLoading, setExpandLoading] = useState(new Set());
 
   useEffect(() => {
-    loadItems();
+    const sd = getAcademicYearStart();
+    const ed = new Date().toISOString().split('T')[0];
+    const itemId = searchParams.get('item');
+    medicalService.getItems().then(setItemOptions).catch(() => {});
+    if (itemId) {
+      medicalService.getItemById(itemId).then((item) => {
+        setSelectedItem(item);
+        loadBatches({ startDate: sd, endDate: ed, itemId: item.uuid });
+      }).catch(() => {
+        loadBatches({ startDate: sd, endDate: ed });
+      });
+    } else {
+      loadBatches({ startDate: sd, endDate: ed });
+    }
   }, []);
 
-  useEffect(() => {
-    // Initialize filters from URL params and trigger search
-    const itemId = searchParams.get('item');
-    if (itemId && items.length > 0) {
-      const item = items.find((i) => i.uuid === itemId);
-      if (item) {
-        setSelectedItem(item);
-        // Trigger search with the item filter
-        loadPurchasesWithFilters({ itemId: item.uuid });
-        return;
-      }
-    }
-    // Only load on initial mount when no URL params or items not loaded yet
-    if (items.length === 0 || !searchParams.get('item')) {
-      loadPurchases();
-    }
-  }, [items]);
-
-  const loadItems = async () => {
-    try {
-      const data = await medicalService.getItems();
-      setItems(data);
-    } catch (err) {
-      console.error('Failed to load items:', err);
-    }
-  };
-
-  const loadPurchasesWithFilters = async (overrideFilters = {}) => {
+  const loadBatches = async ({ startDate: sd, endDate: ed, includeDeleted: incDel, itemId } = {}) => {
     setLoading(true);
     setError('');
+    setExpandedRows(new Set());
     try {
-      const filters = { ...overrideFilters };
-      if (!filters.itemId && selectedItem) filters.itemId = selectedItem.uuid;
-      if (startDate) filters.startDate = startDate;
-      if (endDate) filters.endDate = endDate;
-      if (includeDeleted) filters.includeDeleted = true;
-
-      const data = await medicalService.getPurchases(filters);
-      setPurchases(data);
-    } catch (err) {
+      const params = {};
+      if (sd) params.startDate = sd;
+      if (ed) params.endDate = ed;
+      if (incDel) params.includeDeleted = true;
+      if (itemId) params.itemId = itemId;
+      const data = await medicalService.getPurchaseBatches(params);
+      setBatches(data);
+      setPage(0);
+    } catch {
       setError('Failed to load purchases');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadPurchases = () => loadPurchasesWithFilters();
-
-  const handleSearch = () => {
-    loadPurchases();
-  };
+  const handleSearch = () => loadBatches({ startDate, endDate, includeDeleted, itemId: selectedItem?.uuid });
 
   const handleClear = () => {
-    setSelectedItem(null);
-    setStartDate('');
-    setEndDate('');
+    const sd = getAcademicYearStart();
+    const ed = new Date().toISOString().split('T')[0];
+    setStartDate(sd);
+    setEndDate(ed);
     setIncludeDeleted(false);
-    setSearchParams({});
+    setSelectedItem(null);
+    loadBatches({ startDate: sd, endDate: ed, includeDeleted: false });
+  };
+
+  const toggleExpand = async (uuid) => {
+    const next = new Set(expandedRows);
+    if (next.has(uuid)) {
+      next.delete(uuid);
+      setExpandedRows(next);
+      return;
+    }
+    next.add(uuid);
+    setExpandedRows(next);
+    if (!batchItemsCache[uuid]) {
+      setExpandLoading((prev) => new Set(prev).add(uuid));
+      try {
+        const batch = await medicalService.getPurchaseBatchById(uuid);
+        setBatchItemsCache((prev) => ({ ...prev, [uuid]: batch?.items || [] }));
+      } catch {
+        // silently fail
+      } finally {
+        setExpandLoading((prev) => { const s = new Set(prev); s.delete(uuid); return s; });
+      }
+    }
+  };
+
+  const openBill = async (batchId) => {
+    try {
+      const file = await medicalService.getBill(batchId);
+      const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: file.mimeType });
+      const url = URL.createObjectURL(blob);
+      setBillDialog({ open: true, url, mimeType: file.mimeType, fileName: file.fileName });
+    } catch {
+      setError('Failed to load bill');
+    }
+  };
+
+  const closeBill = () => {
+    if (billDialog.url) URL.revokeObjectURL(billDialog.url);
+    setBillDialog({ open: false, url: null, mimeType: null, fileName: null });
   };
 
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await medicalService.deletePurchase(deleteDialog.item.uuid);
+      await medicalService.deletePurchaseBatch(deleteDialog.item.uuid);
       setDeleteDialog({ open: false, item: null });
-      loadPurchases();
-    } catch (err) {
-      setError('Failed to delete purchase');
+      loadBatches({ startDate, endDate, includeDeleted, itemId: selectedItem?.uuid });
+    } catch {
+      setError('Failed to delete purchase batch');
     } finally {
       setDeleting(false);
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString();
-  };
+  const paginatedBatches = batches.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const colSpan = showDetails ? 12 : 9;
 
-  const formatCurrency = (value) => {
-    if (!value) return '-';
-    return parseFloat(value).toFixed(2);
+  const deletedRowSx = {
+    opacity: 0.6,
+    backgroundColor: 'rgba(244, 67, 54, 0.04)',
+    '& td:not(:first-of-type):not(:last-of-type)': { textDecoration: 'line-through' },
   };
-
-  const columns = [
-    { field: 'itemName', headerName: 'Item', flex: 1, minWidth: 200 },
-    {
-      field: 'purchaseDate',
-      headerName: 'Purchase Date',
-      width: 130,
-      valueFormatter: (value) => formatDate(value),
-    },
-    { field: 'quantity', headerName: 'Quantity', width: 100 },
-    { field: 'batchNo', headerName: 'Batch No.', width: 120 },
-    {
-      field: 'expiryDate',
-      headerName: 'Expiry Date',
-      width: 130,
-      valueFormatter: (value) => formatDate(value),
-    },
-    { field: 'supplier', headerName: 'Supplier', width: 150 },
-    {
-      field: 'costPerUnit',
-      headerName: 'Cost/Unit',
-      width: 100,
-      valueFormatter: (value) => formatCurrency(value),
-    },
-    {
-      field: 'totalCost',
-      headerName: 'Total Cost',
-      width: 120,
-      valueGetter: (value, row) => row.quantity * parseFloat(row.costPerUnit || 0),
-      valueFormatter: (value) => formatCurrency(value),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => {
-        const isDeleted = params.row.status === 'deleted';
-        return (
-          <Box>
-            {!isDeleted && (
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => setDeleteDialog({ open: true, item: params.row })}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
-        );
-      },
-    },
-  ];
 
   return (
     <Box>
@@ -203,18 +215,7 @@ export default function PurchaseList() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <Autocomplete
-                options={items}
-                getOptionLabel={(option) => option.name}
-                value={selectedItem}
-                onChange={(e, newValue) => setSelectedItem(newValue)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Item" size="small" placeholder="All Items" />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 label="Start Date"
@@ -225,7 +226,7 @@ export default function PurchaseList() {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 label="End Date"
@@ -236,7 +237,17 @@ export default function PurchaseList() {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={12} md={3}>
+              <Autocomplete
+                options={itemOptions}
+                getOptionLabel={(o) => o.name}
+                value={selectedItem}
+                onChange={(_, val) => setSelectedItem(val)}
+                size="small"
+                renderInput={(params) => <TextField {...params} label="Item" />}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -246,21 +257,11 @@ export default function PurchaseList() {
                 }
                 label="Include deleted"
               />
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SearchIcon />}
-                  onClick={handleSearch}
-                >
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <Button variant="contained" startIcon={<SearchIcon />} onClick={handleSearch}>
                   Search
                 </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<ClearIcon />}
-                  onClick={handleClear}
-                >
+                <Button variant="outlined" startIcon={<ClearIcon />} onClick={handleClear}>
                   Clear
                 </Button>
               </Box>
@@ -270,42 +271,217 @@ export default function PurchaseList() {
       </Card>
 
       <Card>
-        <DataGrid
-          rows={purchases}
-          columns={columns}
-          getRowId={(row) => row.uuid}
-          getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
-          loading={loading}
-          autoHeight
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          disableRowSelectionOnClick
-          sx={{
-            border: 'none',
-            '& .MuiDataGrid-cell': {
-              borderBottom: '1px solid #e4e9f2',
-            },
-            '& .deleted-row': {
-              opacity: 0.6,
-              backgroundColor: 'rgba(244, 67, 54, 0.04)',
-              '& .MuiDataGrid-cell:not(:last-of-type)': {
-                textDecoration: 'line-through',
-              },
-            },
-          }}
+        {loading && <LinearProgress />}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pt: 1 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showDetails}
+                onChange={(e) => setShowDetails(e.target.checked)}
+                size="small"
+              />
+            }
+            label="Show additional details"
+            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem' } }}
+          />
+        </Box>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ '& th': { fontWeight: 600, whiteSpace: 'nowrap' } }}>
+                <TableCell sx={{ width: 40 }} />
+                <TableCell>Date</TableCell>
+                <TableCell>Items</TableCell>
+                <TableCell align="right">Qty</TableCell>
+                <TableCell align="right">Cost/Unit</TableCell>
+                <TableCell align="right">Total (₹)</TableCell>
+                <TableCell>Supplier</TableCell>
+                <TableCell align="center" sx={{ width: 56 }}>Bills</TableCell>
+                {showDetails && <TableCell>Invoice No.</TableCell>}
+                {showDetails && <TableCell>Batch No.</TableCell>}
+                {showDetails && <TableCell>Expiry</TableCell>}
+                <TableCell align="center" sx={{ width: 72 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {!loading && paginatedBatches.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={colSpan} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                    No purchases found
+                  </TableCell>
+                </TableRow>
+              )}
+              {paginatedBatches.map((row) => {
+                const isDeleted = row.status === 'deleted';
+                const isExpanded = expandedRows.has(row.uuid);
+                const isExpandLoading = expandLoading.has(row.uuid);
+                const canExpand = (row.itemCount || 0) > 1;
+
+                const expandedItems = batchItemsCache[row.uuid] || [];
+
+                return (
+                  <React.Fragment key={row.uuid}>
+                    <TableRow sx={isDeleted ? deletedRowSx : undefined} hover={!isDeleted}>
+                      <TableCell sx={{ pr: 0 }}>
+                        {canExpand && (
+                          <Tooltip title={isExpanded ? 'Collapse' : 'View items'}>
+                            <IconButton size="small" onClick={() => toggleExpand(row.uuid)}>
+                              {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.purchaseDate)}</TableCell>
+                      <TableCell>
+                        {canExpand ? (
+                          <Chip
+                            label={`${row.itemCount} items`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            onClick={() => toggleExpand(row.uuid)}
+                            sx={{ cursor: 'pointer' }}
+                          />
+                        ) : (
+                          <Typography variant="body2">{row.itemName || '1 item'}</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">{row.quantity ?? '—'}</TableCell>
+                      <TableCell align="right">{canExpand ? '—' : formatCurrency(row.costPerUnit)}</TableCell>
+                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                        {row.totalCost != null ? parseFloat(row.totalCost).toFixed(2) : '—'}
+                      </TableCell>
+                      <TableCell>{row.supplier || '—'}</TableCell>
+                      <TableCell align="center">
+                        {row.fileId ? (
+                          <Tooltip title="View bill">
+                            <IconButton size="small" color="primary" onClick={() => openBill(row.uuid)}>
+                              <AttachFileIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : null}
+                      </TableCell>
+                      {showDetails && <TableCell>{row.invoiceNumber || '—'}</TableCell>}
+                      {showDetails && <TableCell>{row.batchNo || '—'}</TableCell>}
+                      {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.expiryDate)}</TableCell>}
+                      <TableCell align="center">
+                        {!isDeleted && (
+                          <Tooltip title="Delete batch">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => setDeleteDialog({ open: true, item: row })}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+
+                    {canExpand && isExpanded && (
+                      isExpandLoading ? (
+                        <TableRow key={row.uuid + '_loading'}>
+                          <TableCell colSpan={colSpan} sx={{ py: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                              <CircularProgress size={20} />
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        expandedItems.map((item) => (
+                          <TableRow
+                            key={item.uuid}
+                            sx={{ backgroundColor: 'rgba(0,0,0,0.02)', '& td': { borderBottom: '1px solid #f0f0f0' } }}
+                          >
+                            <TableCell />
+                            <TableCell />
+                            <TableCell sx={{ pl: 3 }}>
+                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                {item.itemName || item.itemId}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">{item.quantity}</TableCell>
+                            <TableCell align="right">{formatCurrency(item.costPerUnit)}</TableCell>
+                            <TableCell align="right">
+                              {item.costPerUnit
+                                ? (item.quantity * parseFloat(item.costPerUnit)).toFixed(2)
+                                : '—'}
+                            </TableCell>
+                            <TableCell>{row.supplier || '—'}</TableCell>
+                            <TableCell />
+                            {showDetails && <TableCell>{row.invoiceNumber || '—'}</TableCell>}
+                            {showDetails && <TableCell>{item.batchNo || '—'}</TableCell>}
+                            {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(item.expiryDate)}</TableCell>}
+                            <TableCell />
+                          </TableRow>
+                        ))
+                      )
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Box>
+        <TablePagination
+          component="div"
+          count={batches.length}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+          rowsPerPageOptions={[10, 25, 50]}
         />
       </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}
-        title="Delete Purchase"
-        message="Are you sure you want to delete this purchase record? This will also adjust the inventory stock."
+        title="Delete Purchase Batch"
+        message="Are you sure you want to delete this purchase batch? All items in this batch will be removed and stock reversed."
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, item: null })}
         loading={deleting}
       />
+
+      <Dialog open={billDialog.open} onClose={closeBill} maxWidth="md" fullWidth>
+        <DialogTitle>Bill — {billDialog.fileName || '...'}</DialogTitle>
+        <DialogContent
+          dividers
+          sx={{ minHeight: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {billDialog.url && (
+            billDialog.mimeType === 'application/pdf' ? (
+              <Box
+                component="iframe"
+                src={billDialog.url}
+                title="bill"
+                sx={{ width: '100%', height: 560, border: 'none' }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src={billDialog.url}
+                alt="bill"
+                sx={{ maxWidth: '100%', maxHeight: 560, objectFit: 'contain' }}
+              />
+            )
+          )}
+        </DialogContent>
+        <DialogActions>
+          {billDialog.url && (
+            <Button
+              component="a"
+              href={billDialog.url}
+              download={billDialog.fileName}
+              size="small"
+            >
+              Download
+            </Button>
+          )}
+          <Button onClick={closeBill}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

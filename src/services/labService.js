@@ -75,6 +75,52 @@ export const labService = {
     return response.data;
   },
 
+  // Purchase Batches
+  createBulkPurchase: async (data) => {
+    const response = await api.post('/lab/purchases/bulk', data);
+    return response.data;
+  },
+
+  getPurchaseBatches: async (filters = {}) => {
+    const response = await api.get('/lab/purchases/batches', { params: filters });
+    return response.data;
+  },
+
+  getPurchaseBatchById: async (batchId) => {
+    const response = await api.get(`/lab/purchases/batches/${batchId}`);
+    return response.data;
+  },
+
+  updatePurchaseBatch: async (batchId, data) => {
+    const response = await api.put(`/lab/purchases/batches/${batchId}`, data);
+    return response.data;
+  },
+
+  deletePurchaseBatch: async (batchId) => {
+    const response = await api.delete(`/lab/purchases/batches/${batchId}`);
+    return response.data;
+  },
+
+  uploadLabBill: async (batchId, data) => {
+    const response = await api.post(`/lab/purchases/batches/${batchId}/bill`, data);
+    return response.data;
+  },
+
+  getLabBill: async (batchId) => {
+    const response = await api.get(`/lab/purchases/batches/${batchId}/bill`);
+    return response.data;
+  },
+
+  deleteLabBill: async (batchId) => {
+    const response = await api.delete(`/lab/purchases/batches/${batchId}/bill`);
+    return response.data;
+  },
+
+  getAlerts: async (days = 60) => {
+    const response = await api.get('/lab/alerts', { params: { days } });
+    return response.data;
+  },
+
   // Purchases CRUD
   getPurchases: async (filters = {}) => {
     const response = await api.get('/lab/purchases', { params: filters });
@@ -155,6 +201,16 @@ export const labService = {
 
   deleteBreakage: async (id) => {
     const response = await api.delete(`/lab/breakages/${id}`);
+    return response.data;
+  },
+
+  getBreakageImage: async (id) => {
+    const response = await api.get(`/lab/breakages/${id}/image`);
+    return response.data;
+  },
+
+  deleteBreakageImage: async (id) => {
+    const response = await api.delete(`/lab/breakages/${id}/image`);
     return response.data;
   },
 };

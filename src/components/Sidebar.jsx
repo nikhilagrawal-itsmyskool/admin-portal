@@ -22,6 +22,10 @@ import {
   Assessment as OverviewIcon,
   Science as ScienceIcon,
   BrokenImage as BrokenImageIcon,
+  Gavel as GavelIcon,
+  Checkroom as CheckroomIcon,
+  Style as SetsIcon,
+  MenuBook as MenuBookIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -54,12 +58,42 @@ const menuItems = [
       { title: 'Breakage Log', icon: BrokenImageIcon, path: '/lab/breakages' },
     ],
   },
+  {
+    title: 'Fines',
+    icon: GavelIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/fine' },
+      { title: 'Incidents', icon: GavelIcon, path: '/fine/incidents' },
+    ],
+  },
+  {
+    title: 'Uniform',
+    icon: CheckroomIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/uniform' },
+      { title: 'Catalog', icon: CheckroomIcon, path: '/uniform/catalog' },
+      { title: 'Purchases', icon: PurchaseIcon, path: '/uniform/purchases' },
+      { title: 'Sets', icon: SetsIcon, path: '/uniform/sets' },
+      { title: 'Sales', icon: IssueIcon, path: '/uniform/sales' },
+    ],
+  },
+  {
+    title: 'Shop',
+    icon: MenuBookIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/shop' },
+      { title: 'Catalog', icon: MenuBookIcon, path: '/shop/catalog' },
+      { title: 'Purchases', icon: PurchaseIcon, path: '/shop/purchases' },
+      { title: 'Sets', icon: SetsIcon, path: '/shop/sets' },
+      { title: 'Sales', icon: IssueIcon, path: '/shop/sales' },
+    ],
+  },
 ];
 
 export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false });
+  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false });
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));

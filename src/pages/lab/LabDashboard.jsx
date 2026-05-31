@@ -8,7 +8,15 @@ import {
   CardContent,
   CardActionArea,
   CircularProgress,
+  LinearProgress,
   Alert,
+  Chip,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
 } from '@mui/material';
 import {
   Science as ScienceIcon,
@@ -20,6 +28,14 @@ import {
 } from '@mui/icons-material';
 import { labService } from '../../services/labService';
 
+const DAY_OPTIONS = [30, 60, 90];
+
+const formatDate = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  return d.toLocaleDateString('en-GB');
+};
+
 export default function LabDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
@@ -30,9 +46,31 @@ export default function LabDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [alertDays, setAlertDays] = useState(60);
+  const [alertItems, setAlertItems] = useState([]);
+  const [alertLoading, setAlertLoading] = useState(false);
+  const [alertError, setAlertError] = useState('');
+
   useEffect(() => {
     loadStats();
   }, []);
+
+  useEffect(() => {
+    loadAlerts(alertDays);
+  }, [alertDays]);
+
+  const loadAlerts = async (days) => {
+    setAlertLoading(true);
+    setAlertError('');
+    try {
+      const data = await labService.getAlerts(days);
+      setAlertItems(data.items || []);
+    } catch {
+      setAlertError('Failed to load alerts');
+    } finally {
+      setAlertLoading(false);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -153,6 +191,87 @@ export default function LabDashboard() {
           </Grid>
         ))}
       </Grid>
+
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Typography variant="h6">Expiry &amp; Warranty Alerts</Typography>
+          {DAY_OPTIONS.map((d) => (
+            <Chip
+              key={d}
+              label={`${d} days`}
+              onClick={() => setAlertDays(d)}
+              color={alertDays === d ? 'primary' : 'default'}
+              variant={alertDays === d ? 'filled' : 'outlined'}
+              size="small"
+            />
+          ))}
+        </Box>
+        {alertError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {alertError}
+          </Alert>
+        )}
+        <Paper variant="outlined">
+          {alertLoading && <LinearProgress />}
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ '& th': { fontWeight: 600 } }}>
+                <TableCell>Item Name</TableCell>
+                <TableCell>Lab</TableCell>
+                <TableCell align="right">Stock</TableCell>
+                <TableCell>Alerts</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {!alertLoading && alertItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ color: '#8f9bb3', py: 3 }}>
+                    No expiry or warranty alerts within {alertDays} days
+                  </TableCell>
+                </TableRow>
+              ) : (
+                alertItems.map((item) => {
+                  const chips = [];
+                  if (item.expiryDaysLeft != null) {
+                    const color = item.expiryDaysLeft <= 14 ? 'error' : item.expiryDaysLeft <= 30 ? 'warning' : 'default';
+                    chips.push(
+                      <Chip
+                        key="expiry"
+                        label={`Expiry: ${item.expiryDaysLeft}d`}
+                        size="small"
+                        color={color}
+                        variant={color === 'default' ? 'outlined' : 'filled'}
+                        sx={{ mr: 0.5 }}
+                      />
+                    );
+                  }
+                  if (item.warrantyDaysLeft != null) {
+                    const color = item.warrantyDaysLeft <= 14 ? 'error' : item.warrantyDaysLeft <= 30 ? 'warning' : 'default';
+                    chips.push(
+                      <Chip
+                        key="warranty"
+                        label={`Warranty: ${item.warrantyDaysLeft}d`}
+                        size="small"
+                        color={color}
+                        variant={color === 'default' ? 'outlined' : 'filled'}
+                        sx={{ mr: 0.5 }}
+                      />
+                    );
+                  }
+                  return (
+                    <TableRow key={item.itemId} hover>
+                      <TableCell>{item.itemName}</TableCell>
+                      <TableCell>{item.labName}</TableCell>
+                      <TableCell align="right">{item.currentStock} {item.unit}</TableCell>
+                      <TableCell>{chips}</TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
 
       <Typography variant="h6" sx={{ mb: 2 }}>
         Quick Links

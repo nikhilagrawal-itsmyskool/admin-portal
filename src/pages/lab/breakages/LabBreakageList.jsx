@@ -22,6 +22,7 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  Image as ImageIcon,
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
@@ -226,12 +227,30 @@ export default function LabBreakageList() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 100,
+      width: 130,
       sortable: false,
       renderCell: (params) => {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
+            {params.row.fileId && (
+              <IconButton
+                size="small"
+                title="View image"
+                onClick={async () => {
+                  try {
+                    const file = await labService.getBreakageImage(params.row.uuid);
+                    const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
+                    const blob = new Blob([bytes], { type: file.mimeType });
+                    window.open(URL.createObjectURL(blob), '_blank');
+                  } catch {
+                    setError('Failed to load image');
+                  }
+                }}
+              >
+                <ImageIcon fontSize="small" />
+              </IconButton>
+            )}
             <IconButton
               size="small"
               onClick={() => navigate(`/lab/breakages/${params.row.uuid}/edit`)}
@@ -373,6 +392,7 @@ export default function LabBreakageList() {
           disableRowSelectionOnClick
           sx={{
             border: 'none',
+            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
             '& .MuiDataGrid-cell': {
               borderBottom: '1px solid #e4e9f2',
             },

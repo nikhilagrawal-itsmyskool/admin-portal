@@ -58,11 +58,6 @@ export default function EmployeeSearchDialog({ open, onClose, onSelect }) {
   };
 
   const handleSearch = async () => {
-    if (!name && !selectedDepartment) {
-      setError('Please enter a name or select a department');
-      return;
-    }
-
     setLoading(true);
     setError('');
     setSearched(true);

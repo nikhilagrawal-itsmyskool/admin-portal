@@ -11,6 +11,8 @@ import {
 import {
   LocalHospital as MedicalIcon,
   Science as ScienceIcon,
+  Gavel as GavelIcon,
+  Checkroom as CheckroomIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,6 +35,20 @@ const modules = [
     icon: ScienceIcon,
     path: '/lab',
     color: '#00b887',
+  },
+  {
+    title: 'Fines',
+    description: 'Track incidents, decisions, and fine collections',
+    icon: GavelIcon,
+    path: '/fine',
+    color: '#ff3d71',
+  },
+  {
+    title: 'Uniform',
+    description: 'Manage uniform catalog, stock, and student sales',
+    icon: CheckroomIcon,
+    path: '/uniform',
+    color: '#7b5ea7',
   },
 ];
 

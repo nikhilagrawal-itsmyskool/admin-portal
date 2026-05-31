@@ -13,6 +13,10 @@ import {
   Chip,
   FormControlLabel,
   Checkbox,
+  Grid,
+  useMediaQuery,
+  useTheme,
+  Stack,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -28,6 +32,8 @@ import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 export default function ItemList() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -157,11 +163,12 @@ export default function ItemList() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Inventory Items</Typography>
+        <Typography variant="h5">Inventory Items</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => navigate('/medical/items/add')}
+          size={isMobile ? 'small' : 'medium'}
         >
           Add Item
         </Button>
@@ -175,70 +182,164 @@ export default function ItemList() {
 
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <TextField
-              fullWidth
-              placeholder="Search items by name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={handleKeyPress}
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={includeDeleted}
-                  onChange={(e) => setIncludeDeleted(e.target.checked)}
-                />
-              }
-              label="Include deleted"
-              sx={{ whiteSpace: 'nowrap' }}
-            />
-            <Button variant="contained" onClick={handleSearch}>
-              Search
-            </Button>
-            <Button variant="outlined" onClick={handleClear}>
-              Clear
-            </Button>
-          </Box>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={5}>
+              <TextField
+                fullWidth
+                placeholder="Search items by name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={handleKeyPress}
+                size="small"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3} md={3}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={includeDeleted}
+                    onChange={(e) => setIncludeDeleted(e.target.checked)}
+                  />
+                }
+                label="Include deleted"
+              />
+            </Grid>
+            <Grid item xs={12} sm="auto">
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button variant="contained" onClick={handleSearch} fullWidth={isMobile}>
+                  Search
+                </Button>
+                <Button variant="outlined" onClick={handleClear} fullWidth={isMobile}>
+                  Clear
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
-          rows={items}
-          columns={columns}
-          getRowId={(row) => row.uuid}
-          getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
-          loading={loading}
-          autoHeight
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          disableRowSelectionOnClick
-          sx={{
-            border: 'none',
-            '& .MuiDataGrid-cell': {
-              borderBottom: '1px solid #e4e9f2',
-            },
-            '& .deleted-row': {
-              opacity: 0.6,
-              backgroundColor: 'rgba(244, 67, 54, 0.04)',
-              '& .MuiDataGrid-cell:not(:last-of-type)': {
-                textDecoration: 'line-through',
+      {isMobile ? (
+        <Stack spacing={2}>
+          {loading && (
+            <Typography color="text.secondary" textAlign="center">
+              Loading...
+            </Typography>
+          )}
+          {!loading && items.length === 0 && (
+            <Typography color="text.secondary" textAlign="center">
+              No items found.
+            </Typography>
+          )}
+          {items.map((item) => {
+            const isLow = item.currentStock <= item.reorderLevel;
+            const isDeleted = item.status === 'deleted';
+            return (
+              <Card
+                key={item.uuid}
+                sx={isDeleted ? { opacity: 0.6, bgcolor: 'rgba(244, 67, 54, 0.04)' } : {}}
+              >
+                <CardContent sx={{ pb: '12px !important' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      sx={isDeleted ? { textDecoration: 'line-through' } : {}}
+                    >
+                      {item.name}
+                    </Typography>
+                    <Chip
+                      label={`${item.currentStock} ${item.unit}`}
+                      size="small"
+                      color={isLow ? 'error' : 'default'}
+                      variant={isLow ? 'filled' : 'outlined'}
+                    />
+                  </Box>
+                  {item.comments && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      {item.comments}
+                    </Typography>
+                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    Reorder at: {item.reorderLevel}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/medical/items/${item.uuid}/edit`)}
+                      title="Edit Item"
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => navigate(`/medical/purchases?item=${item.uuid}`)}
+                      title="View Purchase Log"
+                    >
+                      <PurchaseIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="secondary"
+                      onClick={() => navigate(`/medical/issues?item=${item.uuid}`)}
+                      title="View Issue Log"
+                    >
+                      <IssueIcon fontSize="small" />
+                    </IconButton>
+                    {!isDeleted && (
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => setDeleteDialog({ open: true, item })}
+                        title="Delete Item"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </Stack>
+      ) : (
+        <Card>
+          <DataGrid
+            rows={items}
+            columns={columns}
+            getRowId={(row) => row.uuid}
+            getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
+            loading={loading}
+            autoHeight
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 10 } },
+            }}
+            disableRowSelectionOnClick
+            sx={{
+              border: 'none',
+              '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
+              '& .MuiDataGrid-cell': {
+                borderBottom: '1px solid #e4e9f2',
               },
-            },
-          }}
-        />
-      </Card>
+              '& .deleted-row': {
+                opacity: 0.6,
+                backgroundColor: 'rgba(244, 67, 54, 0.04)',
+                '& .MuiDataGrid-cell:not(:last-of-type)': {
+                  textDecoration: 'line-through',
+                },
+              },
+            }}
+          />
+        </Card>
+      )}
 
       <ConfirmDialog
         open={deleteDialog.open}

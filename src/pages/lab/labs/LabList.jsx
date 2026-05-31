@@ -199,6 +199,7 @@ export default function LabList() {
           disableRowSelectionOnClick
           sx={{
             border: 'none',
+            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
             '& .MuiDataGrid-cell': {
               borderBottom: '1px solid #e4e9f2',
             },

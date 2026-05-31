@@ -1,0 +1,206 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box, Typography, Grid, Card, CardContent, CardActionArea,
+  CircularProgress, Alert,
+} from '@mui/material';
+import {
+  Checkroom as CheckroomIcon,
+  Inventory as InventoryIcon,
+  ShoppingCart as SalesIcon,
+  Warning as OutstandingIcon,
+  LocalShipping as PurchaseIcon,
+  Style as SetsIcon,
+  Payments as CollectionIcon,
+  LocalOffer as DiscountIcon,
+  Receipt as CostIcon,
+} from '@mui/icons-material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
+import uniformService from '../../services/uniformService';
+
+const formatCurrency = (amount) =>
+  `₹${parseFloat(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+const CHART_COLORS = ['#3366ff', '#00b887', '#ffaa00', '#ff3d71', '#8a5cf5'];
+
+export default function UniformDashboard() {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => { loadStats(); }, []);
+
+  const loadStats = async () => {
+    try {
+      const data = await uniformService.getStats();
+      setStats(data);
+    } catch {
+      setError('Failed to load statistics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
+  }
+
+  const statCards = [
+    {
+      title: 'Total Items',
+      value: stats?.totalItems || 0,
+      icon: CheckroomIcon,
+      color: '#3366ff',
+      path: '/uniform/catalog',
+    },
+    {
+      title: 'Total Cost',
+      value: formatCurrency(stats?.totalCost),
+      icon: CostIcon,
+      color: '#00b887',
+      path: '/uniform/purchases',
+    },
+    {
+      title: 'Stock Value',
+      value: formatCurrency(stats?.totalStockValue),
+      icon: InventoryIcon,
+      color: '#8a5cf5',
+      path: '/uniform/catalog',
+    },
+    {
+      title: 'Discounted Stock Value',
+      value: formatCurrency(stats?.discountedStockValue),
+      icon: DiscountIcon,
+      color: '#ffaa00',
+      path: '/uniform/catalog',
+    },
+    {
+      title: 'Total Collection',
+      value: formatCurrency(stats?.totalCollection),
+      icon: CollectionIcon,
+      color: '#00d68f',
+      path: '/uniform/sales?paymentStatus=paid,partial',
+    },
+    {
+      title: 'Pending Collection',
+      value: formatCurrency(stats?.pendingCollection),
+      icon: OutstandingIcon,
+      color: stats?.pendingCollection > 0 ? '#ff3d71' : '#00d68f',
+      path: '/uniform/sales?paymentStatus=partial',
+    },
+  ];
+
+  const quickLinks = [
+    { title: 'Catalog', description: 'Manage items and sizes', icon: CheckroomIcon, path: '/uniform/catalog', color: '#3366ff' },
+    { title: 'Purchases', description: 'Record stock purchases from suppliers', icon: PurchaseIcon, path: '/uniform/purchases', color: '#00b887' },
+    { title: 'Sets', description: 'Create item bundles for easy selling', icon: SetsIcon, path: '/uniform/sets', color: '#ffaa00' },
+    { title: 'Sales', description: 'Sell uniforms to students', icon: SalesIcon, path: '/uniform/sales', color: '#ff3d71' },
+  ];
+
+  // Build chart data: one object per month with all series values
+  const hotItems = stats?.hotSellingItems;
+  const chartData = hotItems?.months?.map((month, mi) => {
+    const point = { month };
+    hotItems.series.forEach(s => { point[s.name] = s.data[mi]; });
+    return point;
+  }) || [];
+
+  return (
+    <Box>
+      <Typography variant="h4" sx={{ mb: 3 }}>Uniform Module</Typography>
+
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+      {/* Line 1: 6 stat cards */}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        {statCards.map((card) => (
+          <Grid item xs={12} sm={6} md={4} key={card.title}>
+            <Card sx={{ borderLeft: `4px solid ${card.color}` }}>
+              <CardActionArea onClick={() => navigate(card.path)}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ color: '#8f9bb3' }}>{card.title}</Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 600, mt: 0.5 }}>{card.value}</Typography>
+                    </Box>
+                    <card.icon sx={{ fontSize: 40, color: card.color, opacity: 0.8 }} />
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Line 2: Sales This Month + Hot Items chart */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ borderLeft: '4px solid #ffaa00', height: '100%' }}>
+            <CardActionArea onClick={() => navigate('/uniform/sales')} sx={{ height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ color: '#8f9bb3' }}>Sales This Month</Typography>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>{stats?.salesThisMonth || 0}</Typography>
+                    <Typography variant="body2" sx={{ color: '#8f9bb3', mt: 0.5 }}>transactions</Typography>
+                  </Box>
+                  <SalesIcon sx={{ fontSize: 56, color: '#ffaa00', opacity: 0.8 }} />
+                </Box>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>Top Selling Items — Last 6 Months</Typography>
+              {chartData.length === 0 || hotItems?.series?.length === 0 ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+                  <Typography color="text.secondary">No sales data available</Typography>
+                </Box>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    {hotItems.series.map((s, i) => (
+                      <Bar key={s.name} dataKey={s.name} stackId="a" fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Typography variant="h6" sx={{ mb: 2 }}>Quick Links</Typography>
+      <Grid container spacing={3}>
+        {quickLinks.map((link) => (
+          <Grid item xs={12} sm={6} md={3} key={link.title}>
+            <Card>
+              <CardActionArea onClick={() => navigate(link.path)}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{
+                    width: 48, height: 48, borderRadius: 2,
+                    backgroundColor: `${link.color}15`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2,
+                  }}>
+                    <link.icon sx={{ color: link.color }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ mb: 0.5 }}>{link.title}</Typography>
+                  <Typography variant="body2" sx={{ color: '#8f9bb3' }}>{link.description}</Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
@@ -14,8 +14,13 @@ import {
   Autocomplete,
   InputAdornment,
   IconButton,
+  Chip,
 } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  AttachFile as AttachFileIcon,
+} from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
@@ -51,6 +56,10 @@ export default function LabBreakageForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [imageFile, setImageFile] = useState(null); // new file to upload
+  const [existingFileId, setExistingFileId] = useState(null); // existing fileId in edit mode
+  const [deleteExistingFile, setDeleteExistingFile] = useState(false);
+  const imageInputRef = useRef(null);
 
   const responsibleTypes = [
     { value: 'student', label: 'Student' },
@@ -126,6 +135,7 @@ export default function LabBreakageForm() {
       }
       const item = itemsData.find((i) => i.uuid === breakage.itemId);
       if (item) setSelectedItem(item);
+      if (breakage.fileId) setExistingFileId(breakage.fileId);
     } catch (err) {
       setError('Failed to load breakage');
     } finally {
@@ -201,6 +211,18 @@ export default function LabBreakageForm() {
     }));
   };
 
+  const handleImageFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = reader.result.split(',')[1];
+      setImageFile({ fileName: file.name, mimeType: file.type, base64Data, size: file.size });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const clearResponsible = () => {
     setFormData((prev) => ({
       ...prev,
@@ -220,6 +242,8 @@ export default function LabBreakageForm() {
         ...formData,
         quantity: parseInt(formData.quantity, 10) || 1,
         estimatedCost: parseFloat(formData.estimatedCost) || null,
+        fileData: imageFile ? { fileName: imageFile.fileName, mimeType: imageFile.mimeType, base64Data: imageFile.base64Data } : undefined,
+        deleteFile: deleteExistingFile || undefined,
       };
 
       if (isEdit) {
@@ -444,6 +468,50 @@ export default function LabBreakageForm() {
                   multiline
                   rows={3}
                 />
+              </Grid>
+              <Grid item xs={12}>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png"
+                  style={{ display: 'none' }}
+                  onChange={handleImageFile}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<AttachFileIcon />}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    Attach Image
+                  </Button>
+                  {imageFile && (
+                    <Chip
+                      label={`${imageFile.fileName} (${(imageFile.size / 1024).toFixed(1)} KB)`}
+                      size="small"
+                      onDelete={() => setImageFile(null)}
+                    />
+                  )}
+                  {!imageFile && existingFileId && !deleteExistingFile && (
+                    <Chip
+                      label="Existing image"
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      onDelete={() => setDeleteExistingFile(true)}
+                    />
+                  )}
+                  {deleteExistingFile && (
+                    <Chip
+                      label="Image will be removed"
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      onDelete={() => setDeleteExistingFile(false)}
+                    />
+                  )}
+                </Box>
               </Grid>
               {isEdit && (
                 <Grid item xs={12} md={6}>

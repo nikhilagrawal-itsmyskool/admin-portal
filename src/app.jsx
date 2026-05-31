@@ -18,10 +18,33 @@ import LabItemList from './pages/lab/items/LabItemList';
 import LabItemForm from './pages/lab/items/LabItemForm';
 import LabPurchaseList from './pages/lab/purchases/LabPurchaseList';
 import LabPurchaseForm from './pages/lab/purchases/LabPurchaseForm';
+import LabBulkPurchaseForm from './pages/lab/purchases/LabBulkPurchaseForm';
 import LabIssueList from './pages/lab/issues/LabIssueList';
 import LabIssueForm from './pages/lab/issues/LabIssueForm';
 import LabBreakageList from './pages/lab/breakages/LabBreakageList';
 import LabBreakageForm from './pages/lab/breakages/LabBreakageForm';
+import FineDashboard from './pages/fine/FineDashboard';
+import FineIncidentList from './pages/fine/incidents/FineIncidentList';
+import FineIncidentForm from './pages/fine/incidents/FineIncidentForm';
+import FineIncidentDetail from './pages/fine/incidents/FineIncidentDetail';
+import UniformDashboard from './pages/uniform/UniformDashboard';
+import UniformCatalog from './pages/uniform/catalog/UniformCatalog';
+import UniformPurchaseList from './pages/uniform/purchases/UniformPurchaseList';
+import UniformPurchaseForm from './pages/uniform/purchases/UniformPurchaseForm';
+import UniformSetList from './pages/uniform/sets/UniformSetList';
+import UniformSetForm from './pages/uniform/sets/UniformSetForm';
+import UniformSaleList from './pages/uniform/sales/UniformSaleList';
+import UniformSaleForm from './pages/uniform/sales/UniformSaleForm';
+import UniformSaleDetail from './pages/uniform/sales/UniformSaleDetail';
+import ShopDashboard from './pages/shop/ShopDashboard';
+import ShopCatalog from './pages/shop/catalog/ShopCatalog';
+import ShopPurchaseList from './pages/shop/purchases/ShopPurchaseList';
+import ShopPurchaseForm from './pages/shop/purchases/ShopPurchaseForm';
+import ShopSetList from './pages/shop/sets/ShopSetList';
+import ShopSetForm from './pages/shop/sets/ShopSetForm';
+import ShopSaleList from './pages/shop/sales/ShopSaleList';
+import ShopSaleForm from './pages/shop/sales/ShopSaleForm';
+import ShopSaleDetail from './pages/shop/sales/ShopSaleDetail';
 
 export default function App() {
   return (
@@ -55,6 +78,7 @@ export default function App() {
         <Route path="lab/items/add" element={<LabItemForm />} />
         <Route path="lab/items/:id/edit" element={<LabItemForm />} />
         <Route path="lab/purchases" element={<LabPurchaseList />} />
+        <Route path="lab/purchases/bulk/add" element={<LabBulkPurchaseForm />} />
         <Route path="lab/purchases/add" element={<LabPurchaseForm />} />
         <Route path="lab/purchases/:id/edit" element={<LabPurchaseForm />} />
         <Route path="lab/issues" element={<LabIssueList />} />
@@ -63,6 +87,33 @@ export default function App() {
         <Route path="lab/breakages" element={<LabBreakageList />} />
         <Route path="lab/breakages/add" element={<LabBreakageForm />} />
         <Route path="lab/breakages/:id/edit" element={<LabBreakageForm />} />
+        <Route path="fine" element={<FineDashboard />} />
+        <Route path="fine/incidents" element={<FineIncidentList />} />
+        <Route path="fine/incidents/new" element={<FineIncidentForm />} />
+        <Route path="fine/incidents/:id" element={<FineIncidentDetail />} />
+        <Route path="fine/incidents/:id/edit" element={<FineIncidentForm />} />
+        <Route path="uniform" element={<UniformDashboard />} />
+        <Route path="uniform/catalog" element={<UniformCatalog />} />
+        <Route path="uniform/purchases" element={<UniformPurchaseList />} />
+        <Route path="uniform/purchases/new" element={<UniformPurchaseForm />} />
+        <Route path="uniform/purchases/:id" element={<UniformPurchaseForm />} />
+        <Route path="uniform/sets" element={<UniformSetList />} />
+        <Route path="uniform/sets/new" element={<UniformSetForm />} />
+        <Route path="uniform/sets/:id/edit" element={<UniformSetForm />} />
+        <Route path="uniform/sales" element={<UniformSaleList />} />
+        <Route path="uniform/sales/new" element={<UniformSaleForm />} />
+        <Route path="uniform/sales/:id" element={<UniformSaleDetail />} />
+        <Route path="shop" element={<ShopDashboard />} />
+        <Route path="shop/catalog" element={<ShopCatalog />} />
+        <Route path="shop/purchases" element={<ShopPurchaseList />} />
+        <Route path="shop/purchases/new" element={<ShopPurchaseForm />} />
+        <Route path="shop/purchases/:id" element={<ShopPurchaseForm />} />
+        <Route path="shop/sets" element={<ShopSetList />} />
+        <Route path="shop/sets/new" element={<ShopSetForm />} />
+        <Route path="shop/sets/:id/edit" element={<ShopSetForm />} />
+        <Route path="shop/sales" element={<ShopSaleList />} />
+        <Route path="shop/sales/new" element={<ShopSaleForm />} />
+        <Route path="shop/sales/:id" element={<ShopSaleDetail />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -13,21 +13,46 @@ import {
   Grid,
   FormControlLabel,
   Checkbox,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TablePagination,
+  LinearProgress,
+  Chip,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  AttachFile as AttachFileIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
+const formatDate = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${day}/${month}/${d.getUTCFullYear()}`;
+};
+
+const formatCurrency = (v) => (v != null && v !== '' ? parseFloat(v).toFixed(2) : '—');
+
 export default function LabPurchaseList() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [purchases, setPurchases] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [labs, setLabs] = useState([]);
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
@@ -35,6 +60,7 @@ export default function LabPurchaseList() {
   const [error, setError] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
+  const [billDialog, setBillDialog] = useState({ open: false, url: null, mimeType: null, fileName: null });
 
   // Filter state
   const [selectedLab, setSelectedLab] = useState(null);
@@ -42,6 +68,18 @@ export default function LabPurchaseList() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [includeDeleted, setIncludeDeleted] = useState(false);
+
+  // Pagination
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Show/hide additional detail columns
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Expandable rows
+  const [expandedRows, setExpandedRows] = useState(new Set());
+  const [batchItemsCache, setBatchItemsCache] = useState({});
+  const [expandLoading, setExpandLoading] = useState(new Set());
 
   useEffect(() => {
     loadLabsAndItems();
@@ -70,7 +108,7 @@ export default function LabPurchaseList() {
       }
     }
 
-    loadPurchasesWithFilters(overrides);
+    loadBatchesWithFilters(overrides);
   }, [labs, items]);
 
   const loadLabsAndItems = async () => {
@@ -87,9 +125,10 @@ export default function LabPurchaseList() {
     }
   };
 
-  const loadPurchasesWithFilters = async (overrideFilters = {}) => {
+  const loadBatchesWithFilters = async (overrideFilters = {}) => {
     setLoading(true);
     setError('');
+    setExpandedRows(new Set());
     try {
       const filters = { ...overrideFilters };
       if (!filters.labId && selectedLab) filters.labId = selectedLab.uuid;
@@ -98,8 +137,9 @@ export default function LabPurchaseList() {
       if (endDate) filters.endDate = endDate;
       if (includeDeleted) filters.includeDeleted = true;
 
-      const data = await labService.getPurchases(filters);
-      setPurchases(data);
+      const data = await labService.getPurchaseBatches(filters);
+      setBatches(data);
+      setPage(0);
     } catch (err) {
       setError('Failed to load purchases');
     } finally {
@@ -107,21 +147,13 @@ export default function LabPurchaseList() {
     }
   };
 
-  const loadPurchases = () => loadPurchasesWithFilters();
-
-  const handleLabChange = (event, newValue) => {
+  const handleLabChange = (_, newValue) => {
     setSelectedLab(newValue);
     setSelectedItem(null);
-    if (newValue) {
-      setFilteredItems(items.filter((i) => i.labId === newValue.uuid));
-    } else {
-      setFilteredItems(items);
-    }
+    setFilteredItems(newValue ? items.filter((i) => i.labId === newValue.uuid) : items);
   };
 
-  const handleSearch = () => {
-    loadPurchases();
-  };
+  const handleSearch = () => loadBatchesWithFilters();
 
   const handleClear = () => {
     setSelectedLab(null);
@@ -131,90 +163,69 @@ export default function LabPurchaseList() {
     setIncludeDeleted(false);
     setFilteredItems(items);
     setSearchParams({});
+    setBatches([]);
+    setLoading(true);
+    labService.getPurchaseBatches({}).then((data) => {
+      setBatches(data);
+      setPage(0);
+    }).catch(() => setError('Failed to load purchases')).finally(() => setLoading(false));
+  };
+
+  const toggleExpand = async (uuid) => {
+    const next = new Set(expandedRows);
+    if (next.has(uuid)) {
+      next.delete(uuid);
+      setExpandedRows(next);
+      return;
+    }
+    next.add(uuid);
+    setExpandedRows(next);
+    if (!batchItemsCache[uuid]) {
+      setExpandLoading((prev) => new Set(prev).add(uuid));
+      try {
+        const batch = await labService.getPurchaseBatchById(uuid);
+        setBatchItemsCache((prev) => ({ ...prev, [uuid]: batch?.items || [] }));
+      } catch {
+        // silently fail
+      } finally {
+        setExpandLoading((prev) => { const s = new Set(prev); s.delete(uuid); return s; });
+      }
+    }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await labService.deletePurchase(deleteDialog.item.uuid);
+      const row = deleteDialog.item;
+      if (row.recordType === 'batch') {
+        await labService.deletePurchaseBatch(row.uuid);
+      } else {
+        await labService.deletePurchase(row.uuid);
+      }
       setDeleteDialog({ open: false, item: null });
-      loadPurchases();
-    } catch (err) {
+      loadBatchesWithFilters();
+    } catch {
       setError('Failed to delete purchase');
     } finally {
       setDeleting(false);
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString();
+  const paginatedBatches = batches.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const deletedRowSx = {
+    opacity: 0.6,
+    backgroundColor: 'rgba(244, 67, 54, 0.04)',
+    '& td:not(:first-of-type):not(:last-of-type)': { textDecoration: 'line-through' },
   };
 
-  const formatCurrency = (value) => {
-    if (!value) return '-';
-    return parseFloat(value).toFixed(2);
+  const expandedItemSx = {
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    '& td:first-of-type': {
+      borderLeft: '3px solid',
+      borderColor: 'primary.light',
+    },
   };
-
-  const columns = [
-    { field: 'itemName', headerName: 'Item', flex: 1, minWidth: 180 },
-    {
-      field: 'purchaseDate',
-      headerName: 'Purchase Date',
-      width: 130,
-      valueFormatter: (value) => formatDate(value),
-    },
-    { field: 'quantity', headerName: 'Qty', width: 80 },
-    {
-      field: 'costPerUnit',
-      headerName: 'Cost/Unit',
-      width: 100,
-      valueFormatter: (value) => formatCurrency(value),
-    },
-    {
-      field: 'totalCost',
-      headerName: 'Total Cost',
-      width: 110,
-      valueGetter: (value, row) => row.quantity * parseFloat(row.costPerUnit || 0),
-      valueFormatter: (value) => formatCurrency(value),
-    },
-    { field: 'supplier', headerName: 'Supplier', width: 140 },
-    { field: 'batchNo', headerName: 'Batch No.', width: 110 },
-    {
-      field: 'expiryDate',
-      headerName: 'Expiry',
-      width: 110,
-      valueFormatter: (value) => formatDate(value),
-    },
-    {
-      field: 'warrantyEndDate',
-      headerName: 'Warranty End',
-      width: 120,
-      valueFormatter: (value) => formatDate(value),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 80,
-      sortable: false,
-      renderCell: (params) => {
-        const isDeleted = params.row.status === 'deleted';
-        return (
-          <Box>
-            {!isDeleted && (
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => setDeleteDialog({ open: true, item: params.row })}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
-        );
-      },
-    },
-  ];
 
   return (
     <Box>
@@ -223,7 +234,7 @@ export default function LabPurchaseList() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => navigate('/lab/purchases/add')}
+          onClick={() => navigate('/lab/purchases/bulk/add')}
         >
           Add Purchase
         </Button>
@@ -254,7 +265,7 @@ export default function LabPurchaseList() {
                 options={filteredItems}
                 getOptionLabel={(option) => option.name}
                 value={selectedItem}
-                onChange={(e, newValue) => setSelectedItem(newValue)}
+                onChange={(_, val) => setSelectedItem(val)}
                 renderInput={(params) => (
                   <TextField {...params} label="Item" size="small" placeholder="All Items" />
                 )}
@@ -297,20 +308,10 @@ export default function LabPurchaseList() {
             </Grid>
             <Grid item xs={12} md={2}>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SearchIcon />}
-                  onClick={handleSearch}
-                  size="small"
-                >
+                <Button variant="contained" startIcon={<SearchIcon />} onClick={handleSearch} size="small">
                   Search
                 </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<ClearIcon />}
-                  onClick={handleClear}
-                  size="small"
-                >
+                <Button variant="outlined" startIcon={<ClearIcon />} onClick={handleClear} size="small">
                   Clear
                 </Button>
               </Box>
@@ -320,38 +321,212 @@ export default function LabPurchaseList() {
       </Card>
 
       <Card>
-        <DataGrid
-          rows={purchases}
-          columns={columns}
-          getRowId={(row) => row.uuid}
-          getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
-          loading={loading}
-          autoHeight
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          disableRowSelectionOnClick
-          sx={{
-            border: 'none',
-            '& .MuiDataGrid-cell': {
-              borderBottom: '1px solid #e4e9f2',
-            },
-            '& .deleted-row': {
-              opacity: 0.6,
-              backgroundColor: 'rgba(244, 67, 54, 0.04)',
-              '& .MuiDataGrid-cell:not(:last-of-type)': {
-                textDecoration: 'line-through',
-              },
-            },
-          }}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pt: 1 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showDetails}
+                onChange={(e) => setShowDetails(e.target.checked)}
+                size="small"
+              />
+            }
+            label="Show additional details"
+            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem' } }}
+          />
+        </Box>
+        {loading && <LinearProgress />}
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ '& th': { fontWeight: 600, whiteSpace: 'nowrap' } }}>
+                <TableCell sx={{ width: 40 }} />
+                <TableCell>Date</TableCell>
+                <TableCell>Lab</TableCell>
+                <TableCell>Items</TableCell>
+                <TableCell align="right">Qty</TableCell>
+                <TableCell align="right">Cost/Unit</TableCell>
+                <TableCell align="right">Total (₹)</TableCell>
+                <TableCell>Supplier</TableCell>
+                <TableCell align="center" sx={{ width: 56 }}>Bills</TableCell>
+                {showDetails && <TableCell>Invoice No</TableCell>}
+                {showDetails && <TableCell>Batch No</TableCell>}
+                {showDetails && <TableCell>Expiry</TableCell>}
+                {showDetails && <TableCell>Warranty End</TableCell>}
+                <TableCell align="center" sx={{ width: 56 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {!loading && paginatedBatches.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={showDetails ? 14 : 10} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                    No purchases found
+                  </TableCell>
+                </TableRow>
+              )}
+              {paginatedBatches.map((row) => {
+                const isDeleted = row.status === 'deleted';
+                const isExpanded = expandedRows.has(row.uuid);
+                const isExpandLoading = expandLoading.has(row.uuid);
+                const canExpand = (row.itemCount || 0) > 1;
+
+                return (
+                  <React.Fragment key={row.uuid}>
+                    {/* Main row */}
+                    <TableRow sx={isDeleted ? deletedRowSx : undefined} hover={!isDeleted}>
+                      <TableCell sx={{ pr: 0 }}>
+                        {canExpand && (
+                          <Tooltip title={isExpanded ? 'Collapse' : 'View items'}>
+                            <IconButton size="small" onClick={() => toggleExpand(row.uuid)}>
+                              {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.purchaseDate)}</TableCell>
+                      <TableCell>{row.labName || '—'}</TableCell>
+                      <TableCell>
+                        {canExpand ? (
+                          <Chip
+                            label={`${row.itemCount} items`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            onClick={() => toggleExpand(row.uuid)}
+                            sx={{ cursor: 'pointer' }}
+                          />
+                        ) : (
+                          <Typography variant="body2">{row.itemName || '—'}</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">{row.quantity ?? '—'}</TableCell>
+                      <TableCell align="right">
+                        {canExpand ? '—' : (row.costPerUnit != null ? formatCurrency(row.costPerUnit) : '—')}
+                      </TableCell>
+                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                        {row.totalCost != null ? parseFloat(row.totalCost).toFixed(2) : '—'}
+                      </TableCell>
+                      <TableCell>{row.supplier || '—'}</TableCell>
+                      <TableCell align="center">
+                        {row.fileId && (
+                          <Tooltip title="View bill">
+                            <IconButton
+                              size="small"
+                              onClick={async () => {
+                                try {
+                                  const file = await labService.getLabBill(row.uuid);
+                                  const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
+                                  const blob = new Blob([bytes], { type: file.mimeType });
+                                  const url = URL.createObjectURL(blob);
+                                  setBillDialog({ open: true, url, mimeType: file.mimeType, fileName: file.fileName });
+                                } catch {
+                                  setError('Failed to load bill');
+                                }
+                              }}
+                            >
+                              <AttachFileIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      {showDetails && <TableCell>{row.invoiceNumber || '—'}</TableCell>}
+                      {showDetails && <TableCell>{row.batchNo || '—'}</TableCell>}
+                      {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.expiryDate)}</TableCell>}
+                      {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.warrantyEndDate)}</TableCell>}
+                      <TableCell align="center">
+                        {!isDeleted && (
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => setDeleteDialog({ open: true, item: row })}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Loading row while fetching batch items */}
+                    {canExpand && isExpandLoading && (
+                      <TableRow key={row.uuid + '_loading'}>
+                        <TableCell colSpan={showDetails ? 14 : 10} sx={{ py: 0, px: 0 }}>
+                          <LinearProgress />
+                        </TableCell>
+                      </TableRow>
+                    )}
+
+                    {/* Expanded item rows — inline, same columns as parent */}
+                    {canExpand && isExpanded && !isExpandLoading && (batchItemsCache[row.uuid] || []).map((item) => (
+                      <TableRow key={item.uuid} sx={expandedItemSx}>
+                        <TableCell sx={{ pr: 0 }} />
+                        <TableCell />
+                        <TableCell>{item.labName || '—'}</TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{item.itemName || item.itemId}</Typography>
+                        </TableCell>
+                        <TableCell align="right">{item.quantity}</TableCell>
+                        <TableCell align="right">{formatCurrency(item.costPerUnit)}</TableCell>
+                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                          {item.costPerUnit ? (item.quantity * parseFloat(item.costPerUnit)).toFixed(2) : '—'}
+                        </TableCell>
+                        <TableCell>{row.supplier || '—'}</TableCell>
+                        <TableCell />
+                        {showDetails && <TableCell>{row.invoiceNumber || '—'}</TableCell>}
+                        {showDetails && <TableCell>{item.batchNo || '—'}</TableCell>}
+                        {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(item.expiryDate)}</TableCell>}
+                        {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(item.warrantyEndDate)}</TableCell>}
+                        <TableCell />
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Box>
+        <TablePagination
+          component="div"
+          count={batches.length}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+          rowsPerPageOptions={[10, 25, 50]}
         />
       </Card>
 
+      <Dialog
+        open={billDialog.open}
+        onClose={() => { URL.revokeObjectURL(billDialog.url); setBillDialog({ open: false, url: null, mimeType: null, fileName: null }); }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {billDialog.fileName || 'Bill'}
+          <IconButton size="small" onClick={() => { URL.revokeObjectURL(billDialog.url); setBillDialog({ open: false, url: null, mimeType: null, fileName: null }); }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, minHeight: 480 }}>
+          {billDialog.mimeType === 'application/pdf' ? (
+            <iframe src={billDialog.url} style={{ width: '100%', height: 600, border: 'none' }} title="Bill" />
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+              <img src={billDialog.url} alt="Bill" style={{ maxWidth: '100%', maxHeight: 600, objectFit: 'contain' }} />
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog
         open={deleteDialog.open}
-        title="Delete Purchase"
-        message="Are you sure you want to delete this purchase record? This will also adjust the inventory stock."
+        title={deleteDialog.item?.recordType === 'batch' ? 'Delete Purchase Batch' : 'Delete Purchase'}
+        message={
+          deleteDialog.item?.recordType === 'batch'
+            ? 'Are you sure you want to delete this purchase batch? All items will be removed and stock reversed.'
+            : 'Are you sure you want to delete this purchase record? This will also adjust the inventory stock.'
+        }
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, item: null })}
         loading={deleting}
