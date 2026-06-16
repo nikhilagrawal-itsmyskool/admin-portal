@@ -19,18 +19,15 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { DRAWER_WIDTH } from './Sidebar';
-
-const getFirstName = (displayName) => {
-  if (!displayName) return null;
-  return displayName.split(' ')[0];
-};
+import { getShortDisplayName, getFirstNameInitial } from '../utils/userDisplay';
 
 export default function Header({ onMenuClick, isDesktop }) {
   const { user, logout, schoolCode } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
 
-  const firstName = getFirstName(user?.displayName) || user?.loginName;
+  const shortDisplayName = getShortDisplayName(user?.displayName) || user?.loginName;
+  const avatarInitial = getFirstNameInitial(user?.displayName) || user?.loginName?.charAt(0).toUpperCase();
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -76,11 +73,11 @@ export default function Header({ onMenuClick, isDesktop }) {
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="body2" sx={{ color: '#222b45' }}>
-            {firstName}
+            {shortDisplayName}
           </Typography>
           <IconButton onClick={handleMenuOpen} size="small">
             <Avatar sx={{ width: 36, height: 36, bgcolor: '#3366ff' }}>
-              {firstName?.charAt(0).toUpperCase() || 'U'}
+              {avatarInitial || 'U'}
             </Avatar>
           </IconButton>
         </Box>

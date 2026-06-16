@@ -15,11 +15,7 @@ import {
   Checkroom as CheckroomIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-
-const getFirstName = (displayName) => {
-  if (!displayName) return null;
-  return displayName.split(' ')[0];
-};
+import { getFirstName } from '../utils/userDisplay';
 
 const modules = [
   {

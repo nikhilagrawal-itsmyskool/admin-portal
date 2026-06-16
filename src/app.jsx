@@ -79,6 +79,7 @@ export default function App() {
         <Route path="lab/items/:id/edit" element={<LabItemForm />} />
         <Route path="lab/purchases" element={<LabPurchaseList />} />
         <Route path="lab/purchases/bulk/add" element={<LabBulkPurchaseForm />} />
+        <Route path="lab/purchases/bulk/:id/edit" element={<LabBulkPurchaseForm />} />
         <Route path="lab/purchases/add" element={<LabPurchaseForm />} />
         <Route path="lab/purchases/:id/edit" element={<LabPurchaseForm />} />
         <Route path="lab/issues" element={<LabIssueList />} />

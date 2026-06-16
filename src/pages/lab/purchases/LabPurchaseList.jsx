@@ -22,21 +22,19 @@ import {
   LinearProgress,
   Chip,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
 } from '@mui/material';
 import {
   Add as AddIcon,
+  Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  AttachFile as AttachFileIcon,
-  Close as CloseIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
+import { useAuth } from '../../../context/AuthContext';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 const formatDate = (v) => {
@@ -51,6 +49,8 @@ const formatCurrency = (v) => (v != null && v !== '' ? parseFloat(v).toFixed(2) 
 
 export default function LabPurchaseList() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isGod = user?.roles?.includes('god');
   const [searchParams, setSearchParams] = useSearchParams();
   const [batches, setBatches] = useState([]);
   const [labs, setLabs] = useState([]);
@@ -60,7 +60,6 @@ export default function LabPurchaseList() {
   const [error, setError] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
-  const [billDialog, setBillDialog] = useState({ open: false, url: null, mimeType: null, fileName: null });
 
   // Filter state
   const [selectedLab, setSelectedLab] = useState(null);
@@ -208,6 +207,24 @@ export default function LabPurchaseList() {
       setError('Failed to delete purchase');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDownloadBill = async (batchId) => {
+    try {
+      const file = await labService.getLabBill(batchId);
+      const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: file.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.fileName || 'bill';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Failed to download bill');
     }
   };
 
@@ -408,22 +425,9 @@ export default function LabPurchaseList() {
                       <TableCell>{row.supplier || '—'}</TableCell>
                       <TableCell align="center">
                         {row.fileId && (
-                          <Tooltip title="View bill">
-                            <IconButton
-                              size="small"
-                              onClick={async () => {
-                                try {
-                                  const file = await labService.getLabBill(row.uuid);
-                                  const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
-                                  const blob = new Blob([bytes], { type: file.mimeType });
-                                  const url = URL.createObjectURL(blob);
-                                  setBillDialog({ open: true, url, mimeType: file.mimeType, fileName: file.fileName });
-                                } catch {
-                                  setError('Failed to load bill');
-                                }
-                              }}
-                            >
-                              <AttachFileIcon fontSize="small" />
+                          <Tooltip title="Download bill">
+                            <IconButton size="small" onClick={() => handleDownloadBill(row.uuid)}>
+                              <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -432,7 +436,18 @@ export default function LabPurchaseList() {
                       {showDetails && <TableCell>{row.batchNo || '—'}</TableCell>}
                       {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.expiryDate)}</TableCell>}
                       {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.warrantyEndDate)}</TableCell>}
-                      <TableCell align="center">
+                      <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
+                        {!isDeleted && isGod && (
+                          <Tooltip title="Edit">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => navigate(`/lab/purchases/bulk/${row.uuid}/edit`)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {!isDeleted && (
                           <Tooltip title="Delete">
                             <IconButton
@@ -495,29 +510,6 @@ export default function LabPurchaseList() {
           rowsPerPageOptions={[10, 25, 50]}
         />
       </Card>
-
-      <Dialog
-        open={billDialog.open}
-        onClose={() => { URL.revokeObjectURL(billDialog.url); setBillDialog({ open: false, url: null, mimeType: null, fileName: null }); }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {billDialog.fileName || 'Bill'}
-          <IconButton size="small" onClick={() => { URL.revokeObjectURL(billDialog.url); setBillDialog({ open: false, url: null, mimeType: null, fileName: null }); }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0, minHeight: 480 }}>
-          {billDialog.mimeType === 'application/pdf' ? (
-            <iframe src={billDialog.url} style={{ width: '100%', height: 600, border: 'none' }} title="Bill" />
-          ) : (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-              <img src={billDialog.url} alt="Bill" style={{ maxWidth: '100%', maxHeight: 600, objectFit: 'contain' }} />
-            </Box>
-          )}
-        </DialogContent>
-      </Dialog>
 
       <ConfirmDialog
         open={deleteDialog.open}

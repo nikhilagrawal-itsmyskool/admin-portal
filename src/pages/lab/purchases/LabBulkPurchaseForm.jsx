@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -25,11 +25,13 @@ import {
   Delete as DeleteIcon,
   ArrowBack as BackIcon,
   AttachFile as AttachFileIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 
 const emptyItem = () => ({
   _key: Math.random(),
+  uuid: undefined,
   lab: null,
   item: null,
   itemOptions: [],
@@ -41,10 +43,15 @@ const emptyItem = () => ({
   remarks: '',
 });
 
+const toDateInput = (v) => (v ? new Date(v).toISOString().split('T')[0] : '');
+
 export default function LabBulkPurchaseForm() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = !!id;
   const [labs, setLabs] = useState([]);
   const [allItems, setAllItems] = useState([]);
+  const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -57,19 +64,61 @@ export default function LabBulkPurchaseForm() {
   const [defaultWarrantyEndDate, setDefaultWarrantyEndDate] = useState('');
   const [notes, setNotes] = useState('');
   const [billFile, setBillFile] = useState(null);
+  const [hasExistingBill, setHasExistingBill] = useState(false);
+  const [removeExistingBill, setRemoveExistingBill] = useState(false);
   const billInputRef = useRef(null);
 
   // Line items
   const [lineItems, setLineItems] = useState([emptyItem()]);
 
   useEffect(() => {
-    Promise.all([labService.getLabs(), labService.getItems()])
-      .then(([labsData, itemsData]) => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [labsData, itemsData] = await Promise.all([labService.getLabs(), labService.getItems()]);
+        if (cancelled) return;
         setLabs(labsData);
         setAllItems(itemsData);
-      })
-      .catch(() => setError('Failed to load labs/items'));
-  }, []);
+
+        if (isEdit) {
+          const batch = await labService.getPurchaseBatchById(id);
+          if (cancelled) return;
+          setPurchaseDate(toDateInput(batch.purchaseDate) || new Date().toISOString().split('T')[0]);
+          setSupplier(batch.supplier || '');
+          setInvoiceNumber(batch.invoiceNumber || '');
+          setDefaultBatchNo(batch.batchNo || '');
+          setDefaultExpiryDate(toDateInput(batch.expiryDate));
+          setDefaultWarrantyEndDate(toDateInput(batch.warrantyEndDate));
+          setNotes(batch.notes || '');
+          setHasExistingBill(!!batch.fileId);
+
+          const rows = (batch.items || []).map((it) => {
+            const lab = labsData.find((l) => l.uuid === it.labId) || null;
+            const item = itemsData.find((i) => i.uuid === it.itemId) || null;
+            return {
+              _key: Math.random(),
+              uuid: it.uuid,
+              lab,
+              item,
+              itemOptions: lab ? itemsData.filter((i) => i.labId === lab.uuid) : [],
+              quantity: it.quantity != null ? String(it.quantity) : '',
+              costPerUnit: it.costPerUnit != null ? String(it.costPerUnit) : '',
+              batchNo: it.batchNo || '',
+              expiryDate: toDateInput(it.expiryDate),
+              warrantyEndDate: toDateInput(it.warrantyEndDate),
+              remarks: it.remarks || '',
+            };
+          });
+          setLineItems(rows.length ? rows : [emptyItem()]);
+        }
+      } catch {
+        if (!cancelled) setError(isEdit ? 'Failed to load purchase' : 'Failed to load labs/items');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
 
   const updateItem = (index, field, value) => {
     setLineItems((prev) => {
@@ -90,9 +139,28 @@ export default function LabBulkPurchaseForm() {
     reader.onload = () => {
       const base64Data = reader.result.split(',')[1];
       setBillFile({ fileName: file.name, mimeType: file.type, base64Data, size: file.size });
+      setRemoveExistingBill(false);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
+  };
+
+  const handleDownloadExistingBill = async () => {
+    try {
+      const file = await labService.getLabBill(id);
+      const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: file.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.fileName || 'bill';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Failed to download bill');
+    }
   };
 
   const addItem = () => setLineItems((prev) => [...prev, emptyItem()]);
@@ -120,8 +188,8 @@ export default function LabBulkPurchaseForm() {
       expiryDate: defaultExpiryDate || undefined,
       warrantyEndDate: defaultWarrantyEndDate || undefined,
       notes: notes || undefined,
-      bill: billFile ? { fileName: billFile.fileName, mimeType: billFile.mimeType, base64Data: billFile.base64Data } : undefined,
       items: lineItems.map((li) => ({
+        uuid: li.uuid || undefined,
         itemId: li.item.uuid,
         labId: li.lab.uuid,
         quantity: parseInt(li.quantity),
@@ -133,16 +201,38 @@ export default function LabBulkPurchaseForm() {
       })),
     };
 
+    const billPayload = billFile
+      ? { fileName: billFile.fileName, mimeType: billFile.mimeType, base64Data: billFile.base64Data }
+      : null;
+
     setSubmitting(true);
     try {
-      await labService.createBulkPurchase(payload);
+      if (isEdit) {
+        const result = await labService.updatePurchaseBatch(id, payload);
+        const returnedId = result?.uuid || id;
+        if (billPayload) {
+          await labService.uploadLabBill(returnedId, billPayload);
+        } else if (removeExistingBill && hasExistingBill) {
+          await labService.deleteLabBill(returnedId);
+        }
+      } else {
+        await labService.createBulkPurchase({ ...payload, bill: billPayload || undefined });
+      }
       navigate('/lab/purchases');
     } catch (err) {
-      setError(err?.response?.data?.error?.message || 'Failed to create bulk purchase');
+      setError(err?.response?.data?.error?.message || (isEdit ? 'Failed to save purchase' : 'Failed to create bulk purchase'));
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -150,7 +240,7 @@ export default function LabBulkPurchaseForm() {
         <IconButton onClick={() => navigate('/lab/purchases')}>
           <BackIcon />
         </IconButton>
-        <Typography variant="h4">Bulk Purchase</Typography>
+        <Typography variant="h4">{isEdit ? 'Edit Purchase' : 'Bulk Purchase'}</Typography>
       </Box>
 
       {error && (
@@ -220,20 +310,38 @@ export default function LabBulkPurchaseForm() {
                 style={{ display: 'none' }}
                 onChange={handleBillFile}
               />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                 <Button
                   variant="outlined"
                   size="small"
                   startIcon={<AttachFileIcon />}
                   onClick={() => billInputRef.current?.click()}
                 >
-                  Attach Bill
+                  {hasExistingBill && !removeExistingBill ? 'Replace Bill' : 'Attach Bill'}
                 </Button>
                 {billFile && (
                   <Chip
                     label={`${billFile.fileName} (${(billFile.size / 1024).toFixed(1)} KB)`}
                     size="small"
                     onDelete={() => setBillFile(null)}
+                  />
+                )}
+                {isEdit && hasExistingBill && !billFile && !removeExistingBill && (
+                  <Chip
+                    label="Current bill"
+                    size="small"
+                    variant="outlined"
+                    icon={<DownloadIcon />}
+                    onClick={handleDownloadExistingBill}
+                    onDelete={() => setRemoveExistingBill(true)}
+                  />
+                )}
+                {isEdit && removeExistingBill && !billFile && (
+                  <Chip
+                    label="Bill will be removed on save"
+                    size="small"
+                    color="warning"
+                    onDelete={() => setRemoveExistingBill(false)}
                   />
                 )}
               </Box>
@@ -372,7 +480,7 @@ export default function LabBulkPurchaseForm() {
           disabled={submitting}
           startIcon={submitting ? <CircularProgress size={16} /> : undefined}
         >
-          {submitting ? 'Saving...' : 'Save Bulk Purchase'}
+          {submitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Bulk Purchase'}
         </Button>
         <Button variant="outlined" onClick={() => navigate('/lab/purchases')} disabled={submitting}>
           Cancel
