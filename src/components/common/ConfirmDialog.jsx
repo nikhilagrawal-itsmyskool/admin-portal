@@ -13,7 +13,9 @@ export default function ConfirmDialog({
   title,
   message,
   confirmLabel = 'Delete',
+  loadingLabel = 'Deleting...',
   cancelLabel = 'Cancel',
+  confirmColor = 'error',
   onConfirm,
   onCancel,
   loading = false,
@@ -30,11 +32,11 @@ export default function ConfirmDialog({
         </Button>
         <Button
           onClick={onConfirm}
-          color="error"
+          color={confirmColor}
           variant="contained"
           disabled={loading}
         >
-          {loading ? 'Deleting...' : confirmLabel}
+          {loading ? loadingLabel : confirmLabel}
         </Button>
       </DialogActions>
     </Dialog>

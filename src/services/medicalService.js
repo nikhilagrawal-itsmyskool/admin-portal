@@ -88,6 +88,11 @@ export const medicalService = {
     return response.data;
   },
 
+  restorePurchaseBatch: async (batchId) => {
+    const response = await api.post(`/medical/purchases/batches/${batchId}/restore`);
+    return response.data;
+  },
+
   uploadBill: async (batchId, data) => {
     const response = await api.post(`/medical/purchases/batches/${batchId}/bill`, data);
     return response.data;

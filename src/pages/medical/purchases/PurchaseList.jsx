@@ -30,7 +30,9 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
+  Edit as EditIcon,
   Delete as DeleteIcon,
+  RestoreFromTrash as RestoreIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
   AttachFile as AttachFileIcon,
@@ -38,6 +40,7 @@ import {
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { medicalService } from '../../../services/medicalService';
+import { useAuth } from '../../../context/AuthContext';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 const formatDate = (v) => {
@@ -58,6 +61,8 @@ function getAcademicYearStart() {
 
 export default function PurchaseList() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isGod = user?.roles?.includes('god');
   const [searchParams] = useSearchParams();
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +74,8 @@ export default function PurchaseList() {
   const [itemOptions, setItemOptions] = useState([]);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
+  const [restoreDialog, setRestoreDialog] = useState({ open: false, item: null });
+  const [restoring, setRestoring] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
   // Bill viewer
@@ -181,6 +188,19 @@ export default function PurchaseList() {
       setError('Failed to delete purchase batch');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setRestoring(true);
+    try {
+      await medicalService.restorePurchaseBatch(restoreDialog.item.uuid);
+      setRestoreDialog({ open: false, item: null });
+      loadBatches({ startDate, endDate, includeDeleted, itemId: selectedItem?.uuid });
+    } catch {
+      setError('Failed to restore purchase batch');
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -364,7 +384,18 @@ export default function PurchaseList() {
                       {showDetails && <TableCell>{row.invoiceNumber || '—'}</TableCell>}
                       {showDetails && <TableCell>{row.batchNo || '—'}</TableCell>}
                       {showDetails && <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(row.expiryDate)}</TableCell>}
-                      <TableCell align="center">
+                      <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
+                        {!isDeleted && isGod && (
+                          <Tooltip title="Edit">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => navigate(`/medical/purchases/bulk/${row.uuid}/edit`)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {!isDeleted && (
                           <Tooltip title="Delete batch">
                             <IconButton
@@ -373,6 +404,17 @@ export default function PurchaseList() {
                               onClick={() => setDeleteDialog({ open: true, item: row })}
                             >
                               <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {isDeleted && isGod && (
+                          <Tooltip title="Restore deletion">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => setRestoreDialog({ open: true, item: row })}
+                            >
+                              <RestoreIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -392,7 +434,14 @@ export default function PurchaseList() {
                         expandedItems.map((item) => (
                           <TableRow
                             key={item.uuid}
-                            sx={{ backgroundColor: 'rgba(0,0,0,0.02)', '& td': { borderBottom: '1px solid #f0f0f0' } }}
+                            sx={{
+                              backgroundColor: 'rgba(0,0,0,0.02)',
+                              '& td': { borderBottom: '1px solid #f0f0f0' },
+                              ...(isDeleted && {
+                                opacity: 0.6,
+                                '& td:not(:first-of-type):not(:last-of-type)': { textDecoration: 'line-through' },
+                              }),
+                            }}
                           >
                             <TableCell />
                             <TableCell />
@@ -442,6 +491,18 @@ export default function PurchaseList() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, item: null })}
         loading={deleting}
+      />
+
+      <ConfirmDialog
+        open={restoreDialog.open}
+        title="Restore Purchase Batch"
+        message="Are you sure you want to restore this deleted purchase? The items will be re-added and stock adjusted back."
+        confirmLabel="Restore"
+        loadingLabel="Restoring..."
+        confirmColor="primary"
+        onConfirm={handleRestore}
+        onCancel={() => setRestoreDialog({ open: false, item: null })}
+        loading={restoring}
       />
 
       <Dialog open={billDialog.open} onClose={closeBill} maxWidth="md" fullWidth>

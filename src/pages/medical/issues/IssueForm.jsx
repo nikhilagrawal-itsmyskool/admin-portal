@@ -56,8 +56,9 @@ export default function IssueForm() {
 
   useEffect(() => {
     if (!isEdit && user) {
-      setFormData((prev) => ({ ...prev, issuedById: user.id }));
-      setIssuedByEmployee({ uuid: user.id, name: user.displayName });
+      const issuerId = user.employeeId || user.id;
+      setFormData((prev) => ({ ...prev, issuedById: issuerId }));
+      setIssuedByEmployee({ uuid: issuerId, name: user.displayName });
     }
   }, [user, isEdit]);
 

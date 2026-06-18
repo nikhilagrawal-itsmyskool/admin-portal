@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -33,6 +33,7 @@ const ALLOWED_BILL_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 const emptyLineItem = () => ({
   _key: Math.random(),
+  uuid: undefined,
   selectedItem: null,
   itemId: '',
   quantity: '',
@@ -40,6 +41,8 @@ const emptyLineItem = () => ({
   expiryDate: '',
   batchNo: '',
 });
+
+const toDateInput = (v) => (v ? v.split('T')[0] : '');
 
 // Edit mode: still uses the old single-purchase API for backward compat
 function EditPurchaseForm({ id }) {
@@ -251,9 +254,10 @@ function EditPurchaseForm({ id }) {
   );
 }
 
-// Add mode: unified bulk form (always calls /purchases/bulk)
-function AddPurchaseForm() {
+// Bulk form: add mode (calls /purchases/bulk) and god edit mode (calls updatePurchaseBatch)
+function BulkPurchaseForm({ editId }) {
   const navigate = useNavigate();
+  const isEdit = !!editId;
 
   const [header, setHeader] = useState({
     purchaseDate: new Date().toISOString().split('T')[0],
@@ -265,16 +269,52 @@ function AddPurchaseForm() {
   const [lineItems, setLineItems] = useState([emptyLineItem()]);
   const [items, setItems] = useState([]);
   const [billFile, setBillFile] = useState(null); // { fileName, mimeType, base64Data, size }
+  const [hasExistingBill, setHasExistingBill] = useState(false);
+  const [removeExistingBill, setRemoveExistingBill] = useState(false);
+  const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    medicalService
-      .getItems()
-      .then(setItems)
-      .catch(() => {});
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const itemsData = await medicalService.getItems();
+        if (cancelled) return;
+        setItems(itemsData);
+
+        if (isEdit) {
+          const batch = await medicalService.getPurchaseBatchById(editId);
+          if (cancelled) return;
+          setHeader({
+            purchaseDate: toDateInput(batch.purchaseDate) || new Date().toISOString().split('T')[0],
+            supplier: batch.supplier || '',
+            invoiceNumber: batch.invoiceNumber || '',
+            batchNo: batch.batchNo || '',
+            notes: batch.notes || '',
+          });
+          setHasExistingBill(!!batch.fileId);
+          const rows = (batch.items || []).map((it) => ({
+            _key: Math.random(),
+            uuid: it.uuid,
+            selectedItem: itemsData.find((i) => i.uuid === it.itemId) || null,
+            itemId: it.itemId || '',
+            quantity: it.quantity != null ? String(it.quantity) : '',
+            costPerUnit: it.costPerUnit != null ? String(it.costPerUnit) : '',
+            expiryDate: toDateInput(it.expiryDate),
+            batchNo: it.batchNo || '',
+          }));
+          setLineItems(rows.length ? rows : [emptyLineItem()]);
+        }
+      } catch {
+        if (!cancelled) setError(isEdit ? 'Failed to load purchase' : 'Failed to load items');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editId]);
 
   const handleHeaderChange = (e) => {
     const { name, value } = e.target;
@@ -316,10 +356,29 @@ function AddPurchaseForm() {
     reader.onload = (ev) => {
       const base64Data = ev.target.result.split(',')[1];
       setBillFile({ fileName: file.name, mimeType: file.type, base64Data, size: file.size });
+      setRemoveExistingBill(false);
     };
     reader.readAsDataURL(file);
     // reset so same file can be re-selected
     e.target.value = '';
+  };
+
+  const handleDownloadExistingBill = async () => {
+    try {
+      const fileData = await medicalService.getBill(editId);
+      const bytes = Uint8Array.from(atob(fileData.data), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: fileData.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileData.fileName || 'bill';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Failed to download bill');
+    }
   };
 
   const totalCost = lineItems.reduce((sum, item) => {
@@ -354,6 +413,7 @@ function AddPurchaseForm() {
         batchNo: header.batchNo || undefined,
         notes: header.notes || undefined,
         items: lineItems.map((li) => ({
+          uuid: li.uuid || undefined,
           itemId: li.itemId,
           quantity: parseInt(li.quantity, 10),
           costPerUnit: parseFloat(li.costPerUnit) || undefined,
@@ -361,14 +421,21 @@ function AddPurchaseForm() {
           batchNo: li.batchNo || undefined,
         })),
       };
-      if (billFile) {
-        payload.bill = {
-          fileName: billFile.fileName,
-          mimeType: billFile.mimeType,
-          base64Data: billFile.base64Data,
-        };
+      const billPayload = billFile
+        ? { fileName: billFile.fileName, mimeType: billFile.mimeType, base64Data: billFile.base64Data }
+        : null;
+
+      if (isEdit) {
+        const result = await medicalService.updatePurchaseBatch(editId, payload);
+        const returnedId = result?.uuid || editId;
+        if (billPayload) {
+          await medicalService.uploadBill(returnedId, billPayload);
+        } else if (removeExistingBill && hasExistingBill) {
+          await medicalService.deleteBill(returnedId);
+        }
+      } else {
+        await medicalService.createBulkPurchase({ ...payload, bill: billPayload || undefined });
       }
-      await medicalService.createBulkPurchase(payload);
       navigate('/medical/purchases');
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to save purchase');
@@ -377,10 +444,18 @@ function AddPurchaseForm() {
     }
   };
 
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        Add Purchase
+        {isEdit ? 'Edit Purchase' : 'Add Purchase'}
       </Typography>
 
       {error && (
@@ -581,15 +656,39 @@ function AddPurchaseForm() {
                   Replace
                 </Button>
               </Box>
+            ) : isEdit && hasExistingBill && !removeExistingBill ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  icon={<AttachFileIcon />}
+                  label="Current bill"
+                  onClick={handleDownloadExistingBill}
+                  onDelete={() => setRemoveExistingBill(true)}
+                  color="primary"
+                  variant="outlined"
+                />
+                <Button size="small" onClick={() => fileInputRef.current?.click()}>
+                  Replace
+                </Button>
+              </Box>
             ) : (
-              <Button
-                variant="outlined"
-                startIcon={<AttachFileIcon />}
-                onClick={() => fileInputRef.current?.click()}
-                size="small"
-              >
-                Attach Bill
-              </Button>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<AttachFileIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                  size="small"
+                >
+                  Attach Bill
+                </Button>
+                {isEdit && removeExistingBill && (
+                  <Chip
+                    label="Bill will be removed on save"
+                    size="small"
+                    color="warning"
+                    onDelete={() => setRemoveExistingBill(false)}
+                  />
+                )}
+              </Box>
             )}
             <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
               PDF, JPEG, or PNG
@@ -600,7 +699,7 @@ function AddPurchaseForm() {
         <Divider sx={{ mb: 3 }} />
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button type="submit" variant="contained" disabled={saving}>
-            {saving ? 'Saving...' : 'Create Purchase'}
+            {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Purchase'}
           </Button>
           <Button variant="outlined" onClick={() => navigate('/medical/purchases')} disabled={saving}>
             Cancel
@@ -613,5 +712,8 @@ function AddPurchaseForm() {
 
 export default function PurchaseForm() {
   const { id } = useParams();
-  return id ? <EditPurchaseForm id={id} /> : <AddPurchaseForm />;
+  const location = useLocation();
+  const isBulkEdit = location.pathname.includes('/bulk/');
+  if (id && isBulkEdit) return <BulkPurchaseForm editId={id} />;
+  return id ? <EditPurchaseForm id={id} /> : <BulkPurchaseForm />;
 }

@@ -66,6 +66,7 @@ export default function App() {
         <Route path="medical/items/:id/edit" element={<ItemForm />} />
         <Route path="medical/purchases" element={<PurchaseList />} />
         <Route path="medical/purchases/add" element={<PurchaseForm />} />
+        <Route path="medical/purchases/bulk/:id/edit" element={<PurchaseForm />} />
         <Route path="medical/purchases/:id/edit" element={<PurchaseForm />} />
         <Route path="medical/issues" element={<IssueList />} />
         <Route path="medical/issues/add" element={<IssueForm />} />

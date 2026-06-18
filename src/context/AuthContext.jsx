@@ -37,6 +37,7 @@ export function AuthProvider({ children }) {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const userData = {
       id: payload.id,
+      employeeId: payload.employee_id || null,
       loginName: payload.login_name,
       displayName: displayName || payload.login_name,
       schoolId: payload.school_id,

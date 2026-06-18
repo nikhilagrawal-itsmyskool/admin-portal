@@ -101,6 +101,11 @@ export const labService = {
     return response.data;
   },
 
+  restorePurchaseBatch: async (batchId) => {
+    const response = await api.post(`/lab/purchases/batches/${batchId}/restore`);
+    return response.data;
+  },
+
   uploadLabBill: async (batchId, data) => {
     const response = await api.post(`/lab/purchases/batches/${batchId}/bill`, data);
     return response.data;

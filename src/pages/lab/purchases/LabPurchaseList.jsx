@@ -22,16 +22,21 @@ import {
   LinearProgress,
   Chip,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  RestoreFromTrash as RestoreIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Download as DownloadIcon,
+  AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 import { useAuth } from '../../../context/AuthContext';
@@ -60,6 +65,9 @@ export default function LabPurchaseList() {
   const [error, setError] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
+  const [restoreDialog, setRestoreDialog] = useState({ open: false, item: null });
+  const [restoring, setRestoring] = useState(false);
+  const [billDialog, setBillDialog] = useState({ open: false, url: null, mimeType: null, fileName: null });
 
   // Filter state
   const [selectedLab, setSelectedLab] = useState(null);
@@ -210,22 +218,34 @@ export default function LabPurchaseList() {
     }
   };
 
-  const handleDownloadBill = async (batchId) => {
+  const handleRestore = async () => {
+    setRestoring(true);
+    try {
+      await labService.restorePurchaseBatch(restoreDialog.item.uuid);
+      setRestoreDialog({ open: false, item: null });
+      loadBatchesWithFilters();
+    } catch {
+      setError('Failed to restore purchase');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const openBill = async (batchId) => {
     try {
       const file = await labService.getLabBill(batchId);
       const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: file.mimeType });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.fileName || 'bill';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      setBillDialog({ open: true, url, mimeType: file.mimeType, fileName: file.fileName });
     } catch {
-      setError('Failed to download bill');
+      setError('Failed to load bill');
     }
+  };
+
+  const closeBill = () => {
+    if (billDialog.url) URL.revokeObjectURL(billDialog.url);
+    setBillDialog({ open: false, url: null, mimeType: null, fileName: null });
   };
 
   const paginatedBatches = batches.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -242,6 +262,12 @@ export default function LabPurchaseList() {
       borderLeft: '3px solid',
       borderColor: 'primary.light',
     },
+  };
+
+  const expandedItemDeletedSx = {
+    ...expandedItemSx,
+    opacity: 0.6,
+    '& td:not(:first-of-type):not(:last-of-type)': { textDecoration: 'line-through' },
   };
 
   return (
@@ -425,9 +451,9 @@ export default function LabPurchaseList() {
                       <TableCell>{row.supplier || '—'}</TableCell>
                       <TableCell align="center">
                         {row.fileId && (
-                          <Tooltip title="Download bill">
-                            <IconButton size="small" onClick={() => handleDownloadBill(row.uuid)}>
-                              <DownloadIcon fontSize="small" />
+                          <Tooltip title="View bill">
+                            <IconButton size="small" color="primary" onClick={() => openBill(row.uuid)}>
+                              <AttachFileIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -459,6 +485,17 @@ export default function LabPurchaseList() {
                             </IconButton>
                           </Tooltip>
                         )}
+                        {isDeleted && isGod && (
+                          <Tooltip title="Restore deletion">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => setRestoreDialog({ open: true, item: row })}
+                            >
+                              <RestoreIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </TableCell>
                     </TableRow>
 
@@ -473,7 +510,7 @@ export default function LabPurchaseList() {
 
                     {/* Expanded item rows — inline, same columns as parent */}
                     {canExpand && isExpanded && !isExpandLoading && (batchItemsCache[row.uuid] || []).map((item) => (
-                      <TableRow key={item.uuid} sx={expandedItemSx}>
+                      <TableRow key={item.uuid} sx={isDeleted ? expandedItemDeletedSx : expandedItemSx}>
                         <TableCell sx={{ pr: 0 }} />
                         <TableCell />
                         <TableCell>{item.labName || '—'}</TableCell>
@@ -523,6 +560,57 @@ export default function LabPurchaseList() {
         onCancel={() => setDeleteDialog({ open: false, item: null })}
         loading={deleting}
       />
+
+      <ConfirmDialog
+        open={restoreDialog.open}
+        title={restoreDialog.item?.recordType === 'batch' ? 'Restore Purchase Batch' : 'Restore Purchase'}
+        message="Are you sure you want to restore this deleted purchase? The items will be re-added and stock adjusted back."
+        confirmLabel="Restore"
+        loadingLabel="Restoring..."
+        confirmColor="primary"
+        onConfirm={handleRestore}
+        onCancel={() => setRestoreDialog({ open: false, item: null })}
+        loading={restoring}
+      />
+
+      <Dialog open={billDialog.open} onClose={closeBill} maxWidth="md" fullWidth>
+        <DialogTitle>Bill — {billDialog.fileName || '...'}</DialogTitle>
+        <DialogContent
+          dividers
+          sx={{ minHeight: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {billDialog.url && (
+            billDialog.mimeType === 'application/pdf' ? (
+              <Box
+                component="iframe"
+                src={billDialog.url}
+                title="bill"
+                sx={{ width: '100%', height: 560, border: 'none' }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src={billDialog.url}
+                alt="bill"
+                sx={{ maxWidth: '100%', maxHeight: 560, objectFit: 'contain' }}
+              />
+            )
+          )}
+        </DialogContent>
+        <DialogActions>
+          {billDialog.url && (
+            <Button
+              component="a"
+              href={billDialog.url}
+              download={billDialog.fileName}
+              size="small"
+            >
+              Download
+            </Button>
+          )}
+          <Button onClick={closeBill}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -14,6 +14,10 @@ import {
   Grid,
   FormControlLabel,
   Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -38,6 +42,7 @@ export default function LabBreakageList() {
   const [error, setError] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
+  const [imageDialog, setImageDialog] = useState({ open: false, url: null, mimeType: null, fileName: null });
 
   // Filter state
   const [selectedLab, setSelectedLab] = useState(null);
@@ -149,6 +154,23 @@ export default function LabBreakageList() {
     }
   };
 
+  const openImage = async (breakageId) => {
+    try {
+      const file = await labService.getBreakageImage(breakageId);
+      const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: file.mimeType });
+      const url = URL.createObjectURL(blob);
+      setImageDialog({ open: true, url, mimeType: file.mimeType, fileName: file.fileName });
+    } catch {
+      setError('Failed to load image');
+    }
+  };
+
+  const closeImage = () => {
+    if (imageDialog.url) URL.revokeObjectURL(imageDialog.url);
+    setImageDialog({ open: false, url: null, mimeType: null, fileName: null });
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString();
@@ -236,17 +258,9 @@ export default function LabBreakageList() {
             {params.row.fileId && (
               <IconButton
                 size="small"
+                color="primary"
                 title="View image"
-                onClick={async () => {
-                  try {
-                    const file = await labService.getBreakageImage(params.row.uuid);
-                    const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
-                    const blob = new Blob([bytes], { type: file.mimeType });
-                    window.open(URL.createObjectURL(blob), '_blank');
-                  } catch {
-                    setError('Failed to load image');
-                  }
-                }}
+                onClick={() => openImage(params.row.uuid)}
               >
                 <ImageIcon fontSize="small" />
               </IconButton>
@@ -415,6 +429,45 @@ export default function LabBreakageList() {
         onCancel={() => setDeleteDialog({ open: false, item: null })}
         loading={deleting}
       />
+
+      <Dialog open={imageDialog.open} onClose={closeImage} maxWidth="md" fullWidth>
+        <DialogTitle>Image — {imageDialog.fileName || '...'}</DialogTitle>
+        <DialogContent
+          dividers
+          sx={{ minHeight: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {imageDialog.url && (
+            imageDialog.mimeType === 'application/pdf' ? (
+              <Box
+                component="iframe"
+                src={imageDialog.url}
+                title="image"
+                sx={{ width: '100%', height: 560, border: 'none' }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src={imageDialog.url}
+                alt="breakage"
+                sx={{ maxWidth: '100%', maxHeight: 560, objectFit: 'contain' }}
+              />
+            )
+          )}
+        </DialogContent>
+        <DialogActions>
+          {imageDialog.url && (
+            <Button
+              component="a"
+              href={imageDialog.url}
+              download={imageDialog.fileName}
+              size="small"
+            >
+              Download
+            </Button>
+          )}
+          <Button onClick={closeImage}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
