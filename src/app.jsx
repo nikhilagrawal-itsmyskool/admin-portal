@@ -23,6 +23,17 @@ import LabIssueList from './pages/lab/issues/LabIssueList';
 import LabIssueForm from './pages/lab/issues/LabIssueForm';
 import LabBreakageList from './pages/lab/breakages/LabBreakageList';
 import LabBreakageForm from './pages/lab/breakages/LabBreakageForm';
+import SportDashboard from './pages/sports/SportDashboard';
+import SportInchargeList from './pages/sports/incharges/SportInchargeList';
+import SportItemList from './pages/sports/items/SportItemList';
+import SportItemForm from './pages/sports/items/SportItemForm';
+import SportPurchaseList from './pages/sports/purchases/SportPurchaseList';
+import SportPurchaseForm from './pages/sports/purchases/SportPurchaseForm';
+import SportBulkPurchaseForm from './pages/sports/purchases/SportBulkPurchaseForm';
+import SportIssueList from './pages/sports/issues/SportIssueList';
+import SportIssueForm from './pages/sports/issues/SportIssueForm';
+import SportBreakageList from './pages/sports/breakages/SportBreakageList';
+import SportBreakageForm from './pages/sports/breakages/SportBreakageForm';
 import FineDashboard from './pages/fine/FineDashboard';
 import FineIncidentList from './pages/fine/incidents/FineIncidentList';
 import FineIncidentForm from './pages/fine/incidents/FineIncidentForm';
@@ -89,6 +100,22 @@ export default function App() {
         <Route path="lab/breakages" element={<LabBreakageList />} />
         <Route path="lab/breakages/add" element={<LabBreakageForm />} />
         <Route path="lab/breakages/:id/edit" element={<LabBreakageForm />} />
+        <Route path="sports" element={<SportDashboard />} />
+        <Route path="sports/incharges" element={<SportInchargeList />} />
+        <Route path="sports/items" element={<SportItemList />} />
+        <Route path="sports/items/add" element={<SportItemForm />} />
+        <Route path="sports/items/:id/edit" element={<SportItemForm />} />
+        <Route path="sports/purchases" element={<SportPurchaseList />} />
+        <Route path="sports/purchases/bulk/add" element={<SportBulkPurchaseForm />} />
+        <Route path="sports/purchases/bulk/:id/edit" element={<SportBulkPurchaseForm />} />
+        <Route path="sports/purchases/add" element={<SportPurchaseForm />} />
+        <Route path="sports/purchases/:id/edit" element={<SportPurchaseForm />} />
+        <Route path="sports/issues" element={<SportIssueList />} />
+        <Route path="sports/issues/add" element={<SportIssueForm />} />
+        <Route path="sports/issues/:id/edit" element={<SportIssueForm />} />
+        <Route path="sports/breakages" element={<SportBreakageList />} />
+        <Route path="sports/breakages/add" element={<SportBreakageForm />} />
+        <Route path="sports/breakages/:id/edit" element={<SportBreakageForm />} />
         <Route path="fine" element={<FineDashboard />} />
         <Route path="fine/incidents" element={<FineIncidentList />} />
         <Route path="fine/incidents/new" element={<FineIncidentForm />} />
