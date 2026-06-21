@@ -65,6 +65,13 @@ export const labService = {
     return response.data;
   },
 
+  // Bulk-copy item definitions into a target lab. data = { labId, items: [...] }
+  // Returns { created: [...], skipped: [{ name, reason }] }
+  bulkCreateItems: async (data) => {
+    const response = await api.post('/lab/items/bulk', data);
+    return response.data;
+  },
+
   updateItem: async (id, data) => {
     const response = await api.put(`/lab/items/${id}`, data);
     return response.data;

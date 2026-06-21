@@ -13,6 +13,10 @@ import {
   Science as ScienceIcon,
   Gavel as GavelIcon,
   Checkroom as CheckroomIcon,
+  MenuBook as MenuBookIcon,
+  SportsCricket as SportsIcon,
+  Inventory2 as AssetIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { getFirstName } from '../utils/userDisplay';
@@ -45,6 +49,34 @@ const modules = [
     icon: CheckroomIcon,
     path: '/uniform',
     color: '#7b5ea7',
+  },
+  {
+    title: 'Shop',
+    description: 'Manage shop catalog, stock, and student sales',
+    icon: MenuBookIcon,
+    path: '/shop',
+    color: '#ff9f43',
+  },
+  {
+    title: 'Sports',
+    description: 'Manage sports inventory, purchases, issues, and breakages',
+    icon: SportsIcon,
+    path: '/sports',
+    color: '#0095ff',
+  },
+  {
+    title: 'Assets',
+    description: 'Manage the asset register, asset tree, and asset types',
+    icon: AssetIcon,
+    path: '/asset',
+    color: '#8d6e63',
+  },
+  {
+    title: 'Employees',
+    description: 'Manage employees, logins, and passwords',
+    icon: PeopleIcon,
+    path: '/employees',
+    color: '#009688',
   },
 ];
 

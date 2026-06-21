@@ -26,9 +26,11 @@ import {
   Clear as ClearIcon,
   LocalShipping as PurchaseIcon,
   Assignment as IssueIcon,
+  ContentCopy as CopyIcon,
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import CopyItemsDialog from './CopyItemsDialog';
 
 export default function LabItemList() {
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ export default function LabItemList() {
   const [error, setError] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
 
   // Filter state
   const [selectedLab, setSelectedLab] = useState(null);
@@ -275,13 +278,22 @@ export default function LabItemList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Lab Inventory Items</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/lab/items/add')}
-        >
-          Add Item
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<CopyIcon />}
+            onClick={() => setCopyDialogOpen(true)}
+          >
+            Copy from Lab
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/lab/items/add')}
+          >
+            Add Item
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -424,6 +436,14 @@ export default function LabItemList() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, item: null })}
         loading={deleting}
+      />
+
+      <CopyItemsDialog
+        open={copyDialogOpen}
+        onClose={() => setCopyDialogOpen(false)}
+        labs={labs}
+        defaultTargetLab={selectedLab}
+        onCopied={loadItems}
       />
     </Box>
   );

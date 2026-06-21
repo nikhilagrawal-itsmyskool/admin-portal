@@ -43,6 +43,11 @@ export default function Header({ onMenuClick, isDesktop }) {
     navigate('/login');
   };
 
+  const handleProfile = () => {
+    handleMenuClose();
+    navigate('/profile');
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -93,10 +98,13 @@ export default function Header({ onMenuClick, isDesktop }) {
           }}
         >
           <MenuItem disabled>
-            <PersonIcon sx={{ mr: 1 }} fontSize="small" />
             {user?.displayName || user?.loginName}
           </MenuItem>
           <Divider />
+          <MenuItem onClick={handleProfile}>
+            <PersonIcon sx={{ mr: 1 }} fontSize="small" />
+            Profile
+          </MenuItem>
           <MenuItem onClick={handleLogout}>
             <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
             Logout

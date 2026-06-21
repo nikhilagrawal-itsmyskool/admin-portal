@@ -8,4 +8,15 @@ export const authService = {
     });
     return response.data;
   },
+
+  // Change the logged-in user's password. Routes to the employee or student
+  // endpoint based on account type. The Bearer token is attached automatically.
+  changePassword: async (type, currentPassword, newPassword) => {
+    const path =
+      type === 'student'
+        ? '/auth/student/change-password'
+        : '/auth/employee/change-password';
+    const response = await api.post(path, { currentPassword, newPassword });
+    return response.data;
+  },
 };

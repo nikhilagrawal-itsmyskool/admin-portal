@@ -27,6 +27,11 @@ import {
   Style as SetsIcon,
   MenuBook as MenuBookIcon,
   SportsCricket as SportsIcon,
+  AccountTree as AssetTreeIcon,
+  Category as TypeIcon,
+  Inventory2 as AssetIcon,
+  Tag as CountsIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -101,12 +106,27 @@ const menuItems = [
       { title: 'Breakage Log', icon: BrokenImageIcon, path: '/sports/breakages' },
     ],
   },
+  {
+    title: 'Assets',
+    icon: AssetIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/asset' },
+      { title: 'Asset Register', icon: AssetTreeIcon, path: '/asset/tree' },
+      { title: 'Counts', icon: CountsIcon, path: '/asset/counts' },
+      { title: 'Asset Types', icon: TypeIcon, path: '/asset/types' },
+    ],
+  },
+  {
+    title: 'Employees',
+    icon: PeopleIcon,
+    path: '/employees',
+  },
 ];
 
 export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false });
+  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false });
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));

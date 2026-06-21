@@ -56,6 +56,13 @@ import ShopSetForm from './pages/shop/sets/ShopSetForm';
 import ShopSaleList from './pages/shop/sales/ShopSaleList';
 import ShopSaleForm from './pages/shop/sales/ShopSaleForm';
 import ShopSaleDetail from './pages/shop/sales/ShopSaleDetail';
+import AssetDashboard from './pages/asset/AssetDashboard';
+import AssetTree from './pages/asset/tree/AssetTree';
+import AssetTypeList from './pages/asset/types/AssetTypeList';
+import AssetCounts from './pages/asset/AssetCounts';
+import EmployeeList from './pages/employee/EmployeeList';
+import EmployeeForm from './pages/employee/EmployeeForm';
+import Profile from './pages/Profile';
 
 export default function App() {
   return (
@@ -143,6 +150,14 @@ export default function App() {
         <Route path="shop/sales" element={<ShopSaleList />} />
         <Route path="shop/sales/new" element={<ShopSaleForm />} />
         <Route path="shop/sales/:id" element={<ShopSaleDetail />} />
+        <Route path="asset" element={<AssetDashboard />} />
+        <Route path="asset/tree" element={<AssetTree />} />
+        <Route path="asset/types" element={<AssetTypeList />} />
+        <Route path="asset/counts" element={<AssetCounts />} />
+        <Route path="employees" element={<EmployeeList />} />
+        <Route path="employees/add" element={<EmployeeForm />} />
+        <Route path="employees/:id/edit" element={<EmployeeForm />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
