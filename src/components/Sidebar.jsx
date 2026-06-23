@@ -35,6 +35,9 @@ import {
   LocalLibrary as LibraryIcon,
   LibraryAdd as CatalogIcon,
   SwapHoriz as CirculationIcon,
+  Widgets as SuppliesIcon,
+  DeleteSweep as WastageIcon,
+  Category as CategoryIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -131,6 +134,18 @@ const menuItems = [
     ],
   },
   {
+    title: 'Supplies',
+    icon: SuppliesIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/supplies' },
+      { title: 'Categories', icon: CategoryIcon, path: '/supplies/categories' },
+      { title: 'Inventory Items', icon: InventoryIcon, path: '/supplies/items' },
+      { title: 'Purchase Log', icon: PurchaseIcon, path: '/supplies/purchases' },
+      { title: 'Issue Log', icon: IssueIcon, path: '/supplies/issues' },
+      { title: 'Wastage Log', icon: WastageIcon, path: '/supplies/wastages' },
+    ],
+  },
+  {
     title: 'Employees',
     icon: PeopleIcon,
     path: '/employees',
@@ -140,7 +155,7 @@ const menuItems = [
 export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false });
+  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false });
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));

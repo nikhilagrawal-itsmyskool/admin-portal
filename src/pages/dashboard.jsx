@@ -16,6 +16,8 @@ import {
   MenuBook as MenuBookIcon,
   SportsCricket as SportsIcon,
   Inventory2 as AssetIcon,
+  LocalLibrary as LibraryIcon,
+  Widgets as SuppliesIcon,
   People as PeopleIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
@@ -70,6 +72,20 @@ const modules = [
     icon: AssetIcon,
     path: '/asset',
     color: '#8d6e63',
+  },
+  {
+    title: 'Library',
+    description: 'Manage the catalog, circulation, and library fines',
+    icon: LibraryIcon,
+    path: '/library',
+    color: '#5e35b1',
+  },
+  {
+    title: 'Supplies',
+    description: 'Manage supply categories, inventory, purchases, issues, and wastage',
+    icon: SuppliesIcon,
+    path: '/supplies',
+    color: '#00acc1',
   },
   {
     title: 'Employees',

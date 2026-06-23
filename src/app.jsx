@@ -69,6 +69,16 @@ import WorkDetail from './pages/library/works/WorkDetail';
 import Circulation from './pages/library/circulation/Circulation';
 import FineList from './pages/library/fines/FineList';
 import LibrarySettings from './pages/library/settings/LibrarySettings';
+import SuppliesDashboard from './pages/supplies/SuppliesDashboard';
+import SupplyCategoryList from './pages/supplies/categories/SupplyCategoryList';
+import SupplyItemList from './pages/supplies/items/SupplyItemList';
+import SupplyItemForm from './pages/supplies/items/SupplyItemForm';
+import SupplyPurchaseList from './pages/supplies/purchases/SupplyPurchaseList';
+import SupplyBulkPurchaseForm from './pages/supplies/purchases/SupplyBulkPurchaseForm';
+import SupplyIssueList from './pages/supplies/issues/SupplyIssueList';
+import SupplyIssueForm from './pages/supplies/issues/SupplyIssueForm';
+import SupplyWastageList from './pages/supplies/wastages/SupplyWastageList';
+import SupplyWastageForm from './pages/supplies/wastages/SupplyWastageForm';
 import Profile from './pages/Profile';
 
 export default function App() {
@@ -171,6 +181,20 @@ export default function App() {
         <Route path="library/circulation" element={<Circulation />} />
         <Route path="library/fines" element={<FineList />} />
         <Route path="library/settings" element={<LibrarySettings />} />
+        <Route path="supplies" element={<SuppliesDashboard />} />
+        <Route path="supplies/categories" element={<SupplyCategoryList />} />
+        <Route path="supplies/items" element={<SupplyItemList />} />
+        <Route path="supplies/items/add" element={<SupplyItemForm />} />
+        <Route path="supplies/items/:id/edit" element={<SupplyItemForm />} />
+        <Route path="supplies/purchases" element={<SupplyPurchaseList />} />
+        <Route path="supplies/purchases/add" element={<SupplyBulkPurchaseForm />} />
+        <Route path="supplies/purchases/:id/edit" element={<SupplyBulkPurchaseForm />} />
+        <Route path="supplies/issues" element={<SupplyIssueList />} />
+        <Route path="supplies/issues/add" element={<SupplyIssueForm />} />
+        <Route path="supplies/issues/:id/edit" element={<SupplyIssueForm />} />
+        <Route path="supplies/wastages" element={<SupplyWastageList />} />
+        <Route path="supplies/wastages/add" element={<SupplyWastageForm />} />
+        <Route path="supplies/wastages/:id/edit" element={<SupplyWastageForm />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 
