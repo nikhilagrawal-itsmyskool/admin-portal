@@ -62,6 +62,13 @@ import AssetTypeList from './pages/asset/types/AssetTypeList';
 import AssetCounts from './pages/asset/AssetCounts';
 import EmployeeList from './pages/employee/EmployeeList';
 import EmployeeForm from './pages/employee/EmployeeForm';
+import LibraryDashboard from './pages/library/LibraryDashboard';
+import WorkList from './pages/library/works/WorkList';
+import CatalogForm from './pages/library/works/CatalogForm';
+import WorkDetail from './pages/library/works/WorkDetail';
+import Circulation from './pages/library/circulation/Circulation';
+import FineList from './pages/library/fines/FineList';
+import LibrarySettings from './pages/library/settings/LibrarySettings';
 import Profile from './pages/Profile';
 
 export default function App() {
@@ -157,6 +164,13 @@ export default function App() {
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/add" element={<EmployeeForm />} />
         <Route path="employees/:id/edit" element={<EmployeeForm />} />
+        <Route path="library" element={<LibraryDashboard />} />
+        <Route path="library/catalog" element={<WorkList />} />
+        <Route path="library/catalog/new" element={<CatalogForm />} />
+        <Route path="library/catalog/:id" element={<WorkDetail />} />
+        <Route path="library/circulation" element={<Circulation />} />
+        <Route path="library/fines" element={<FineList />} />
+        <Route path="library/settings" element={<LibrarySettings />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

@@ -32,6 +32,9 @@ import {
   Inventory2 as AssetIcon,
   Tag as CountsIcon,
   People as PeopleIcon,
+  LocalLibrary as LibraryIcon,
+  LibraryAdd as CatalogIcon,
+  SwapHoriz as CirculationIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -117,6 +120,17 @@ const menuItems = [
     ],
   },
   {
+    title: 'Library',
+    icon: LibraryIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/library' },
+      { title: 'Catalog', icon: CatalogIcon, path: '/library/catalog' },
+      { title: 'Circulation', icon: CirculationIcon, path: '/library/circulation' },
+      { title: 'Fines', icon: GavelIcon, path: '/library/fines' },
+      { title: 'Settings', icon: TypeIcon, path: '/library/settings' },
+    ],
+  },
+  {
     title: 'Employees',
     icon: PeopleIcon,
     path: '/employees',
@@ -126,7 +140,7 @@ const menuItems = [
 export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false });
+  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false });
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));
