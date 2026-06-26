@@ -2,8 +2,8 @@ import api from '../config/api';
 
 export const academicCalendarService = {
   getAcademicYears: async () => {
-    const response = await api.get('/academic-years');
-    return response.data;
+    const response = await api.get('/academic-years/search');
+    return response.data; // [{ uuid, name }]
   },
 
   getCurrentAcademicYear: async () => {

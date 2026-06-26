@@ -79,6 +79,15 @@ import SupplyIssueList from './pages/supplies/issues/SupplyIssueList';
 import SupplyIssueForm from './pages/supplies/issues/SupplyIssueForm';
 import SupplyWastageList from './pages/supplies/wastages/SupplyWastageList';
 import SupplyWastageForm from './pages/supplies/wastages/SupplyWastageForm';
+import TimetableDashboard from './pages/timetable/TimetableDashboard';
+import SubjectList from './pages/timetable/subjects/SubjectList';
+import ConfigList from './pages/timetable/config/ConfigList';
+import ConfigBuilder from './pages/timetable/config/ConfigBuilder';
+import ClassSetup from './pages/timetable/setup/ClassSetup';
+import WingList from './pages/timetable/wings/WingList';
+import ConstraintList from './pages/timetable/constraints/ConstraintList';
+import GenerateWizard from './pages/timetable/generate/GenerateWizard';
+import PublishedTimetable from './pages/timetable/published/PublishedTimetable';
 import Profile from './pages/Profile';
 
 export default function App() {
@@ -195,6 +204,15 @@ export default function App() {
         <Route path="supplies/wastages" element={<SupplyWastageList />} />
         <Route path="supplies/wastages/add" element={<SupplyWastageForm />} />
         <Route path="supplies/wastages/:id/edit" element={<SupplyWastageForm />} />
+        <Route path="timetable" element={<TimetableDashboard />} />
+        <Route path="timetable/subjects" element={<SubjectList />} />
+        <Route path="timetable/configs" element={<ConfigList />} />
+        <Route path="timetable/configs/:id" element={<ConfigBuilder />} />
+        <Route path="timetable/setup" element={<ClassSetup />} />
+        <Route path="timetable/wings" element={<WingList />} />
+        <Route path="timetable/constraints" element={<ConstraintList />} />
+        <Route path="timetable/generate" element={<GenerateWizard />} />
+        <Route path="timetable/published" element={<PublishedTimetable />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

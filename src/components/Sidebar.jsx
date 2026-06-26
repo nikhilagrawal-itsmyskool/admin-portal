@@ -38,6 +38,14 @@ import {
   Widgets as SuppliesIcon,
   DeleteSweep as WastageIcon,
   Category as CategoryIcon,
+  CalendarMonth as TimetableIcon,
+  Subject as SubjectIcon,
+  GridOn as GridIcon,
+  Groups as ClassSetupIcon,
+  AccountTree as WingIcon,
+  Rule as ConstraintIcon,
+  AutoAwesome as GenerateIcon,
+  EventAvailable as PublishedIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -146,6 +154,20 @@ const menuItems = [
     ],
   },
   {
+    title: 'Timetable',
+    icon: TimetableIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/timetable' },
+      { title: 'Subjects', icon: SubjectIcon, path: '/timetable/subjects' },
+      { title: 'Grid Config', icon: GridIcon, path: '/timetable/configs' },
+      { title: 'Class Setup', icon: ClassSetupIcon, path: '/timetable/setup' },
+      { title: 'Wings', icon: WingIcon, path: '/timetable/wings' },
+      { title: 'Teacher Constraints', icon: ConstraintIcon, path: '/timetable/constraints' },
+      { title: 'Generate', icon: GenerateIcon, path: '/timetable/generate' },
+      { title: 'Published', icon: PublishedIcon, path: '/timetable/published' },
+    ],
+  },
+  {
     title: 'Employees',
     icon: PeopleIcon,
     path: '/employees',
@@ -155,7 +177,7 @@ const menuItems = [
 export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false });
+  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false, Timetable: false });
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));
