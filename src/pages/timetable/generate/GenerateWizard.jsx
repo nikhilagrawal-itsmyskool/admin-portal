@@ -123,15 +123,17 @@ export default function GenerateWizard() {
       {/* Step 0: select config */}
       {activeStep === 0 && (
         <Card><CardContent>
-          <TextField select fullWidth label="Active Config" value={configId} onChange={(e) => setConfigId(e.target.value)} sx={{ maxWidth: 400 }}>
-            {configs.length === 0 && <MenuItem value="" disabled>No active configs — create one in Grid Config</MenuItem>}
-            {configs.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
-          </TextField>
-          <TextField select fullWidth label="Scope" value={wingId} onChange={(e) => setWingId(e.target.value)} sx={{ maxWidth: 400, mt: 2 }}
-            helperText="Generate the whole school, or just one wing's classes.">
-            <MenuItem value="">Whole school</MenuItem>
-            {wings.map((w) => <MenuItem key={w.uuid} value={w.uuid}>{w.name}</MenuItem>)}
-          </TextField>
+          <Stack direction="row" spacing={2} alignItems="flex-start" flexWrap="wrap">
+            <TextField select label="Active Config" value={configId} onChange={(e) => setConfigId(e.target.value)} sx={{ minWidth: 280, flex: 1, maxWidth: 400 }}>
+              {configs.length === 0 && <MenuItem value="" disabled>No active configs — create one in Grid Config</MenuItem>}
+              {configs.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
+            </TextField>
+            <TextField select label="Scope" value={wingId} onChange={(e) => setWingId(e.target.value)} sx={{ minWidth: 280, flex: 1, maxWidth: 400 }}
+              helperText="Generate the whole school, or just one wing's classes.">
+              <MenuItem value="">Whole school</MenuItem>
+              {wings.map((w) => <MenuItem key={w.uuid} value={w.uuid}>{w.name}</MenuItem>)}
+            </TextField>
+          </Stack>
           <Box sx={{ mt: 3 }}>
             <Button variant="contained" disabled={!configId || busy} onClick={runFeasibility}>
               {busy ? 'Checking...' : 'Run Feasibility'}

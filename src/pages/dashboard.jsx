@@ -18,6 +18,7 @@ import {
   Inventory2 as AssetIcon,
   LocalLibrary as LibraryIcon,
   Widgets as SuppliesIcon,
+  CalendarMonth as TimetableIcon,
   People as PeopleIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
@@ -86,6 +87,13 @@ const modules = [
     icon: SuppliesIcon,
     path: '/supplies',
     color: '#00acc1',
+  },
+  {
+    title: 'Timetable',
+    description: 'Build subjects, grids, and wings, then auto-generate class timetables',
+    icon: TimetableIcon,
+    path: '/timetable',
+    color: '#f4b400',
   },
   {
     title: 'Employees',
