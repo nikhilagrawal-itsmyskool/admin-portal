@@ -46,6 +46,8 @@ import {
   Rule as ConstraintIcon,
   AutoAwesome as GenerateIcon,
   EventAvailable as PublishedIcon,
+  School as StudentIcon,
+  Home as HouseIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -165,6 +167,14 @@ const menuItems = [
       { title: 'Teacher Constraints', icon: ConstraintIcon, path: '/timetable/constraints' },
       { title: 'Generate', icon: GenerateIcon, path: '/timetable/generate' },
       { title: 'Published', icon: PublishedIcon, path: '/timetable/published' },
+    ],
+  },
+  {
+    title: 'Students',
+    icon: StudentIcon,
+    children: [
+      { title: 'All Students', icon: PeopleIcon, path: '/students' },
+      { title: 'Houses', icon: HouseIcon, path: '/students/houses' },
     ],
   },
   {

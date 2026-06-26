@@ -88,6 +88,10 @@ import WingList from './pages/timetable/wings/WingList';
 import ConstraintList from './pages/timetable/constraints/ConstraintList';
 import GenerateWizard from './pages/timetable/generate/GenerateWizard';
 import PublishedTimetable from './pages/timetable/published/PublishedTimetable';
+import StudentList from './pages/student/StudentList';
+import StudentForm from './pages/student/StudentForm';
+import StudentDetail from './pages/student/StudentDetail';
+import HouseList from './pages/student/houses/HouseList';
 import Profile from './pages/Profile';
 
 export default function App() {
@@ -180,6 +184,11 @@ export default function App() {
         <Route path="asset/tree" element={<AssetTree />} />
         <Route path="asset/types" element={<AssetTypeList />} />
         <Route path="asset/counts" element={<AssetCounts />} />
+        <Route path="students" element={<StudentList />} />
+        <Route path="students/new" element={<StudentForm />} />
+        <Route path="students/houses" element={<HouseList />} />
+        <Route path="students/:id" element={<StudentDetail />} />
+        <Route path="students/:id/edit" element={<StudentForm />} />
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/add" element={<EmployeeForm />} />
         <Route path="employees/:id/edit" element={<EmployeeForm />} />
