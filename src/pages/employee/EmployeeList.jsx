@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -13,8 +13,8 @@ import {
   Chip,
   FormControlLabel,
   Switch,
-} from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+} from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -22,28 +22,35 @@ import {
   Delete as DeleteIcon,
   VpnKey as VpnKeyIcon,
   Restore as RestoreIcon,
-} from '@mui/icons-material';
-import { employeeService } from '../../services/employeeService';
-import { useAuth } from '../../context/AuthContext';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
-import CredentialsDialog from './dialogs/CredentialsDialog';
+} from "@mui/icons-material";
+import { employeeService } from "../../services/employeeService";
+import { useAuth } from "../../context/AuthContext";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import CredentialsDialog from "./dialogs/CredentialsDialog";
 
 export default function EmployeeList() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.roles?.includes('god') || user?.roles?.includes('admin');
-  const isGod = user?.roles?.includes('god');
+  const isAdmin =
+    user?.roles?.includes("god") || user?.roles?.includes("admin");
+  const isGod = user?.roles?.includes("god");
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
-  const [restoreDialog, setRestoreDialog] = useState({ open: false, item: null });
+  const [restoreDialog, setRestoreDialog] = useState({
+    open: false,
+    item: null,
+  });
   const [restoring, setRestoring] = useState(false);
-  const [credentialsDialog, setCredentialsDialog] = useState({ open: false, item: null });
+  const [credentialsDialog, setCredentialsDialog] = useState({
+    open: false,
+    item: null,
+  });
 
   useEffect(() => {
     loadEmployees();
@@ -51,14 +58,14 @@ export default function EmployeeList() {
 
   const loadEmployees = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await employeeService.searchEmployees(
-        showDeleted ? { includeDeleted: true } : {}
+        showDeleted ? { includeDeleted: true } : {},
       );
       setEmployees(data);
     } catch (err) {
-      setError('Failed to load employees');
+      setError("Failed to load employees");
     } finally {
       setLoading(false);
     }
@@ -71,7 +78,7 @@ export default function EmployeeList() {
       setDeleteDialog({ open: false, item: null });
       loadEmployees();
     } catch (err) {
-      setError('Failed to delete employee');
+      setError("Failed to delete employee");
     } finally {
       setDeleting(false);
     }
@@ -84,7 +91,7 @@ export default function EmployeeList() {
       setRestoreDialog({ open: false, item: null });
       loadEmployees();
     } catch (err) {
-      setError('Failed to restore employee');
+      setError("Failed to restore employee");
     } finally {
       setRestoring(false);
     }
@@ -95,34 +102,35 @@ export default function EmployeeList() {
     (e) =>
       e.name?.toLowerCase().includes(term) ||
       e.familyUniqueNumber?.toLowerCase().includes(term) ||
-      e.employeeNumber?.toLowerCase().includes(term)
+      e.employeeNumber?.toLowerCase().includes(term),
   );
 
   const columns = [
-    { field: 'name', headerName: 'Name', flex: 1, minWidth: 180 },
-    { field: 'familyUniqueNumber', headerName: 'Login ID', width: 150 },
-    { field: 'employeeNumber', headerName: 'Employee No.', width: 140 },
-    { field: 'mobile', headerName: 'Mobile', width: 140 },
+    { field: "name", headerName: "Name", flex: 1, minWidth: 180 },
+    { field: "familyUniqueNumber", headerName: "Login ID", width: 150 },
+    { field: "employeeNumber", headerName: "Employee No.", width: 140 },
+    { field: "code", headerName: "Code", width: 90 },
+    { field: "mobile", headerName: "Mobile", width: 140 },
     {
-      field: 'status',
-      headerName: 'Status',
+      field: "status",
+      headerName: "Status",
       width: 110,
       renderCell: (params) => (
         <Chip
-          label={params.value === 'deleted' ? 'Deleted' : 'Active'}
+          label={params.value === "deleted" ? "Deleted" : "Active"}
           size="small"
-          color={params.value === 'deleted' ? 'default' : 'success'}
+          color={params.value === "deleted" ? "default" : "success"}
         />
       ),
     },
     {
-      field: 'actions',
-      headerName: 'Actions',
+      field: "actions",
+      headerName: "Actions",
       width: 150,
       sortable: false,
       renderCell: (params) => {
         if (!isAdmin) return null;
-        const isDeleted = params.row.status === 'deleted';
+        const isDeleted = params.row.status === "deleted";
         if (isDeleted) {
           // Only god can restore.
           return isGod ? (
@@ -148,7 +156,9 @@ export default function EmployeeList() {
             <IconButton
               size="small"
               color="primary"
-              onClick={() => setCredentialsDialog({ open: true, item: params.row })}
+              onClick={() =>
+                setCredentialsDialog({ open: true, item: params.row })
+              }
               title="View Credentials"
             >
               <VpnKeyIcon fontSize="small" />
@@ -169,13 +179,20 @@ export default function EmployeeList() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
         <Typography variant="h4">Employees</Typography>
         {isAdmin && (
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => navigate('/employees/add')}
+            onClick={() => navigate("/employees/add")}
           >
             Add Employee
           </Button>
@@ -183,14 +200,14 @@ export default function EmployeeList() {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError("")}>
           {error}
         </Alert>
       )}
 
       <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ pb: '16px !important' }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <CardContent sx={{ pb: "16px !important" }}>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
             <TextField
               fullWidth
               placeholder="Search by name, login ID or employee number..."
@@ -214,7 +231,7 @@ export default function EmployeeList() {
                   />
                 }
                 label="Show deleted"
-                sx={{ whiteSpace: 'nowrap' }}
+                sx={{ whiteSpace: "nowrap" }}
               />
             )}
           </Box>
@@ -226,19 +243,21 @@ export default function EmployeeList() {
           rows={filteredEmployees}
           columns={columns}
           getRowId={(row) => row.uuid}
-          getRowClassName={(params) => (params.row.status === 'deleted' ? 'deleted-row' : '')}
+          getRowClassName={(params) =>
+            params.row.status === "deleted" ? "deleted-row" : ""
+          }
           loading={loading}
           autoHeight
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           disableRowSelectionOnClick
           sx={{
-            border: 'none',
-            '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
-            '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' },
-            '& .deleted-row': {
+            border: "none",
+            "& .MuiDataGrid-columnHeaderTitle": { fontWeight: 600 },
+            "& .MuiDataGrid-cell": { borderBottom: "1px solid #e4e9f2" },
+            "& .deleted-row": {
               opacity: 0.6,
-              backgroundColor: 'rgba(244, 67, 54, 0.04)',
+              backgroundColor: "rgba(244, 67, 54, 0.04)",
             },
           }}
         />

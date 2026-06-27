@@ -1,24 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { employeeService } from '../../../services/employeeService';
+import React, { useState, useEffect } from "react";
+import { getCached, resolveTeacher } from "./teacherDirectory";
 
-// Module-level cache so repeated teacher ids resolve once.
-const cache = new Map();
-
+// Renders a teacher's full name from their employee id, via the shared teacher
+// directory cache (so name + code resolve once across the whole timetable UI).
 export default function TeacherName({ id }) {
-  const [name, setName] = useState(id && cache.has(id) ? cache.get(id) : null);
+  const [name, setName] = useState(() => getCached(id)?.name || null);
 
   useEffect(() => {
     let active = true;
     if (!id) return;
-    if (cache.has(id)) { setName(cache.get(id)); return; }
-    employeeService.getEmployee(id)
-      .then((data) => {
-        const n = data?.name || data?.employee?.name || id;
-        cache.set(id, n);
-        if (active) setName(n);
-      })
-      .catch(() => { cache.set(id, id); if (active) setName(id); });
-    return () => { active = false; };
+    const cached = getCached(id);
+    if (cached) {
+      setName(cached.name);
+      return;
+    }
+    resolveTeacher(id).then((t) => {
+      if (active) setName(t.name);
+    });
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   if (!id) return <>—</>; // teacher-less period (e.g. supervised study)

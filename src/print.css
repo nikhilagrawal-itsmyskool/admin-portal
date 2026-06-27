@@ -1,0 +1,41 @@
+/* Print isolation: when a #print-root overlay is mounted, print only it.
+   Screen rendering of #print-root is hidden; it only appears on paper. */
+#print-root {
+  display: none;
+}
+
+@media print {
+  /* Hide the whole app, reveal only the print overlay. */
+  body * {
+    visibility: hidden !important;
+  }
+  #print-root,
+  #print-root * {
+    visibility: visible !important;
+  }
+  #print-root {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+
+  /* Each printable panel is one page. */
+  .print-page {
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+}
