@@ -192,6 +192,11 @@ export const timetableService = {
     const response = await api.post(`${BASE}/days/${dayId}/slots`, data);
     return response.data;
   },
+  // Copy all slots from another day onto this (empty) day of the same config.
+  cloneDaySlots: async (dayId, data) => {
+    const response = await api.post(`${BASE}/days/${dayId}/clone-slots`, data);
+    return response.data; // updated target day incl. slots
+  },
   updateSlot: async (slotId, data) => {
     const response = await api.put(`${BASE}/slots/${slotId}`, data);
     return response.data;

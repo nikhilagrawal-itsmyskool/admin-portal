@@ -224,6 +224,88 @@ function SlotDialog({
   );
 }
 
+// Copy all slots from another day of this config onto the (empty) target day.
+// Only days that already have slots are offered as a source.
+function CloneSlotsDialog({ open, target, days, labelFor, onClose, onDone }) {
+  const [sourceDayId, setSourceDayId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setSourceDayId("");
+    setSaving(false);
+    setError("");
+  }, [open]);
+
+  const sourceOptions = (days || []).filter(
+    (d) => d.uuid !== target?.uuid && (d.slots || []).length > 0,
+  );
+
+  const clone = async () => {
+    if (!sourceDayId) {
+      setError("Pick a day to copy from");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await timetableService.cloneDaySlots(target.uuid, { sourceDayId });
+      onDone();
+      onClose();
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.description || "Failed to clone slots",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>Clone slots from another day</DialogTitle>
+      <DialogContent>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
+            {error}
+          </Alert>
+        )}
+        {sourceOptions.length === 0 ? (
+          <Alert severity="info" sx={{ mt: 1 }}>
+            No other day has slots to copy from yet.
+          </Alert>
+        ) : (
+          <TextField
+            select
+            fullWidth
+            label="Copy from day"
+            value={sourceDayId}
+            onChange={(e) => setSourceDayId(e.target.value)}
+            sx={{ mt: 1 }}
+          >
+            {sourceOptions.map((d) => (
+              <MenuItem key={d.uuid} value={d.uuid}>
+                {labelFor(d)} ({(d.slots || []).length} slots)
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={clone}
+          disabled={saving || sourceOptions.length === 0}
+        >
+          {saving ? "Cloning..." : "Clone"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function ConfigBuilder() {
   const { canMutate } = useTimetablePerms();
   const { id } = useParams();
@@ -239,6 +321,7 @@ export default function ConfigBuilder() {
     day: null,
     slot: null,
   });
+  const [cloneFor, setCloneFor] = useState({ open: false, day: null });
   const [confirm, setConfirm] = useState({
     open: false,
     kind: null,
@@ -547,6 +630,17 @@ export default function ConfigBuilder() {
                     Add Slot
                   </Button>
                 )}
+                {/* Clone is only offered on an empty day; it disappears once the
+                    day has any slot and returns if all slots are removed. */}
+                {canEdit && (day.slots || []).length === 0 && (
+                  <Button
+                    size="small"
+                    startIcon={<CloneIcon />}
+                    onClick={() => setCloneFor({ open: true, day })}
+                  >
+                    Clone slots from another day
+                  </Button>
+                )}
               </Stack>
             </CardContent>
           </Card>
@@ -572,6 +666,14 @@ export default function ConfigBuilder() {
         }
         onClose={() => setSlotDialog({ open: false, day: null, slot: null })}
         onSave={saveSlot}
+      />
+      <CloneSlotsDialog
+        open={cloneFor.open}
+        target={cloneFor.day}
+        days={config.days || []}
+        labelFor={(d) => d.label || labelForDow(d.dayOfWeek)}
+        onClose={() => setCloneFor({ open: false, day: null })}
+        onDone={load}
       />
       <ConfirmDialog
         open={confirm.open}
