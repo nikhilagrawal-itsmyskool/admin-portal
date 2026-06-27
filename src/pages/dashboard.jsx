@@ -24,8 +24,12 @@ import {
   Campaign as CommunicationIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
+import { useCan } from "../permissions/can";
 import { getFirstName } from "../utils/userDisplay";
 
+// `perm` mirrors the left-menu gating in Sidebar.jsx — cards lead into a module, so a
+// user only sees the card if they can reach that module. Cards with no `perm` are open
+// to all signed-in staff (Attendance, Communication).
 const modules = [
   {
     title: "Medical",
@@ -33,6 +37,7 @@ const modules = [
     icon: MedicalIcon,
     path: "/medical",
     color: "#3366ff",
+    perm: "medical.view",
   },
   {
     title: "Laboratory",
@@ -40,6 +45,7 @@ const modules = [
     icon: ScienceIcon,
     path: "/lab",
     color: "#00b887",
+    perm: "lab.view",
   },
   {
     title: "Fines",
@@ -47,6 +53,7 @@ const modules = [
     icon: GavelIcon,
     path: "/fine",
     color: "#ff3d71",
+    perm: "fine.view",
   },
   {
     title: "Uniform",
@@ -54,6 +61,7 @@ const modules = [
     icon: CheckroomIcon,
     path: "/uniform",
     color: "#7b5ea7",
+    perm: "uniform.view",
   },
   {
     title: "Shop",
@@ -61,6 +69,7 @@ const modules = [
     icon: MenuBookIcon,
     path: "/shop",
     color: "#ff9f43",
+    perm: "shop.view",
   },
   {
     title: "Sports",
@@ -68,6 +77,7 @@ const modules = [
     icon: SportsIcon,
     path: "/sports",
     color: "#0095ff",
+    perm: "sports.view",
   },
   {
     title: "Assets",
@@ -75,6 +85,7 @@ const modules = [
     icon: AssetIcon,
     path: "/asset",
     color: "#8d6e63",
+    perm: "asset.view",
   },
   {
     title: "Library",
@@ -82,6 +93,7 @@ const modules = [
     icon: LibraryIcon,
     path: "/library",
     color: "#5e35b1",
+    perm: "library.view",
   },
   {
     title: "Supplies",
@@ -90,6 +102,7 @@ const modules = [
     icon: SuppliesIcon,
     path: "/supplies",
     color: "#00acc1",
+    perm: "supplies.view",
   },
   {
     title: "Timetable",
@@ -98,6 +111,8 @@ const modules = [
     icon: TimetableIcon,
     path: "/timetable",
     color: "#f4b400",
+    // Planning landing; teachers reach the Published timetable via the left menu.
+    perm: "timetable.print",
   },
   {
     title: "Attendance",
@@ -119,14 +134,17 @@ const modules = [
     icon: PeopleIcon,
     path: "/employees",
     color: "#009688",
+    perm: "employee.view",
   },
 ];
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const can = useCan();
 
   const firstName = getFirstName(user?.displayName) || user?.loginName;
+  const visibleModules = modules.filter((m) => !m.perm || can(m.perm));
 
   return (
     <Box>
@@ -138,7 +156,7 @@ export default function Dashboard() {
       </Typography>
 
       <Grid container spacing={3}>
-        {modules.map((module) => (
+        {visibleModules.map((module) => (
           <Grid item xs={12} sm={6} md={4} key={module.title}>
             <Card>
               <CardActionArea onClick={() => navigate(module.path)}>

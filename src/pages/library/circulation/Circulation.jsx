@@ -8,6 +8,8 @@ import {
   SwapHoriz as IssueIcon, AssignmentReturn as ReturnIcon, Autorenew as RenewIcon, Person as PersonIcon,
 } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
 
@@ -56,6 +58,8 @@ function BookChip({ book }) {
 }
 
 export default function Circulation() {
+  const can = useCan();
+  const canManage = can(ACTIONS.LIBRARY_MANAGE);
   const [tab, setTab] = useState(0);
   const [issued, setIssued] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -158,6 +162,7 @@ export default function Circulation() {
       <Typography variant="h4" sx={{ mb: 3 }}>Circulation</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
+      {canManage && (
       <Card sx={{ mb: 3 }}>
         <Tabs value={tab} onChange={(e, v) => { setTab(v); setResult(null); }} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab icon={<IssueIcon />} iconPosition="start" label="Issue" />
@@ -231,6 +236,7 @@ export default function Circulation() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <Typography variant="h6" sx={{ mb: 1 }}>Currently issued ({issued.length})</Typography>
       <Card>

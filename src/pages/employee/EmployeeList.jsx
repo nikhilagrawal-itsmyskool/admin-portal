@@ -22,12 +22,14 @@ import {
   Delete as DeleteIcon,
   VpnKey as VpnKeyIcon,
   Restore as RestoreIcon,
+  Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { employeeService } from "../../services/employeeService";
 import { useCan } from "../../permissions/can";
 import { ACTIONS } from "../../permissions/actions";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import CredentialsDialog from "./dialogs/CredentialsDialog";
+import EmployeeDetailDialog from "./dialogs/EmployeeDetailDialog";
 
 export default function EmployeeList() {
   const navigate = useNavigate();
@@ -51,6 +53,7 @@ export default function EmployeeList() {
     open: false,
     item: null,
   });
+  const [detailDialog, setDetailDialog] = useState({ open: false, item: null });
 
   useEffect(() => {
     loadEmployees();
@@ -129,48 +132,56 @@ export default function EmployeeList() {
       width: 150,
       sortable: false,
       renderCell: (params) => {
-        if (!isAdmin) return null;
         const isDeleted = params.row.status === "deleted";
-        if (isDeleted) {
-          // Only god can restore.
-          return isGod ? (
-            <IconButton
-              size="small"
-              color="success"
-              onClick={() => setRestoreDialog({ open: true, item: params.row })}
-              title="Restore Employee"
-            >
-              <RestoreIcon fontSize="small" />
-            </IconButton>
-          ) : null;
-        }
         return (
           <Box>
+            {/* View is open to anyone who can reach this page (employee.view). */}
             <IconButton
               size="small"
-              onClick={() => navigate(`/employees/${params.row.uuid}/edit`)}
-              title="Edit Employee"
+              onClick={() => setDetailDialog({ open: true, item: params.row })}
+              title="View Details"
             >
-              <EditIcon fontSize="small" />
+              <ViewIcon fontSize="small" />
             </IconButton>
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() =>
-                setCredentialsDialog({ open: true, item: params.row })
-              }
-              title="View Credentials"
-            >
-              <VpnKeyIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => setDeleteDialog({ open: true, item: params.row })}
-              title="Delete Employee"
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+            {isAdmin && isDeleted && isGod && (
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => setRestoreDialog({ open: true, item: params.row })}
+                title="Restore Employee"
+              >
+                <RestoreIcon fontSize="small" />
+              </IconButton>
+            )}
+            {isAdmin && !isDeleted && (
+              <>
+                <IconButton
+                  size="small"
+                  onClick={() => navigate(`/employees/${params.row.uuid}/edit`)}
+                  title="Edit Employee"
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() =>
+                    setCredentialsDialog({ open: true, item: params.row })
+                  }
+                  title="View Credentials"
+                >
+                  <VpnKeyIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => setDeleteDialog({ open: true, item: params.row })}
+                  title="Delete Employee"
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </>
+            )}
           </Box>
         );
       },
@@ -251,8 +262,10 @@ export default function EmployeeList() {
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           disableRowSelectionOnClick
+          onRowClick={(params) => setDetailDialog({ open: true, item: params.row })}
           sx={{
             border: "none",
+            cursor: "pointer",
             "& .MuiDataGrid-columnHeaderTitle": { fontWeight: 600 },
             "& .MuiDataGrid-cell": { borderBottom: "1px solid #e4e9f2" },
             "& .deleted-row": {
@@ -288,6 +301,12 @@ export default function EmployeeList() {
         open={credentialsDialog.open}
         employee={credentialsDialog.item}
         onClose={() => setCredentialsDialog({ open: false, item: null })}
+      />
+
+      <EmployeeDetailDialog
+        open={detailDialog.open}
+        employee={detailDialog.item}
+        onClose={() => setDetailDialog({ open: false, item: null })}
       />
     </Box>
   );

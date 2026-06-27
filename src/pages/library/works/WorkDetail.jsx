@@ -10,12 +10,16 @@ import {
   LibraryAdd as EditionIcon, Print as PrintIcon,
 } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 
 const STATUS_COLORS = { available: 'success', issued: 'warning', lost: 'error', withdrawn: 'default', damaged: 'error' };
 
 export default function WorkDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.LIBRARY_MANAGE);
   const [work, setWork] = useState(null);
   const [copiesByTitle, setCopiesByTitle] = useState({});
   const [languages, setLanguages] = useState([]);
@@ -133,7 +137,9 @@ export default function WorkDetail() {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="h6">Editions ({work.titles?.length || 0})</Typography>
-        <Button size="small" startIcon={<EditionIcon />} onClick={() => setEditionDlg(true)}>Add edition / language</Button>
+        {canManage && (
+          <Button size="small" startIcon={<EditionIcon />} onClick={() => setEditionDlg(true)}>Add edition / language</Button>
+        )}
       </Box>
 
       {(work.titles || []).map((t) => (
@@ -148,9 +154,11 @@ export default function WorkDetail() {
             </Box>
           </AccordionSummary>
           <AccordionDetails>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-              <Button size="small" startIcon={<AddIcon />} onClick={() => setCopiesDlg({ open: true, titleId: t.uuid })}>Add copies</Button>
-            </Box>
+            {canManage && (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                <Button size="small" startIcon={<AddIcon />} onClick={() => setCopiesDlg({ open: true, titleId: t.uuid })}>Add copies</Button>
+              </Box>
+            )}
             <Table size="small">
               <TableHead>
                 <TableRow>

@@ -21,9 +21,13 @@ import {
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 
 export default function WorkList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.LIBRARY_MANAGE);
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -94,9 +98,11 @@ export default function WorkList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Library Catalog</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/library/catalog/new')}>
-          Catalog a Book
-        </Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/library/catalog/new')}>
+            Catalog a Book
+          </Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}

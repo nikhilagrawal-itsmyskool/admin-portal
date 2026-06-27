@@ -33,6 +33,8 @@ import {
   MergeType as MergeIcon,
 } from '@mui/icons-material';
 import { suppliesService } from '../../../services/suppliesService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 function MergeDialog({ open, source, allItems, onClose, onSuccess }) {
@@ -91,6 +93,8 @@ function MergeDialog({ open, source, allItems, onClose, onSuccess }) {
 
 export default function SupplyItemList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -218,21 +222,23 @@ export default function SupplyItemList() {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
-            <Tooltip title="Edit Item">
-              <IconButton size="small" onClick={() => navigate(`/supplies/items/${params.row.uuid}/edit`)}><EditIcon fontSize="small" /></IconButton>
-            </Tooltip>
+            {canManage && (
+              <Tooltip title="Edit Item">
+                <IconButton size="small" onClick={() => navigate(`/supplies/items/${params.row.uuid}/edit`)}><EditIcon fontSize="small" /></IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="View Purchases">
               <IconButton size="small" color="primary" onClick={() => navigate(`/supplies/purchases?item=${params.row.uuid}`)}><PurchaseIcon fontSize="small" /></IconButton>
             </Tooltip>
             <Tooltip title="View Issues">
               <IconButton size="small" color="secondary" onClick={() => navigate(`/supplies/issues?item=${params.row.uuid}`)}><IssueIcon fontSize="small" /></IconButton>
             </Tooltip>
-            {!isDeleted && (
+            {!isDeleted && canManage && (
               <Tooltip title="Merge into another item">
                 <IconButton size="small" color="warning" onClick={() => setMergeDialog({ open: true, item: params.row })}><MergeIcon fontSize="small" /></IconButton>
               </Tooltip>
             )}
-            {!isDeleted && (
+            {!isDeleted && canManage && (
               <Tooltip title="Delete Item">
                 <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, item: params.row })}><DeleteIcon fontSize="small" /></IconButton>
               </Tooltip>
@@ -247,7 +253,9 @@ export default function SupplyItemList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Supply Inventory Items</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/items/add')}>Add Item</Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/items/add')}>Add Item</Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}

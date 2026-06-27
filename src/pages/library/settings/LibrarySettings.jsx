@@ -5,6 +5,8 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 
 const LOOKUP_TYPES = [
   { value: 'color', label: 'Colors' },
@@ -17,6 +19,8 @@ const LOOKUP_TYPES = [
 ];
 
 export default function LibrarySettings() {
+  const can = useCan();
+  const canManage = can(ACTIONS.LIBRARY_MANAGE);
   const [tab, setTab] = useState(0);
   const [notice, setNotice] = useState(null);
 
@@ -132,16 +136,18 @@ export default function LibrarySettings() {
                 {lookupType === 'color' && (
                   <Grid item xs={6} md={2}><TextField fullWidth size="small" type="color" label="Color" InputLabelProps={{ shrink: true }} value={draft.hex || '#cccccc'} onChange={(e) => setDraft({ ...draft, hex: e.target.value })} /></Grid>
                 )}
-                <Grid item xs={6} md={2}><Button variant="outlined" startIcon={<AddIcon />} onClick={addLookup}>Add</Button></Grid>
+                {canManage && (
+                  <Grid item xs={6} md={2}><Button variant="outlined" startIcon={<AddIcon />} onClick={addLookup}>Add</Button></Grid>
+                )}
               </Grid>
 
               <Table size="small">
                 <TableHead>
-                  <TableRow><TableCell>Code</TableCell><TableCell>Label</TableCell><TableCell>{lookupType === 'color' ? 'DDC class / color' : 'Extra'}</TableCell><TableCell align="right">Action</TableCell></TableRow>
+                  <TableRow><TableCell>Code</TableCell><TableCell>Label</TableCell><TableCell>{lookupType === 'color' ? 'DDC class / color' : 'Extra'}</TableCell>{canManage && <TableCell align="right">Action</TableCell>}</TableRow>
                 </TableHead>
                 <TableBody>
                   {lookups.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} align="center">None yet</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={canManage ? 4 : 3} align="center">None yet</TableCell></TableRow>
                   ) : lookups.map((l) => (
                     <TableRow key={l.uuid}>
                       <TableCell>{l.code}</TableCell>
@@ -154,7 +160,7 @@ export default function LibrarySettings() {
                           </Box>
                         ) : '—'}
                       </TableCell>
-                      <TableCell align="right"><IconButton size="small" color="error" onClick={() => removeLookup(l.uuid)}><DeleteIcon fontSize="small" /></IconButton></TableCell>
+                      {canManage && <TableCell align="right"><IconButton size="small" color="error" onClick={() => removeLookup(l.uuid)}><DeleteIcon fontSize="small" /></IconButton></TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -178,7 +184,7 @@ export default function LibrarySettings() {
                 </TextField>
               </Grid>
               <Grid item xs={12} md={4}><TextField fullWidth size="small" type="number" label="Lost charge value" helperText="₹ (fixed) or × (multiplier)" {...pf('lostChargeValue')} /></Grid>
-              <Grid item xs={12}><Button variant="contained" startIcon={<SaveIcon />} onClick={savePolicy}>Save policy</Button></Grid>
+              {canManage && <Grid item xs={12}><Button variant="contained" startIcon={<SaveIcon />} onClick={savePolicy}>Save policy</Button></Grid>}
             </Grid>
           )}
         </CardContent>

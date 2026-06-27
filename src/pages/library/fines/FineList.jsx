@@ -6,10 +6,14 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import { Payments as CollectIcon, Block as WaiveIcon } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 
 const STATUS_COLORS = { pending: 'warning', paid: 'success', waived: 'default' };
 
 export default function FineList() {
+  const can = useCan();
+  const canManage = can(ACTIONS.LIBRARY_MANAGE);
   const [fines, setFines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,7 +68,7 @@ export default function FineList() {
     }
   };
 
-  const columns = [
+  const baseColumns = [
     { field: 'borrowerId', headerName: 'Borrower', flex: 1, minWidth: 140 },
     { field: 'borrowerType', headerName: 'Type', width: 100, renderCell: (p) => <Chip label={p.value} size="small" variant="outlined" /> },
     { field: 'fineType', headerName: 'Reason', width: 110, renderCell: (p) => <Chip label={p.value} size="small" color={p.value === 'lost' ? 'error' : 'warning'} variant="outlined" /> },
@@ -72,16 +76,22 @@ export default function FineList() {
     { field: 'amount', headerName: 'Amount', width: 110, valueFormatter: (v) => `₹${Number(v).toFixed(2)}` },
     { field: 'status', headerName: 'Status', width: 110, renderCell: (p) => <Chip label={p.value} size="small" color={STATUS_COLORS[p.value] || 'default'} /> },
     { field: 'receiptNumber', headerName: 'Receipt', width: 160, renderCell: (p) => p.value || '—' },
-    {
-      field: 'actions', headerName: 'Actions', width: 110, sortable: false,
-      renderCell: (params) => params.row.status === 'pending' ? (
-        <Box>
-          <IconButton size="small" color="success" title="Collect" onClick={() => setCollectDlg({ open: true, fine: params.row, amount: String(params.row.amount), notes: '' })}><CollectIcon fontSize="small" /></IconButton>
-          <IconButton size="small" color="warning" title="Waive" onClick={() => setWaiveDlg({ open: true, fine: params.row, notes: '' })}><WaiveIcon fontSize="small" /></IconButton>
-        </Box>
-      ) : null,
-    },
   ];
+
+  const columns = canManage
+    ? [
+        ...baseColumns,
+        {
+          field: 'actions', headerName: 'Actions', width: 110, sortable: false,
+          renderCell: (params) => params.row.status === 'pending' ? (
+            <Box>
+              <IconButton size="small" color="success" title="Collect" onClick={() => setCollectDlg({ open: true, fine: params.row, amount: String(params.row.amount), notes: '' })}><CollectIcon fontSize="small" /></IconButton>
+              <IconButton size="small" color="warning" title="Waive" onClick={() => setWaiveDlg({ open: true, fine: params.row, notes: '' })}><WaiveIcon fontSize="small" /></IconButton>
+            </Box>
+          ) : null,
+        },
+      ]
+    : baseColumns;
 
   return (
     <Box>

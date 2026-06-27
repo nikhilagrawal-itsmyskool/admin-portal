@@ -57,6 +57,7 @@ const formatCurrency = (v) =>
 export default function SupplyPurchaseList() {
   const navigate = useNavigate();
   const can = useCan();
+  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
   const canEditPurchase = can(ACTIONS.PURCHASE_LOG_EDIT);
   const canRestorePurchase = can(ACTIONS.PURCHASE_LOG_RESTORE);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -266,13 +267,15 @@ export default function SupplyPurchaseList() {
         }}
       >
         <Typography variant="h4">Supply Purchase Log</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/supplies/purchases/add")}
-        >
-          Add Purchase
-        </Button>
+        {canManage && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/supplies/purchases/add")}
+          >
+            Add Purchase
+          </Button>
+        )}
       </Box>
 
       {error && (
@@ -485,7 +488,7 @@ export default function SupplyPurchaseList() {
                             </IconButton>
                           </Tooltip>
                         )}
-                        {!isDeleted && (
+                        {!isDeleted && canManage && (
                           <Tooltip title="Delete">
                             <IconButton
                               size="small"

@@ -21,9 +21,13 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { libraryService } from '../../services/libraryService';
+import { useCan } from '../../permissions/can';
+import { ACTIONS } from '../../permissions/actions';
 
 export default function LibraryDashboard() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.LIBRARY_MANAGE);
   const [stats, setStats] = useState({ works: 0, copies: 0, available: 0, issued: 0, pendingFines: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -65,12 +69,12 @@ export default function LibraryDashboard() {
   ];
 
   const quickLinks = [
-    { title: 'Catalog a Book', description: 'Add a work, edition and copies in one go', icon: CatalogIcon, path: '/library/catalog/new' },
+    canManage && { title: 'Catalog a Book', description: 'Add a work, edition and copies in one go', icon: CatalogIcon, path: '/library/catalog/new' },
     { title: 'Search Catalog', description: 'Find works, editions and copies', icon: SearchIcon, path: '/library/catalog' },
     { title: 'Circulation', description: 'Issue, return and renew books', icon: IssuedIcon, path: '/library/circulation' },
     { title: 'Fines', description: 'Collect or waive overdue/lost fines', icon: FineIcon, path: '/library/fines' },
     { title: 'Settings', description: 'Lookups, colors, locations and loan policy', icon: SettingsIcon, path: '/library/settings' },
-  ];
+  ].filter(Boolean);
 
   if (loading) {
     return (

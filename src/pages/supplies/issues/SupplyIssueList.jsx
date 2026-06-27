@@ -29,6 +29,8 @@ import {
   KeyboardReturn as ReturnIcon,
 } from '@mui/icons-material';
 import { suppliesService } from '../../../services/suppliesService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 function ReturnDialog({ open, issue, onClose, onSuccess }) {
@@ -82,6 +84,8 @@ function ReturnDialog({ open, issue, onClose, onSuccess }) {
 
 export default function SupplyIssueList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [issues, setIssues] = useState([]);
   const [items, setItems] = useState([]);
@@ -209,10 +213,10 @@ export default function SupplyIssueList() {
         const canReturn = !isDeleted && !params.row.returned && (params.row.issueType === 'individual' || params.row.issueType === 'class_use' || params.row.issueType === 'event');
         return (
           <Box>
-            {canReturn && (
+            {canReturn && canManage && (
               <IconButton size="small" color="primary" onClick={() => setReturnDialog({ open: true, issue: params.row })} title="Process Return"><ReturnIcon fontSize="small" /></IconButton>
             )}
-            {!isDeleted && (
+            {!isDeleted && canManage && (
               <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, item: params.row })} title="Delete Issue"><DeleteIcon fontSize="small" /></IconButton>
             )}
           </Box>
@@ -225,7 +229,9 @@ export default function SupplyIssueList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Supply Issue Log</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/issues/add')}>Add Issue</Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/issues/add')}>Add Issue</Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}

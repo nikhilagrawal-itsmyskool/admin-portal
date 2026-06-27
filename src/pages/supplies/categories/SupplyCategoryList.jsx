@@ -22,6 +22,8 @@ import {
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
 import { suppliesService } from '../../../services/suppliesService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 function CategoryDialog({ open, category, onClose, onSaved }) {
@@ -81,6 +83,8 @@ function CategoryDialog({ open, category, onClose, onSaved }) {
 
 export default function SupplyCategoryList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -134,16 +138,20 @@ export default function SupplyCategoryList() {
               <InventoryIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => setDialog({ open: true, category: params.row })}>
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, category: params.row })}>
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {canManage && (
+            <Tooltip title="Edit">
+              <IconButton size="small" onClick={() => setDialog({ open: true, category: params.row })}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {canManage && (
+            <Tooltip title="Delete">
+              <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, category: params.row })}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       ),
     },
@@ -153,9 +161,11 @@ export default function SupplyCategoryList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Supply Categories</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialog({ open: true, category: null })}>
-          Add Category
-        </Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialog({ open: true, category: null })}>
+            Add Category
+          </Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}

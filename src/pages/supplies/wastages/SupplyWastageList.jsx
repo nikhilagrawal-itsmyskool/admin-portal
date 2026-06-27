@@ -25,6 +25,8 @@ import {
   Clear as ClearIcon,
 } from '@mui/icons-material';
 import { suppliesService } from '../../../services/suppliesService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 const reasonLabels = { spoiled: 'Spoiled', expired: 'Expired', damaged: 'Damaged', lost: 'Lost', used_up: 'Used Up', other: 'Other' };
@@ -32,6 +34,8 @@ const reasonColors = { spoiled: 'warning', expired: 'warning', damaged: 'error',
 
 export default function SupplyWastageList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [wastages, setWastages] = useState([]);
   const [items, setItems] = useState([]);
@@ -142,8 +146,8 @@ export default function SupplyWastageList() {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
-            {!isDeleted && <IconButton size="small" onClick={() => navigate(`/supplies/wastages/${params.row.uuid}/edit`)} title="Edit"><EditIcon fontSize="small" /></IconButton>}
-            {!isDeleted && <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, item: params.row })} title="Delete"><DeleteIcon fontSize="small" /></IconButton>}
+            {!isDeleted && canManage && <IconButton size="small" onClick={() => navigate(`/supplies/wastages/${params.row.uuid}/edit`)} title="Edit"><EditIcon fontSize="small" /></IconButton>}
+            {!isDeleted && canManage && <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, item: params.row })} title="Delete"><DeleteIcon fontSize="small" /></IconButton>}
           </Box>
         );
       },
@@ -154,7 +158,9 @@ export default function SupplyWastageList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Supply Wastage Log</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/wastages/add')}>Record Wastage</Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/wastages/add')}>Record Wastage</Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
