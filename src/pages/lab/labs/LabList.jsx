@@ -12,7 +12,7 @@ import {
   Alert,
   Chip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -184,8 +184,7 @@ export default function LabList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={filteredLabs}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -212,7 +211,6 @@ export default function LabList() {
             },
           }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

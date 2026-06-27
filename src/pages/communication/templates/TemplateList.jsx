@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, IconButton, Alert, Chip, Tooltip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { communicationService } from '../../../services/communicationService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
@@ -86,8 +86,7 @@ export default function TemplateList() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={templates}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -98,7 +97,6 @@ export default function TemplateList() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 } }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

@@ -4,7 +4,7 @@ import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, Alert,
   IconButton, Chip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Add as AddIcon, Visibility as ViewIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
@@ -110,8 +110,7 @@ export default function UniformPurchaseList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={purchases}
           columns={columns}
           getRowId={r => r.uuid}
@@ -122,7 +121,6 @@ export default function UniformPurchaseList() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 }, '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' } }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

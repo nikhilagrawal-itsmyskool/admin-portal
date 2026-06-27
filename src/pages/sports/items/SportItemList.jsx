@@ -17,7 +17,7 @@ import {
   Checkbox,
   InputAdornment,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -403,8 +403,8 @@ export default function SportItemList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
+          primaryChipField="currentStock"
           rows={items}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -431,7 +431,6 @@ export default function SportItemList() {
             },
           }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

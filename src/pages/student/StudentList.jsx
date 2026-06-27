@@ -16,7 +16,7 @@ import {
   Paper,
   Stack,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import {
   PersonAdd as PersonAddIcon,
   Edit as EditIcon,
@@ -337,8 +337,10 @@ export default function StudentList() {
         </Paper>
       )}
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
+          primaryChipField="status"
+          mobilePageSize={25}
+          emptyMessage="No students found."
           rows={students}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -356,7 +358,6 @@ export default function StudentList() {
             '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' },
           }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

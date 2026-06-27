@@ -21,7 +21,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -421,8 +421,7 @@ export default function FineIncidentList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={incidents}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -439,7 +438,6 @@ export default function FineIncidentList() {
             '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' },
           }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

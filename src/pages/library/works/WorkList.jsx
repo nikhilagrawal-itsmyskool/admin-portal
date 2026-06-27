@@ -13,7 +13,7 @@ import {
   Grid,
   InputAdornment,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -137,8 +137,7 @@ export default function WorkList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={works}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -155,7 +154,6 @@ export default function WorkList() {
             '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' },
           }}
         />
-      </Card>
     </Box>
   );
 }

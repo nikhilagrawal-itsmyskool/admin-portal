@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Card, Alert, Chip, Button } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Send as ComposeIcon } from '@mui/icons-material';
 import { communicationService } from '../../../services/communicationService';
 
@@ -44,8 +44,7 @@ export default function MessageJobList() {
         <Button variant="contained" startIcon={<ComposeIcon />} onClick={() => navigate('/communication/compose')}>Compose</Button>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={jobs}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -56,7 +55,6 @@ export default function MessageJobList() {
           onRowClick={(params) => navigate(`/communication/messages/${params.row.uuid}`)}
           sx={{ border: 'none', cursor: 'pointer', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 } }}
         />
-      </Card>
     </Box>
   );
 }

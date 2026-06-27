@@ -15,7 +15,7 @@ import {
   Tooltip,
   Chip,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import ResponsiveDataGrid from "../../../components/common/ResponsiveDataGrid";
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -249,8 +249,7 @@ export default function SubjectList() {
         </Alert>
       )}
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={subjects}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -265,7 +264,6 @@ export default function SubjectList() {
             "& .MuiDataGrid-cell": { borderBottom: "1px solid #e4e9f2" },
           }}
         />
-      </Card>
 
       <SubjectDialog
         open={dialog.open}

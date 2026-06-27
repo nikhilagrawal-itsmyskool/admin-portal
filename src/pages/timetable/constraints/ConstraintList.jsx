@@ -15,7 +15,7 @@ import {
   TextField,
   MenuItem,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import ResponsiveDataGrid from "../../../components/common/ResponsiveDataGrid";
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -321,8 +321,7 @@ export default function ConstraintList() {
               </Button>
             </Box>
           )}
-          <Card>
-            <DataGrid
+          <ResponsiveDataGrid
               rows={rows}
               columns={columns}
               getRowId={(r) => r.uuid}
@@ -335,7 +334,6 @@ export default function ConstraintList() {
               disableRowSelectionOnClick
               sx={{ border: "none" }}
             />
-          </Card>
         </>
       )}
 

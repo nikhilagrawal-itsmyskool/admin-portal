@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Button, Card, Alert, IconButton, Chip,
+  Box, Typography, Button, Alert, IconButton, Chip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
@@ -79,8 +79,8 @@ export default function UniformSetList() {
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
+          primaryChipField="gender"
           rows={sets}
           columns={columns}
           getRowId={r => r.uuid}
@@ -91,7 +91,6 @@ export default function UniformSetList() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 }, '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' } }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

@@ -3,7 +3,7 @@ import {
   Box, Typography, Card, CardContent, Alert, Chip, IconButton, TextField, MenuItem, Grid,
   Dialog, DialogTitle, DialogContent, DialogActions, Button,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Payments as CollectIcon, Block as WaiveIcon } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
 import { useCan } from '../../../permissions/can';
@@ -114,8 +114,7 @@ export default function FineList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={fines}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -126,7 +125,6 @@ export default function FineList() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 }, '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' } }}
         />
-      </Card>
 
       <Dialog open={collectDlg.open} onClose={() => setCollectDlg({ open: false, fine: null, amount: '', notes: '' })} maxWidth="xs" fullWidth>
         <DialogTitle>Collect fine</DialogTitle>

@@ -26,7 +26,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import ResponsiveDataGrid from "../../../components/common/ResponsiveDataGrid";
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -424,7 +424,8 @@ function SubjectsTab({ classId, academicYearId, subjects }) {
           </Button>
         </Box>
       )}
-      <DataGrid
+      <ResponsiveDataGrid
+        disableCard
         rows={rows}
         columns={columns}
         getRowId={(r) => r.uuid}
@@ -670,7 +671,8 @@ function TeachersTab({ classId, academicYearId, subjects }) {
           </Button>
         </Box>
       )}
-      <DataGrid
+      <ResponsiveDataGrid
+        disableCard
         rows={rows}
         columns={columns}
         getRowId={(r) => r.uuid}

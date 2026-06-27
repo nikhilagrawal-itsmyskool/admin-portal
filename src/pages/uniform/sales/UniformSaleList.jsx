@@ -4,7 +4,7 @@ import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, Alert,
   IconButton, Chip, MenuItem, Select, InputLabel, FormControl, OutlinedInput,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Add as AddIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
 
@@ -132,8 +132,7 @@ export default function UniformSaleList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={sales}
           columns={columns}
           getRowId={r => r.uuid}
@@ -144,7 +143,6 @@ export default function UniformSaleList() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 }, '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' } }}
         />
-      </Card>
     </Box>
   );
 }

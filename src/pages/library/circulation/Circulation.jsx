@@ -3,7 +3,7 @@ import {
   Box, Typography, Card, CardContent, Tabs, Tab, TextField, Button, Alert, Grid,
   ToggleButtonGroup, ToggleButton, Chip, FormControlLabel, Checkbox, Autocomplete,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   SwapHoriz as IssueIcon, AssignmentReturn as ReturnIcon, Autorenew as RenewIcon, Person as PersonIcon,
 } from '@mui/icons-material';
@@ -239,8 +239,7 @@ export default function Circulation() {
       )}
 
       <Typography variant="h6" sx={{ mb: 1 }}>Currently issued ({issued.length})</Typography>
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={issued}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -251,7 +250,6 @@ export default function Circulation() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 }, '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' } }}
         />
-      </Card>
 
       <StudentSearchDialog open={studentDlg} onClose={() => setStudentDlg(false)} onSelect={(s) => setBorrower(s)} />
       <EmployeeSearchDialog open={employeeDlg} onClose={() => setEmployeeDlg(false)} onSelect={(e) => setBorrower(e)} />

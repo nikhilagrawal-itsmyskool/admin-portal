@@ -20,7 +20,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -508,8 +508,7 @@ export default function SportIssueList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={issues}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -536,7 +535,6 @@ export default function SportIssueList() {
             },
           }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

@@ -14,7 +14,7 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -170,8 +170,7 @@ export default function SupplyCategoryList() {
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={categories}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -186,7 +185,6 @@ export default function SupplyCategoryList() {
             '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' },
           }}
         />
-      </Card>
 
       <CategoryDialog
         open={dialog.open}

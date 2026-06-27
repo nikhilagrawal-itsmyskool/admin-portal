@@ -21,7 +21,7 @@ import {
   DialogActions,
   Tooltip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -314,8 +314,8 @@ export default function SupplyItemList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
+          primaryChipField="currentStock"
           rows={items}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -336,7 +336,6 @@ export default function SupplyItemList() {
             },
           }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

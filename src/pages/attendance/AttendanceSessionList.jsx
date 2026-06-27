@@ -4,7 +4,7 @@ import {
   Box, Typography, Card, CardContent, Grid, TextField, Autocomplete, MenuItem,
   Button, Alert, Chip,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { attendanceService } from '../../services/attendanceService';
 import { classService } from '../../services/classService';
@@ -109,8 +109,7 @@ export default function AttendanceSessionList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={sessions}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -121,7 +120,6 @@ export default function AttendanceSessionList() {
           onRowClick={(params) => navigate(`/attendance/sessions/${params.row.uuid}`)}
           sx={{ border: 'none', cursor: 'pointer', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 } }}
         />
-      </Card>
     </Box>
   );
 }

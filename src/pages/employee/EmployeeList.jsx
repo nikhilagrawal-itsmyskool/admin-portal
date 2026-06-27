@@ -14,7 +14,7 @@ import {
   FormControlLabel,
   Switch,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -249,8 +249,7 @@ export default function EmployeeList() {
         </CardContent>
       </Card>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={filteredEmployees}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -274,7 +273,6 @@ export default function EmployeeList() {
             },
           }}
         />
-      </Card>
 
       <ConfirmDialog
         open={deleteDialog.open}

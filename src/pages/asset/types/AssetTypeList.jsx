@@ -18,7 +18,7 @@ import {
   FormControlLabel,
   Switch,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -258,8 +258,7 @@ export default function AssetTypeList() {
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>
       )}
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={types}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -270,7 +269,6 @@ export default function AssetTypeList() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 } }}
         />
-      </Card>
 
       <TypeFormDialog
         open={formDialog.open}

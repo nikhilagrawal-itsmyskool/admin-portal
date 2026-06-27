@@ -14,7 +14,7 @@ import {
   CircularProgress,
   IconButton,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import { ArrowBack as BackIcon } from '@mui/icons-material';
 import {
   BarChart,
@@ -193,8 +193,7 @@ export default function AssetCounts() {
         )}
       </Box>
 
-      <Card>
-        <DataGrid
+      <ResponsiveDataGrid
           rows={detail?.rows || []}
           columns={columns}
           getRowId={(row) => row.uuid}
@@ -205,7 +204,6 @@ export default function AssetCounts() {
           disableRowSelectionOnClick
           sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 } }}
         />
-      </Card>
     </Box>
   );
 }
