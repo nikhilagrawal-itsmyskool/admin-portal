@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -7,7 +7,7 @@ import {
   Card,
   CardContent,
   CardActionArea,
-} from '@mui/material';
+} from "@mui/material";
 import {
   LocalHospital as MedicalIcon,
   Science as ScienceIcon,
@@ -20,87 +20,105 @@ import {
   Widgets as SuppliesIcon,
   CalendarMonth as TimetableIcon,
   People as PeopleIcon,
-} from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
-import { getFirstName } from '../utils/userDisplay';
+  FactCheck as AttendanceIcon,
+  Campaign as CommunicationIcon,
+} from "@mui/icons-material";
+import { useAuth } from "../context/AuthContext";
+import { getFirstName } from "../utils/userDisplay";
 
 const modules = [
   {
-    title: 'Medical',
-    description: 'Manage medical inventory, purchases, and issues',
+    title: "Medical",
+    description: "Manage medical inventory, purchases, and issues",
     icon: MedicalIcon,
-    path: '/medical',
-    color: '#3366ff',
+    path: "/medical",
+    color: "#3366ff",
   },
   {
-    title: 'Laboratory',
-    description: 'Manage lab inventory, purchases, issues, and breakages',
+    title: "Laboratory",
+    description: "Manage lab inventory, purchases, issues, and breakages",
     icon: ScienceIcon,
-    path: '/lab',
-    color: '#00b887',
+    path: "/lab",
+    color: "#00b887",
   },
   {
-    title: 'Fines',
-    description: 'Track incidents, decisions, and fine collections',
+    title: "Fines",
+    description: "Track incidents, decisions, and fine collections",
     icon: GavelIcon,
-    path: '/fine',
-    color: '#ff3d71',
+    path: "/fine",
+    color: "#ff3d71",
   },
   {
-    title: 'Uniform',
-    description: 'Manage uniform catalog, stock, and student sales',
+    title: "Uniform",
+    description: "Manage uniform catalog, stock, and student sales",
     icon: CheckroomIcon,
-    path: '/uniform',
-    color: '#7b5ea7',
+    path: "/uniform",
+    color: "#7b5ea7",
   },
   {
-    title: 'Shop',
-    description: 'Manage shop catalog, stock, and student sales',
+    title: "Shop",
+    description: "Manage shop catalog, stock, and student sales",
     icon: MenuBookIcon,
-    path: '/shop',
-    color: '#ff9f43',
+    path: "/shop",
+    color: "#ff9f43",
   },
   {
-    title: 'Sports',
-    description: 'Manage sports inventory, purchases, issues, and breakages',
+    title: "Sports",
+    description: "Manage sports inventory, purchases, issues, and breakages",
     icon: SportsIcon,
-    path: '/sports',
-    color: '#0095ff',
+    path: "/sports",
+    color: "#0095ff",
   },
   {
-    title: 'Assets',
-    description: 'Manage the asset register, asset tree, and asset types',
+    title: "Assets",
+    description: "Manage the asset register, asset tree, and asset types",
     icon: AssetIcon,
-    path: '/asset',
-    color: '#8d6e63',
+    path: "/asset",
+    color: "#8d6e63",
   },
   {
-    title: 'Library',
-    description: 'Manage the catalog, circulation, and library fines',
+    title: "Library",
+    description: "Manage the catalog, circulation, and library fines",
     icon: LibraryIcon,
-    path: '/library',
-    color: '#5e35b1',
+    path: "/library",
+    color: "#5e35b1",
   },
   {
-    title: 'Supplies',
-    description: 'Manage supply categories, inventory, purchases, issues, and wastage',
+    title: "Supplies",
+    description:
+      "Manage supply categories, inventory, purchases, issues, and wastage",
     icon: SuppliesIcon,
-    path: '/supplies',
-    color: '#00acc1',
+    path: "/supplies",
+    color: "#00acc1",
   },
   {
-    title: 'Timetable',
-    description: 'Build subjects, grids, and wings, then auto-generate class timetables',
+    title: "Timetable",
+    description:
+      "Build subjects, grids, and wings, then auto-generate class timetables",
     icon: TimetableIcon,
-    path: '/timetable',
-    color: '#f4b400',
+    path: "/timetable",
+    color: "#f4b400",
   },
   {
-    title: 'Employees',
-    description: 'Manage employees, logins, and passwords',
+    title: "Attendance",
+    description: "Take daily attendance and review session history",
+    icon: AttendanceIcon,
+    path: "/attendance",
+    color: "#43a047",
+  },
+  {
+    title: "Communication",
+    description: "Compose messages, manage templates, and track sent messages",
+    icon: CommunicationIcon,
+    path: "/communication",
+    color: "#e91e63",
+  },
+  {
+    title: "Employees",
+    description: "Manage employees, logins, and passwords",
     icon: PeopleIcon,
-    path: '/employees',
-    color: '#009688',
+    path: "/employees",
+    color: "#009688",
   },
 ];
 
@@ -115,7 +133,7 @@ export default function Dashboard() {
       <Typography variant="h4" sx={{ mb: 1 }}>
         Welcome back, {firstName}
       </Typography>
-      <Typography variant="body1" sx={{ color: '#8f9bb3', mb: 4 }}>
+      <Typography variant="body1" sx={{ color: "#8f9bb3", mb: 4 }}>
         Select a module to get started
       </Typography>
 
@@ -131,9 +149,9 @@ export default function Dashboard() {
                       height: 56,
                       borderRadius: 2,
                       backgroundColor: `${module.color}15`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       mb: 2,
                     }}
                   >
@@ -142,7 +160,7 @@ export default function Dashboard() {
                   <Typography variant="h6" sx={{ mb: 1 }}>
                     {module.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#8f9bb3' }}>
+                  <Typography variant="body2" sx={{ color: "#8f9bb3" }}>
                     {module.description}
                   </Typography>
                 </CardContent>
