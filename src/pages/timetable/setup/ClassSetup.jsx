@@ -32,7 +32,9 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Person as PersonIcon,
+  ContentCopy as ContentCopyIcon,
 } from "@mui/icons-material";
+import { classService } from "../../../services/classService";
 import { timetableService } from "../../../services/timetableService";
 import { AcademicYearSelect, ClassSelect } from "../components/Selectors";
 import BlockRulesEditor from "../components/BlockRulesEditor";
@@ -1162,12 +1164,155 @@ function OfferingDialog({ band, subjects, onClose, onSaved }) {
   );
 }
 
+// -------------------------------------------------------------- Clone setup dialog
+// Copies another section's academic setup (subjects, teaching assignments,
+// elective bands+offerings) onto the currently selected section. The class teacher
+// is intentionally NOT copied — it is the per-section difference, set separately.
+function CloneSetupDialog({ targetClassId, academicYearId, onClose, onCloned }) {
+  const [classes, setClasses] = useState([]);
+  const [sourceClassId, setSourceClassId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    classService
+      .getClasses()
+      .then((data) => {
+        if (active)
+          setClasses(Array.isArray(data) ? data : data.classes || []);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Source options exclude the target section itself.
+  const sourceOptions = classes.filter((c) => c.uuid !== targetClassId);
+
+  const clone = async () => {
+    if (!sourceClassId) {
+      setError("Pick a section to copy from");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const summary = await timetableService.cloneClassSetup({
+        sourceClassId,
+        targetClassId,
+        academicYearId,
+      });
+      setResult(summary);
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.description || "Failed to clone setup",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Clone setup from another section</DialogTitle>
+      <DialogContent>
+        {result ? (
+          <Box sx={{ mt: 1 }}>
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Setup copied successfully.
+            </Alert>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              Copied to this section:
+            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              flexWrap="wrap"
+              useFlexGap
+              sx={{ mb: 1 }}
+            >
+              <Chip label={`${result.classSubjects} subjects`} />
+              <Chip label={`${result.teachingAssignments} assignments`} />
+              <Chip label={`${result.electiveBands} elective bands`} />
+              <Chip label={`${result.electiveOfferings} offerings`} />
+            </Stack>
+            <Typography variant="caption" sx={{ color: "#8f9bb3" }}>
+              The class teacher was not copied — set it on the Class Teacher tab.
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ mt: 1 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            <Typography variant="body2" sx={{ color: "#8f9bb3", mb: 2 }}>
+              Copies subjects, teaching assignments, and elective bands from the
+              chosen section into this one. The class teacher is not copied. The
+              target section must have no existing subjects, assignments, or
+              bands.
+            </Typography>
+            <TextField
+              select
+              fullWidth
+              label="Copy from section"
+              value={sourceClassId}
+              onChange={(e) => setSourceClassId(e.target.value)}
+            >
+              {sourceOptions.length === 0 && (
+                <MenuItem value="" disabled>
+                  No other sections
+                </MenuItem>
+              )}
+              {sourceOptions.map((c) => (
+                <MenuItem key={c.uuid} value={c.uuid}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        {result ? (
+          <Button
+            variant="contained"
+            onClick={() => {
+              onCloned();
+              onClose();
+            }}
+          >
+            Done
+          </Button>
+        ) : (
+          <>
+            <Button onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={clone} disabled={saving}>
+              {saving ? "Cloning..." : "Clone"}
+            </Button>
+          </>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 // --------------------------------------------------------------------- ClassSetup
 export default function ClassSetup() {
+  const { canMutate } = useTimetablePerms();
   const [academicYearId, setAcademicYearId] = useState("");
   const [classId, setClassId] = useState("");
   const [tab, setTab] = useState(0);
   const [subjects, setSubjects] = useState([]);
+  const [cloneOpen, setCloneOpen] = useState(false);
+  // Bumped after a clone so the tab panels remount and reload their data.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     timetableService
@@ -1183,12 +1328,28 @@ export default function ClassSetup() {
       <Typography variant="h4" sx={{ mb: 3 }}>
         Class Setup
       </Typography>
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ mb: 3 }}
+        alignItems="center"
+        flexWrap="wrap"
+        useFlexGap
+      >
         <AcademicYearSelect
           value={academicYearId}
           onChange={setAcademicYearId}
         />
         <ClassSelect value={classId} onChange={setClassId} />
+        {ready && canMutate && (
+          <Button
+            variant="outlined"
+            startIcon={<ContentCopyIcon />}
+            onClick={() => setCloneOpen(true)}
+          >
+            Clone from another section
+          </Button>
+        )}
       </Stack>
 
       {!ready ? (
@@ -1210,7 +1371,7 @@ export default function ClassSetup() {
           <CardContent>
             {tab === 0 && (
               <ClassTeacherTab
-                key={`ct-${classId}-${academicYearId}`}
+                key={`ct-${classId}-${academicYearId}-${refreshKey}`}
                 classId={classId}
                 academicYearId={academicYearId}
                 subjects={subjects}
@@ -1218,7 +1379,7 @@ export default function ClassSetup() {
             )}
             {tab === 1 && (
               <SubjectsTab
-                key={`cs-${classId}-${academicYearId}`}
+                key={`cs-${classId}-${academicYearId}-${refreshKey}`}
                 classId={classId}
                 academicYearId={academicYearId}
                 subjects={subjects}
@@ -1226,7 +1387,7 @@ export default function ClassSetup() {
             )}
             {tab === 2 && (
               <TeachersTab
-                key={`ta-${classId}-${academicYearId}`}
+                key={`ta-${classId}-${academicYearId}-${refreshKey}`}
                 classId={classId}
                 academicYearId={academicYearId}
                 subjects={subjects}
@@ -1234,7 +1395,7 @@ export default function ClassSetup() {
             )}
             {tab === 3 && (
               <ElectivesTab
-                key={`eb-${classId}-${academicYearId}`}
+                key={`eb-${classId}-${academicYearId}-${refreshKey}`}
                 classId={classId}
                 academicYearId={academicYearId}
                 subjects={subjects}
@@ -1242,6 +1403,15 @@ export default function ClassSetup() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {cloneOpen && (
+        <CloneSetupDialog
+          targetClassId={classId}
+          academicYearId={academicYearId}
+          onClose={() => setCloneOpen(false)}
+          onCloned={() => setRefreshKey((k) => k + 1)}
+        />
       )}
     </Box>
   );

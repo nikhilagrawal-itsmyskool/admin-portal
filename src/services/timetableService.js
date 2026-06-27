@@ -81,6 +81,14 @@ export const timetableService = {
     return response.data;
   },
 
+  // Clone a whole section's academic setup onto another section in the same year.
+  // The class teacher is NOT copied (per-section difference). Body:
+  // { sourceClassId, targetClassId, academicYearId }
+  cloneClassSetup: async (data) => {
+    const response = await api.post(`${BASE}/clone-class-setup`, data);
+    return response.data; // { classSubjects, teachingAssignments, electiveBands, electiveOfferings }
+  },
+
   // Wings (named class sets) (filter: academicYearId)
   getWings: async (params = {}) => {
     const response = await api.get(`${BASE}/wings`, { params });
