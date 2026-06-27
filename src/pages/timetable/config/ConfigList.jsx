@@ -5,7 +5,10 @@ import {
   DialogActions, TextField, Tooltip, Chip,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon, Edit as EditIcon, Archive as ArchiveIcon,
+  ContentCopy as CloneIcon, Lock as LockIcon, LockOpen as LockOpenIcon,
+} from '@mui/icons-material';
 import { timetableService } from '../../../services/timetableService';
 import { AcademicYearSelect } from '../components/Selectors';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
@@ -87,22 +90,43 @@ export default function ConfigList() {
     }
   };
 
+  const handleClone = async (config) => {
+    setError('');
+    try {
+      const clone = await timetableService.cloneConfig(config.uuid, {});
+      navigate(`/timetable/configs/${clone.uuid}`);
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to clone config');
+    }
+  };
+
   const columns = [
     { field: 'name', headerName: 'Config', flex: 1, minWidth: 200 },
     {
-      field: 'status', headerName: 'Status', width: 120,
+      field: 'status', headerName: 'Status', width: 110,
       renderCell: (params) => <Chip size="small" label={params.value} color={params.value === 'active' ? 'success' : 'default'} variant="outlined" />,
     },
     {
-      field: 'actions', headerName: 'Actions', width: 140, sortable: false,
+      field: 'lockedAt', headerName: 'Lock', width: 110, sortable: false,
+      renderCell: (params) => (
+        params.value
+          ? <Chip size="small" icon={<LockIcon />} label="Locked" />
+          : <Chip size="small" icon={<LockOpenIcon />} label="Draft" color="success" variant="outlined" />
+      ),
+    },
+    {
+      field: 'actions', headerName: 'Actions', width: 170, sortable: false,
       renderCell: (params) => (
         <Box>
           <Tooltip title="Edit grid">
             <IconButton size="small" color="primary" onClick={() => navigate(`/timetable/configs/${params.row.uuid}`)}><EditIcon fontSize="small" /></IconButton>
           </Tooltip>
+          <Tooltip title="Clone into a new draft">
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleClone(params.row); }}><CloneIcon fontSize="small" /></IconButton>
+          </Tooltip>
           {params.row.status === 'active' && (
             <Tooltip title="Archive">
-              <IconButton size="small" color="error" onClick={() => setArchiveDialog({ open: true, config: params.row })}><ArchiveIcon fontSize="small" /></IconButton>
+              <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setArchiveDialog({ open: true, config: params.row }); }}><ArchiveIcon fontSize="small" /></IconButton>
             </Tooltip>
           )}
         </Box>

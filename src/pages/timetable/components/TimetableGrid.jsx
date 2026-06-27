@@ -1,9 +1,11 @@
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
+import TeacherName from './TeacherName';
 
 const DOW_LABEL = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' };
 const FIXED_BG = '#eef1f7';
 const TEACH_BG = '#ffffff';
+const REG_BG = '#fff4f4';
 
 // Renders a weekday×period grid from a config (days[].slots[]) and entries.
 // mode 'class' filters entries by classId; mode 'teacher' by teacherId.
@@ -12,7 +14,9 @@ export default function TimetableGrid({ config, entries = [], mode, selectedId, 
   if (!config?.days?.length) return <Typography sx={{ color: '#8f9bb3' }}>No grid configured.</Typography>;
 
   const days = [...config.days].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
-  const maxSeq = Math.max(...days.flatMap((d) => (d.slots || []).map((s) => s.sequence)), 0);
+  // Render every sequence actually present, in order — including assembly (-1)
+  // and the registration / 0th period (0), which are non-positive.
+  const seqs = [...new Set(days.flatMap((d) => (d.slots || []).map((s) => s.sequence)))].sort((a, b) => a - b);
 
   // entries for the selected class/teacher, keyed by timeSlotId
   const mine = entries.filter((e) => (mode === 'class' ? e.classId === selectedId : e.teacherId === selectedId));
@@ -25,6 +29,23 @@ export default function TimetableGrid({ config, entries = [], mode, selectedId, 
   const cell = (day, seq) => {
     const slot = (day.slots || []).find((s) => s.sequence === seq);
     if (!slot) return <Box sx={{ minHeight: 52 }} />;
+    if (slot.slotType === 'registration') {
+      // Attendance period: booked by the class teacher (no subject).
+      const regItems = bySlot.get(slot.uuid) || [];
+      return (
+        <Box sx={{ minHeight: 52, bgcolor: REG_BG, border: '1px solid #f0c9c9', borderRadius: 1, p: 0.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', lineHeight: 1.2 }}>
+            {slot.label || 'Registration'}
+          </Typography>
+          {regItems.map((e) => (
+            <Typography key={e.uuid} variant="caption" sx={{ color: '#8f9bb3', display: 'block', lineHeight: 1.2 }}>
+              {mode === 'class' ? <TeacherName id={e.teacherId} /> : (classNameById[e.classId] || e.classId)}
+            </Typography>
+          ))}
+          {regItems.length === 0 && <Typography variant="caption" sx={{ color: '#8f9bb3', fontStyle: 'italic' }}>Attendance</Typography>}
+        </Box>
+      );
+    }
     if (slot.slotType !== 'teaching') {
       return (
         <Box sx={{ minHeight: 52, bgcolor: FIXED_BG, borderRadius: 1, p: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -58,7 +79,7 @@ export default function TimetableGrid({ config, entries = [], mode, selectedId, 
             <Typography variant="caption" sx={{ fontWeight: 600 }}>{d.label || DOW_LABEL[d.dayOfWeek] || d.dayOfWeek}</Typography>
           </Box>
         ))}
-        {Array.from({ length: maxSeq }, (_, i) => i + 1).map((seq) => (
+        {seqs.map((seq) => (
           <React.Fragment key={seq}>
             <Box sx={{ p: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Typography variant="caption" sx={{ fontWeight: 600, color: '#8f9bb3' }}>{seq}</Typography>

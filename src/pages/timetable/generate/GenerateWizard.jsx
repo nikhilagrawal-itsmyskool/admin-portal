@@ -38,7 +38,8 @@ export default function GenerateWizard() {
   const pollRef = useRef(null);
 
   useEffect(() => {
-    timetableService.getConfigs().then((d) => setConfigs((d.configs || []).filter((c) => c.status === 'active'))).catch(() => {});
+    // Only locked, active configs can be generated (the backend enforces this too).
+    timetableService.getConfigs().then((d) => setConfigs((d.configs || []).filter((c) => c.status === 'active' && c.lockedAt))).catch(() => {});
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
@@ -124,8 +125,9 @@ export default function GenerateWizard() {
       {activeStep === 0 && (
         <Card><CardContent>
           <Stack direction="row" spacing={2} alignItems="flex-start" flexWrap="wrap">
-            <TextField select label="Active Config" value={configId} onChange={(e) => setConfigId(e.target.value)} sx={{ minWidth: 280, flex: 1, maxWidth: 400 }}>
-              {configs.length === 0 && <MenuItem value="" disabled>No active configs — create one in Grid Config</MenuItem>}
+            <TextField select label="Locked Config" value={configId} onChange={(e) => setConfigId(e.target.value)} sx={{ minWidth: 280, flex: 1, maxWidth: 400 }}
+              helperText="Only locked configs can be generated — lock one in Grid Config.">
+              {configs.length === 0 && <MenuItem value="" disabled>No locked configs — lock one in Grid Config first</MenuItem>}
               {configs.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
             </TextField>
             <TextField select label="Scope" value={wingId} onChange={(e) => setWingId(e.target.value)} sx={{ minWidth: 280, flex: 1, maxWidth: 400 }}

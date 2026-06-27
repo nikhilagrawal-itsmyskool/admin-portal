@@ -45,7 +45,7 @@ export default function TimetableDashboard() {
 
   const quickLinks = [
     { title: 'Subjects', description: 'Manage subjects (academic, games, library, activity)', icon: SubjectIcon, path: '/timetable/subjects' },
-    { title: 'Grid Config', description: 'Build the day-varying bell schedule (periods, breaks, activities)', icon: GridIcon, path: '/timetable/configs' },
+    { title: 'Grid Config', description: 'Build the day-varying bell schedule (assembly, 0th/registration, periods, breaks), then lock it for generation', icon: GridIcon, path: '/timetable/configs' },
     { title: 'Class Setup', description: 'Class teacher, subjects, teaching assignments, elective bands', icon: ClassSetupIcon, path: '/timetable/setup' },
     { title: 'Teacher Constraints', description: 'Day-offs, unavailable slots, weekly maximums', icon: ConstraintIcon, path: '/timetable/constraints' },
     { title: 'Generate Timetable', description: 'Run feasibility, generate candidates, review and publish', icon: GenerateIcon, path: '/timetable/generate' },

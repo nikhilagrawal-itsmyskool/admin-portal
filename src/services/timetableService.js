@@ -1,6 +1,6 @@
-import api from '../config/api';
+import api from "../config/api";
 
-const BASE = '/timetable';
+const BASE = "/timetable";
 
 export const timetableService = {
   // Lookups (enum dropdowns)
@@ -121,11 +121,16 @@ export const timetableService = {
     return response.data;
   },
   addElectiveOffering: async (bandId, data) => {
-    const response = await api.post(`${BASE}/elective-bands/${bandId}/offerings`, data);
+    const response = await api.post(
+      `${BASE}/elective-bands/${bandId}/offerings`,
+      data,
+    );
     return response.data;
   },
   deleteElectiveOffering: async (offeringId) => {
-    const response = await api.delete(`${BASE}/elective-offerings/${offeringId}`);
+    const response = await api.delete(
+      `${BASE}/elective-offerings/${offeringId}`,
+    );
     return response.data;
   },
 
@@ -149,6 +154,19 @@ export const timetableService = {
   deleteConfig: async (id) => {
     const response = await api.delete(`${BASE}/configs/${id}`);
     return response.data;
+  },
+  // Lock lifecycle: only a locked config can be generated; locked is immutable.
+  lockConfig: async (id) => {
+    const response = await api.post(`${BASE}/configs/${id}/lock`);
+    return response.data;
+  },
+  unlockConfig: async (id) => {
+    const response = await api.post(`${BASE}/configs/${id}/unlock`);
+    return response.data;
+  },
+  cloneConfig: async (id, data = {}) => {
+    const response = await api.post(`${BASE}/configs/${id}/clone`, data);
+    return response.data; // new draft config (includes days[].slots[])
   },
   createDay: async (configId, data) => {
     const response = await api.post(`${BASE}/configs/${configId}/days`, data);
@@ -221,7 +239,9 @@ export const timetableService = {
     return response.data; // { publishedTimetable, entries, config }
   },
   getPublishedList: async (academicYearId) => {
-    const response = await api.get(`${BASE}/published-list`, { params: { academicYearId } });
+    const response = await api.get(`${BASE}/published-list`, {
+      params: { academicYearId },
+    });
     return response.data; // { published: [{ uuid, wingId, wingName, entryCount, ... }] }
   },
   validateMove: async (data) => {
