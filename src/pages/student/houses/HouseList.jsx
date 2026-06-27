@@ -22,8 +22,12 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { studentService } from '../../../services/studentService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 
 export default function HouseList() {
+  const can = useCan();
+  const canManage = can(ACTIONS.STUDENT_MANAGE);
   const [houses, setHouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -94,9 +98,11 @@ export default function HouseList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Houses</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => openDialog(null)}>
-          Add House
-        </Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => openDialog(null)}>
+            Add House
+          </Button>
+        )}
       </Box>
 
       {error && (
@@ -139,12 +145,18 @@ export default function HouseList() {
                       </Box>
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => openDialog(h)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => setDel({ open: true, item: h })}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      {canManage ? (
+                        <>
+                          <IconButton size="small" onClick={() => openDialog(h)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" color="error" onClick={() => setDel({ open: true, item: h })}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

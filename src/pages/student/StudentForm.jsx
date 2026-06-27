@@ -17,6 +17,8 @@ import { ArrowBack as BackIcon, Save as SaveIcon } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { classService } from '../../services/classService';
 import { academicCalendarService } from '../../services/academicCalendarService';
+import { useCan } from '../../permissions/can';
+import { ACTIONS } from '../../permissions/actions';
 
 const GENDERS = [
   { value: 'M', label: 'Male' },
@@ -24,10 +26,24 @@ const GENDERS = [
   { value: 'O', label: 'Other' },
 ];
 
+const PREF_RECIPIENTS = [
+  { value: 'father', label: 'Father' },
+  { value: 'mother', label: 'Mother' },
+  { value: 'guardian', label: 'Guardian' },
+];
+
 export default function StudentForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const can = useCan();
+  const canManage = can(ACTIONS.STUDENT_MANAGE);
+
+  // Frontend gate: only god/admin reach the form. Entry points are already hidden;
+  // this bounces a non-manager who lands here via a direct URL.
+  useEffect(() => {
+    if (!canManage) navigate('/students', { replace: true });
+  }, [canManage, navigate]);
 
   const [houses, setHouses] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -58,18 +74,15 @@ export default function StudentForm() {
   }, [id]);
 
   const loadLookups = async () => {
-    try {
-      const [h, c, y] = await Promise.all([
-        studentService.getHouses(),
-        classService.getClasses(),
-        academicCalendarService.getAcademicYears(),
-      ]);
-      setHouses(h.houses || []);
-      setClasses(c || []);
-      setYears(y || []);
-    } catch {
-      /* best effort */
-    }
+    // Each lookup loads independently — one failing API must not blank the others.
+    const [h, c, y] = await Promise.allSettled([
+      studentService.getHouses(),
+      classService.getClasses(),
+      academicCalendarService.getAcademicYears(),
+    ]);
+    if (h.status === 'fulfilled') setHouses(h.value.houses || []);
+    if (c.status === 'fulfilled') setClasses(c.value || []);
+    if (y.status === 'fulfilled') setYears(y.value || []);
   };
 
   const loadStudent = async () => {
@@ -95,6 +108,16 @@ export default function StudentForm() {
   };
 
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  // Communication preference is a compact `recipient:channel` token (e.g. "mother:whatsapp");
+  // empty means the (future) communication module applies its default ladder.
+  const prefRecipient = (form.communicationPreference || '').split(':')[0] || '';
+  const prefChannel = (form.communicationPreference || '').split(':')[1] || 'whatsapp';
+  const setPref = (recipient, channel) =>
+    setForm((f) => ({
+      ...f,
+      communicationPreference: recipient ? `${recipient}:${channel || 'whatsapp'}` : '',
+    }));
 
   const handleSave = async () => {
     setError('');
@@ -206,15 +229,37 @@ export default function StudentForm() {
                 renderInput={(p) => <TextField {...p} label="House" size="small" />}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
-                label="Communication preference"
-                value={form.communicationPreference}
-                onChange={setField('communicationPreference')}
+                select
+                label="Contact preference"
+                value={prefRecipient}
+                onChange={(e) => setPref(e.target.value, prefChannel)}
                 size="small"
-                placeholder="e.g. WhatsApp"
-              />
+                helperText="Empty = default ladder"
+              >
+                <MenuItem value="">Default ladder</MenuItem>
+                {PREF_RECIPIENTS.map((r) => (
+                  <MenuItem key={r.value} value={r.value}>
+                    {r.label} first
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <TextField
+                fullWidth
+                select
+                label="Channel"
+                value={prefChannel}
+                onChange={(e) => setPref(prefRecipient, e.target.value)}
+                size="small"
+                disabled={!prefRecipient}
+              >
+                <MenuItem value="whatsapp">WhatsApp</MenuItem>
+                <MenuItem value="sms">SMS</MenuItem>
+              </TextField>
             </Grid>
             {isEdit && (
               <Grid item xs={12} md={3}>

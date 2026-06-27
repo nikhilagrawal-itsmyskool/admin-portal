@@ -34,11 +34,15 @@ import { academicCalendarService } from '../../services/academicCalendarService'
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import PromoteDialog from './PromoteDialog';
 import AssignHouseDialog from './AssignHouseDialog';
+import { useCan } from '../../permissions/can';
+import { ACTIONS } from '../../permissions/actions';
 
 const STATUS_COLORS = { active: 'success', inactive: 'default', deleted: 'error' };
 
 export default function StudentList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.STUDENT_MANAGE);
   const [students, setStudents] = useState([]);
   const [houses, setHouses] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -74,18 +78,15 @@ export default function StudentList() {
   }, []);
 
   const loadLookups = async () => {
-    try {
-      const [h, c, y] = await Promise.all([
-        studentService.getHouses(),
-        classService.getClasses(),
-        academicCalendarService.getAcademicYears(),
-      ]);
-      setHouses(h.houses || []);
-      setClasses(c || []);
-      setYears(y || []);
-    } catch {
-      // lookups are best-effort; the grid still works without them
-    }
+    // Each lookup loads independently — one failing API must not blank the others.
+    const [h, c, y] = await Promise.allSettled([
+      studentService.getHouses(),
+      classService.getClasses(),
+      academicCalendarService.getAcademicYears(),
+    ]);
+    if (h.status === 'fulfilled') setHouses(h.value.houses || []);
+    if (c.status === 'fulfilled') setClasses(c.value || []);
+    if (y.status === 'fulfilled') setYears(y.value || []);
   };
 
   const buildFilters = () => {
@@ -152,30 +153,35 @@ export default function StudentList() {
   };
 
   const columns = [
-    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
-    {
-      field: 'admissionNumber',
-      headerName: 'Adm #',
-      width: 120,
-      valueGetter: (value, row) => row.admissionNumber || row.admission_number || '-',
-    },
+    { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
     {
       field: 'className',
       headerName: 'Class',
-      width: 120,
+      width: 110,
       valueGetter: (value, row) => row.className || row.class_name || '-',
+    },
+    {
+      field: 'admissionNumber',
+      headerName: 'Adm #',
+      width: 110,
+      valueGetter: (value, row) => row.admissionNumber || row.admission_number || '-',
+    },
+    {
+      field: 'gender',
+      headerName: 'Gender',
+      width: 90,
+      valueGetter: (value, row) => row.gender || '-',
     },
     {
       field: 'houseId',
       headerName: 'House',
-      width: 130,
+      width: 120,
       valueGetter: (value, row) => houseNameById[row.houseId || row.house_id] || '-',
     },
-    { field: 'gender', headerName: 'Gender', width: 90, valueGetter: (value) => value || '-' },
     {
       field: 'status',
       headerName: 'Status',
-      width: 110,
+      width: 100,
       renderCell: (params) => (
         <Chip label={params.value || 'active'} size="small" color={STATUS_COLORS[params.value] || 'default'} />
       ),
@@ -190,17 +196,21 @@ export default function StudentList() {
           <IconButton size="small" title="View" onClick={() => navigate(`/students/${params.row.uuid}`)}>
             <ViewIcon fontSize="small" />
           </IconButton>
-          <IconButton size="small" title="Edit" onClick={() => navigate(`/students/${params.row.uuid}/edit`)}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            color="error"
-            title="Delete"
-            onClick={() => setDeleteDialog({ open: true, item: params.row })}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {canManage && (
+            <IconButton size="small" title="Edit" onClick={() => navigate(`/students/${params.row.uuid}/edit`)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canManage && (
+            <IconButton
+              size="small"
+              color="error"
+              title="Delete"
+              onClick={() => setDeleteDialog({ open: true, item: params.row })}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -210,14 +220,16 @@ export default function StudentList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Students</Typography>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<PromoteIcon />} onClick={() => setPromoteOpen(true)}>
-            Promote Class
-          </Button>
-          <Button variant="contained" startIcon={<PersonAddIcon />} onClick={() => navigate('/students/new')}>
-            Admit Student
-          </Button>
-        </Stack>
+        {canManage && (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" startIcon={<PromoteIcon />} onClick={() => setPromoteOpen(true)}>
+              Promote Class
+            </Button>
+            <Button variant="contained" startIcon={<PersonAddIcon />} onClick={() => navigate('/students/new')}>
+              Admit Student
+            </Button>
+          </Stack>
+        )}
       </Box>
 
       {error && (
@@ -292,7 +304,7 @@ export default function StudentList() {
       </Card>
 
       {/* Population action bar — appears when rows are selected */}
-      {selection.length > 0 && (
+      {selection.length > 0 && canManage && (
         <Paper
           sx={{
             mb: 2,
@@ -332,7 +344,7 @@ export default function StudentList() {
           getRowId={(row) => row.uuid}
           loading={loading}
           autoHeight
-          checkboxSelection
+          checkboxSelection={canManage}
           rowSelectionModel={selection}
           onRowSelectionModelChange={(ids) => setSelection(ids)}
           disableRowSelectionOnClick

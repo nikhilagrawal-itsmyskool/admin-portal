@@ -9,7 +9,7 @@
 // only edit the roles that should gain the new leaf.
 export const ROLE_PERMISSIONS = {
   god: ["*"],
-  admin: ["employee.manage", "timetable.print"],
+  admin: ["employee.manage", "timetable.print", "student.manage", "student.contacts.view"],
 };
 
 // Roles to show as columns in the generated permissions.md matrix.

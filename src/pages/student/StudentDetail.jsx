@@ -36,6 +36,9 @@ import {
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { useCan } from '../../permissions/can';
+import { ACTIONS } from '../../permissions/actions';
+import { maskContact } from '../../utils/mask';
 
 const RELATIONS = [
   { value: 'father', label: 'Father' },
@@ -124,9 +127,15 @@ export default function StudentDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const fileRef = useRef(null);
+  const guardianFileRef = useRef(null);
+  const can = useCan();
+  const canManage = can(ACTIONS.STUDENT_MANAGE);
+  const canViewContacts = can(ACTIONS.STUDENT_VIEW_CONTACTS);
 
   const [student, setStudent] = useState(null);
   const [photoUrl, setPhotoUrl] = useState('');
+  const [guardianPhotos, setGuardianPhotos] = useState({}); // guardianId -> dataUrl
+  const [photoTarget, setPhotoTarget] = useState(null); // guardianId being (re)photographed
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -144,10 +153,51 @@ export default function StudentDetail() {
       const s = await studentService.getStudentById(id);
       setStudent(s);
       loadPhoto();
+      loadGuardianPhotos(s.guardians || []);
     } catch {
       setError('Failed to load student');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGuardianPhotos = async (guardians) => {
+    const entries = await Promise.all(
+      guardians
+        .filter((g) => g.photoId)
+        .map(async (g) => {
+          try {
+            const p = await studentService.getPhoto('guardian', g.uuid);
+            return [g.uuid, `data:${p.mimeType};base64,${p.data}`];
+          } catch {
+            return [g.uuid, ''];
+          }
+        })
+    );
+    setGuardianPhotos(Object.fromEntries(entries));
+  };
+
+  const pickGuardianPhoto = (guardianId) => {
+    setPhotoTarget(guardianId);
+    guardianFileRef.current?.click();
+  };
+
+  const handleGuardianPhotoPick = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !photoTarget) return;
+    try {
+      const base64Data = await fileToBase64(file);
+      await studentService.uploadPhoto('guardian', photoTarget, {
+        fileName: file.name,
+        mimeType: file.type,
+        base64Data,
+      });
+      load();
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || 'Photo upload failed (use JPEG/PNG under 2 MB)');
+    } finally {
+      if (guardianFileRef.current) guardianFileRef.current.value = '';
+      setPhotoTarget(null);
     }
   };
 
@@ -210,9 +260,11 @@ export default function StudentDetail() {
         <Typography variant="h4" sx={{ flexGrow: 1 }}>
           {student.name}
         </Typography>
-        <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/students/${id}/edit`)}>
-          Edit
-        </Button>
+        {canManage && (
+          <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/students/${id}/edit`)}>
+            Edit
+          </Button>
+        )}
       </Box>
 
       {error && (
@@ -229,10 +281,14 @@ export default function StudentDetail() {
               <Avatar src={photoUrl} sx={{ width: 120, height: 120, mx: 'auto', mb: 1, fontSize: 40 }}>
                 {student.name?.[0]}
               </Avatar>
-              <input ref={fileRef} type="file" accept="image/png,image/jpeg" hidden onChange={handlePhotoPick} />
-              <Button size="small" startIcon={<PhotoIcon />} onClick={() => fileRef.current?.click()}>
-                {photoUrl ? 'Change photo' : 'Add photo'}
-              </Button>
+              {canManage && (
+                <>
+                  <input ref={fileRef} type="file" accept="image/png,image/jpeg" hidden onChange={handlePhotoPick} />
+                  <Button size="small" startIcon={<PhotoIcon />} onClick={() => fileRef.current?.click()}>
+                    {photoUrl ? 'Change photo' : 'Add photo'}
+                  </Button>
+                </>
+              )}
               <Divider sx={{ my: 2 }} />
               <Stack spacing={0.5} sx={{ textAlign: 'left' }}>
                 <Fact label="Admission #" value={student.admissionNumber} />
@@ -242,7 +298,7 @@ export default function StudentDetail() {
                 <Fact label="Gender" value={student.gender} />
                 <Fact label="DOB" value={student.dob ? String(student.dob).slice(0, 10) : null} />
                 <Fact label="Family #" value={student.familyUniqueNumber} />
-                <Fact label="Comm. pref" value={student.communicationPreference} />
+                <Fact label="Comm. pref" value={prettyPref(student.communicationPreference)} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
                   <Typography variant="body2" color="text.secondary">
                     Status
@@ -264,10 +320,20 @@ export default function StudentDetail() {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Guardians</Typography>
-                <Button size="small" startIcon={<AddIcon />} onClick={() => setGuardianDialog({ open: true, initial: null })}>
-                  Add
-                </Button>
+                {canManage && (
+                  <Button size="small" startIcon={<AddIcon />} onClick={() => setGuardianDialog({ open: true, initial: null })}>
+                    Add
+                  </Button>
+                )}
               </Box>
+              {/* Shared hidden input for guardian photo uploads */}
+              <input
+                ref={guardianFileRef}
+                type="file"
+                accept="image/png,image/jpeg"
+                hidden
+                onChange={handleGuardianPhotoPick}
+              />
               {(student.guardians || []).length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
                   No guardians added yet.
@@ -279,31 +345,50 @@ export default function StudentDetail() {
                       <Card variant="outlined">
                         <CardContent sx={{ pb: '12px !important' }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="subtitle2" sx={{ textTransform: 'capitalize' }}>
-                              {g.relation}
-                              {g.isPrimaryContact && (
-                                <Tooltip title="Primary contact">
-                                  <StarIcon fontSize="inherit" color="warning" sx={{ ml: 0.5, verticalAlign: 'middle' }} />
-                                </Tooltip>
-                              )}
-                            </Typography>
-                            <Box>
-                              <IconButton size="small" onClick={() => setGuardianDialog({ open: true, initial: g })}>
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton size="small" color="error" onClick={() => setDelGuardian({ open: true, item: g })}>
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Tooltip title={canManage ? 'Change photo' : ''}>
+                                <Avatar
+                                  src={guardianPhotos[g.uuid]}
+                                  onClick={canManage ? () => pickGuardianPhoto(g.uuid) : undefined}
+                                  sx={{ width: 40, height: 40, cursor: canManage ? 'pointer' : 'default' }}
+                                >
+                                  {g.name?.[0] || g.relation?.[0]?.toUpperCase()}
+                                </Avatar>
+                              </Tooltip>
+                              <Typography variant="subtitle2" sx={{ textTransform: 'capitalize' }}>
+                                {g.relation}
+                                {g.isPrimaryContact && (
+                                  <Tooltip title="Primary contact">
+                                    <StarIcon fontSize="inherit" color="warning" sx={{ ml: 0.5, verticalAlign: 'middle' }} />
+                                  </Tooltip>
+                                )}
+                              </Typography>
                             </Box>
+                            {canManage && (
+                              <Box>
+                                <IconButton size="small" onClick={() => setGuardianDialog({ open: true, initial: g })}>
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" color="error" onClick={() => setDelGuardian({ open: true, item: g })}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            )}
                           </Box>
-                          <Typography variant="body2">{g.name || '—'}</Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5 }}>{g.name || '—'}</Typography>
                           {g.occupation && (
                             <Typography variant="caption" color="text.secondary">
                               {g.occupation}
                             </Typography>
                           )}
                           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                            {[g.mobile, g.email].filter(Boolean).join(' · ') || '—'}
+                            {[
+                              g.mobile && maskContact(g.mobile, 'phone', canViewContacts),
+                              g.whatsapp && maskContact(g.whatsapp, 'phone', canViewContacts),
+                              g.email && maskContact(g.email, 'email', canViewContacts),
+                            ]
+                              .filter(Boolean)
+                              .join(' · ') || '—'}
                           </Typography>
                         </CardContent>
                       </Card>
@@ -368,6 +453,15 @@ export default function StudentDetail() {
       />
     </Box>
   );
+}
+
+// Render a compact `recipient:channel` preference token as a readable label.
+function prettyPref(pref) {
+  if (!pref) return 'Default ladder';
+  const [recipient, channel] = String(pref).split(':');
+  const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+  const channelLabel = channel === 'sms' ? 'SMS' : channel === 'whatsapp' ? 'WhatsApp' : cap(channel);
+  return `${cap(recipient)} first${channelLabel ? ` (${channelLabel})` : ''}`;
 }
 
 function Fact({ label, value }) {

@@ -9,6 +9,8 @@ export const ACTIONS = {
   EMPLOYEE_RESTORE: "employee.restore",
   PURCHASE_LOG_EDIT: "purchaseLog.edit",
   PURCHASE_LOG_RESTORE: "purchaseLog.restore",
+  STUDENT_MANAGE: "student.manage",
+  STUDENT_VIEW_CONTACTS: "student.contacts.view",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -42,5 +44,14 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.PURCHASE_LOG_RESTORE,
     description: "Restore a deleted purchase log entry",
+  },
+  {
+    action: ACTIONS.STUDENT_MANAGE,
+    description:
+      "Admit/edit/delete students, manage guardians & houses, assign house, promote/graduate",
+  },
+  {
+    action: ACTIONS.STUDENT_VIEW_CONTACTS,
+    description: "View unmasked parent/guardian phone, WhatsApp & email",
   },
 ];
