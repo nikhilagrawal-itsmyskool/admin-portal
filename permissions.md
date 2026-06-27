@@ -1,18 +1,19 @@
 # UI Permissions
 
 Role-based permissions enforced in the admin portal UI (read from the JWT `roles`).
-Note: these are **UI-only** today — the backend does not yet enforce them.
+**UI-only today** — the backend does not yet enforce them.
 
-## god
+> Generated from `src/permissions/` by `npm run gen:permissions`. Do not edit by hand —
+> change `actions.js` / `policy.js` and regenerate.
 
-- Restore deleted purchase records — medical, lab (and any other module's purchase log).
-- Edit purchase logs — medical, lab (and any other module's purchase log).
-- Add, edit and delete employees; view and reset employee passwords.
-- Restore deleted employees.
+| Action | Description | god | admin |
+| --- | --- | --- | --- |
+| `timetable.view` | View timetable pages (open to all signed-in users) | ✓ | — |
+| `timetable.print` | Print class / teacher / master timetables | ✓ | ✓ |
+| `timetable.manage` | Create/edit/delete subjects, class setup, grid config (lock/clone), wings, constraints; generate & publish | ✓ | — |
+| `employee.manage` | Add, edit, delete employees; view & reset passwords | ✓ | ✓ |
+| `employee.restore` | Restore a deleted employee | ✓ | — |
+| `purchaseLog.edit` | Edit a purchase log entry (medical, lab, sports, supplies, …) | ✓ | — |
+| `purchaseLog.restore` | Restore a deleted purchase log entry | ✓ | — |
 
-## admin
-
-- Add, edit and delete employees.
-- View employee passwords and reset them.
-
-_admin cannot edit/restore purchase logs or restore deleted employees — those are god-only._
+_`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._

@@ -14,10 +14,12 @@ import TimetableGrid from "./TimetableGrid";
 import TeacherName from "./TeacherName";
 import PrintLayer from "./PrintLayer";
 import { resolveTeacher, getCached } from "./teacherDirectory";
+import { useTimetablePerms } from "./usePerms";
 import { classService } from "../../../services/classService";
 
 // Toggle between per-class and per-teacher grid views over a set of entries.
 export default function GridViewer({ config, entries = [], printHeader = "" }) {
+  const { canPrint } = useTimetablePerms();
   const [mode, setMode] = useState("class");
   const [selectedId, setSelectedId] = useState("");
   const [classNameById, setClassNameById] = useState({});
@@ -112,15 +114,17 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
             </MenuItem>
           ))}
         </TextField>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<PrintIcon />}
-          disabled={!selectedId}
-          onClick={startPrint}
-        >
-          Print
-        </Button>
+        {canPrint && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PrintIcon />}
+            disabled={!selectedId}
+            onClick={startPrint}
+          >
+            Print
+          </Button>
+        )}
       </Stack>
       <TimetableGrid
         config={config}

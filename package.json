@@ -10,7 +10,8 @@
         "serve:prod": "vite build --mode production && vite preview --port 8080 --host",
         "test": "playwright test",
         "test:ui": "playwright test --ui",
-        "test:headed": "cross-env HEADED=1 playwright test --headed"
+        "test:headed": "cross-env HEADED=1 playwright test --headed",
+        "gen:permissions": "node scripts/gen-permissions.mjs"
     },
     "dependencies": {
         "@emotion/react": "^11.11.4",

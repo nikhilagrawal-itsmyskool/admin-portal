@@ -15,7 +15,8 @@ import {
   Chip,
 } from "@mui/material";
 import { employeeService } from "../../services/employeeService";
-import { useAuth } from "../../context/AuthContext";
+import { useCan } from "../../permissions/can";
+import { ACTIONS } from "../../permissions/actions";
 
 const GENDERS = [
   { value: "M", label: "Male" },
@@ -27,9 +28,8 @@ export default function EmployeeForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
-  const { user } = useAuth();
-  const isAdmin =
-    user?.roles?.includes("god") || user?.roles?.includes("admin");
+  const can = useCan();
+  const isAdmin = can(ACTIONS.EMPLOYEE_MANAGE);
 
   const [formData, setFormData] = useState({
     name: "",

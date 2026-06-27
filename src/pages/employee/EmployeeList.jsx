@@ -24,16 +24,16 @@ import {
   Restore as RestoreIcon,
 } from "@mui/icons-material";
 import { employeeService } from "../../services/employeeService";
-import { useAuth } from "../../context/AuthContext";
+import { useCan } from "../../permissions/can";
+import { ACTIONS } from "../../permissions/actions";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import CredentialsDialog from "./dialogs/CredentialsDialog";
 
 export default function EmployeeList() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const isAdmin =
-    user?.roles?.includes("god") || user?.roles?.includes("admin");
-  const isGod = user?.roles?.includes("god");
+  const can = useCan();
+  const isAdmin = can(ACTIONS.EMPLOYEE_MANAGE);
+  const isGod = can(ACTIONS.EMPLOYEE_RESTORE);
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);

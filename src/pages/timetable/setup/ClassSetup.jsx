@@ -39,6 +39,7 @@ import BlockRulesEditor from "../components/BlockRulesEditor";
 import TeacherName from "../components/TeacherName";
 import EmployeeSearchDialog from "../../../components/common/EmployeeSearchDialog";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
+import { useTimetablePerms } from "../components/usePerms";
 
 function blockSummary(blockRules) {
   if (!blockRules?.blocks?.length) return "singles";
@@ -74,6 +75,7 @@ const rowSubjectLabel = (row) => {
 
 // ---------------------------------------------------------------- Class Teacher
 function ClassTeacherTab({ classId, academicYearId, subjects }) {
+  const { canMutate } = useTimetablePerms();
   const [current, setCurrent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [picker, setPicker] = useState(false);
@@ -236,12 +238,16 @@ function ClassTeacherTab({ classId, academicYearId, subjects }) {
               label={<TeacherName id={current.teacherId} />}
               color="primary"
             />
-            <Button variant="outlined" onClick={() => setPicker(true)}>
-              Change
-            </Button>
-            <Button variant="outlined" color="error" onClick={remove}>
-              Remove
-            </Button>
+            {canMutate && (
+              <Button variant="outlined" onClick={() => setPicker(true)}>
+                Change
+              </Button>
+            )}
+            {canMutate && (
+              <Button variant="outlined" color="error" onClick={remove}>
+                Remove
+              </Button>
+            )}
           </Stack>
           <TextField
             select
@@ -249,6 +255,7 @@ function ClassTeacherTab({ classId, academicYearId, subjects }) {
             sx={{ maxWidth: 360 }}
             value={current.firstPeriodSubjectId || ""}
             onChange={(e) => setFirstPeriodSubject(e.target.value)}
+            disabled={!canMutate}
             helperText="Which of the class teacher's subjects goes in the first period."
           >
             <MenuItem value="">Auto (subject with most periods/week)</MenuItem>
@@ -263,6 +270,7 @@ function ClassTeacherTab({ classId, academicYearId, subjects }) {
               control={
                 <Switch
                   checked={allFirstPeriodDays}
+                  disabled={!canMutate}
                   onChange={(e) => onToggleAllDays(e.target.checked)}
                 />
               }
@@ -273,6 +281,7 @@ function ClassTeacherTab({ classId, academicYearId, subjects }) {
                 <ToggleButtonGroup
                   size="small"
                   value={firstPeriodDays}
+                  disabled={!canMutate}
                   onChange={(e, val) => onChangeDays(val)}
                 >
                   {WEEKDAYS.map((d) => (
@@ -292,7 +301,7 @@ function ClassTeacherTab({ classId, academicYearId, subjects }) {
             )}
           </Box>
         </Stack>
-      ) : (
+      ) : canMutate ? (
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -300,6 +309,8 @@ function ClassTeacherTab({ classId, academicYearId, subjects }) {
         >
           Set Class Teacher
         </Button>
+      ) : (
+        <Typography sx={{ color: "#8f9bb3" }}>No class teacher set.</Typography>
       )}
       <EmployeeSearchDialog
         open={picker}
@@ -312,6 +323,7 @@ function ClassTeacherTab({ classId, academicYearId, subjects }) {
 
 // ----------------------------------------------------------------- Subjects tab
 function SubjectsTab({ classId, academicYearId, subjects }) {
+  const { canMutate } = useTimetablePerms();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -352,29 +364,33 @@ function SubjectsTab({ classId, academicYearId, subjects }) {
       valueGetter: (value, row) => blockSummary(row.blockRules),
       sortable: false,
     },
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 110,
-      sortable: false,
-      renderCell: (p) => (
-        <Box>
-          <IconButton
-            size="small"
-            onClick={() => setDialog({ open: true, row: p.row })}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            color="error"
-            onClick={() => setDel({ open: true, row: p.row })}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
-    },
+    ...(canMutate
+      ? [
+          {
+            field: "actions",
+            headerName: "Actions",
+            width: 110,
+            sortable: false,
+            renderCell: (p) => (
+              <Box>
+                <IconButton
+                  size="small"
+                  onClick={() => setDialog({ open: true, row: p.row })}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => setDel({ open: true, row: p.row })}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const handleDelete = async () => {
@@ -395,15 +411,17 @@ function SubjectsTab({ classId, academicYearId, subjects }) {
           {error}
         </Alert>
       )}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setDialog({ open: true, row: null })}
-        >
-          Add Subject
-        </Button>
-      </Box>
+      {canMutate && (
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setDialog({ open: true, row: null })}
+          >
+            Add Subject
+          </Button>
+        </Box>
+      )}
       <DataGrid
         rows={rows}
         columns={columns}
@@ -545,6 +563,7 @@ function ClassSubjectDialog({
 
 // ----------------------------------------------------------------- Teachers tab
 function TeachersTab({ classId, academicYearId, subjects }) {
+  const { canMutate } = useTimetablePerms();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -591,29 +610,33 @@ function TeachersTab({ classId, academicYearId, subjects }) {
       width: 130,
       valueGetter: (value, row) => row.periodShare ?? "all",
     },
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 110,
-      sortable: false,
-      renderCell: (p) => (
-        <Box>
-          <IconButton
-            size="small"
-            onClick={() => setDialog({ open: true, row: p.row })}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            color="error"
-            onClick={() => setDel({ open: true, row: p.row })}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
-    },
+    ...(canMutate
+      ? [
+          {
+            field: "actions",
+            headerName: "Actions",
+            width: 110,
+            sortable: false,
+            renderCell: (p) => (
+              <Box>
+                <IconButton
+                  size="small"
+                  onClick={() => setDialog({ open: true, row: p.row })}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => setDel({ open: true, row: p.row })}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const handleDelete = async () => {
@@ -634,15 +657,17 @@ function TeachersTab({ classId, academicYearId, subjects }) {
           {error}
         </Alert>
       )}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setDialog({ open: true, row: null })}
-        >
-          Add Assignment
-        </Button>
-      </Box>
+      {canMutate && (
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setDialog({ open: true, row: null })}
+          >
+            Add Assignment
+          </Button>
+        </Box>
+      )}
       <DataGrid
         rows={rows}
         columns={columns}
@@ -797,6 +822,7 @@ function AssignmentDialog({
 
 // ---------------------------------------------------------------- Electives tab
 function ElectivesTab({ classId, academicYearId, subjects }) {
+  const { canMutate } = useTimetablePerms();
   const [bands, setBands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -857,15 +883,17 @@ function ElectivesTab({ classId, academicYearId, subjects }) {
         XI/XII option groups: all subjects in a band run in the same periods;
         each student picks one.
       </Typography>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setBandDialog(true)}
-        >
-          Add Band
-        </Button>
-      </Box>
+      {canMutate && (
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setBandDialog(true)}
+          >
+            Add Band
+          </Button>
+        </Box>
+      )}
       <Stack spacing={2}>
         {bands.length === 0 && (
           <Typography sx={{ color: "#8f9bb3" }}>No elective bands.</Typography>
@@ -887,24 +915,26 @@ function ElectivesTab({ classId, academicYearId, subjects }) {
                     {blockSummary(band.blockRules)}
                   </Typography>
                 </Box>
-                <Box>
-                  <Tooltip title="Add offering">
-                    <IconButton
-                      color="primary"
-                      onClick={() => setOfferingFor(band)}
-                    >
-                      <AddIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete band">
-                    <IconButton
-                      color="error"
-                      onClick={() => setDelBand({ open: true, band })}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
+                {canMutate && (
+                  <Box>
+                    <Tooltip title="Add offering">
+                      <IconButton
+                        color="primary"
+                        onClick={() => setOfferingFor(band)}
+                      >
+                        <AddIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete band">
+                      <IconButton
+                        color="error"
+                        onClick={() => setDelBand({ open: true, band })}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                )}
               </Box>
               <Divider sx={{ my: 1 }} />
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -921,7 +951,9 @@ function ElectivesTab({ classId, academicYearId, subjects }) {
                         {rowSubjectLabel(o)} — <TeacherName id={o.teacherId} />
                       </span>
                     }
-                    onDelete={() => removeOffering(o.uuid)}
+                    onDelete={
+                      canMutate ? () => removeOffering(o.uuid) : undefined
+                    }
                     variant="outlined"
                   />
                 ))}
