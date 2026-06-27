@@ -92,6 +92,16 @@ import StudentList from './pages/student/StudentList';
 import StudentForm from './pages/student/StudentForm';
 import StudentDetail from './pages/student/StudentDetail';
 import HouseList from './pages/student/houses/HouseList';
+import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
+import TakeAttendance from './pages/attendance/TakeAttendance';
+import AttendanceSessionList from './pages/attendance/AttendanceSessionList';
+import AttendanceSessionDetail from './pages/attendance/AttendanceSessionDetail';
+import CommunicationDashboard from './pages/communication/CommunicationDashboard';
+import TemplateList from './pages/communication/templates/TemplateList';
+import TemplateForm from './pages/communication/templates/TemplateForm';
+import ComposeMessage from './pages/communication/messages/ComposeMessage';
+import MessageJobList from './pages/communication/messages/MessageJobList';
+import MessageJobDetail from './pages/communication/messages/MessageJobDetail';
 import Profile from './pages/Profile';
 
 export default function App() {
@@ -222,6 +232,17 @@ export default function App() {
         <Route path="timetable/constraints" element={<ConstraintList />} />
         <Route path="timetable/generate" element={<GenerateWizard />} />
         <Route path="timetable/published" element={<PublishedTimetable />} />
+        <Route path="attendance" element={<AttendanceDashboard />} />
+        <Route path="attendance/mark" element={<TakeAttendance />} />
+        <Route path="attendance/sessions" element={<AttendanceSessionList />} />
+        <Route path="attendance/sessions/:id" element={<AttendanceSessionDetail />} />
+        <Route path="communication" element={<CommunicationDashboard />} />
+        <Route path="communication/templates" element={<TemplateList />} />
+        <Route path="communication/templates/add" element={<TemplateForm />} />
+        <Route path="communication/templates/:id/edit" element={<TemplateForm />} />
+        <Route path="communication/compose" element={<ComposeMessage />} />
+        <Route path="communication/messages" element={<MessageJobList />} />
+        <Route path="communication/messages/:id" element={<MessageJobDetail />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useCan } from '../permissions/can';
 import {
   Drawer,
   List,
@@ -48,6 +49,13 @@ import {
   EventAvailable as PublishedIcon,
   School as StudentIcon,
   Home as HouseIcon,
+  FactCheck as AttendanceIcon,
+  EditCalendar as MarkIcon,
+  History as HistoryIcon,
+  Campaign as CommunicationIcon,
+  Send as ComposeIcon,
+  Description as TemplateIcon,
+  Outbox as SentIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -61,6 +69,7 @@ const menuItems = [
   {
     title: 'Medical',
     icon: MedicalIcon,
+    perm: 'medical.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/medical' },
       { title: 'Inventory Items', icon: InventoryIcon, path: '/medical/items' },
@@ -71,6 +80,7 @@ const menuItems = [
   {
     title: 'Laboratory',
     icon: ScienceIcon,
+    perm: 'lab.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/lab' },
       { title: 'Labs', icon: ScienceIcon, path: '/lab/labs' },
@@ -83,6 +93,7 @@ const menuItems = [
   {
     title: 'Fines',
     icon: GavelIcon,
+    perm: 'fine.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/fine' },
       { title: 'Incidents', icon: GavelIcon, path: '/fine/incidents' },
@@ -91,6 +102,7 @@ const menuItems = [
   {
     title: 'Uniform',
     icon: CheckroomIcon,
+    perm: 'uniform.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/uniform' },
       { title: 'Catalog', icon: CheckroomIcon, path: '/uniform/catalog' },
@@ -102,6 +114,7 @@ const menuItems = [
   {
     title: 'Shop',
     icon: MenuBookIcon,
+    perm: 'shop.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/shop' },
       { title: 'Catalog', icon: MenuBookIcon, path: '/shop/catalog' },
@@ -113,9 +126,10 @@ const menuItems = [
   {
     title: 'Sports',
     icon: SportsIcon,
+    perm: 'sports.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/sports' },
-      { title: 'In-charges', icon: SportsIcon, path: '/sports/incharges' },
+      { title: 'In-charges', icon: SportsIcon, path: '/sports/incharges', perm: 'sports.manage' },
       { title: 'Inventory Items', icon: InventoryIcon, path: '/sports/items' },
       { title: 'Purchase Log', icon: PurchaseIcon, path: '/sports/purchases' },
       { title: 'Issue Log', icon: IssueIcon, path: '/sports/issues' },
@@ -125,6 +139,7 @@ const menuItems = [
   {
     title: 'Assets',
     icon: AssetIcon,
+    perm: 'asset.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/asset' },
       { title: 'Asset Register', icon: AssetTreeIcon, path: '/asset/tree' },
@@ -135,6 +150,7 @@ const menuItems = [
   {
     title: 'Library',
     icon: LibraryIcon,
+    perm: 'library.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/library' },
       { title: 'Catalog', icon: CatalogIcon, path: '/library/catalog' },
@@ -146,6 +162,7 @@ const menuItems = [
   {
     title: 'Supplies',
     icon: SuppliesIcon,
+    perm: 'supplies.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/supplies' },
       { title: 'Categories', icon: CategoryIcon, path: '/supplies/categories' },
@@ -158,36 +175,77 @@ const menuItems = [
   {
     title: 'Timetable',
     icon: TimetableIcon,
+    perm: 'timetable.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/timetable' },
-      { title: 'Subjects', icon: SubjectIcon, path: '/timetable/subjects' },
-      { title: 'Grid Config', icon: GridIcon, path: '/timetable/configs' },
-      { title: 'Class Setup', icon: ClassSetupIcon, path: '/timetable/setup' },
-      { title: 'Wings', icon: WingIcon, path: '/timetable/wings' },
-      { title: 'Teacher Constraints', icon: ConstraintIcon, path: '/timetable/constraints' },
-      { title: 'Generate', icon: GenerateIcon, path: '/timetable/generate' },
-      { title: 'Published', icon: PublishedIcon, path: '/timetable/published' },
+      // Planning pages: admin+god (timetable.print); teachers see Published only.
+      { title: 'Overview', icon: OverviewIcon, path: '/timetable', perm: 'timetable.print' },
+      { title: 'Subjects', icon: SubjectIcon, path: '/timetable/subjects', perm: 'timetable.print' },
+      { title: 'Grid Config', icon: GridIcon, path: '/timetable/configs', perm: 'timetable.print' },
+      { title: 'Class Setup', icon: ClassSetupIcon, path: '/timetable/setup', perm: 'timetable.print' },
+      { title: 'Wings', icon: WingIcon, path: '/timetable/wings', perm: 'timetable.print' },
+      { title: 'Teacher Constraints', icon: ConstraintIcon, path: '/timetable/constraints', perm: 'timetable.print' },
+      { title: 'Generate', icon: GenerateIcon, path: '/timetable/generate', perm: 'timetable.print' },
+      { title: 'Published', icon: PublishedIcon, path: '/timetable/published', perm: 'timetable.view' },
+    ],
+  },
+  {
+    title: 'Attendance',
+    icon: AttendanceIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/attendance' },
+      { title: 'Take Attendance', icon: MarkIcon, path: '/attendance/mark' },
+      { title: 'History', icon: HistoryIcon, path: '/attendance/sessions' },
+    ],
+  },
+  {
+    title: 'Communication',
+    icon: CommunicationIcon,
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/communication' },
+      { title: 'Compose', icon: ComposeIcon, path: '/communication/compose' },
+      { title: 'Templates', icon: TemplateIcon, path: '/communication/templates' },
+      { title: 'Sent Messages', icon: SentIcon, path: '/communication/messages' },
     ],
   },
   {
     title: 'Students',
     icon: StudentIcon,
+    perm: 'student.view',
     children: [
       { title: 'All Students', icon: PeopleIcon, path: '/students' },
-      { title: 'Houses', icon: HouseIcon, path: '/students/houses' },
+      { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.manage' },
     ],
   },
   {
     title: 'Employees',
     icon: PeopleIcon,
     path: '/employees',
+    perm: 'employee.view',
   },
 ];
 
 export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false, Timetable: false });
+  const can = useCan();
+  const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false, Timetable: false, Attendance: false, Communication: false });
+
+  // Filter the static menu by the user's permissions: a parent with its own `perm`
+  // the user fails is dropped; its children are filtered by each child's `perm`
+  // (falling back to the parent's), and a parent left with no children is dropped.
+  const visibleMenu = menuItems
+    .map((item) => {
+      if (!item.children) {
+        return !item.perm || can(item.perm) ? item : null;
+      }
+      if (item.perm && !can(item.perm)) return null;
+      const children = item.children.filter((c) => {
+        const perm = c.perm ?? item.perm;
+        return !perm || can(perm);
+      });
+      return children.length ? { ...item, children } : null;
+    })
+    .filter(Boolean);
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));
@@ -227,7 +285,7 @@ export default function Sidebar({ open, onClose, isDesktop }) {
       </Box>
 
       <List sx={{ pt: 2 }}>
-        {menuItems.map((item) => (
+        {visibleMenu.map((item) => (
           <React.Fragment key={item.title}>
             {item.children ? (
               <>

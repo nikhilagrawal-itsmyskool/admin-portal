@@ -25,9 +25,13 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { sportsService } from '../../../services/sportsService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
 
 export default function SportInchargeList() {
+  const can = useCan();
+  const canManage = can(ACTIONS.SPORTS_MANAGE);
   const [sportTypes, setSportTypes] = useState([]);
   const [inchargesByType, setInchargesByType] = useState({});
   const [loading, setLoading] = useState(true);
@@ -147,9 +151,11 @@ export default function SportInchargeList() {
                     )}
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" onClick={() => openEdit(type)} title="Manage in-charges">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
+                    {canManage && (
+                      <IconButton size="small" onClick={() => openEdit(type)} title="Manage in-charges">
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               );

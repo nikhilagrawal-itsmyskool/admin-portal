@@ -15,5 +15,11 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `employee.restore` | Restore a deleted employee | ✓ | — |
 | `purchaseLog.edit` | Edit a purchase log entry (medical, lab, sports, supplies, …) | ✓ | — |
 | `purchaseLog.restore` | Restore a deleted purchase log entry | ✓ | — |
+| `student.manage` | Admit/edit/delete students, manage guardians & houses, assign house, promote/graduate | ✓ | ✓ |
+| `student.contacts.view` | View unmasked parent/guardian phone, WhatsApp & email | ✓ | ✓ |
+| `attendance.finalize` | Finalize a daily attendance session and edit records after finalize (marking & viewing are open to all staff) | ✓ | ✓ |
+| `communication.send` | Compose, schedule, preview, send and cancel SMS/WhatsApp messages | ✓ | ✓ |
+| `communication.template.manage` | Create, edit and activate message templates | ✓ | ✓ |
+| `communication.template.delete` | Delete or restore a message template | ✓ | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._

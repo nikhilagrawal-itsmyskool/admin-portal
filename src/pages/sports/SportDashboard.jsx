@@ -27,6 +27,8 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { sportsService } from '../../services/sportsService';
+import { useCan } from '../../permissions/can';
+import { ACTIONS } from '../../permissions/actions';
 
 const DAY_OPTIONS = [30, 60, 90];
 
@@ -38,6 +40,8 @@ const formatDate = (v) => {
 
 export default function SportDashboard() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SPORTS_MANAGE);
   const [stats, setStats] = useState({
     totalSports: 0,
     totalItems: 0,
@@ -126,6 +130,10 @@ export default function SportDashboard() {
     },
   ];
 
+  // In-charge assignment is a manage-only page — hide its entry points from view-only users.
+  const visibleCards = cards.filter((c) => canManage || c.path !== '/sports/incharges');
+  const visibleQuickLinks = quickLinks.filter((l) => canManage || l.path !== '/sports/incharges');
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -147,7 +155,7 @@ export default function SportDashboard() {
       )}
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {cards.map((card) => (
+        {visibleCards.map((card) => (
           <Grid item xs={12} sm={6} md={3} key={card.title}>
             <Card sx={{ borderLeft: `4px solid ${card.color}` }}>
               <CardActionArea onClick={() => navigate(card.path)}>
@@ -174,7 +182,7 @@ export default function SportDashboard() {
         Quick Links
       </Typography>
       <Grid container spacing={3}>
-        {quickLinks.map((link) => (
+        {visibleQuickLinks.map((link) => (
           <Grid item xs={12} sm={6} md={4} key={link.title}>
             <Card>
               <CardActionArea onClick={() => navigate(link.path)}>

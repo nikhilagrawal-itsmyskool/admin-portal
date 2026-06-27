@@ -26,6 +26,8 @@ import {
   ArrowBack as BackIcon,
 } from '@mui/icons-material';
 import { assetService } from '../../../services/assetService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 function TypeFormDialog({ open, onClose, onSaved, type }) {
@@ -144,6 +146,8 @@ function TypeFormDialog({ open, onClose, onSaved, type }) {
 
 export default function AssetTypeList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.ASSET_MANAGE);
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -182,7 +186,7 @@ export default function AssetTypeList() {
     }
   };
 
-  const columns = [
+  const baseColumns = [
     { field: 'label', headerName: 'Label', flex: 1, minWidth: 160 },
     { field: 'code', headerName: 'Code', width: 150, renderCell: (p) => <code>{p.value}</code> },
     {
@@ -212,23 +216,29 @@ export default function AssetTypeList() {
         <Chip label={p.value} size="small" color={p.value === 'container' ? 'primary' : 'default'} variant="outlined" />
       ),
     },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <Box>
-          <IconButton size="small" onClick={() => setFormDialog({ open: true, type: params.row })}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, type: params.row })}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
-    },
   ];
+
+  const columns = canManage
+    ? [
+        ...baseColumns,
+        {
+          field: 'actions',
+          headerName: 'Actions',
+          width: 120,
+          sortable: false,
+          renderCell: (params) => (
+            <Box>
+              <IconButton size="small" onClick={() => setFormDialog({ open: true, type: params.row })}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+              <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, type: params.row })}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ),
+        },
+      ]
+    : baseColumns;
 
   return (
     <Box>
@@ -237,9 +247,11 @@ export default function AssetTypeList() {
           <IconButton onClick={() => navigate('/asset/tree')}><BackIcon /></IconButton>
           <Typography variant="h4">Asset Types</Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setFormDialog({ open: true, type: null })}>
-          Add Type
-        </Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setFormDialog({ open: true, type: null })}>
+            Add Type
+          </Button>
+        )}
       </Box>
 
       {error && (

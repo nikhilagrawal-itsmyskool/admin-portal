@@ -29,10 +29,14 @@ import {
   Image as ImageIcon,
 } from '@mui/icons-material';
 import { sportsService } from '../../../services/sportsService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 export default function SportBreakageList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SPORTS_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [breakages, setBreakages] = useState([]);
   const [sportTypes, setSportTypes] = useState([]);
@@ -265,14 +269,16 @@ export default function SportBreakageList() {
                 <ImageIcon fontSize="small" />
               </IconButton>
             )}
-            <IconButton
-              size="small"
-              onClick={() => navigate(`/sports/breakages/${params.row.uuid}/edit`)}
-              title="Edit Breakage"
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-            {!isDeleted && (
+            {canManage && (
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/sports/breakages/${params.row.uuid}/edit`)}
+                title="Edit Breakage"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
+            {!isDeleted && canManage && (
               <IconButton
                 size="small"
                 color="error"
@@ -292,13 +298,15 @@ export default function SportBreakageList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Sport Breakage Log</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/sports/breakages/add')}
-        >
-          Add Breakage
-        </Button>
+        {canManage && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/sports/breakages/add')}
+          >
+            Add Breakage
+          </Button>
+        )}
       </Box>
 
       {error && (

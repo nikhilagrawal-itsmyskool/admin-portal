@@ -27,6 +27,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { assetService } from '../../../services/assetService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import AssetFormDialog from '../dialogs/AssetFormDialog';
 import MoveAssetDialog from '../dialogs/MoveAssetDialog';
@@ -58,7 +60,7 @@ function buildNameById(nodes, map = {}) {
 }
 
 // ---- single node row (recursive) ----
-function AssetNode({ node, depth, onAction }) {
+function AssetNode({ node, depth, onAction, canManage }) {
   const [open, setOpen] = useState(depth < 2);
   const hasChildren = node.children && node.children.length > 0;
   const isBucket = !node.assetCode && node.quantity > 1;
@@ -122,19 +124,27 @@ function AssetNode({ node, depth, onAction }) {
         )}
 
         <Box className="node-actions" sx={{ ml: 'auto', opacity: 0.25, transition: 'opacity 0.15s' }}>
-          <Tooltip title="Add child">
-            <IconButton size="small" onClick={() => onAction('addChild', node)}><AddIcon fontSize="small" /></IconButton>
-          </Tooltip>
-          <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => onAction('edit', node)}><EditIcon fontSize="small" /></IconButton>
-          </Tooltip>
-          <Tooltip title="Responsibility">
-            <IconButton size="small" onClick={() => onAction('responsibility', node)}><PersonIcon fontSize="small" /></IconButton>
-          </Tooltip>
-          <Tooltip title="Move">
-            <IconButton size="small" onClick={() => onAction('move', node)}><MoveIcon fontSize="small" /></IconButton>
-          </Tooltip>
-          {isBucket && (
+          {canManage && (
+            <Tooltip title="Add child">
+              <IconButton size="small" onClick={() => onAction('addChild', node)}><AddIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
+          {canManage && (
+            <Tooltip title="Edit">
+              <IconButton size="small" onClick={() => onAction('edit', node)}><EditIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
+          {canManage && (
+            <Tooltip title="Responsibility">
+              <IconButton size="small" onClick={() => onAction('responsibility', node)}><PersonIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
+          {canManage && (
+            <Tooltip title="Move">
+              <IconButton size="small" onClick={() => onAction('move', node)}><MoveIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
+          {canManage && isBucket && (
             <Tooltip title="Individualize (tag items)">
               <IconButton size="small" onClick={() => onAction('individualize', node)}><SplitIcon fontSize="small" /></IconButton>
             </Tooltip>
@@ -142,16 +152,18 @@ function AssetNode({ node, depth, onAction }) {
           <Tooltip title="Movement history">
             <IconButton size="small" onClick={() => onAction('movements', node)}><HistoryIcon fontSize="small" /></IconButton>
           </Tooltip>
-          <Tooltip title="Delete">
-            <IconButton size="small" color="error" onClick={() => onAction('delete', node)}><DeleteIcon fontSize="small" /></IconButton>
-          </Tooltip>
+          {canManage && (
+            <Tooltip title="Delete">
+              <IconButton size="small" color="error" onClick={() => onAction('delete', node)}><DeleteIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
         </Box>
       </Box>
 
       {hasChildren && (
         <Collapse in={open} timeout="auto" unmountOnExit>
           {node.children.map((child) => (
-            <AssetNode key={child.uuid} node={child} depth={depth + 1} onAction={onAction} />
+            <AssetNode key={child.uuid} node={child} depth={depth + 1} onAction={onAction} canManage={canManage} />
           ))}
         </Collapse>
       )}
@@ -161,6 +173,8 @@ function AssetNode({ node, depth, onAction }) {
 
 export default function AssetTree() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.ASSET_MANAGE);
   const [tree, setTree] = useState([]);
   const [types, setTypes] = useState([]);
   const [conditions, setConditions] = useState([]);
@@ -262,9 +276,11 @@ export default function AssetTree() {
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadTree}>
             Refresh
           </Button>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setFormDialog({ open: true, asset: null, parent: null })}>
-            Add Root Asset
-          </Button>
+          {canManage && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setFormDialog({ open: true, asset: null, parent: null })}>
+              Add Root Asset
+            </Button>
+          )}
         </Stack>
       </Box>
 
@@ -286,7 +302,7 @@ export default function AssetTree() {
           </Box>
         ) : (
           tree.map((node) => (
-            <AssetNode key={node.uuid} node={node} depth={0} onAction={handleAction} />
+            <AssetNode key={node.uuid} node={node} depth={0} onAction={handleAction} canManage={canManage} />
           ))
         )}
       </Card>

@@ -28,10 +28,14 @@ import {
   Assignment as IssueIcon,
 } from '@mui/icons-material';
 import { sportsService } from '../../../services/sportsService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 export default function SportItemList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SPORTS_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [sportTypes, setSportTypes] = useState([]);
@@ -239,13 +243,15 @@ export default function SportItemList() {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
-            <IconButton
-              size="small"
-              onClick={() => navigate(`/sports/items/${params.row.uuid}/edit`)}
-              title="Edit Item"
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
+            {canManage && (
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/sports/items/${params.row.uuid}/edit`)}
+                title="Edit Item"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
             <IconButton
               size="small"
               color="primary"
@@ -262,7 +268,7 @@ export default function SportItemList() {
             >
               <IssueIcon fontSize="small" />
             </IconButton>
-            {!isDeleted && (
+            {!isDeleted && canManage && (
               <IconButton
                 size="small"
                 color="error"
@@ -282,13 +288,15 @@ export default function SportItemList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Sport Inventory Items</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/sports/items/add')}
-        >
-          Add Item
-        </Button>
+        {canManage && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/sports/items/add')}
+          >
+            Add Item
+          </Button>
+        )}
       </Box>
 
       {error && (

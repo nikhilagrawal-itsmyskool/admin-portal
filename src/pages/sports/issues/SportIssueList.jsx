@@ -29,6 +29,8 @@ import {
   KeyboardReturn as ReturnIcon,
 } from '@mui/icons-material';
 import { sportsService } from '../../../services/sportsService';
+import { useCan } from '../../../permissions/can';
+import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 function ReturnDialog({ open, issue, onClose, onSuccess }) {
@@ -129,6 +131,8 @@ function ReturnDialog({ open, issue, onClose, onSuccess }) {
 
 export default function SportIssueList() {
   const navigate = useNavigate();
+  const can = useCan();
+  const canManage = can(ACTIONS.SPORTS_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [issues, setIssues] = useState([]);
   const [sportTypes, setSportTypes] = useState([]);
@@ -356,7 +360,7 @@ export default function SportIssueList() {
           (params.row.issueType === 'individual' || params.row.issueType === 'class_use');
         return (
           <Box>
-            {canReturn && (
+            {canReturn && canManage && (
               <IconButton
                 size="small"
                 color="primary"
@@ -366,7 +370,7 @@ export default function SportIssueList() {
                 <ReturnIcon fontSize="small" />
               </IconButton>
             )}
-            {!isDeleted && (
+            {!isDeleted && canManage && (
               <IconButton
                 size="small"
                 color="error"
@@ -386,13 +390,15 @@ export default function SportIssueList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Sport Issue Log</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/sports/issues/add')}
-        >
-          Add Issue
-        </Button>
+        {canManage && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/sports/issues/add')}
+          >
+            Add Issue
+          </Button>
+        )}
       </Box>
 
       {error && (

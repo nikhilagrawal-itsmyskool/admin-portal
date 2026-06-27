@@ -57,6 +57,7 @@ const formatCurrency = (v) =>
 export default function SportPurchaseList() {
   const navigate = useNavigate();
   const can = useCan();
+  const canManage = can(ACTIONS.SPORTS_MANAGE);
   const canEditPurchase = can(ACTIONS.PURCHASE_LOG_EDIT);
   const canRestorePurchase = can(ACTIONS.PURCHASE_LOG_RESTORE);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -318,13 +319,15 @@ export default function SportPurchaseList() {
         }}
       >
         <Typography variant="h4">Sport Purchase Log</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/sports/purchases/bulk/add")}
-        >
-          Add Purchase
-        </Button>
+        {canManage && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/sports/purchases/bulk/add")}
+          >
+            Add Purchase
+          </Button>
+        )}
       </Box>
 
       {error && (
@@ -583,7 +586,7 @@ export default function SportPurchaseList() {
                             </IconButton>
                           </Tooltip>
                         )}
-                        {!isDeleted && (
+                        {!isDeleted && canManage && (
                           <Tooltip title="Delete">
                             <IconButton
                               size="small"
