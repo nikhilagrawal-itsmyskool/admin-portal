@@ -75,9 +75,12 @@ function DayGrid({
       entriesByKey.get(`${classId}|${day.dayOfWeek}|${slot.uuid}`) || [];
     return items
       .map((e) => {
-        const subj = e.subjectName || e.subjectId;
-        const code = teacherCode(e.teacherId);
-        return code ? `${subj} (${code})` : subj;
+        // Subject name + subject code, then teacher code. e.g. "Maths (MAT) · T07"
+        const subj = e.subjectCode
+          ? `${e.subjectName || e.subjectId} (${e.subjectCode})`
+          : e.subjectName || e.subjectId;
+        const tcode = teacherCode(e.teacherId);
+        return tcode ? `${subj} · ${tcode}` : subj;
       })
       .join(" / ");
   };

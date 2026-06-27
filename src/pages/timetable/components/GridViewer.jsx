@@ -13,16 +13,20 @@ import { Print as PrintIcon } from "@mui/icons-material";
 import TimetableGrid from "./TimetableGrid";
 import TeacherName from "./TeacherName";
 import PrintLayer from "./PrintLayer";
-import { resolveTeacher, getCached } from "./teacherDirectory";
+import { resolveTeacher, getCached, resolveTeachers } from "./teacherDirectory";
 import { useTimetablePerms } from "./usePerms";
 import { classService } from "../../../services/classService";
+
+// "Name (CODE)" when a code exists, else just the name/id.
+const withCode = (name, code) => (code ? `${name} (${code})` : name || "");
 
 // Toggle between per-class and per-teacher grid views over a set of entries.
 export default function GridViewer({ config, entries = [], printHeader = "" }) {
   const { canPrint } = useTimetablePerms();
   const [mode, setMode] = useState("class");
   const [selectedId, setSelectedId] = useState("");
-  const [classNameById, setClassNameById] = useState({});
+  const [classById, setClassById] = useState({}); // uuid -> { name, code }
+  const [teacherById, setTeacherById] = useState({}); // id -> { name, code }
   const [printing, setPrinting] = useState(false);
   const [printTitle, setPrintTitle] = useState("");
 
@@ -33,12 +37,22 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
         const list = Array.isArray(data) ? data : data.classes || [];
         const map = {};
         list.forEach((c) => {
-          map[c.uuid] = c.name;
+          map[c.uuid] = { name: c.name, code: c.code };
         });
-        setClassNameById(map);
+        setClassById(map);
       })
       .catch(() => {});
   }, []);
+
+  // Resolve every teacher in the entries to { name, code } for the cells.
+  useEffect(() => {
+    const ids = [...new Set(entries.map((e) => e.teacherId).filter(Boolean))];
+    if (ids.length === 0) {
+      setTeacherById({});
+      return;
+    }
+    resolveTeachers(ids).then((m) => setTeacherById(Object.fromEntries(m)));
+  }, [entries]);
 
   const classIds = useMemo(
     () => [...new Set(entries.map((e) => e.classId))],
@@ -49,6 +63,8 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
     [entries],
   );
   const options = mode === "class" ? classIds : teacherIds;
+  const classLabel = (id) =>
+    withCode(classById[id]?.name || id, classById[id]?.code);
 
   useEffect(() => {
     if (options.length > 0 && !options.includes(selectedId))
@@ -61,10 +77,10 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
     if (!selectedId) return;
     let label;
     if (mode === "class") {
-      label = `Class ${classNameById[selectedId] || selectedId}`;
+      label = `Class ${classLabel(selectedId)}`;
     } else {
       const t = getCached(selectedId) || (await resolveTeacher(selectedId));
-      label = t?.name || selectedId;
+      label = withCode(t?.name || selectedId, t?.code);
     }
     setPrintTitle(label);
     setPrinting(true);
@@ -106,11 +122,7 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
           )}
           {options.map((id) => (
             <MenuItem key={id} value={id}>
-              {mode === "class" ? (
-                classNameById[id] || id
-              ) : (
-                <TeacherName id={id} />
-              )}
+              {mode === "class" ? classLabel(id) : <TeacherName id={id} />}
             </MenuItem>
           ))}
         </TextField>
@@ -131,7 +143,8 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
         entries={entries}
         mode={mode}
         selectedId={selectedId}
-        classNameById={classNameById}
+        classById={classById}
+        teacherById={teacherById}
       />
 
       <PrintLayer open={printing} onClose={() => setPrinting(false)}>
@@ -150,7 +163,8 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
             entries={entries}
             mode={mode}
             selectedId={selectedId}
-            classNameById={classNameById}
+            classById={classById}
+            teacherById={teacherById}
           />
         </Box>
       </PrintLayer>
