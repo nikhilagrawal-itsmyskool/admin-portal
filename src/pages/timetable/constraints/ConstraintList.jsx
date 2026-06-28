@@ -14,10 +14,13 @@ import {
   DialogActions,
   TextField,
   MenuItem,
+  Autocomplete,
+  Tooltip,
 } from "@mui/material";
 import ResponsiveDataGrid from "../../../components/common/ResponsiveDataGrid";
 import {
   Add as AddIcon,
+  Edit as EditIcon,
   Delete as DeleteIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
@@ -28,16 +31,21 @@ import EmployeeSearchDialog from "../../../components/common/EmployeeSearchDialo
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { useTimetablePerms } from "../components/usePerms";
 
-const NEEDS_DAY = ["day_off", "unavailable_slot", "preferred_slot"];
-const NEEDS_SLOT = ["unavailable_slot", "preferred_slot"];
+const NEEDS_DAY = ["day_off", "unavailable_slot", "preferred_slot", "available_slot"];
+const NEEDS_SLOT = ["unavailable_slot", "preferred_slot", "available_slot"];
 const NEEDS_MAX = ["max_per_day", "max_consecutive", "weekly_max"];
+
+const DAY_LABELS = { 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun" };
+// Back-compat: a constraint may store a single `day` or a `days` list. Read either.
+const daysOf = (value) =>
+  Array.isArray(value?.days) ? value.days : value?.day != null ? [value.day] : [];
 
 function describeValue(type, value) {
   if (!value) return "";
-  if (type === "day_off") return `day ${value.day}`;
-  if (NEEDS_SLOT.includes(type))
-    return `day ${value.day}, period ${value.slot}`;
   if (NEEDS_MAX.includes(type)) return `max ${value.max}`;
+  const days = daysOf(value).map((d) => DAY_LABELS[d] || d).join(", ");
+  if (type === "day_off") return days;
+  if (NEEDS_SLOT.includes(type)) return `period ${value.slot} · ${days}`;
   return JSON.stringify(value);
 }
 
@@ -46,38 +54,63 @@ function ConstraintDialog({
   academicYearId,
   types,
   days,
+  constraint,
   onClose,
   onSaved,
 }) {
-  const [constraintType, setConstraintType] = useState("day_off");
-  const [day, setDay] = useState(1);
-  const [slot, setSlot] = useState(1);
-  const [max, setMax] = useState(1);
-  const [hardness, setHardness] = useState("hard");
-  const [weight, setWeight] = useState("");
+  const isEdit = Boolean(constraint?.uuid);
+  const [constraintType, setConstraintType] = useState(
+    constraint?.constraintType || "available_slot",
+  );
+  const [selectedDays, setSelectedDays] = useState(daysOf(constraint?.value));
+  const [slot, setSlot] = useState(constraint?.value?.slot ?? 1);
+  const [max, setMax] = useState(constraint?.value?.max ?? 1);
+  const [hardness, setHardness] = useState(constraint?.hardness || "hard");
+  const [weight, setWeight] = useState(
+    constraint?.weight != null ? String(constraint.weight) : "",
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // preferred is a soft nudge only; available is a hard whitelist.
+  const effectiveHardness =
+    constraintType === "preferred_slot"
+      ? "soft"
+      : constraintType === "available_slot"
+        ? "hard"
+        : hardness;
+
   const buildValue = () => {
-    if (constraintType === "day_off") return { day: Number(day) };
-    if (NEEDS_SLOT.includes(constraintType))
-      return { day: Number(day), slot: Number(slot) };
     if (NEEDS_MAX.includes(constraintType)) return { max: Number(max) };
+    if (constraintType === "day_off") return { days: selectedDays.map(Number) };
+    if (NEEDS_SLOT.includes(constraintType))
+      return { days: selectedDays.map(Number), slot: Number(slot) };
     return {};
   };
 
   const save = async () => {
+    if (NEEDS_DAY.includes(constraintType) && selectedDays.length === 0) {
+      setError("Pick at least one day");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      await timetableService.createTeacherConstraint({
-        academicYearId,
-        teacherId: teacher.uuid,
-        constraintType,
+      const payload = {
         value: buildValue(),
-        hardness,
+        hardness: effectiveHardness,
         weight: weight === "" ? undefined : Number(weight),
-      });
+      };
+      if (isEdit) {
+        await timetableService.updateTeacherConstraint(constraint.uuid, payload);
+      } else {
+        await timetableService.createTeacherConstraint({
+          academicYearId,
+          teacherId: teacher.uuid,
+          constraintType,
+          ...payload,
+        });
+      }
       onSaved();
       onClose();
     } catch (err) {
@@ -89,7 +122,7 @@ function ConstraintDialog({
 
   return (
     <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Add Constraint</DialogTitle>
+      <DialogTitle>{isEdit ? "Edit Constraint" : "Add Constraint"}</DialogTitle>
       <DialogContent>
         {error && (
           <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
@@ -101,6 +134,7 @@ function ConstraintDialog({
           fullWidth
           label="Type"
           value={constraintType}
+          disabled={isEdit}
           onChange={(e) => setConstraintType(e.target.value)}
           sx={{ mt: 1, mb: 2 }}
         >
@@ -111,26 +145,25 @@ function ConstraintDialog({
           ))}
         </TextField>
         {NEEDS_DAY.includes(constraintType) && (
-          <TextField
-            select
-            fullWidth
-            label="Day"
-            value={day}
-            onChange={(e) => setDay(e.target.value)}
+          <Autocomplete
+            multiple
+            options={days}
+            value={days.filter((d) => selectedDays.includes(d.value))}
+            onChange={(e, v) => setSelectedDays(v.map((o) => o.value))}
+            getOptionLabel={(o) => o.label}
+            isOptionEqualToValue={(o, v) => o.value === v.value}
+            renderInput={(params) => (
+              <TextField {...params} label="Days" placeholder="Pick days" />
+            )}
             sx={{ mb: 2 }}
-          >
-            {days.map((d) => (
-              <MenuItem key={d.value} value={d.value}>
-                {d.label}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
         )}
         {NEEDS_SLOT.includes(constraintType) && (
           <TextField
             fullWidth
             type="number"
-            label="Period (sequence)"
+            label="Teaching period"
+            helperText="1 = the first teaching period of the day (assembly/break/lunch are not counted)"
             value={slot}
             onChange={(e) => setSlot(e.target.value)}
             sx={{ mb: 2 }}
@@ -146,18 +179,29 @@ function ConstraintDialog({
             sx={{ mb: 2 }}
           />
         )}
-        <TextField
-          select
-          fullWidth
-          label="Hardness"
-          value={hardness}
-          onChange={(e) => setHardness(e.target.value)}
-          sx={{ mb: 2 }}
-        >
-          <MenuItem value="hard">Hard (must satisfy)</MenuItem>
-          <MenuItem value="soft">Soft (prefer)</MenuItem>
-        </TextField>
-        {hardness === "soft" && (
+        {constraintType === "preferred_slot" ? (
+          <Alert severity="info" sx={{ mb: 1 }}>
+            Preferred is a soft nudge — the solver tries it but may override it.
+          </Alert>
+        ) : constraintType === "available_slot" ? (
+          <Alert severity="info" sx={{ mb: 1 }}>
+            Available is a hard rule — the teacher is scheduled ONLY in these
+            periods (everything else is blocked).
+          </Alert>
+        ) : (
+          <TextField
+            select
+            fullWidth
+            label="Hardness"
+            value={hardness}
+            onChange={(e) => setHardness(e.target.value)}
+            sx={{ mb: 2 }}
+          >
+            <MenuItem value="hard">Hard (must satisfy)</MenuItem>
+            <MenuItem value="soft">Soft (prefer)</MenuItem>
+          </TextField>
+        )}
+        {effectiveHardness === "soft" && constraintType !== "preferred_slot" && (
           <TextField
             fullWidth
             type="number"
@@ -189,7 +233,7 @@ export default function ConstraintList() {
   const [error, setError] = useState("");
   const [types, setTypes] = useState([]);
   const [days, setDays] = useState([]);
-  const [dialog, setDialog] = useState(false);
+  const [dialog, setDialog] = useState({ open: false, constraint: null });
   const [del, setDel] = useState({ open: false, row: null });
 
   useEffect(() => {
@@ -261,16 +305,25 @@ export default function ConstraintList() {
           {
             field: "actions",
             headerName: "",
-            width: 70,
+            width: 110,
             sortable: false,
             renderCell: (p) => (
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => setDel({ open: true, row: p.row })}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+              <>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => setDialog({ open: true, constraint: p.row })}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => setDel({ open: true, row: p.row })}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </>
             ),
           },
         ]
@@ -315,7 +368,7 @@ export default function ConstraintList() {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setDialog(true)}
+                onClick={() => setDialog({ open: true, constraint: null })}
               >
                 Add Constraint
               </Button>
@@ -342,13 +395,14 @@ export default function ConstraintList() {
         onClose={() => setPicker(false)}
         onSelect={(emp) => setTeacher(emp)}
       />
-      {dialog && (
+      {dialog.open && (
         <ConstraintDialog
           teacher={teacher}
           academicYearId={academicYearId}
           types={types}
           days={days}
-          onClose={() => setDialog(false)}
+          constraint={dialog.constraint}
+          onClose={() => setDialog({ open: false, constraint: null })}
           onSaved={load}
         />
       )}

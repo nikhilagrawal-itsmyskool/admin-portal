@@ -459,6 +459,7 @@ function CohortBands({ group, academicYearId, subjects, canMutate }) {
                       <span>
                         {o.subjectName || o.subjectId} —{" "}
                         <TeacherName id={o.teacherId} />
+                        {o.periodShare ? ` (${o.periodShare})` : ""}
                       </span>
                     }
                     onDelete={canMutate ? () => removeOffering(o.uuid) : undefined}
@@ -587,6 +588,7 @@ function CohortBandDialog({ classGroupId, academicYearId, onClose, onSaved }) {
 function CohortOfferingDialog({ band, subjects, onClose, onSaved }) {
   const [subjectId, setSubjectId] = useState("");
   const [teacher, setTeacher] = useState(null);
+  const [share, setShare] = useState("");
   const [picker, setPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -606,6 +608,7 @@ function CohortOfferingDialog({ band, subjects, onClose, onSaved }) {
       await timetableService.addElectiveOffering(band.uuid, {
         subjectId,
         teacherId: teacher.uuid,
+        periodShare: share === "" ? undefined : Number(share),
       });
       onSaved();
     } catch (err) {
@@ -640,6 +643,16 @@ function CohortOfferingDialog({ band, subjects, onClose, onSaved }) {
             {teacher ? "Change" : "Pick"}
           </Button>
         </Stack>
+        <TextField
+          type="number"
+          size="small"
+          label="Periods for this teacher (optional)"
+          helperText="Leave blank if this teacher takes the whole subject. To split a subject across two teachers, add it twice — e.g. Biology · Mr A · 6, then Biology · Mr B · 3."
+          value={share}
+          onChange={(e) => setShare(e.target.value)}
+          sx={{ mt: 2 }}
+          fullWidth
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>
