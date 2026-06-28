@@ -109,10 +109,10 @@ const modules = [
     description:
       "Build subjects, grids, and wings, then auto-generate class timetables",
     icon: TimetableIcon,
-    path: "/timetable",
+    // Route by capability: planners get the overview, teachers the published view.
+    path: (can) => (can("timetable.print") ? "/timetable" : "/timetable/published"),
     color: "#f4b400",
-    // Planning landing; teachers reach the Published timetable via the left menu.
-    perm: "timetable.print",
+    perm: "timetable.view",
   },
   {
     title: "Attendance",
@@ -159,7 +159,15 @@ export default function Dashboard() {
         {visibleModules.map((module) => (
           <Grid item xs={12} sm={6} md={4} key={module.title}>
             <Card>
-              <CardActionArea onClick={() => navigate(module.path)}>
+              <CardActionArea
+                onClick={() =>
+                  navigate(
+                    typeof module.path === "function"
+                      ? module.path(can)
+                      : module.path,
+                  )
+                }
+              >
                 <CardContent sx={{ p: 3 }}>
                   <Box
                     sx={{

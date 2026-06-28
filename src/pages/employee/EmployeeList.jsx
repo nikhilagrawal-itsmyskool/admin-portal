@@ -26,6 +26,7 @@ import {
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { employeeService } from "../../services/employeeService";
+import { useAuth } from "../../context/AuthContext";
 import { useCan } from "../../permissions/can";
 import { ACTIONS } from "../../permissions/actions";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -34,9 +35,14 @@ import EmployeeDetailDialog from "./dialogs/EmployeeDetailDialog";
 
 export default function EmployeeList() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const can = useCan();
   const isAdmin = can(ACTIONS.EMPLOYEE_MANAGE);
   const isGod = can(ACTIONS.EMPLOYEE_RESTORE);
+
+  // Managers can open anyone's detail; view-only staff (teachers) may open
+  // only their own row. user.employeeId is the logged-in employee's uuid.
+  const canViewEmployee = (row) => isAdmin || row?.uuid === user?.employeeId;
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -151,14 +157,16 @@ export default function EmployeeList() {
         const isDeleted = params.row.status === "deleted";
         return (
           <Box>
-            {/* View is open to anyone who can reach this page (employee.view). */}
-            <IconButton
-              size="small"
-              onClick={() => setDetailDialog({ open: true, item: params.row })}
-              title="View Details"
-            >
-              <ViewIcon fontSize="small" />
-            </IconButton>
+            {/* View: managers see all; view-only staff only their own row. */}
+            {canViewEmployee(params.row) && (
+              <IconButton
+                size="small"
+                onClick={() => setDetailDialog({ open: true, item: params.row })}
+                title="View Details"
+              >
+                <ViewIcon fontSize="small" />
+              </IconButton>
+            )}
             {isAdmin && isDeleted && isGod && (
               <IconButton
                 size="small"
@@ -273,7 +281,12 @@ export default function EmployeeList() {
           columns={columns}
           getRowId={(row) => row.uuid}
           getRowClassName={(params) =>
-            params.row.status === "deleted" ? "deleted-row" : ""
+            [
+              params.row.status === "deleted" ? "deleted-row" : "",
+              canViewEmployee(params.row) ? "" : "no-click-row",
+            ]
+              .filter(Boolean)
+              .join(" ")
           }
           loading={loading}
           autoHeight
@@ -281,12 +294,17 @@ export default function EmployeeList() {
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
           disableRowSelectionOnClick
-          onRowClick={(params) => setDetailDialog({ open: true, item: params.row })}
+          onRowClick={(params) => {
+            if (canViewEmployee(params.row)) {
+              setDetailDialog({ open: true, item: params.row });
+            }
+          }}
           sx={{
             border: "none",
             cursor: "pointer",
             "& .MuiDataGrid-columnHeaderTitle": { fontWeight: 600 },
             "& .MuiDataGrid-cell": { borderBottom: "1px solid #e4e9f2" },
+            "& .no-click-row": { cursor: "default" },
             "& .deleted-row": {
               opacity: 0.6,
               backgroundColor: "rgba(244, 67, 54, 0.04)",
