@@ -187,6 +187,7 @@ const menuItems = [
       { title: 'Wings', icon: WingIcon, path: '/timetable/wings', perm: 'timetable.print' },
       { title: 'Teacher Constraints', icon: ConstraintIcon, path: '/timetable/constraints', perm: 'timetable.print' },
       { title: 'Generate', icon: GenerateIcon, path: '/timetable/generate', perm: 'timetable.print' },
+      { title: 'Generation Runs', icon: HistoryIcon, path: '/timetable/runs', perm: 'timetable.print' },
       { title: 'Published', icon: PublishedIcon, path: '/timetable/published', perm: 'timetable.view' },
     ],
   },

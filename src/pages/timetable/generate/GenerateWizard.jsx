@@ -26,6 +26,7 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
+import { Link as RouterLink } from "react-router-dom";
 import { timetableService } from "../../../services/timetableService";
 import GridViewer from "../components/GridViewer";
 import { useTimetablePerms } from "../components/usePerms";
@@ -420,6 +421,16 @@ export default function GenerateWizard() {
       {activeStep === 3 && (
         <Card>
           <CardContent>
+            {runId && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                This run is saved. You can leave this page and reopen it any time
+                from{" "}
+                <RouterLink to={`/timetable/runs/${runId}`}>
+                  Generation Runs
+                </RouterLink>
+                .
+              </Alert>
+            )}
             {(runStatus === "queued" || runStatus === "running") && (
               <Box
                 sx={{

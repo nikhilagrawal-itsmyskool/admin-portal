@@ -252,6 +252,11 @@ export const timetableService = {
     const response = await api.post(`${BASE}/generate`, data);
     return response.data; // { runId, status }
   },
+  // Run history (filter: academicYearId, configId, status)
+  getRuns: async (params = {}) => {
+    const response = await api.get(`${BASE}/runs`, { params });
+    return response.data; // { runs: [...] }
+  },
   getRun: async (id) => {
     const response = await api.get(`${BASE}/runs/${id}`);
     return response.data;
