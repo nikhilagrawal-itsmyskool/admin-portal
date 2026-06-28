@@ -85,6 +85,7 @@ import ConfigList from './pages/timetable/config/ConfigList';
 import ConfigBuilder from './pages/timetable/config/ConfigBuilder';
 import ClassSetup from './pages/timetable/setup/ClassSetup';
 import WingList from './pages/timetable/wings/WingList';
+import ClassGroupList from './pages/timetable/groups/ClassGroupList';
 import ConstraintList from './pages/timetable/constraints/ConstraintList';
 import GenerateWizard from './pages/timetable/generate/GenerateWizard';
 import PublishedTimetable from './pages/timetable/published/PublishedTimetable';
@@ -229,6 +230,7 @@ export default function App() {
         <Route path="timetable/configs/:id" element={<ConfigBuilder />} />
         <Route path="timetable/setup" element={<ClassSetup />} />
         <Route path="timetable/wings" element={<WingList />} />
+        <Route path="timetable/class-groups" element={<ClassGroupList />} />
         <Route path="timetable/constraints" element={<ConstraintList />} />
         <Route path="timetable/generate" element={<GenerateWizard />} />
         <Route path="timetable/published" element={<PublishedTimetable />} />

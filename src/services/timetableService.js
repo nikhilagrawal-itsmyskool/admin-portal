@@ -107,7 +107,26 @@ export const timetableService = {
     return response.data;
   },
 
-  // Elective bands + offerings (filter: classId, academicYearId)
+  // Class groups / cohorts (filter: academicYearId). A cohort is a set of
+  // co-scheduled classes (a composite class like XI-A); membership is class-level.
+  getClassGroups: async (params = {}) => {
+    const response = await api.get(`${BASE}/class-groups`, { params });
+    return response.data; // { classGroups: [...] }
+  },
+  createClassGroup: async (data) => {
+    const response = await api.post(`${BASE}/class-groups`, data);
+    return response.data;
+  },
+  updateClassGroup: async (id, data) => {
+    const response = await api.put(`${BASE}/class-groups/${id}`, data);
+    return response.data;
+  },
+  deleteClassGroup: async (id) => {
+    const response = await api.delete(`${BASE}/class-groups/${id}`);
+    return response.data;
+  },
+
+  // Elective bands + offerings (filter: classId, classGroupId, academicYearId)
   getElectiveBands: async (params = {}) => {
     const response = await api.get(`${BASE}/elective-bands`, { params });
     return response.data; // { bands: [...] }
