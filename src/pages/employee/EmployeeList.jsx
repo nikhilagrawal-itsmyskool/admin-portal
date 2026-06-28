@@ -15,6 +15,7 @@ import {
   Switch,
 } from "@mui/material";
 import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
+import usePersistedPaginationModel from "../../hooks/usePersistedPaginationModel";
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -54,6 +55,10 @@ export default function EmployeeList() {
     item: null,
   });
   const [detailDialog, setDetailDialog] = useState({ open: false, item: null });
+  const [paginationModel, setPaginationModel] = usePersistedPaginationModel(
+    "employeeList",
+    { page: 0, pageSize: 25 },
+  );
 
   useEffect(() => {
     loadEmployees();
@@ -107,6 +112,17 @@ export default function EmployeeList() {
       e.familyUniqueNumber?.toLowerCase().includes(term) ||
       e.employeeNumber?.toLowerCase().includes(term),
   );
+
+  // Never leave the user stranded past the last page (deletes, filter, search).
+  useEffect(() => {
+    const lastPage = Math.max(
+      0,
+      Math.ceil(filteredEmployees.length / paginationModel.pageSize) - 1,
+    );
+    if (paginationModel.page > lastPage) {
+      setPaginationModel({ ...paginationModel, page: lastPage });
+    }
+  }, [filteredEmployees.length, paginationModel.pageSize]);
 
   const columns = [
     { field: "name", headerName: "Name", flex: 1, minWidth: 180 },
@@ -223,7 +239,10 @@ export default function EmployeeList() {
               fullWidth
               placeholder="Search by name, login ID or employee number..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPaginationModel({ ...paginationModel, page: 0 });
+              }}
               size="small"
               InputProps={{
                 startAdornment: (
@@ -258,8 +277,9 @@ export default function EmployeeList() {
           }
           loading={loading}
           autoHeight
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          pageSizeOptions={[10, 25, 50, 100]}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
           disableRowSelectionOnClick
           onRowClick={(params) => setDetailDialog({ open: true, item: params.row })}
           sx={{

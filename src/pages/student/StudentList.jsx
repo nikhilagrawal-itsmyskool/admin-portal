@@ -17,6 +17,7 @@ import {
   Stack,
 } from '@mui/material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
+import usePersistedPaginationModel from '../../hooks/usePersistedPaginationModel';
 import {
   PersonAdd as PersonAddIcon,
   Edit as EditIcon,
@@ -65,6 +66,10 @@ export default function StudentList() {
   const [assignHouseOpen, setAssignHouseOpen] = useState(false);
   const [graduateDialog, setGraduateDialog] = useState(false);
   const [graduating, setGraduating] = useState(false);
+  const [paginationModel, setPaginationModel] = usePersistedPaginationModel('studentList', {
+    page: 0,
+    pageSize: 25,
+  });
 
   const houseNameById = useMemo(() => {
     const m = {};
@@ -114,12 +119,27 @@ export default function StudentList() {
     }
   };
 
+  // Never leave the user stranded past the last page (new search, deletes).
+  useEffect(() => {
+    const lastPage = Math.max(0, Math.ceil(students.length / paginationModel.pageSize) - 1);
+    if (paginationModel.page > lastPage) {
+      setPaginationModel({ ...paginationModel, page: lastPage });
+    }
+  }, [students.length, paginationModel.pageSize]);
+
+  // A fresh search yields a new result set — jump back to the first page.
+  const runSearch = () => {
+    setPaginationModel((p) => ({ ...p, page: 0 }));
+    loadStudents();
+  };
+
   const handleClear = () => {
     setName('');
     setSelectedClass(null);
     setSelectedYear(null);
     setAdmissionNumber('');
     setPhone('');
+    setPaginationModel((p) => ({ ...p, page: 0 }));
     loadStudents({});
   };
 
@@ -248,7 +268,7 @@ export default function StudentList() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 size="small"
-                onKeyDown={(e) => e.key === 'Enter' && loadStudents()}
+                onKeyDown={(e) => e.key === 'Enter' && runSearch()}
               />
             </Grid>
             <Grid item xs={12} md={2}>
@@ -276,7 +296,7 @@ export default function StudentList() {
                 value={admissionNumber}
                 onChange={(e) => setAdmissionNumber(e.target.value)}
                 size="small"
-                onKeyDown={(e) => e.key === 'Enter' && loadStudents()}
+                onKeyDown={(e) => e.key === 'Enter' && runSearch()}
               />
             </Grid>
             <Grid item xs={6} md={1.5}>
@@ -286,12 +306,12 @@ export default function StudentList() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 size="small"
-                onKeyDown={(e) => e.key === 'Enter' && loadStudents()}
+                onKeyDown={(e) => e.key === 'Enter' && runSearch()}
               />
             </Grid>
             <Grid item xs={12} md={2.5}>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="contained" startIcon={<SearchIcon />} onClick={() => loadStudents()} size="small">
+                <Button variant="contained" startIcon={<SearchIcon />} onClick={runSearch} size="small">
                   Search
                 </Button>
                 <Button variant="outlined" startIcon={<ClearIcon />} onClick={handleClear} size="small">
@@ -351,7 +371,8 @@ export default function StudentList() {
           onRowSelectionModelChange={(ids) => setSelection(ids)}
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50, 100]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
           sx={{
             border: 'none',
             '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
