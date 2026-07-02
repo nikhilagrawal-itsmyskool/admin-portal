@@ -22,6 +22,8 @@ import {
   People as PeopleIcon,
   FactCheck as AttendanceIcon,
   Campaign as CommunicationIcon,
+  PersonSearch as HiringIcon,
+  DirectionsBus as TransportIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useCan } from "../permissions/can";
@@ -135,6 +137,22 @@ const modules = [
     path: "/employees",
     color: "#009688",
     perm: "employee.view",
+  },
+  {
+    title: "Hiring",
+    description: "Track candidates through the interview pipeline",
+    icon: HiringIcon,
+    path: "/hiring",
+    color: "#795548",
+    perm: "hiring.view",
+  },
+  {
+    title: "Transport",
+    description: "Manage stops, vehicles, routes, and bus attendance",
+    icon: TransportIcon,
+    path: "/transport",
+    color: "#ff6f00",
+    perm: "transport.view",
   },
 ];
 

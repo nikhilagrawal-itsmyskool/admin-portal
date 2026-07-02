@@ -58,6 +58,11 @@ import {
   Description as TemplateIcon,
   Outbox as SentIcon,
   PersonSearch as HiringIcon,
+  DirectionsBus as TransportIcon,
+  PinDrop as StopIcon,
+  AirportShuttle as VehicleIcon,
+  AltRoute as RouteIcon,
+  AssignmentInd as AssignmentIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -231,6 +236,20 @@ const menuItems = [
     icon: HiringIcon,
     path: '/hiring',
     perm: 'hiring.view',
+  },
+  {
+    title: 'Transport',
+    icon: TransportIcon,
+    perm: 'transport.view',
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/transport' },
+      { title: 'Stops', icon: StopIcon, path: '/transport/stops' },
+      { title: 'Vehicles', icon: VehicleIcon, path: '/transport/vehicles' },
+      { title: 'Routes', icon: RouteIcon, path: '/transport/routes' },
+      { title: 'Student Assignments', icon: AssignmentIcon, path: '/transport/assignments' },
+      { title: 'Take Attendance', icon: MarkIcon, path: '/transport/attendance/mark' },
+      { title: 'Attendance History', icon: HistoryIcon, path: '/transport/attendance/sessions' },
+    ],
   },
 ];
 

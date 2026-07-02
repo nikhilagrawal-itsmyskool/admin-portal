@@ -31,6 +31,9 @@ export const ROLE_PERMISSIONS = {
     "communication.template.manage",
     "hiring.view",
     "hiring.manage",
+    "transport.view",
+    "transport.manage",
+    "transport.attendance.finalize",
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   teacher: [
@@ -41,6 +44,7 @@ export const ROLE_PERMISSIONS = {
     "timetable.view", // Published timetable only (menu gates the rest)
     "student.view",
     "employee.view",
+    "transport.view", // reach the module + mark bus attendance (finalize is gated)
   ],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
@@ -50,6 +54,7 @@ export const ROLE_PERMISSIONS = {
   "library-incharge": ["library.*"],
   "supplies-incharge": ["supplies.*"],
   "hiring-incharge": ["hiring.*"],
+  "transport-incharge": ["transport.*"],
 };
 
 // Roles to show as columns in the generated permissions.md matrix.
@@ -64,4 +69,5 @@ export const DOC_ROLES = [
   "library-incharge",
   "supplies-incharge",
   "hiring-incharge",
+  "transport-incharge",
 ];

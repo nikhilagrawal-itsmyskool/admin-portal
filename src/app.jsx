@@ -108,6 +108,15 @@ import TemplateForm from './pages/communication/templates/TemplateForm';
 import ComposeMessage from './pages/communication/messages/ComposeMessage';
 import MessageJobList from './pages/communication/messages/MessageJobList';
 import MessageJobDetail from './pages/communication/messages/MessageJobDetail';
+import TransportDashboard from './pages/transport/TransportDashboard';
+import StopList from './pages/transport/stops/StopList';
+import VehicleList from './pages/transport/vehicles/VehicleList';
+import VehicleForm from './pages/transport/vehicles/VehicleForm';
+import RouteList from './pages/transport/routes/RouteList';
+import RouteForm from './pages/transport/routes/RouteForm';
+import TransportAssignmentList from './pages/transport/assignments/AssignmentList';
+import TransportTakeAttendance from './pages/transport/attendance/TransportTakeAttendance';
+import TransportSessionList from './pages/transport/attendance/TransportSessionList';
 import Profile from './pages/Profile';
 
 export default function App() {
@@ -256,6 +265,17 @@ export default function App() {
         <Route path="communication/compose" element={<ComposeMessage />} />
         <Route path="communication/messages" element={<MessageJobList />} />
         <Route path="communication/messages/:id" element={<MessageJobDetail />} />
+        <Route path="transport" element={<TransportDashboard />} />
+        <Route path="transport/stops" element={<StopList />} />
+        <Route path="transport/vehicles" element={<VehicleList />} />
+        <Route path="transport/vehicles/add" element={<VehicleForm />} />
+        <Route path="transport/vehicles/:id/edit" element={<VehicleForm />} />
+        <Route path="transport/routes" element={<RouteList />} />
+        <Route path="transport/routes/new" element={<RouteForm />} />
+        <Route path="transport/routes/:id" element={<RouteForm />} />
+        <Route path="transport/assignments" element={<TransportAssignmentList />} />
+        <Route path="transport/attendance/mark" element={<TransportTakeAttendance />} />
+        <Route path="transport/attendance/sessions" element={<TransportSessionList />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

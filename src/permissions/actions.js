@@ -38,6 +38,9 @@ export const ACTIONS = {
   COMMUNICATION_TEMPLATE_DELETE: "communication.template.delete",
   HIRING_VIEW: "hiring.view",
   HIRING_MANAGE: "hiring.manage",
+  TRANSPORT_VIEW: "transport.view",
+  TRANSPORT_MANAGE: "transport.manage",
+  TRANSPORT_ATTENDANCE_FINALIZE: "transport.attendance.finalize",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -186,5 +189,19 @@ export const ACTION_CATALOG = [
     action: ACTIONS.HIRING_MANAGE,
     description:
       "Add/edit/delete candidates, interview stages, files & final decisions",
+  },
+  {
+    action: ACTIONS.TRANSPORT_VIEW,
+    description: "See the Transport menu and read its pages",
+  },
+  {
+    action: ACTIONS.TRANSPORT_MANAGE,
+    description:
+      "Add/edit/delete stops, vehicles, routes, route stops & student assignments",
+  },
+  {
+    action: ACTIONS.TRANSPORT_ATTENDANCE_FINALIZE,
+    description:
+      "Finalize a transport (bus) attendance session and edit records after finalize (marking is open to all staff who can view)",
   },
 ];
