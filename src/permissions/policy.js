@@ -29,6 +29,8 @@ export const ROLE_PERMISSIONS = {
     "attendance.finalize",
     "communication.send",
     "communication.template.manage",
+    "hiring.view",
+    "hiring.manage",
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   teacher: [
@@ -47,6 +49,7 @@ export const ROLE_PERMISSIONS = {
   "assets-incharge": ["asset.*"],
   "library-incharge": ["library.*"],
   "supplies-incharge": ["supplies.*"],
+  "hiring-incharge": ["hiring.*"],
 };
 
 // Roles to show as columns in the generated permissions.md matrix.
@@ -60,4 +63,5 @@ export const DOC_ROLES = [
   "assets-incharge",
   "library-incharge",
   "supplies-incharge",
+  "hiring-incharge",
 ];

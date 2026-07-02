@@ -38,6 +38,9 @@ import FineDashboard from './pages/fine/FineDashboard';
 import FineIncidentList from './pages/fine/incidents/FineIncidentList';
 import FineIncidentForm from './pages/fine/incidents/FineIncidentForm';
 import FineIncidentDetail from './pages/fine/incidents/FineIncidentDetail';
+import HiringCandidateList from './pages/hiring/HiringCandidateList';
+import HiringCandidateForm from './pages/hiring/HiringCandidateForm';
+import HiringCandidateDetail from './pages/hiring/HiringCandidateDetail';
 import UniformDashboard from './pages/uniform/UniformDashboard';
 import UniformCatalog from './pages/uniform/catalog/UniformCatalog';
 import UniformPurchaseList from './pages/uniform/purchases/UniformPurchaseList';
@@ -171,6 +174,10 @@ export default function App() {
         <Route path="fine/incidents/new" element={<FineIncidentForm />} />
         <Route path="fine/incidents/:id" element={<FineIncidentDetail />} />
         <Route path="fine/incidents/:id/edit" element={<FineIncidentForm />} />
+        <Route path="hiring" element={<HiringCandidateList />} />
+        <Route path="hiring/new" element={<HiringCandidateForm />} />
+        <Route path="hiring/:id" element={<HiringCandidateDetail />} />
+        <Route path="hiring/:id/edit" element={<HiringCandidateForm />} />
         <Route path="uniform" element={<UniformDashboard />} />
         <Route path="uniform/catalog" element={<UniformCatalog />} />
         <Route path="uniform/purchases" element={<UniformPurchaseList />} />

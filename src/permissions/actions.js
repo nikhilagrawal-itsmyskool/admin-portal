@@ -36,6 +36,8 @@ export const ACTIONS = {
   COMMUNICATION_SEND: "communication.send",
   COMMUNICATION_TEMPLATE_MANAGE: "communication.template.manage",
   COMMUNICATION_TEMPLATE_DELETE: "communication.template.delete",
+  HIRING_VIEW: "hiring.view",
+  HIRING_MANAGE: "hiring.manage",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -175,5 +177,14 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.COMMUNICATION_TEMPLATE_DELETE,
     description: "Delete or restore a message template",
+  },
+  {
+    action: ACTIONS.HIRING_VIEW,
+    description: "See the Hiring menu and read candidate records",
+  },
+  {
+    action: ACTIONS.HIRING_MANAGE,
+    description:
+      "Add/edit/delete candidates, interview stages, files & final decisions",
   },
 ];

@@ -57,6 +57,7 @@ import {
   Send as ComposeIcon,
   Description as TemplateIcon,
   Outbox as SentIcon,
+  PersonSearch as HiringIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -224,6 +225,12 @@ const menuItems = [
     icon: PeopleIcon,
     path: '/employees',
     perm: 'employee.view',
+  },
+  {
+    title: 'Hiring',
+    icon: HiringIcon,
+    path: '/hiring',
+    perm: 'hiring.view',
   },
 ];
 
