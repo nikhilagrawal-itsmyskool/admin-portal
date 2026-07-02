@@ -25,10 +25,14 @@ import {
   RadioGroup,
   FormControlLabel,
 } from "@mui/material";
-import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
+import {
+  ExpandMore as ExpandMoreIcon,
+  Download as DownloadIcon,
+} from "@mui/icons-material";
 import { Link as RouterLink } from "react-router-dom";
 import { timetableService } from "../../../services/timetableService";
 import GridViewer from "../components/GridViewer";
+import { downloadRunExport } from "../components/exportDownload";
 import { useTimetablePerms } from "../components/usePerms";
 
 const PRESETS = {
@@ -201,6 +205,18 @@ export default function GenerateWizard() {
       setError(err.response?.data?.error?.description || "Failed to publish");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const doDownload = async (format) => {
+    setError("");
+    try {
+      await downloadRunExport(runId, format);
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.description ||
+          `Could not download ${format.toUpperCase()} (it may still be rendering).`,
+      );
     }
   };
 
@@ -488,6 +504,24 @@ export default function GenerateWizard() {
                       config={fullConfig}
                       entries={selectedCand.entries || []}
                     />
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => doDownload("xlsx")}
+                      >
+                        Download XLS
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => doDownload("pdf")}
+                      >
+                        Download PDF
+                      </Button>
+                    </Stack>
                     <Divider sx={{ my: 2 }} />
                     <Stack direction="row" spacing={2} alignItems="center">
                       <TextField

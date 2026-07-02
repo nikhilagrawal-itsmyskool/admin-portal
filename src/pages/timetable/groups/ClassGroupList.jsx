@@ -332,6 +332,7 @@ function CohortBands({ group, academicYearId, subjects, canMutate }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [bandDialog, setBandDialog] = useState(false);
+  const [editBand, setEditBand] = useState(null);
   const [delBand, setDelBand] = useState({ open: false, band: null });
   const [offeringFor, setOfferingFor] = useState(null);
 
@@ -434,6 +435,11 @@ function CohortBands({ group, academicYearId, subjects, canMutate }) {
                         <AddIcon />
                       </IconButton>
                     </Tooltip>
+                    <Tooltip title="Edit band">
+                      <IconButton onClick={() => setEditBand(band)}>
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Delete band">
                       <IconButton
                         color="error"
@@ -480,6 +486,15 @@ function CohortBands({ group, academicYearId, subjects, canMutate }) {
           onSaved={load}
         />
       )}
+      {editBand && (
+        <CohortBandDialog
+          classGroupId={group.uuid}
+          academicYearId={academicYearId}
+          band={editBand}
+          onClose={() => setEditBand(null)}
+          onSaved={load}
+        />
+      )}
       {offeringFor && (
         <CohortOfferingDialog
           band={offeringFor}
@@ -502,10 +517,11 @@ function CohortBands({ group, academicYearId, subjects, canMutate }) {
   );
 }
 
-function CohortBandDialog({ classGroupId, academicYearId, onClose, onSaved }) {
-  const [name, setName] = useState("");
-  const [periodsPerWeek, setPeriodsPerWeek] = useState(1);
-  const [blockRules, setBlockRules] = useState(undefined);
+function CohortBandDialog({ classGroupId, academicYearId, band, onClose, onSaved }) {
+  const isEdit = Boolean(band?.uuid);
+  const [name, setName] = useState(band?.name || "");
+  const [periodsPerWeek, setPeriodsPerWeek] = useState(band?.periodsPerWeek || 1);
+  const [blockRules, setBlockRules] = useState(band?.blockRules || undefined);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -522,17 +538,27 @@ function CohortBandDialog({ classGroupId, academicYearId, onClose, onSaved }) {
     setSaving(true);
     setError("");
     try {
-      await timetableService.createElectiveBand({
-        academicYearId,
-        classGroupId,
-        name: name.trim(),
-        periodsPerWeek: ppw,
-        blockRules,
-      });
+      if (isEdit)
+        await timetableService.updateElectiveBand(band.uuid, {
+          name: name.trim(),
+          periodsPerWeek: ppw,
+          blockRules,
+        });
+      else
+        await timetableService.createElectiveBand({
+          academicYearId,
+          classGroupId,
+          name: name.trim(),
+          periodsPerWeek: ppw,
+          blockRules,
+        });
       onSaved();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error?.description || "Failed to create band");
+      setError(
+        err.response?.data?.error?.description ||
+          `Failed to ${isEdit ? "update" : "create"} band`,
+      );
     } finally {
       setSaving(false);
     }
@@ -540,7 +566,7 @@ function CohortBandDialog({ classGroupId, academicYearId, onClose, onSaved }) {
 
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Shared Band</DialogTitle>
+      <DialogTitle>{isEdit ? "Edit Shared Band" : "Add Shared Band"}</DialogTitle>
       <DialogContent>
         {error && (
           <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
@@ -578,7 +604,7 @@ function CohortBandDialog({ classGroupId, academicYearId, onClose, onSaved }) {
           Cancel
         </Button>
         <Button variant="contained" onClick={save} disabled={saving}>
-          {saving ? "Saving..." : "Create"}
+          {saving ? "Saving..." : isEdit ? "Save" : "Create"}
         </Button>
       </DialogActions>
     </Dialog>

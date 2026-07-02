@@ -831,6 +831,7 @@ function ElectivesTab({ classId, academicYearId, subjects }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [bandDialog, setBandDialog] = useState(false);
+  const [editBand, setEditBand] = useState(null); // band to edit
   const [delBand, setDelBand] = useState({ open: false, band: null });
   const [offeringFor, setOfferingFor] = useState(null); // band to add offering to
 
@@ -929,6 +930,11 @@ function ElectivesTab({ classId, academicYearId, subjects }) {
                         <AddIcon />
                       </IconButton>
                     </Tooltip>
+                    <Tooltip title="Edit band">
+                      <IconButton onClick={() => setEditBand(band)}>
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Delete band">
                       <IconButton
                         color="error"
@@ -975,6 +981,15 @@ function ElectivesTab({ classId, academicYearId, subjects }) {
           onSaved={load}
         />
       )}
+      {editBand && (
+        <BandDialog
+          classId={classId}
+          academicYearId={academicYearId}
+          band={editBand}
+          onClose={() => setEditBand(null)}
+          onSaved={load}
+        />
+      )}
       {offeringFor && (
         <OfferingDialog
           band={offeringFor}
@@ -997,10 +1012,11 @@ function ElectivesTab({ classId, academicYearId, subjects }) {
   );
 }
 
-function BandDialog({ classId, academicYearId, onClose, onSaved }) {
-  const [name, setName] = useState("");
-  const [periodsPerWeek, setPeriodsPerWeek] = useState(1);
-  const [blockRules, setBlockRules] = useState(undefined);
+function BandDialog({ classId, academicYearId, band, onClose, onSaved }) {
+  const isEdit = Boolean(band?.uuid);
+  const [name, setName] = useState(band?.name || "");
+  const [periodsPerWeek, setPeriodsPerWeek] = useState(band?.periodsPerWeek || 1);
+  const [blockRules, setBlockRules] = useState(band?.blockRules || undefined);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -1017,18 +1033,26 @@ function BandDialog({ classId, academicYearId, onClose, onSaved }) {
     setSaving(true);
     setError("");
     try {
-      await timetableService.createElectiveBand({
-        academicYearId,
-        classId,
-        name: name.trim(),
-        periodsPerWeek: ppw,
-        blockRules,
-      });
+      if (isEdit)
+        await timetableService.updateElectiveBand(band.uuid, {
+          name: name.trim(),
+          periodsPerWeek: ppw,
+          blockRules,
+        });
+      else
+        await timetableService.createElectiveBand({
+          academicYearId,
+          classId,
+          name: name.trim(),
+          periodsPerWeek: ppw,
+          blockRules,
+        });
       onSaved();
       onClose();
     } catch (err) {
       setError(
-        err.response?.data?.error?.description || "Failed to create band",
+        err.response?.data?.error?.description ||
+          `Failed to ${isEdit ? "update" : "create"} band`,
       );
     } finally {
       setSaving(false);
@@ -1037,7 +1061,7 @@ function BandDialog({ classId, academicYearId, onClose, onSaved }) {
 
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Elective Band</DialogTitle>
+      <DialogTitle>{isEdit ? "Edit Elective Band" : "Add Elective Band"}</DialogTitle>
       <DialogContent>
         {error && (
           <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
@@ -1071,7 +1095,7 @@ function BandDialog({ classId, academicYearId, onClose, onSaved }) {
           Cancel
         </Button>
         <Button variant="contained" onClick={save} disabled={saving}>
-          {saving ? "Saving..." : "Create"}
+          {saving ? "Saving..." : isEdit ? "Save" : "Create"}
         </Button>
       </DialogActions>
     </Dialog>

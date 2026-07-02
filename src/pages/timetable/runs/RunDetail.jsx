@@ -14,10 +14,12 @@ import {
 import {
   ArrowBack as BackIcon,
   InfoOutlined as InfoIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import { timetableService } from "../../../services/timetableService";
 import GridViewer from "../components/GridViewer";
+import { downloadRunExport } from "../components/exportDownload";
 import { useTimetablePerms } from "../components/usePerms";
 
 const SCORE_HELP =
@@ -97,6 +99,18 @@ export default function RunDetail() {
       setError(err.response?.data?.error?.description || "Failed to publish");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const doDownload = async (format) => {
+    setError("");
+    try {
+      await downloadRunExport(id, format);
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.description ||
+          `Could not download ${format.toUpperCase()} (it may still be rendering).`,
+      );
     }
   };
 
@@ -226,6 +240,24 @@ export default function RunDetail() {
               {selected && (
                 <>
                   <GridViewer config={config} entries={selected.entries || []} />
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      onClick={() => doDownload("xlsx")}
+                    >
+                      Download XLS
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      onClick={() => doDownload("pdf")}
+                    >
+                      Download PDF
+                    </Button>
+                  </Stack>
                   <Divider sx={{ my: 2 }} />
                   <Stack direction="row" spacing={2} alignItems="center">
                     <TextField

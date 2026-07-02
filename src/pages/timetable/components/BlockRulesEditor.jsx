@@ -7,10 +7,12 @@ import {
   Button,
   Stack,
   Alert,
-  MenuItem,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
+// Mon–Sat only (schools run Mon–Sat). Sunday is intentionally omitted here.
 const DAY_OPTIONS = [
   { value: 1, label: "Mon" },
   { value: 2, label: "Tue" },
@@ -18,7 +20,6 @@ const DAY_OPTIONS = [
   { value: 4, label: "Thu" },
   { value: 5, label: "Fri" },
   { value: 6, label: "Sat" },
-  { value: 7, label: "Sun" },
 ];
 
 // Edits class_subject / elective_band block_rules:
@@ -26,7 +27,8 @@ const DAY_OPTIONS = [
 // Emits `undefined` when there are no blocks (backend then defaults to singles).
 // Live-validates sum(size*count) === periodsPerWeek (matches backend timetable-util).
 // The preferred day/period is a SOFT hint: the solver tries it first but may move
-// the block to find a valid timetable.
+// the block to find a valid timetable. A block may prefer MULTIPLE days that all
+// share ONE preferred period — stored as prefer: [{ day, slot }, ...] (same slot).
 export default function BlockRulesEditor({ value, periodsPerWeek, onChange }) {
   const blocks = value?.blocks || [];
   const total = blocks.reduce(
@@ -58,20 +60,23 @@ export default function BlockRulesEditor({ value, periodsPerWeek, onChange }) {
   const removeBlock = (idx) =>
     emit({ ...value, blocks: blocks.filter((_, i) => i !== idx) });
 
-  // The preferred start is stored as block.prefer = [{ day, slot }] (one hint per block).
-  const prefDay = (b) => b.prefer?.[0]?.day ?? "";
+  // The preferred start is stored as block.prefer = [{ day, slot }, ...] — one or
+  // more days that all share the SAME preferred period (slot).
+  const prefDays = (b) => [...new Set((b.prefer || []).map((p) => p.day))];
   const prefSlot = (b) => b.prefer?.[0]?.slot ?? "";
-  const updatePrefer = (idx, day, slot) => {
-    const d = day === "" ? undefined : Number(day);
-    // No day = no hint. Picking a day defaults the period to 1 so the choice
-    // persists and the period field enables; the user can then adjust it.
-    if (!d) {
+  // Rebuild the prefer array from the selected days + one shared slot.
+  const writePrefer = (idx, days, slot) => {
+    if (!days || days.length === 0) {
       updateBlock(idx, { prefer: undefined });
       return;
     }
     const s = slot === "" || slot == null ? 1 : Math.max(1, Number(slot) || 1);
-    updateBlock(idx, { prefer: [{ day: d, slot: s }] });
+    updateBlock(idx, { prefer: days.map((day) => ({ day, slot: s })) });
   };
+  // Toggling days keeps the current shared period (defaults to 1 for the first day).
+  const updatePreferDays = (idx, days) => writePrefer(idx, days, prefSlot(blocks[idx]));
+  const updatePreferSlot = (idx, slot) =>
+    writePrefer(idx, prefDays(blocks[idx]), slot);
 
   return (
     <Box sx={{ border: "1px solid #e4e9f2", borderRadius: 1, p: 2 }}>
@@ -83,8 +88,9 @@ export default function BlockRulesEditor({ value, periodsPerWeek, onChange }) {
         sx={{ color: "#8f9bb3", display: "block", mb: 1.5 }}
       >
         Leave empty for all single periods. A size-2 block is a double (two
-        consecutive periods). Pref. day/period is an optional hint — the solver
-        tries it first but may move the block.
+        consecutive periods). Pref. days/period is an optional hint — pick one or
+        more days that share the same period; the solver tries it first but may
+        move the block.
       </Typography>
 
       <Stack spacing={1.5}>
@@ -121,29 +127,33 @@ export default function BlockRulesEditor({ value, periodsPerWeek, onChange }) {
             <Typography variant="body2" sx={{ color: "#8f9bb3" }}>
               = {(Number(b.size) || 0) * (Number(b.count) || 0)} periods
             </Typography>
-            <TextField
-              size="small"
-              select
-              label="Pref. day"
-              value={prefDay(b)}
-              onChange={(e) => updatePrefer(idx, e.target.value, prefSlot(b))}
-              sx={{ width: 110 }}
-            >
-              <MenuItem value="">None</MenuItem>
-              {DAY_OPTIONS.map((d) => (
-                <MenuItem key={d.value} value={d.value}>
-                  {d.label}
-                </MenuItem>
-              ))}
-            </TextField>
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{ color: "#8f9bb3", display: "block", mb: 0.25 }}
+              >
+                Pref. days
+              </Typography>
+              <ToggleButtonGroup
+                size="small"
+                value={prefDays(b)}
+                onChange={(e, days) => updatePreferDays(idx, days)}
+              >
+                {DAY_OPTIONS.map((d) => (
+                  <ToggleButton key={d.value} value={d.value}>
+                    {d.label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Box>
             <TextField
               size="small"
               type="number"
               label="Pref. period"
               value={prefSlot(b)}
-              onChange={(e) => updatePrefer(idx, prefDay(b), e.target.value)}
+              onChange={(e) => updatePreferSlot(idx, e.target.value)}
               sx={{ width: 110 }}
-              disabled={!prefDay(b)}
+              disabled={prefDays(b).length === 0}
             />
             <IconButton
               size="small"

@@ -265,6 +265,14 @@ export const timetableService = {
     const response = await api.get(`${BASE}/runs/${id}/candidates`);
     return response.data; // { candidates: [...] }
   },
+  // Rendered timetable export (format: 'xlsx' | 'pdf'); returns base64 JSON
+  // { fileName, mimeType, data } — decode to a Blob to download (see downloadRunExport).
+  exportRun: async (id, format = "xlsx") => {
+    const response = await api.get(`${BASE}/runs/${id}/export`, {
+      params: { format },
+    });
+    return response.data;
+  },
   publish: async (data) => {
     const response = await api.post(`${BASE}/publish`, data);
     return response.data;
