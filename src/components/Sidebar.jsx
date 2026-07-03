@@ -238,17 +238,19 @@ const menuItems = [
     perm: 'hiring.view',
   },
   {
+    // No parent perm: managers (transport.view) see all children; a
+    // transport-attendance teacher (transport.attendance.mark) sees only the two
+    // attendance items below, so the menu shows with just those.
     title: 'Transport',
     icon: TransportIcon,
-    perm: 'transport.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/transport' },
-      { title: 'Stops', icon: StopIcon, path: '/transport/stops' },
-      { title: 'Vehicles', icon: VehicleIcon, path: '/transport/vehicles' },
-      { title: 'Routes', icon: RouteIcon, path: '/transport/routes' },
-      { title: 'Student Assignments', icon: AssignmentIcon, path: '/transport/assignments' },
-      { title: 'Take Attendance', icon: MarkIcon, path: '/transport/attendance/mark' },
-      { title: 'Attendance History', icon: HistoryIcon, path: '/transport/attendance/sessions' },
+      { title: 'Overview', icon: OverviewIcon, path: '/transport', perm: 'transport.view' },
+      { title: 'Stops', icon: StopIcon, path: '/transport/stops', perm: 'transport.view' },
+      { title: 'Vehicles', icon: VehicleIcon, path: '/transport/vehicles', perm: 'transport.view' },
+      { title: 'Routes', icon: RouteIcon, path: '/transport/routes', perm: 'transport.view' },
+      { title: 'Student Assignments', icon: AssignmentIcon, path: '/transport/assignments', perm: 'transport.view' },
+      { title: 'Take Attendance', icon: MarkIcon, path: '/transport/attendance/mark', perm: 'transport.attendance.mark' },
+      { title: 'Attendance History', icon: HistoryIcon, path: '/transport/attendance/sessions', perm: 'transport.attendance.mark' },
     ],
   },
 ];

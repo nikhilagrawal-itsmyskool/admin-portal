@@ -40,6 +40,7 @@ export const ACTIONS = {
   HIRING_MANAGE: "hiring.manage",
   TRANSPORT_VIEW: "transport.view",
   TRANSPORT_MANAGE: "transport.manage",
+  TRANSPORT_ATTENDANCE_MARK: "transport.attendance.mark",
   TRANSPORT_ATTENDANCE_FINALIZE: "transport.attendance.finalize",
 };
 
@@ -200,8 +201,13 @@ export const ACTION_CATALOG = [
       "Add/edit/delete stops, vehicles, routes, route stops & student assignments",
   },
   {
+    action: ACTIONS.TRANSPORT_ATTENDANCE_MARK,
+    description:
+      "Reach the bus-attendance screens and mark attendance — for admin/god/transport-incharge on any route, and a transport-attendance teacher only on routes they're staffed on",
+  },
+  {
     action: ACTIONS.TRANSPORT_ATTENDANCE_FINALIZE,
     description:
-      "Finalize a transport (bus) attendance session and edit records after finalize (marking is open to all staff who can view)",
+      "Finalize a transport (bus) attendance session and edit records after finalize (admin/god/transport-incharge only)",
   },
 ];

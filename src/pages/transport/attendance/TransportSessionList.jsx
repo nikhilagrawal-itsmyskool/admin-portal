@@ -4,8 +4,13 @@ import {
 } from '@mui/material';
 import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { transportService } from '../../../services/transportService';
+import { useCan } from '../../../permissions/can';
+import { useAuth } from '../../../context/AuthContext';
+import { visibleTransportRoutes } from '../../../permissions/transportAccess';
 
 export default function TransportSessionList() {
+  const can = useCan();
+  const { user } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,15 +30,29 @@ export default function TransportSessionList() {
     }
   };
 
+  const canViewAll = can('transport.view');
+
   useEffect(() => {
     (async () => {
+      let rts = [];
       try {
-        const rts = await transportService.getRoutes();
+        rts = await transportService.getRoutes();
         setRoutes(rts || []);
       } catch { /* ignore */ }
+      // Managers browse all sessions; an attendance-only teacher is pinned to one
+      // of their own routes — no "All Routes" that would leak other routes.
+      if (!canViewAll) {
+        const mine = visibleTransportRoutes(rts, { user, canViewAll: false });
+        if (mine.length) { setRouteId(mine[0].uuid); load(mine[0].uuid); }
+        else { setSessions([]); setLoading(false); }
+        return;
+      }
+      load();
     })();
-    load();
   }, []);
+
+  // A transport-attendance teacher only sees history for routes they're staffed on.
+  const routeOptions = visibleTransportRoutes(routes, { user, canViewAll });
 
   const columns = [
     { field: 'attendanceDate', headerName: 'Date', width: 120 },
@@ -65,13 +84,15 @@ export default function TransportSessionList() {
             <Grid item xs={12} md={4}>
               <TextField fullWidth select size="small" label="Route" value={routeId}
                 onChange={(e) => { setRouteId(e.target.value); load(e.target.value); }}>
-                <MenuItem value="">All Routes</MenuItem>
-                {routes.map((r) => <MenuItem key={r.uuid} value={r.uuid}>{r.name} ({r.direction})</MenuItem>)}
+                {canViewAll && <MenuItem value="">All Routes</MenuItem>}
+                {routeOptions.map((r) => <MenuItem key={r.uuid} value={r.uuid}>{r.name} ({r.direction})</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={2}>
-              <Button variant="outlined" size="small" onClick={() => { setRouteId(''); load(''); }}>Clear</Button>
-            </Grid>
+            {canViewAll && (
+              <Grid item xs={12} md={2}>
+                <Button variant="outlined" size="small" onClick={() => { setRouteId(''); load(''); }}>Clear</Button>
+              </Grid>
+            )}
           </Grid>
         </CardContent>
       </Card>

@@ -9,6 +9,8 @@ import { transportService } from '../../../services/transportService';
 import { academicCalendarService } from '../../../services/academicCalendarService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useCan } from '../../../permissions/can';
+import { useAuth } from '../../../context/AuthContext';
+import { visibleTransportRoutes } from '../../../permissions/transportAccess';
 
 const STATUSES = [
   { value: 'boarded', label: 'B', color: 'success' },
@@ -20,6 +22,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function TransportTakeAttendance() {
   const can = useCan();
+  const { user } = useAuth();
   const canFinalize = can('transport.attendance.finalize');
 
   const [routes, setRoutes] = useState([]);
@@ -54,6 +57,9 @@ export default function TransportTakeAttendance() {
       }
     })();
   }, []);
+
+  // A transport-attendance teacher only picks from routes they're staffed on.
+  const routeOptions = visibleTransportRoutes(routes, { user, canViewAll: can('transport.view') });
 
   const finalized = session?.status === 'finalized';
 
@@ -132,7 +138,7 @@ export default function TransportTakeAttendance() {
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={4}>
               <TextField fullWidth select size="small" label="Route" value={routeId} onChange={(e) => setRouteId(e.target.value)}>
-                {routes.map((r) => <MenuItem key={r.uuid} value={r.uuid}>{r.name} ({r.direction})</MenuItem>)}
+                {routeOptions.map((r) => <MenuItem key={r.uuid} value={r.uuid}>{r.name} ({r.direction})</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>

@@ -33,9 +33,12 @@ export const ROLE_PERMISSIONS = {
     "hiring.manage",
     "transport.view",
     "transport.manage",
+    "transport.attendance.mark",
     "transport.attendance.finalize",
   ],
   // Standard teaching staff: view-only across the modules they can reach.
+  // No transport access by default — bus attendance needs the `transport-attendance`
+  // role below (and route assignment), not plain `teacher`.
   teacher: [
     "sports.view",
     "asset.view",
@@ -44,7 +47,6 @@ export const ROLE_PERMISSIONS = {
     "timetable.view", // Published timetable only (menu gates the rest)
     "student.view",
     "employee.view",
-    "transport.view", // reach the module + mark bus attendance (finalize is gated)
   ],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
@@ -55,6 +57,11 @@ export const ROLE_PERMISSIONS = {
   "supplies-incharge": ["supplies.*"],
   "hiring-incharge": ["hiring.*"],
   "transport-incharge": ["transport.*"],
+  // Route-scoped teacher: reach the bus-attendance screens and mark attendance,
+  // but only for routes they are staffed on (accompanying teacher / helper /
+  // route incharge). The route filtering is enforced in the attendance pages;
+  // finalize stays admin/god/transport-incharge only.
+  "transport-attendance": ["transport.attendance.mark"],
 };
 
 // Roles to show as columns in the generated permissions.md matrix.
@@ -70,4 +77,5 @@ export const DOC_ROLES = [
   "supplies-incharge",
   "hiring-incharge",
   "transport-incharge",
+  "transport-attendance",
 ];
