@@ -21,6 +21,9 @@ import {
   AccordionDetails,
   Card,
   CardContent,
+  MenuItem,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -458,20 +461,26 @@ function CohortBands({ group, academicYearId, subjects, canMutate }) {
                     No subjects yet.
                   </Typography>
                 )}
-                {(band.offerings || []).map((o) => (
-                  <Chip
-                    key={o.uuid}
-                    label={
-                      <span>
-                        {o.subjectName || o.subjectId} —{" "}
-                        <TeacherName id={o.teacherId} />
-                        {o.periodShare ? ` (${o.periodShare})` : ""}
-                      </span>
-                    }
-                    onDelete={canMutate ? () => removeOffering(o.uuid) : undefined}
-                    variant="outlined"
-                  />
-                ))}
+                {(band.offerings || []).map((o) => {
+                  const stream = o.classId
+                    ? (group.classes || []).find((c) => c.classId === o.classId)
+                    : null;
+                  return (
+                    <Chip
+                      key={o.uuid}
+                      label={
+                        <span>
+                          {stream ? `[${stream.className || o.classId}] ` : ""}
+                          {o.subjectName || o.subjectId} —{" "}
+                          <TeacherName id={o.teacherId} />
+                          {o.periodShare ? ` (${o.periodShare})` : ""}
+                        </span>
+                      }
+                      onDelete={canMutate ? () => removeOffering(o.uuid) : undefined}
+                      variant="outlined"
+                    />
+                  );
+                })}
               </Stack>
             </CardContent>
           </Card>
@@ -499,6 +508,7 @@ function CohortBands({ group, academicYearId, subjects, canMutate }) {
         <CohortOfferingDialog
           band={offeringFor}
           subjects={subjects}
+          members={group.classes || []}
           onClose={() => setOfferingFor(null)}
           onSaved={() => {
             setOfferingFor(null);
@@ -522,6 +532,9 @@ function CohortBandDialog({ classGroupId, academicYearId, band, onClose, onSaved
   const [name, setName] = useState(band?.name || "");
   const [periodsPerWeek, setPeriodsPerWeek] = useState(band?.periodsPerWeek || 1);
   const [blockRules, setBlockRules] = useState(band?.blockRules || undefined);
+  // parallel = the two streams run their OWN subjects at the same block (co_schedule=false);
+  // default is "together" (pooled). Existing bands: coSchedule===false means parallel.
+  const [parallel, setParallel] = useState(band?.coSchedule === false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -543,6 +556,7 @@ function CohortBandDialog({ classGroupId, academicYearId, band, onClose, onSaved
           name: name.trim(),
           periodsPerWeek: ppw,
           blockRules,
+          coSchedule: !parallel,
         });
       else
         await timetableService.createElectiveBand({
@@ -551,6 +565,7 @@ function CohortBandDialog({ classGroupId, academicYearId, band, onClose, onSaved
           name: name.trim(),
           periodsPerWeek: ppw,
           blockRules,
+          coSchedule: !parallel,
         });
       onSaved();
       onClose();
@@ -585,6 +600,20 @@ function CohortBandDialog({ classGroupId, academicYearId, band, onClose, onSaved
           onChange={(e) => setName(e.target.value)}
           sx={{ mt: 2, mb: 2 }}
         />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={parallel}
+              onChange={(e) => setParallel(e.target.checked)}
+            />
+          }
+          label="Parallel streams (each stream studies its own subjects)"
+        />
+        <Typography variant="caption" sx={{ color: "#8f9bb3", display: "block", mb: 2 }}>
+          {parallel
+            ? "Parallel: each stream runs its OWN offerings at this block (e.g. Science: Bio/Maths, Commerce: Accountancy). Kept aligned where possible, but they may differ — set each offering's stream below."
+            : "Together (default): one pooled block — all streams share the same offerings and slots (students regroup by choice)."}
+        </Typography>
         <TextField
           fullWidth
           type="number"
@@ -611,10 +640,12 @@ function CohortBandDialog({ classGroupId, academicYearId, band, onClose, onSaved
   );
 }
 
-function CohortOfferingDialog({ band, subjects, onClose, onSaved }) {
+function CohortOfferingDialog({ band, subjects, members = [], onClose, onSaved }) {
+  const parallel = band?.coSchedule === false;
   const [subjectId, setSubjectId] = useState("");
   const [teacher, setTeacher] = useState(null);
   const [share, setShare] = useState("");
+  const [classId, setClassId] = useState(""); // "" = shared by all streams
   const [picker, setPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -635,6 +666,7 @@ function CohortOfferingDialog({ band, subjects, onClose, onSaved }) {
         subjectId,
         teacherId: teacher.uuid,
         periodShare: share === "" ? undefined : Number(share),
+        classId: parallel && classId ? classId : undefined,
       });
       onSaved();
     } catch (err) {
@@ -662,6 +694,24 @@ function CohortOfferingDialog({ band, subjects, onClose, onSaved }) {
           onChange={(e, v) => setSubjectId(v?.uuid || "")}
           renderInput={(params) => <TextField {...params} label="Subject" />}
         />
+        {parallel && (
+          <TextField
+            select
+            fullWidth
+            label="Which stream?"
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            helperText="Whose subject is this? Pick a stream, or 'Shared' if both streams study it."
+            sx={{ mb: 2 }}
+          >
+            <MenuItem value="">Shared (all streams)</MenuItem>
+            {members.map((m) => (
+              <MenuItem key={m.classId} value={m.classId}>
+                {m.className || m.classId}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
         <Stack direction="row" spacing={2} alignItems="center">
           <Typography variant="body2">Teacher:</Typography>
           <Chip label={teacher?.name || "none"} />

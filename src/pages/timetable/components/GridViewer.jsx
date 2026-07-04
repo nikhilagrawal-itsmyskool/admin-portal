@@ -22,7 +22,14 @@ import { classService } from "../../../services/classService";
 const withCode = (name, code) => (code ? `${name} (${code})` : name || "");
 
 // Toggle between per-class and per-teacher grid views over a set of entries.
-export default function GridViewer({ config, entries = [], printHeader = "" }) {
+export default function GridViewer({
+  config,
+  entries = [],
+  printHeader = "",
+  editable = false,
+  publishedTimetableId,
+  onChanged,
+}) {
   const { canPrint } = useTimetablePerms();
   const [mode, setMode] = useState("class");
   const [selectedId, setSelectedId] = useState("");
@@ -177,6 +184,9 @@ export default function GridViewer({ config, entries = [], printHeader = "" }) {
           selectedId={selectedId}
           classById={classById}
           teacherById={teacherById}
+          editable={editable && mode === "class"}
+          publishedTimetableId={publishedTimetableId}
+          onChanged={onChanged}
         />
       )}
 

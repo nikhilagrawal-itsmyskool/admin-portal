@@ -26,6 +26,8 @@ export default function PublishedTimetable() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [view, setView] = useState("individual"); // 'individual' (class/teacher) | 'master'
+  const [editMode, setEditMode] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Which scopes (whole-school + wings) have an active published master this year.
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function PublishedTimetable() {
         ),
       )
       .finally(() => setLoading(false));
-  }, [academicYearId, scope, scopes.length]);
+  }, [academicYearId, scope, scopes.length, reloadKey]);
 
   const pt = data?.publishedTimetable;
 
@@ -122,20 +124,35 @@ export default function PublishedTimetable() {
       ) : (
         <Card>
           <CardContent>
-            <ToggleButtonGroup
-              size="small"
-              exclusive
-              value={view}
-              sx={{ mb: 2 }}
-              onChange={(e, v) => {
-                if (v) setView(v);
-              }}
-            >
-              <ToggleButton value="individual">Class / Teacher</ToggleButton>
-              <ToggleButton value="master">Master</ToggleButton>
-            </ToggleButtonGroup>
+            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={view}
+                onChange={(e, v) => {
+                  if (v) setView(v);
+                }}
+              >
+                <ToggleButton value="individual">Class / Teacher</ToggleButton>
+                <ToggleButton value="master">Master</ToggleButton>
+              </ToggleButtonGroup>
+              {view === "individual" && (
+                <Chip
+                  label={editMode ? "Editing — click a period" : "Edit"}
+                  color={editMode ? "warning" : "default"}
+                  variant={editMode ? "filled" : "outlined"}
+                  onClick={() => setEditMode((v) => !v)}
+                />
+              )}
+            </Stack>
             {view === "individual" ? (
-              <GridViewer config={data.config} entries={data.entries || []} />
+              <GridViewer
+                config={data.config}
+                entries={data.entries || []}
+                editable={editMode}
+                publishedTimetableId={pt.uuid}
+                onChanged={() => setReloadKey((k) => k + 1)}
+              />
             ) : (
               <MasterTimetable
                 config={data.config}

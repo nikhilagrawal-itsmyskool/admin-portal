@@ -293,4 +293,17 @@ export const timetableService = {
     const response = await api.post(`${BASE}/validate-move`, data);
     return response.data;
   },
+  // Manual editing of the published master (Edit mode). Body carries publishedTimetableId.
+  movePublishedEntry: async (id, data) => {
+    const response = await api.put(`${BASE}/published/entries/${id}/move`, data);
+    return response.data;
+  },
+  editPublishedEntry: async (id, data) => {
+    const response = await api.put(`${BASE}/published/entries/${id}`, data);
+    return response.data;
+  },
+  swapPublishedEntries: async (data) => {
+    const response = await api.post(`${BASE}/published/swap`, data);
+    return response.data;
+  },
 };

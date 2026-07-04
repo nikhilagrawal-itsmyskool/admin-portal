@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, Typography, Paper } from "@mui/material";
+import EditCellDialog from "./EditCellDialog";
 
 const DOW_LABEL = {
   1: "Mon",
@@ -27,7 +28,11 @@ export default function TimetableGrid({
   selectedId,
   classById = {},
   teacherById = {},
+  editable = false,
+  publishedTimetableId,
+  onChanged,
 }) {
+  const [editingCell, setEditingCell] = useState(null); // { day, slot, items }
   if (!config?.days?.length)
     return (
       <Typography sx={{ color: "#8f9bb3" }}>No grid configured.</Typography>
@@ -127,14 +132,18 @@ export default function TimetableGrid({
       );
     }
     const items = bySlot.get(slot.uuid) || [];
+    const canEdit = editable && items.length > 0;
     return (
       <Box
+        onClick={canEdit ? () => setEditingCell({ day, slot, items }) : undefined}
         sx={{
           minHeight: 64,
           bgcolor: TEACH_BG,
           border: "1px solid #e4e9f2",
           borderRadius: 1,
           p: 0.5,
+          cursor: canEdit ? "pointer" : "default",
+          "&:hover": canEdit ? { borderColor: "#598bff", boxShadow: 1 } : undefined,
         }}
       >
         {items.map((e) => (
@@ -206,7 +215,20 @@ export default function TimetableGrid({
         sx={{ color: "#8f9bb3", mt: 1, display: "block" }}
       >
         * = elective band (parallel options)
+        {editable ? " · click a period to edit, move or swap it" : ""}
       </Typography>
+      {editingCell && (
+        <EditCellDialog
+          open
+          onClose={() => setEditingCell(null)}
+          publishedTimetableId={publishedTimetableId}
+          classId={selectedId}
+          group={editingCell.items}
+          config={config}
+          allEntries={entries}
+          onChanged={() => onChanged && onChanged()}
+        />
+      )}
     </Paper>
   );
 }
