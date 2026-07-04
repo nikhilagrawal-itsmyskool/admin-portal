@@ -2,9 +2,10 @@ import api from '../config/api';
 
 export const studentService = {
   // ---- Search / list ----
-  searchStudents: async (params = {}) => {
+  searchStudents: async (params = {}, signal) => {
     // params: { name, classId, academicYearId, admissionNumber, phone }
-    const response = await api.get('/students/search', { params });
+    // signal: optional AbortSignal so callers (e.g. type-ahead) can cancel stale requests
+    const response = await api.get('/students/search', { params, signal });
     return response.data;
   },
 

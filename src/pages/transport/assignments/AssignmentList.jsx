@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, IconButton, Alert, Chip, Grid, MenuItem, TextField,
-  Autocomplete, Dialog, DialogTitle, DialogContent, DialogActions,
+  Autocomplete, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { transportService } from '../../../services/transportService';
 import { studentService } from '../../../services/studentService';
+import { classService } from '../../../services/classService';
 import { academicCalendarService } from '../../../services/academicCalendarService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useCan } from '../../../permissions/can';
@@ -18,8 +19,18 @@ export default function AssignmentList() {
   const [assignments, setAssignments] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [years, setYears] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // student picker — server-side async search (name + optional class filter)
+  const [studentOptions, setStudentOptions] = useState([]);
+  const [studentInput, setStudentInput] = useState('');
+  const [studentLoading, setStudentLoading] = useState(false);
+  const [pickClass, setPickClass] = useState(null); // null = All classes
+
+  const searchSeq = useRef(0);
+  const searchTimer = useRef(null);
+  const searchAbort = useRef(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -51,26 +62,77 @@ export default function AssignmentList() {
     }
   };
 
+  // Server-side student search. A monotonic sequence + AbortController guard
+  // ensure a slow response for an earlier keystroke can never overwrite a newer
+  // one (the "type Arjun → nothing, edit → appears" race).
+  const runStudentSearch = useCallback((name, classId) => {
+    const seq = ++searchSeq.current;
+    searchAbort.current?.abort();
+    const controller = new AbortController();
+    searchAbort.current = controller;
+    setStudentLoading(true);
+
+    const params = {};
+    if (name && name.trim()) params.name = name.trim();
+    if (classId) params.classId = classId;
+
+    studentService
+      .searchStudents(params, controller.signal)
+      .then((data) => {
+        if (seq !== searchSeq.current) return; // superseded by a newer search
+        setStudentOptions(Array.isArray(data) ? data : data?.students || []);
+      })
+      .catch(() => {
+        if (controller.signal.aborted || seq !== searchSeq.current) return;
+        setStudentOptions([]);
+      })
+      .finally(() => {
+        if (seq === searchSeq.current) setStudentLoading(false);
+      });
+  }, []);
+
+  const debouncedStudentSearch = useCallback((name, classId) => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => runStudentSearch(name, classId), 250);
+  }, [runStudentSearch]);
+
   useEffect(() => {
     (async () => {
       try {
-        const [rts, yrs, studs] = await Promise.all([
+        const [rts, yrs, cls] = await Promise.all([
           transportService.getRoutes(),
           academicCalendarService.getAcademicYears(),
-          studentService.searchStudents(),
+          classService.getClasses(),
         ]);
         setRoutes(rts || []);
         setYears(Array.isArray(yrs) ? yrs : yrs?.academicYears || []);
-        setStudents(Array.isArray(studs) ? studs : studs?.students || []);
+        setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
         try {
           const cur = await academicCalendarService.getCurrentAcademicYear();
           if (cur?.uuid) setAddForm((f) => ({ ...f, academicYearId: cur.uuid }));
         } catch { /* no current year */ }
       } catch {
-        setError('Failed to load routes / students');
+        setError('Failed to load routes / classes');
       }
     })();
     loadAssignments();
+  }, []);
+
+  // Populate the (unfiltered) student list when the Assign dialog opens; reset
+  // the picker when it closes.
+  useEffect(() => {
+    if (addOpen) {
+      runStudentSearch('', undefined);
+    } else {
+      setPickClass(null);
+      setStudentInput('');
+      setStudentOptions([]);
+    }
+  }, [addOpen, runStudentSearch]);
+
+  useEffect(() => () => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchAbort.current?.abort();
   }, []);
 
   // When a route is picked in the add dialog, load its stops.
@@ -199,10 +261,51 @@ export default function AssignmentList() {
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Autocomplete options={students} getOptionLabel={(o) => `${o.name}${o.admissionNo ? ` (${o.admissionNo})` : ''}`}
-                isOptionEqualToValue={(o, v) => o.uuid === v.uuid} value={addForm.student}
+              <Autocomplete
+                options={classes}
+                getOptionLabel={(o) => o?.name || ''}
+                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                value={pickClass}
+                onChange={(_, v) => { setPickClass(v); runStudentSearch(studentInput, v?.uuid); }}
+                renderInput={(params) => <TextField {...params} label="Class (filter)" size="small" placeholder="All classes" />}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Autocomplete
+                options={studentOptions}
+                loading={studentLoading}
+                filterOptions={(x) => x}
+                getOptionLabel={(o) => {
+                  if (!o?.name) return '';
+                  const cls = o.className || o.class_name;
+                  return cls ? `${o.name} — ${cls}` : o.name;
+                }}
+                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                value={addForm.student}
                 onChange={(_, v) => setAddForm({ ...addForm, student: v })}
-                renderInput={(params) => <TextField {...params} label="Student" size="small" />} />
+                inputValue={studentInput}
+                onInputChange={(_, v, reason) => {
+                  setStudentInput(v);
+                  if (reason === 'input') debouncedStudentSearch(v, pickClass?.uuid);
+                }}
+                noOptionsText={studentLoading ? 'Searching…' : 'No students'}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Student"
+                    size="small"
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {studentLoading ? <CircularProgress color="inherit" size={16} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField fullWidth select label="Route" value={addForm.routeId} onChange={(e) => onPickRoute(e.target.value)} size="small">
