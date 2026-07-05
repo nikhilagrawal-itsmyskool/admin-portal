@@ -12,7 +12,15 @@ export function getSchoolCode() {
       return subdomain;
     }
   }
-  return import.meta.env.VITE_SCHOOL_CODE || 'demo';
+  // Non-school host (e.g. the Amplify *.amplifyapp.com preview URL): use a stored
+  // code, else prompt once and remember it. Lets us verify a specific school's
+  // deployment in parallel without touching its live schoolCode.itsmyskool.com host.
+  let code = localStorage.getItem('school_code_override');
+  if (!code) {
+    code = window.prompt('Enter school code');
+    if (code) localStorage.setItem('school_code_override', code);
+  }
+  return code || import.meta.env.VITE_SCHOOL_CODE || 'demo';
 }
 
 const api = axios.create({
