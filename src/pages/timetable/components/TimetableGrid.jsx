@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, Paper } from "@mui/material";
+import { Box, Typography, Paper, useMediaQuery, useTheme } from "@mui/material";
 import EditCellDialog from "./EditCellDialog";
 
 const DOW_LABEL = {
@@ -33,6 +33,8 @@ export default function TimetableGrid({
   onChanged,
 }) {
   const [editingCell, setEditingCell] = useState(null); // { day, slot, items }
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   if (!config?.days?.length)
     return (
       <Typography sx={{ color: "#8f9bb3" }}>No grid configured.</Typography>
@@ -167,55 +169,99 @@ export default function TimetableGrid({
     );
   };
 
-  return (
+  // Desktop: the transposed grid (periods across, days down), horizontally scrollable.
+  const desktopGrid = (
     <Paper variant="outlined" sx={{ overflowX: "auto", p: 1 }}>
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: `64px repeat(${days.length}, minmax(150px, 1fr))`,
+          gridTemplateColumns: `100px repeat(${seqs.length}, minmax(150px, 1fr))`,
           gap: 0.5,
-          minWidth: 64 + days.length * 150,
+          minWidth: 100 + seqs.length * 150,
         }}
       >
+        {/* Header row: corner + one column per period (x-axis = periods). */}
         <Box sx={{ fontWeight: 600, p: 0.5 }}>
-          <Typography variant="caption">Period</Typography>
+          <Typography variant="caption">Day</Typography>
         </Box>
-        {days.map((d) => (
-          <Box key={d.uuid} sx={{ p: 0.5, textAlign: "center" }}>
-            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-              {d.label || DOW_LABEL[d.dayOfWeek] || d.dayOfWeek}
+        {seqs.map((seq) => (
+          <Box key={`h-${seq}`} sx={{ p: 0.5, textAlign: "center" }}>
+            <Typography
+              variant="caption"
+              sx={{ fontWeight: 600, color: "#8f9bb3" }}
+            >
+              {seq}
             </Typography>
           </Box>
         ))}
-        {seqs.map((seq) => (
-          <React.Fragment key={seq}>
-            <Box
-              sx={{
-                p: 0.5,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 600, color: "#8f9bb3" }}
-              >
-                {seq}
+        {/* One row per day (y-axis = days); cells are that day's periods left→right. */}
+        {days.map((d) => (
+          <React.Fragment key={d.uuid}>
+            <Box sx={{ p: 0.5, display: "flex", alignItems: "center" }}>
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                {d.label || DOW_LABEL[d.dayOfWeek] || d.dayOfWeek}
               </Typography>
             </Box>
-            {days.map((d) => (
+            {seqs.map((seq) => (
               <Box key={`${d.uuid}-${seq}`}>{cell(d, seq)}</Box>
             ))}
           </React.Fragment>
         ))}
       </Box>
+    </Paper>
+  );
+
+  // Mobile: the wide grid is awkward on a phone, so stack one section per day with its
+  // periods listed vertically (period number left, the same cell right). Reuses cell().
+  const mobileList = (
+    <Box>
+      {days.map((d) => (
+        <Paper key={d.uuid} variant="outlined" sx={{ mb: 1.5, p: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+            {d.label || DOW_LABEL[d.dayOfWeek] || d.dayOfWeek}
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "36px 1fr",
+              gap: 0.5,
+              alignItems: "stretch",
+            }}
+          >
+            {seqs.map((seq) => (
+              <React.Fragment key={`${d.uuid}-${seq}`}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 600, color: "#8f9bb3" }}
+                  >
+                    {seq}
+                  </Typography>
+                </Box>
+                <Box>{cell(d, seq)}</Box>
+              </React.Fragment>
+            ))}
+          </Box>
+        </Paper>
+      ))}
+    </Box>
+  );
+
+  return (
+    <Box>
+      {isMobile ? mobileList : desktopGrid}
       <Typography
         variant="caption"
         sx={{ color: "#8f9bb3", mt: 1, display: "block" }}
       >
         * = elective band (parallel options)
-        {editable ? " · click a period to edit, move or swap it" : ""}
+        {editable ? " · tap a period to edit, move or swap it" : ""}
       </Typography>
       {editingCell && (
         <EditCellDialog
@@ -229,6 +275,6 @@ export default function TimetableGrid({
           onChanged={() => onChanged && onChanged()}
         />
       )}
-    </Paper>
+    </Box>
   );
 }

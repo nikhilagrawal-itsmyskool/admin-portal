@@ -29,15 +29,23 @@ export default function GridViewer({
   editable = false,
   publishedTimetableId,
   onChanged,
+  onModeChange,
+  initialMode,
+  initialSelectedId,
 }) {
   const { canPrint } = useTimetablePerms();
-  const [mode, setMode] = useState("class");
-  const [selectedId, setSelectedId] = useState("");
+  const [mode, setMode] = useState(initialMode || "class");
+  const [selectedId, setSelectedId] = useState(initialSelectedId || "");
   const [classById, setClassById] = useState({}); // uuid -> { name, code }
   const [classRank, setClassRank] = useState({}); // uuid -> canonical order index
   const [teacherById, setTeacherById] = useState({}); // id -> { name, code }
   const [printing, setPrinting] = useState(false);
   const [printTitle, setPrintTitle] = useState("");
+
+  // Report the active view up so parents can, e.g., show downloads only on Master.
+  useEffect(() => {
+    if (onModeChange) onModeChange(mode);
+  }, [mode, onModeChange]);
 
   useEffect(() => {
     classService

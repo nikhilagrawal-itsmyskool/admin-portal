@@ -208,6 +208,8 @@ export default function GenerateWizard() {
     }
   };
 
+  const [gridMode, setGridMode] = useState("class");
+
   const doDownload = async (format) => {
     setError("");
     try {
@@ -503,25 +505,28 @@ export default function GenerateWizard() {
                     <GridViewer
                       config={fullConfig}
                       entries={selectedCand.entries || []}
+                      onModeChange={setGridMode}
                     />
-                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<DownloadIcon />}
-                        onClick={() => doDownload("xlsx")}
-                      >
-                        Download XLS
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<DownloadIcon />}
-                        onClick={() => doDownload("pdf")}
-                      >
-                        Download PDF
-                      </Button>
-                    </Stack>
+                    {gridMode === "master" && (
+                      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<DownloadIcon />}
+                          onClick={() => doDownload("xlsx")}
+                        >
+                          Download XLS
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<DownloadIcon />}
+                          onClick={() => doDownload("pdf")}
+                        >
+                          Download PDF
+                        </Button>
+                      </Stack>
+                    )}
                     <Divider sx={{ my: 2 }} />
                     <Stack direction="row" spacing={2} alignItems="center">
                       <TextField

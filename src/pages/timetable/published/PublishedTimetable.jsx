@@ -17,6 +17,7 @@ import { timetableService } from "../../../services/timetableService";
 import { AcademicYearSelect } from "../components/Selectors";
 import GridViewer from "../components/GridViewer";
 import MasterTimetable from "../components/MasterTimetable";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function PublishedTimetable() {
   const [academicYearId, setAcademicYearId] = useState("");
@@ -28,6 +29,13 @@ export default function PublishedTimetable() {
   const [view, setView] = useState("individual"); // 'individual' (class/teacher) | 'master'
   const [editMode, setEditMode] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const { user } = useAuth();
+  // A logged-in teacher (an employee whose id teaches in this timetable) defaults to
+  // their own By-Teacher view with their id preselected.
+  const myTeacherId = user?.employeeId || user?.id || "";
+  const iAmTeacher =
+    !!myTeacherId &&
+    (data?.entries || []).some((e) => e.teacherId === myTeacherId);
 
   // Which scopes (whole-school + wings) have an active published master this year.
   useEffect(() => {
@@ -152,6 +160,8 @@ export default function PublishedTimetable() {
                 editable={editMode}
                 publishedTimetableId={pt.uuid}
                 onChanged={() => setReloadKey((k) => k + 1)}
+                initialMode={iAmTeacher ? "teacher" : undefined}
+                initialSelectedId={iAmTeacher ? myTeacherId : undefined}
               />
             ) : (
               <MasterTimetable

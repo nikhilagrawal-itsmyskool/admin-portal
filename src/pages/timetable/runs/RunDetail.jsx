@@ -102,6 +102,8 @@ export default function RunDetail() {
     }
   };
 
+  const [gridMode, setGridMode] = useState("class");
+
   const doDownload = async (format) => {
     setError("");
     try {
@@ -239,25 +241,31 @@ export default function RunDetail() {
 
               {selected && (
                 <>
-                  <GridViewer config={config} entries={selected.entries || []} />
-                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<DownloadIcon />}
-                      onClick={() => doDownload("xlsx")}
-                    >
-                      Download XLS
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<DownloadIcon />}
-                      onClick={() => doDownload("pdf")}
-                    >
-                      Download PDF
-                    </Button>
-                  </Stack>
+                  <GridViewer
+                    config={config}
+                    entries={selected.entries || []}
+                    onModeChange={setGridMode}
+                  />
+                  {gridMode === "master" && (
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => doDownload("xlsx")}
+                      >
+                        Download XLS
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => doDownload("pdf")}
+                      >
+                        Download PDF
+                      </Button>
+                    </Stack>
+                  )}
                   <Divider sx={{ my: 2 }} />
                   <Stack direction="row" spacing={2} alignItems="center">
                     <TextField
