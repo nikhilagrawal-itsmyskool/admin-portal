@@ -202,13 +202,13 @@ export default function TimetableGrid({
         <Box sx={{ fontWeight: 600, p: 0.5 }}>
           <Typography variant="caption">Day</Typography>
         </Box>
-        {visibleSeqs.map((seq) => (
+        {visibleSeqs.map((seq, idx) => (
           <Box key={`h-${seq}`} sx={{ p: 0.5, textAlign: "center" }}>
             <Typography
               variant="caption"
               sx={{ fontWeight: 600, color: "#8f9bb3" }}
             >
-              {seq}
+              {hideNonTeaching ? idx + 1 : seq}
             </Typography>
           </Box>
         ))}
@@ -246,7 +246,7 @@ export default function TimetableGrid({
               alignItems: "stretch",
             }}
           >
-            {visibleSeqs.map((seq) => (
+            {visibleSeqs.map((seq, idx) => (
               <React.Fragment key={`${d.uuid}-${seq}`}>
                 <Box
                   sx={{
@@ -259,7 +259,7 @@ export default function TimetableGrid({
                     variant="caption"
                     sx={{ fontWeight: 600, color: "#8f9bb3" }}
                   >
-                    {seq}
+                    {hideNonTeaching ? idx + 1 : seq}
                   </Typography>
                 </Box>
                 <Box>{cell(d, seq)}</Box>
