@@ -8,6 +8,8 @@ import {
   Stack,
   Button,
   Typography,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { Print as PrintIcon } from "@mui/icons-material";
 import TimetableGrid from "./TimetableGrid";
@@ -41,6 +43,8 @@ export default function GridViewer({
   const [teacherById, setTeacherById] = useState({}); // id -> { name, code }
   const [printing, setPrinting] = useState(false);
   const [printTitle, setPrintTitle] = useState("");
+  const [hideNonTeaching, setHideNonTeaching] = useState(true);
+  const [fitToWidth, setFitToWidth] = useState(true);
 
   // Report the active view up so parents can, e.g., show downloads only on Master.
   useEffect(() => {
@@ -181,6 +185,30 @@ export default function GridViewer({
             Print
           </Button>
         )}
+        {mode !== "master" && (
+          <>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={hideNonTeaching}
+                  onChange={(e) => setHideNonTeaching(e.target.checked)}
+                />
+              }
+              label="Hide non-teaching periods"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={fitToWidth}
+                  onChange={(e) => setFitToWidth(e.target.checked)}
+                />
+              }
+              label="Fit to width"
+            />
+          </>
+        )}
       </Stack>
       {mode === "master" ? (
         <MasterTimetable config={config} entries={entries} />
@@ -195,6 +223,8 @@ export default function GridViewer({
           editable={editable && mode === "class"}
           publishedTimetableId={publishedTimetableId}
           onChanged={onChanged}
+          hideNonTeaching={hideNonTeaching}
+          fitToWidth={fitToWidth}
         />
       )}
 
@@ -216,6 +246,8 @@ export default function GridViewer({
             selectedId={selectedId}
             classById={classById}
             teacherById={teacherById}
+            hideNonTeaching={hideNonTeaching}
+            fitToWidth
           />
         </Box>
       </PrintLayer>

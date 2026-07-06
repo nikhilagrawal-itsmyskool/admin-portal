@@ -31,6 +31,8 @@ export default function TimetableGrid({
   editable = false,
   publishedTimetableId,
   onChanged,
+  hideNonTeaching = true,
+  fitToWidth = true,
 }) {
   const [editingCell, setEditingCell] = useState(null); // { day, slot, items }
   const theme = useTheme();
@@ -44,6 +46,16 @@ export default function TimetableGrid({
   const seqs = [
     ...new Set(days.flatMap((d) => (d.slots || []).map((s) => s.sequence))),
   ].sort((a, b) => a - b);
+  // Periods that are teaching on at least one day; hide the rest (break / assembly /
+  // lunch / registration) when hideNonTeaching is on.
+  const teachingSeqs = seqs.filter((seq) =>
+    days.some((d) =>
+      (d.slots || []).some(
+        (s) => s.sequence === seq && s.slotType === "teaching",
+      ),
+    ),
+  );
+  const visibleSeqs = hideNonTeaching ? teachingSeqs : seqs;
 
   const mine = entries.filter((e) =>
     mode === "class" ? e.classId === selectedId : e.teacherId === selectedId,
@@ -169,22 +181,28 @@ export default function TimetableGrid({
     );
   };
 
-  // Desktop: the transposed grid (periods across, days down), horizontally scrollable.
+  // Desktop: transposed grid (periods across, days down). fitToWidth makes columns fill
+  // the width (cells shrink to fit screen/page); otherwise a fixed min-width + scroll.
   const desktopGrid = (
-    <Paper variant="outlined" sx={{ overflowX: "auto", p: 1 }}>
+    <Paper
+      variant="outlined"
+      sx={{ overflowX: fitToWidth ? "visible" : "auto", p: 1 }}
+    >
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: `100px repeat(${seqs.length}, minmax(150px, 1fr))`,
+          gridTemplateColumns: fitToWidth
+            ? `72px repeat(${visibleSeqs.length}, 1fr)`
+            : `100px repeat(${visibleSeqs.length}, minmax(150px, 1fr))`,
           gap: 0.5,
-          minWidth: 100 + seqs.length * 150,
+          ...(fitToWidth ? {} : { minWidth: 100 + visibleSeqs.length * 150 }),
         }}
       >
         {/* Header row: corner + one column per period (x-axis = periods). */}
         <Box sx={{ fontWeight: 600, p: 0.5 }}>
           <Typography variant="caption">Day</Typography>
         </Box>
-        {seqs.map((seq) => (
+        {visibleSeqs.map((seq) => (
           <Box key={`h-${seq}`} sx={{ p: 0.5, textAlign: "center" }}>
             <Typography
               variant="caption"
@@ -202,7 +220,7 @@ export default function TimetableGrid({
                 {d.label || DOW_LABEL[d.dayOfWeek] || d.dayOfWeek}
               </Typography>
             </Box>
-            {seqs.map((seq) => (
+            {visibleSeqs.map((seq) => (
               <Box key={`${d.uuid}-${seq}`}>{cell(d, seq)}</Box>
             ))}
           </React.Fragment>
@@ -228,7 +246,7 @@ export default function TimetableGrid({
               alignItems: "stretch",
             }}
           >
-            {seqs.map((seq) => (
+            {visibleSeqs.map((seq) => (
               <React.Fragment key={`${d.uuid}-${seq}`}>
                 <Box
                   sx={{
