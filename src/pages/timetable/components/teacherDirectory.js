@@ -49,9 +49,34 @@ export async function resolveTeacher(id) {
 }
 
 // Resolve many ids at once; returns a Map(id -> { name, code }).
+//
+// Does ONE /employees/search to populate the cache for every requested id at once,
+// instead of firing N per-id /employees/{id} calls. The old per-id fan-out (e.g. 33
+// parallel requests for a full timetable grid) overwhelmed the DB connections and
+// caused intermittent 500s, leaving teachers unresolved. Falls back to per-id lookup
+// only for ids the bulk search didn't return.
 export async function resolveTeachers(ids) {
   const unique = [...new Set((ids || []).filter(Boolean))];
-  await Promise.all(unique.map((id) => resolveTeacher(id)));
+
+  if (unique.some((id) => !cache.has(id))) {
+    try {
+      const list = await employeeService.searchEmployees({});
+      const arr = Array.isArray(list) ? list : list?.employees || list?.data || [];
+      for (const emp of arr) {
+        if (!emp || !emp.uuid) continue;
+        const name = emp.name || emp.uuid;
+        const code = (emp.code && String(emp.code).trim()) || deriveInitials(name);
+        cache.set(emp.uuid, { name, code });
+      }
+    } catch {
+      // Bulk fetch failed — fall through to per-id resolution below.
+    }
+  }
+
+  const stillMissing = unique.filter((id) => !cache.has(id));
+  if (stillMissing.length)
+    await Promise.all(stillMissing.map((id) => resolveTeacher(id)));
+
   const map = new Map();
   for (const id of unique)
     map.set(id, cache.get(id) || { name: id, code: deriveInitials(id) });
