@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, Paper, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Typography, Paper } from "@mui/material";
 import EditCellDialog from "./EditCellDialog";
 
 const DOW_LABEL = {
@@ -35,8 +35,6 @@ export default function TimetableGrid({
   fitToWidth = true,
 }) {
   const [editingCell, setEditingCell] = useState(null); // { day, slot, items }
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   if (!config?.days?.length)
     return (
       <Typography sx={{ color: "#8f9bb3" }}>No grid configured.</Typography>
@@ -181,9 +179,9 @@ export default function TimetableGrid({
     );
   };
 
-  // Desktop: transposed grid (periods across, days down). fitToWidth makes columns fill
-  // the width (cells shrink to fit screen/page); otherwise a fixed min-width + scroll.
-  const desktopGrid = (
+  // Transposed grid (periods across, days down). fitToWidth makes columns fill the
+  // width (cells shrink to fit screen/page); otherwise a fixed min-width + scroll.
+  const grid = (
     <Paper
       variant="outlined"
       sx={{ overflowX: fitToWidth ? "visible" : "auto", p: 1 }}
@@ -229,51 +227,9 @@ export default function TimetableGrid({
     </Paper>
   );
 
-  // Mobile: the wide grid is awkward on a phone, so stack one section per day with its
-  // periods listed vertically (period number left, the same cell right). Reuses cell().
-  const mobileList = (
-    <Box>
-      {days.map((d) => (
-        <Paper key={d.uuid} variant="outlined" sx={{ mb: 1.5, p: 1 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
-            {d.label || DOW_LABEL[d.dayOfWeek] || d.dayOfWeek}
-          </Typography>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "36px 1fr",
-              gap: 0.5,
-              alignItems: "stretch",
-            }}
-          >
-            {visibleSeqs.map((seq, idx) => (
-              <React.Fragment key={`${d.uuid}-${seq}`}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{ fontWeight: 600, color: "#8f9bb3" }}
-                  >
-                    {hideNonTeaching ? idx + 1 : seq}
-                  </Typography>
-                </Box>
-                <Box>{cell(d, seq)}</Box>
-              </React.Fragment>
-            ))}
-          </Box>
-        </Paper>
-      ))}
-    </Box>
-  );
-
   return (
     <Box>
-      {isMobile ? mobileList : desktopGrid}
+      {grid}
       <Typography
         variant="caption"
         sx={{ color: "#8f9bb3", mt: 1, display: "block" }}
