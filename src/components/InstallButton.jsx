@@ -11,6 +11,7 @@ import {
 import {
   InstallMobile as InstallIcon,
   IosShare as ShareIcon,
+  MoreVert as MenuIcon,
 } from "@mui/icons-material";
 
 const isIos = () =>
@@ -22,10 +23,13 @@ const isStandalone = () =>
   (window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true);
 
-// A self-hiding "Install app" button. On Chromium (Android/desktop) it fires the native
-// install prompt captured early in main.jsx (window.deferredInstallPrompt); on iOS Safari
-// — which has no install API — it opens Add-to-Home-Screen instructions. Renders nothing
-// once the app is installed (standalone) or when it isn't installable.
+// "Install app" button. It stays visible whenever the app isn't already installed:
+//  - If Chrome/Edge captured a native install prompt (main.jsx → window.deferredInstallPrompt),
+//    tapping it fires that one-tap install.
+//  - Otherwise (iOS Safari, or Android/desktop before Chrome offers its prompt) it opens
+//    platform-aware Add-to-Home-Screen instructions, since the page can't drive the
+//    browser's install menu itself.
+// Renders nothing once the app is running installed (standalone).
 export default function InstallButton({
   variant = "outlined",
   size = "small",
@@ -36,7 +40,7 @@ export default function InstallButton({
     typeof window !== "undefined" ? window.deferredInstallPrompt : null,
   );
   const [installed, setInstalled] = useState(isStandalone());
-  const [iosOpen, setIosOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     const onInstallable = () =>
@@ -56,11 +60,10 @@ export default function InstallButton({
   if (installed) return null;
 
   const ios = isIos();
-  // Only show when we can actually install: a captured prompt (Chromium) or iOS Safari.
-  if (!deferred && !ios) return null;
 
   const handleClick = async () => {
     if (deferred) {
+      // Native one-tap install (Android/desktop Chromium).
       deferred.prompt();
       try {
         await deferred.userChoice;
@@ -69,7 +72,8 @@ export default function InstallButton({
         setDeferred(null);
       }
     } else {
-      setIosOpen(true);
+      // No native prompt available — show how to install manually.
+      setHelpOpen(true);
     }
   };
 
@@ -85,28 +89,59 @@ export default function InstallButton({
       >
         Install app
       </Button>
-      <Dialog open={iosOpen} onClose={() => setIosOpen(false)}>
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)}>
         <DialogTitle>Install ItsMySkool</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 1.5 }}>
-            In <strong>Safari</strong>, add this app to your home screen:
-          </Typography>
-          <Box component="ol" sx={{ pl: 2.5, m: 0, "& li": { mb: 1 } }}>
-            <li>
-              Tap the <strong>Share</strong> button{" "}
-              <ShareIcon fontSize="inherit" sx={{ verticalAlign: "middle" }} /> in
-              the toolbar.
-            </li>
-            <li>
-              Scroll down and tap <strong>Add to Home Screen</strong>.
-            </li>
-            <li>
-              Tap <strong>Add</strong> — the app appears on your home screen.
-            </li>
-          </Box>
+          {ios ? (
+            <>
+              <Typography variant="body2" sx={{ mb: 1.5 }}>
+                In <strong>Safari</strong>, add this app to your home screen:
+              </Typography>
+              <Box component="ol" sx={{ pl: 2.5, m: 0, "& li": { mb: 1 } }}>
+                <li>
+                  Tap the <strong>Share</strong> button{" "}
+                  <ShareIcon
+                    fontSize="inherit"
+                    sx={{ verticalAlign: "middle" }}
+                  />{" "}
+                  in the toolbar.
+                </li>
+                <li>
+                  Scroll down and tap <strong>Add to Home Screen</strong>.
+                </li>
+                <li>
+                  Tap <strong>Add</strong> — the app appears on your home screen.
+                </li>
+              </Box>
+            </>
+          ) : (
+            <>
+              <Typography variant="body2" sx={{ mb: 1.5 }}>
+                Add this app to your home screen:
+              </Typography>
+              <Box component="ol" sx={{ pl: 2.5, m: 0, "& li": { mb: 1 } }}>
+                <li>
+                  Open the browser menu{" "}
+                  <MenuIcon
+                    fontSize="inherit"
+                    sx={{ verticalAlign: "middle" }}
+                  />{" "}
+                  (top-right).
+                </li>
+                <li>
+                  Tap <strong>Install app</strong> or{" "}
+                  <strong>Add to Home screen</strong>.
+                </li>
+                <li>
+                  Confirm <strong>Install</strong>. (On a computer, use the
+                  install icon in the address bar.)
+                </li>
+              </Box>
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIosOpen(false)}>Got it</Button>
+          <Button onClick={() => setHelpOpen(false)}>Got it</Button>
         </DialogActions>
       </Dialog>
     </>
