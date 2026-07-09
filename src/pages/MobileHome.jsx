@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { useCan } from "../permissions/can";
 import { MOBILE_FEATURES } from "../mobile/mobileFeatures";
+import InstallButton from "../components/InstallButton";
 
 // Mobile landing: a tile menu of the mobile-published features the signed-in user's
 // role can access. Rendered at "/" on small screens (see App.jsx HomeScreen).
@@ -22,6 +23,7 @@ export default function MobileHome() {
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
         ItsMySkool
       </Typography>
+      <InstallButton variant="contained" fullWidth sx={{ mb: 2 }} />
       {items.length === 0 ? (
         <Typography color="text.secondary">
           No mobile features are available for your role. Use a desktop for the full

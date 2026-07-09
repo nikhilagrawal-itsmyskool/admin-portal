@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { DRAWER_WIDTH } from './Sidebar';
 import { getShortDisplayName, getFirstNameInitial } from '../utils/userDisplay';
+import InstallButton from './InstallButton';
 
 export default function Header({ onMenuClick, isDesktop }) {
   const { user, logout, schoolCode } = useAuth();
@@ -77,6 +78,7 @@ export default function Header({ onMenuClick, isDesktop }) {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {isDesktop && <InstallButton />}
           <Typography variant="body2" sx={{ color: '#222b45' }}>
             {shortDisplayName}
           </Typography>
