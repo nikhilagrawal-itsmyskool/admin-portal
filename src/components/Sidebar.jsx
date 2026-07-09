@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCan } from '../permissions/can';
 import { MOBILE_FEATURES } from '../mobile/mobileFeatures';
+import { useIsMobile } from '../hooks/useIsMobile';
 import {
   Drawer,
   List,
@@ -260,6 +261,7 @@ export default function Sidebar({ open, onClose, isDesktop }) {
   const navigate = useNavigate();
   const location = useLocation();
   const can = useCan();
+  const isMobile = useIsMobile();
   const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false, Timetable: false, Attendance: false, Communication: false });
 
   // Filter the static menu by the user's permissions: a parent with its own `perm`
@@ -319,7 +321,7 @@ export default function Sidebar({ open, onClose, isDesktop }) {
         </Typography>
       </Box>
 
-      {isDesktop ? (
+      {!isMobile ? (
       <List sx={{ pt: 2 }}>
         {visibleMenu.map((item) => (
           <React.Fragment key={item.title}>

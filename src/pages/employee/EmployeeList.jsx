@@ -284,6 +284,7 @@ export default function EmployeeList() {
           rows={filteredEmployees}
           columns={columns}
           getRowId={(row) => row.uuid}
+          onCardClick={(row) => canViewEmployee(row) && setDetailDialog({ open: true, item: row })}
           getRowClassName={(params) =>
             [
               params.row.status === "deleted" ? "deleted-row" : "",

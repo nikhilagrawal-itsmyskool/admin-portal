@@ -365,6 +365,7 @@ export default function StudentList() {
           rows={students}
           columns={columns}
           getRowId={(row) => row.uuid}
+          onCardClick={(row) => navigate(`/students/${row.uuid}`)}
           loading={loading}
           autoHeight
           checkboxSelection={canManage}

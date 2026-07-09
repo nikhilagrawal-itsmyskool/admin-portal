@@ -98,6 +98,7 @@ export default function ResponsiveDataGrid({
   renderMobileCard,
   mobilePageSize,
   onRowClick,
+  onCardClick,
   emptyMessage = "No records found.",
   hideActionsOnMobile = false,
   ...dataGridProps
@@ -172,11 +173,18 @@ export default function ResponsiveDataGrid({
           );
         }
 
-        const clickable = typeof onRowClick === "function";
+        const clickable =
+          typeof onCardClick === "function" || typeof onRowClick === "function";
         return (
           <Card
             key={id}
-            onClick={clickable ? () => onRowClick({ row, id }) : undefined}
+            onClick={
+              onCardClick
+                ? () => onCardClick(row)
+                : onRowClick
+                  ? () => onRowClick({ row, id })
+                  : undefined
+            }
             sx={{
               ...(isDeleted
                 ? { opacity: 0.6, bgcolor: "rgba(244, 67, 54, 0.04)" }

@@ -298,7 +298,7 @@ export default function HiringCandidateDetail() {
           />
         </Box>
         {canManage && (
-          <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/hiring/${id}/edit`)}>
+          <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/hiring/${id}/edit`)} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
             Edit Details
           </Button>
         )}

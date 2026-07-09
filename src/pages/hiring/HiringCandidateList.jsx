@@ -320,6 +320,7 @@ export default function HiringCandidateList() {
         rows={candidates}
         columns={columns}
         getRowId={(row) => row.uuid}
+        onCardClick={(row) => navigate(`/hiring/${row.uuid}`)}
         loading={loading}
         autoHeight
         pageSizeOptions={[10, 25, 50]}

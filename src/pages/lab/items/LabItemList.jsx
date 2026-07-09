@@ -283,6 +283,7 @@ export default function LabItemList() {
             variant="outlined"
             startIcon={<CopyIcon />}
             onClick={() => setCopyDialogOpen(true)}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
             Copy from Lab
           </Button>

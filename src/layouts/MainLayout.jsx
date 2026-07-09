@@ -8,10 +8,11 @@ import Header from '../components/Header';
 export default function MainLayout() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const location = useLocation();
-  // On small screens, only the mobile-published routes are reachable; anything else
-  // bounces to the mobile home.
-  const blockedOnMobile = !isDesktop && !isMobilePathAllowed(location.pathname);
+  // On phones (< sm) only the mobile-published routes are reachable; anything else
+  // bounces to the mobile home. Tablets (sm+) get the full portal.
+  const blockedOnMobile = isMobile && !isMobilePathAllowed(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSidebarToggle = () => {
