@@ -10,6 +10,7 @@ import {
   Typography,
   Checkbox,
   FormControlLabel,
+  useMediaQuery,
 } from "@mui/material";
 import { Print as PrintIcon } from "@mui/icons-material";
 import TimetableGrid from "./TimetableGrid";
@@ -34,6 +35,8 @@ export default function GridViewer({
   onModeChange,
   initialMode,
   initialSelectedId,
+  isPhone = false,
+  showSelector = true,
 }) {
   const { canPrint } = useTimetablePerms();
   const [mode, setMode] = useState(initialMode || "class");
@@ -45,6 +48,11 @@ export default function GridViewer({
   const [printTitle, setPrintTitle] = useState("");
   const [hideNonTeaching, setHideNonTeaching] = useState(true);
   const [fitToWidth, setFitToWidth] = useState(true);
+  const portrait = useMediaQuery("(orientation: portrait)");
+  // On a phone the grid is forced to fit the width with non-teaching periods hidden
+  // (both toggles are removed there); desktop keeps the user's checkbox choices.
+  const effHide = isPhone ? true : hideNonTeaching;
+  const effFit = isPhone ? true : fitToWidth;
 
   // Report the active view up so parents can, e.g., show downloads only on Master.
   useEffect(() => {
@@ -132,84 +140,99 @@ export default function GridViewer({
 
   return (
     <Box>
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{ mb: 2 }}
-        alignItems="center"
-        className="no-print"
-      >
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={mode}
-          onChange={(e, v) => {
-            if (v) setSelectedId("");
-            if (v) setMode(v);
-          }}
+      {(showSelector || !isPhone) && (
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ mb: 2 }}
+          alignItems="center"
+          flexWrap="wrap"
+          className="no-print"
         >
-          <ToggleButton value="class">By Class</ToggleButton>
-          <ToggleButton value="teacher">By Teacher</ToggleButton>
-          <ToggleButton value="master">Master</ToggleButton>
-        </ToggleButtonGroup>
-        {mode !== "master" && (
-          <TextField
-            select
-            size="small"
-            label={mode === "class" ? "Class" : "Teacher"}
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            sx={{ minWidth: 240 }}
-          >
-            {options.length === 0 && (
-              <MenuItem value="" disabled>
-                None
-              </MenuItem>
-            )}
-            {options.map((id) => (
-              <MenuItem key={id} value={id}>
-                {mode === "class" ? classLabel(id) : <TeacherName id={id} />}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-        {/* Master mode has its own Day picker + Print inside MasterTimetable. */}
-        {mode !== "master" && canPrint && (
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<PrintIcon />}
-            disabled={!selectedId}
-            onClick={startPrint}
-          >
-            Print
-          </Button>
-        )}
-        {mode !== "master" && (
-          <>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={hideNonTeaching}
-                  onChange={(e) => setHideNonTeaching(e.target.checked)}
-                />
-              }
-              label="Hide non-teaching periods"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={fitToWidth}
-                  onChange={(e) => setFitToWidth(e.target.checked)}
-                />
-              }
-              label="Fit to width"
-            />
-          </>
-        )}
-      </Stack>
+          {showSelector && (
+            <ToggleButtonGroup
+              size="small"
+              exclusive
+              value={mode}
+              onChange={(e, v) => {
+                if (v) setSelectedId("");
+                if (v) setMode(v);
+              }}
+            >
+              <ToggleButton value="class">By Class</ToggleButton>
+              <ToggleButton value="teacher">By Teacher</ToggleButton>
+              <ToggleButton value="master">Master</ToggleButton>
+            </ToggleButtonGroup>
+          )}
+          {showSelector && mode !== "master" && (
+            <TextField
+              select
+              size="small"
+              label={mode === "class" ? "Class" : "Teacher"}
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              sx={{ minWidth: 240 }}
+            >
+              {options.length === 0 && (
+                <MenuItem value="" disabled>
+                  None
+                </MenuItem>
+              )}
+              {options.map((id) => (
+                <MenuItem key={id} value={id}>
+                  {mode === "class" ? classLabel(id) : <TeacherName id={id} />}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+          {/* Master mode has its own Day picker + Print inside MasterTimetable.
+              Print + the display toggles are desktop-only (hidden on phones). */}
+          {!isPhone && mode !== "master" && canPrint && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<PrintIcon />}
+              disabled={!selectedId}
+              onClick={startPrint}
+            >
+              Print
+            </Button>
+          )}
+          {!isPhone && mode !== "master" && (
+            <>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={hideNonTeaching}
+                    onChange={(e) => setHideNonTeaching(e.target.checked)}
+                  />
+                }
+                label="Hide non-teaching periods"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={fitToWidth}
+                    onChange={(e) => setFitToWidth(e.target.checked)}
+                  />
+                }
+                label="Fit to width"
+              />
+            </>
+          )}
+        </Stack>
+      )}
+      {isPhone && portrait && mode !== "master" && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", mb: 1 }}
+        >
+          Rotate your phone to landscape for a wider view.
+        </Typography>
+      )}
       {mode === "master" ? (
         <MasterTimetable config={config} entries={entries} />
       ) : (
@@ -223,8 +246,8 @@ export default function GridViewer({
           editable={editable && mode === "class"}
           publishedTimetableId={publishedTimetableId}
           onChanged={onChanged}
-          hideNonTeaching={hideNonTeaching}
-          fitToWidth={fitToWidth}
+          hideNonTeaching={effHide}
+          fitToWidth={effFit}
         />
       )}
 

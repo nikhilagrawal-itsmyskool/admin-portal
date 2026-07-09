@@ -12,6 +12,7 @@ import {
   MenuItem,
   ToggleButton,
   ToggleButtonGroup,
+  useMediaQuery,
 } from "@mui/material";
 import { timetableService } from "../../../services/timetableService";
 import { AcademicYearSelect } from "../components/Selectors";
@@ -30,6 +31,12 @@ export default function PublishedTimetable() {
   const [editMode, setEditMode] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const { user } = useAuth();
+  // Phone = either dimension < 600px, so it stays true when rotated to landscape.
+  const isPhone = useMediaQuery("(max-width:599.95px), (max-height:599.95px)");
+  const isGod = (user?.roles || []).includes("god");
+  // Non-god on a phone gets a stripped view: their own timetable only — no year/scope
+  // selectors, no Class/Teacher/Master toggle, no edit. God keeps the full controls.
+  const simpleMobile = isPhone && !isGod;
   // A logged-in teacher (an employee whose id teaches in this timetable) defaults to
   // their own By-Teacher view with their id preselected.
   const myTeacherId = user?.employeeId || user?.id || "";
@@ -81,7 +88,12 @@ export default function PublishedTimetable() {
       <Typography variant="h4" sx={{ mb: 3 }}>
         Published Timetable
       </Typography>
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        sx={{ mb: 3, display: simpleMobile ? "none" : "flex" }}
+      >
         <AcademicYearSelect
           value={academicYearId}
           onChange={setAcademicYearId}
@@ -132,36 +144,40 @@ export default function PublishedTimetable() {
       ) : (
         <Card>
           <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-              <ToggleButtonGroup
-                size="small"
-                exclusive
-                value={view}
-                onChange={(e, v) => {
-                  if (v) setView(v);
-                }}
-              >
-                <ToggleButton value="individual">Class / Teacher</ToggleButton>
-                <ToggleButton value="master">Master</ToggleButton>
-              </ToggleButtonGroup>
-              {view === "individual" && (
-                <Chip
-                  label={editMode ? "Editing — click a period" : "Edit"}
-                  color={editMode ? "warning" : "default"}
-                  variant={editMode ? "filled" : "outlined"}
-                  onClick={() => setEditMode((v) => !v)}
-                />
-              )}
-            </Stack>
+            {!simpleMobile && (
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                <ToggleButtonGroup
+                  size="small"
+                  exclusive
+                  value={view}
+                  onChange={(e, v) => {
+                    if (v) setView(v);
+                  }}
+                >
+                  <ToggleButton value="individual">Class / Teacher</ToggleButton>
+                  <ToggleButton value="master">Master</ToggleButton>
+                </ToggleButtonGroup>
+                {!isPhone && view === "individual" && (
+                  <Chip
+                    label={editMode ? "Editing — click a period" : "Edit"}
+                    color={editMode ? "warning" : "default"}
+                    variant={editMode ? "filled" : "outlined"}
+                    onClick={() => setEditMode((v) => !v)}
+                  />
+                )}
+              </Stack>
+            )}
             {view === "individual" ? (
               <GridViewer
                 config={data.config}
                 entries={data.entries || []}
-                editable={editMode}
+                editable={editMode && !isPhone}
                 publishedTimetableId={pt.uuid}
                 onChanged={() => setReloadKey((k) => k + 1)}
                 initialMode={iAmTeacher ? "teacher" : undefined}
                 initialSelectedId={iAmTeacher ? myTeacherId : undefined}
+                isPhone={isPhone}
+                showSelector={!simpleMobile}
               />
             ) : (
               <MasterTimetable
