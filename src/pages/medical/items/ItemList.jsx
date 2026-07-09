@@ -164,14 +164,15 @@ export default function ItemList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">Inventory Items</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/medical/items/add')}
-          size={isMobile ? 'small' : 'medium'}
-        >
-          Add Item
-        </Button>
+        {!isMobile && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/medical/items/add')}
+          >
+            Add Item
+          </Button>
+        )}
       </Box>
 
       {error && (
@@ -269,41 +270,7 @@ export default function ItemList() {
                   <Typography variant="caption" color="text.secondary">
                     Reorder at: {item.reorderLevel}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => navigate(`/medical/items/${item.uuid}/edit`)}
-                      title="Edit Item"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => navigate(`/medical/purchases?item=${item.uuid}`)}
-                      title="View Purchase Log"
-                    >
-                      <PurchaseIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="secondary"
-                      onClick={() => navigate(`/medical/issues?item=${item.uuid}`)}
-                      title="View Issue Log"
-                    >
-                      <IssueIcon fontSize="small" />
-                    </IconButton>
-                    {!isDeleted && (
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => setDeleteDialog({ open: true, item })}
-                        title="Delete Item"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                  </Box>
+                  {/* Mobile is view-only for inventory items — no row actions. */}
                 </CardContent>
               </Card>
             );

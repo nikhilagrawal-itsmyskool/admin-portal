@@ -171,6 +171,7 @@ export default function EmployeeList() {
               <IconButton
                 size="small"
                 color="success"
+                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                 onClick={() => setRestoreDialog({ open: true, item: params.row })}
                 title="Restore Employee"
               >
@@ -181,6 +182,7 @@ export default function EmployeeList() {
               <>
                 <IconButton
                   size="small"
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                   onClick={() => navigate(`/employees/${params.row.uuid}/edit`)}
                   title="Edit Employee"
                 >
@@ -199,6 +201,7 @@ export default function EmployeeList() {
                 <IconButton
                   size="small"
                   color="error"
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                   onClick={() => setDeleteDialog({ open: true, item: params.row })}
                   title="Delete Employee"
                 >
@@ -228,6 +231,7 @@ export default function EmployeeList() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => navigate("/employees/add")}
+            sx={{ display: { xs: "none", sm: "inline-flex" } }}
           >
             Add Employee
           </Button>

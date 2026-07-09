@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  ToggleButton, ToggleButtonGroup, CircularProgress,
+  ToggleButton, ToggleButtonGroup, CircularProgress, Stack, useMediaQuery, useTheme,
 } from '@mui/material';
 import { Search as SearchIcon, Save as SaveIcon, CheckCircle as FinalizeIcon } from '@mui/icons-material';
 import { transportService } from '../../../services/transportService';
@@ -24,6 +24,8 @@ export default function TransportTakeAttendance() {
   const can = useCan();
   const { user } = useAuth();
   const canFinalize = can('transport.attendance.finalize');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [routes, setRoutes] = useState([]);
   const [years, setYears] = useState([]);
@@ -178,42 +180,69 @@ export default function TransportTakeAttendance() {
 
             {finalized && <Alert severity="info" sx={{ mb: 2 }}>This session is finalized. Edit individual records from History.</Alert>}
 
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>#</TableCell>
-                    <TableCell>Student</TableCell>
-                    <TableCell>Stop</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Remark</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {students.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} align="center">No students assigned to this route</TableCell></TableRow>
-                  ) : students.map((s, i) => (
-                    <TableRow key={s.studentId}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell>{s.name}</TableCell>
-                      <TableCell>{s.stopName || '-'}</TableCell>
-                      <TableCell>
-                        <ToggleButtonGroup size="small" exclusive value={s.status}
-                          onChange={(_, v) => v && setStatus(s.studentId, v)} disabled={finalized}>
-                          {STATUSES.map((st) => (
-                            <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
-                          ))}
-                        </ToggleButtonGroup>
-                      </TableCell>
-                      <TableCell>
-                        <TextField size="small" placeholder="Remark" value={s.remark}
-                          onChange={(e) => setRemark(s.studentId, e.target.value)} disabled={finalized} variant="standard" />
-                      </TableCell>
+            {isMobile ? (
+              <Stack spacing={1.5}>
+                {students.length === 0 ? (
+                  <Typography align="center" color="text.secondary" sx={{ py: 3 }}>
+                    No students assigned to this route
+                  </Typography>
+                ) : students.map((s, i) => (
+                  <Paper key={s.studentId} variant="outlined" sx={{ p: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      {i + 1}. {s.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      Stop: {s.stopName || '-'}
+                    </Typography>
+                    <ToggleButtonGroup size="small" exclusive fullWidth value={s.status}
+                      onChange={(_, v) => v && setStatus(s.studentId, v)} disabled={finalized} sx={{ mb: 1 }}>
+                      {STATUSES.map((st) => (
+                        <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
+                      ))}
+                    </ToggleButtonGroup>
+                    <TextField size="small" fullWidth placeholder="Remark" value={s.remark}
+                      onChange={(e) => setRemark(s.studentId, e.target.value)} disabled={finalized} variant="standard" />
+                  </Paper>
+                ))}
+              </Stack>
+            ) : (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>#</TableCell>
+                      <TableCell>Student</TableCell>
+                      <TableCell>Stop</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Remark</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {students.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} align="center">No students assigned to this route</TableCell></TableRow>
+                    ) : students.map((s, i) => (
+                      <TableRow key={s.studentId}>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell>{s.name}</TableCell>
+                        <TableCell>{s.stopName || '-'}</TableCell>
+                        <TableCell>
+                          <ToggleButtonGroup size="small" exclusive value={s.status}
+                            onChange={(_, v) => v && setStatus(s.studentId, v)} disabled={finalized}>
+                            {STATUSES.map((st) => (
+                              <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
+                            ))}
+                          </ToggleButtonGroup>
+                        </TableCell>
+                        <TableCell>
+                          <TextField size="small" placeholder="Remark" value={s.remark}
+                            onChange={(e) => setRemark(s.studentId, e.target.value)} disabled={finalized} variant="standard" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </CardContent>
         </Card>
       )}

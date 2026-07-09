@@ -99,7 +99,7 @@ export default function WorkList() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Library Catalog</Typography>
         {canManage && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/library/catalog/new')}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/library/catalog/new')} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
             Catalog a Book
           </Button>
         )}

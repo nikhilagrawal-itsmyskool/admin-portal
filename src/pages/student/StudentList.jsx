@@ -217,7 +217,7 @@ export default function StudentList() {
             <ViewIcon fontSize="small" />
           </IconButton>
           {canManage && (
-            <IconButton size="small" title="Edit" onClick={() => navigate(`/students/${params.row.uuid}/edit`)}>
+            <IconButton size="small" title="Edit" sx={{ display: { xs: 'none', sm: 'inline-flex' } }} onClick={() => navigate(`/students/${params.row.uuid}/edit`)}>
               <EditIcon fontSize="small" />
             </IconButton>
           )}
@@ -226,6 +226,7 @@ export default function StudentList() {
               size="small"
               color="error"
               title="Delete"
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
               onClick={() => setDeleteDialog({ open: true, item: params.row })}
             >
               <DeleteIcon fontSize="small" />
@@ -241,7 +242,7 @@ export default function StudentList() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Students</Typography>
         {canManage && (
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ display: { xs: 'none', sm: 'flex' } }}>
             <Button variant="outlined" startIcon={<PromoteIcon />} onClick={() => setPromoteOpen(true)}>
               Promote Class
             </Button>

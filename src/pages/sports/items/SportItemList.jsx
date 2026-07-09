@@ -293,6 +293,7 @@ export default function SportItemList() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => navigate('/sports/items/add')}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
             Add Item
           </Button>
@@ -407,6 +408,7 @@ export default function SportItemList() {
           primaryChipField="currentStock"
           rows={items}
           columns={columns}
+          hideActionsOnMobile
           getRowId={(row) => row.uuid}
           getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
           loading={loading}

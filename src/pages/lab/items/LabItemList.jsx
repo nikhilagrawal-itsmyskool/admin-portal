@@ -290,6 +290,7 @@ export default function LabItemList() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => navigate('/lab/items/add')}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
             Add Item
           </Button>
@@ -403,6 +404,7 @@ export default function LabItemList() {
           primaryChipField="currentStock"
           rows={items}
           columns={columns}
+          hideActionsOnMobile
           getRowId={(row) => row.uuid}
           getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
           loading={loading}

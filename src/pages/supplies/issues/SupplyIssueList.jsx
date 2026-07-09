@@ -279,6 +279,7 @@ export default function SupplyIssueList() {
       <ResponsiveDataGrid
           rows={issues}
           columns={columns}
+          hideActionsOnMobile
           getRowId={(row) => row.uuid}
           getRowClassName={(params) => (params.row.status === 'deleted' ? 'deleted-row' : '')}
           loading={loading}

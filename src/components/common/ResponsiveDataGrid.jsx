@@ -99,6 +99,7 @@ export default function ResponsiveDataGrid({
   mobilePageSize,
   onRowClick,
   emptyMessage = "No records found.",
+  hideActionsOnMobile = false,
   ...dataGridProps
 }) {
   const theme = useTheme();
@@ -225,7 +226,7 @@ export default function ResponsiveDataGrid({
                 </Box>
               ))}
 
-              {actionsCol && (
+              {actionsCol && !hideActionsOnMobile && (
                 <Box
                   sx={{
                     display: "flex",

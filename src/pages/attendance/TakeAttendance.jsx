@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, Autocomplete,
   MenuItem, Alert, Chip, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, ToggleButton, ToggleButtonGroup, CircularProgress,
+  TableRow, Paper, ToggleButton, ToggleButtonGroup, CircularProgress, Stack,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import { Search as SearchIcon, Save as SaveIcon, CheckCircle as FinalizeIcon } from '@mui/icons-material';
 import { attendanceService } from '../../services/attendanceService';
@@ -24,6 +25,8 @@ const today = () => new Date().toISOString().slice(0, 10);
 export default function TakeAttendance() {
   const can = useCan();
   const canFinalize = can(ACTIONS.ATTENDANCE_FINALIZE);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [classes, setClasses] = useState([]);
   const [years, setYears] = useState([]);
@@ -186,53 +189,96 @@ export default function TakeAttendance() {
 
             {finalized && <Alert severity="info" sx={{ mb: 2 }}>This session is finalized. Edit individual records from History.</Alert>}
 
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>#</TableCell>
-                    <TableCell>Student</TableCell>
-                    <TableCell>Adm. No</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Remark</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {students.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} align="center">No enrolled students for this class/year</TableCell></TableRow>
-                  ) : students.map((s, i) => (
-                    <TableRow key={s.studentId}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell>{s.name}</TableCell>
-                      <TableCell>{s.admissionNumber || '-'}</TableCell>
-                      <TableCell>
-                        <ToggleButtonGroup
-                          size="small"
-                          exclusive
-                          value={s.status}
-                          onChange={(_, v) => v && setStatus(s.studentId, v)}
-                          disabled={finalized}
-                        >
-                          {STATUSES.map((st) => (
-                            <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
-                          ))}
-                        </ToggleButtonGroup>
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          placeholder="Remark"
-                          value={s.remark}
-                          onChange={(e) => setRemark(s.studentId, e.target.value)}
-                          disabled={finalized}
-                          variant="standard"
-                        />
-                      </TableCell>
+            {isMobile ? (
+              <Stack spacing={1.5}>
+                {students.length === 0 ? (
+                  <Typography align="center" color="text.secondary" sx={{ py: 3 }}>
+                    No enrolled students for this class/year
+                  </Typography>
+                ) : students.map((s, i) => (
+                  <Paper key={s.studentId} variant="outlined" sx={{ p: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        {i + 1}. {s.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {s.admissionNumber || '-'}
+                      </Typography>
+                    </Box>
+                    <ToggleButtonGroup
+                      size="small"
+                      exclusive
+                      fullWidth
+                      value={s.status}
+                      onChange={(_, v) => v && setStatus(s.studentId, v)}
+                      disabled={finalized}
+                      sx={{ mb: 1 }}
+                    >
+                      {STATUSES.map((st) => (
+                        <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
+                      ))}
+                    </ToggleButtonGroup>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      placeholder="Remark"
+                      value={s.remark}
+                      onChange={(e) => setRemark(s.studentId, e.target.value)}
+                      disabled={finalized}
+                      variant="standard"
+                    />
+                  </Paper>
+                ))}
+              </Stack>
+            ) : (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>#</TableCell>
+                      <TableCell>Student</TableCell>
+                      <TableCell>Adm. No</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Remark</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {students.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} align="center">No enrolled students for this class/year</TableCell></TableRow>
+                    ) : students.map((s, i) => (
+                      <TableRow key={s.studentId}>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell>{s.name}</TableCell>
+                        <TableCell>{s.admissionNumber || '-'}</TableCell>
+                        <TableCell>
+                          <ToggleButtonGroup
+                            size="small"
+                            exclusive
+                            value={s.status}
+                            onChange={(_, v) => v && setStatus(s.studentId, v)}
+                            disabled={finalized}
+                          >
+                            {STATUSES.map((st) => (
+                              <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
+                            ))}
+                          </ToggleButtonGroup>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            placeholder="Remark"
+                            value={s.remark}
+                            onChange={(e) => setRemark(s.studentId, e.target.value)}
+                            disabled={finalized}
+                            variant="standard"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </CardContent>
         </Card>
       )}
