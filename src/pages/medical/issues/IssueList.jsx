@@ -16,8 +16,6 @@ import {
   InputAdornment,
   FormControlLabel,
   Checkbox,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
@@ -34,9 +32,6 @@ import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialo
 
 export default function IssueList() {
   const navigate = useNavigate();
-  const theme = useTheme();
-  // Mobile issue list keeps Add-issue but drops row actions (delete) — view + add only.
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [searchParams, setSearchParams] = useSearchParams();
   const [issues, setIssues] = useState([]);
   const [items, setItems] = useState([]);
@@ -370,7 +365,8 @@ export default function IssueList() {
 
       <ResponsiveDataGrid
           rows={issues}
-          columns={isMobile ? columns.filter((c) => c.field !== 'actions') : columns}
+          columns={columns}
+          hideActionsOnMobile
           getRowId={(row) => row.uuid}
           getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
           loading={loading}

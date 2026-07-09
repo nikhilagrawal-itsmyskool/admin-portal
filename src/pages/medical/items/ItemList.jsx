@@ -16,9 +16,8 @@ import {
   Grid,
   useMediaQuery,
   useTheme,
-  Stack,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -164,15 +163,14 @@ export default function ItemList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">Inventory Items</Typography>
-        {!isMobile && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/medical/items/add')}
-          >
-            Add Item
-          </Button>
-        )}
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/medical/items/add')}
+          sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+        >
+          Add Item
+        </Button>
       </Box>
 
       {error && (
@@ -226,87 +224,22 @@ export default function ItemList() {
         </CardContent>
       </Card>
 
-      {isMobile ? (
-        <Stack spacing={2}>
-          {loading && (
-            <Typography color="text.secondary" textAlign="center">
-              Loading...
-            </Typography>
-          )}
-          {!loading && items.length === 0 && (
-            <Typography color="text.secondary" textAlign="center">
-              No items found.
-            </Typography>
-          )}
-          {items.map((item) => {
-            const isLow = item.currentStock <= item.reorderLevel;
-            const isDeleted = item.status === 'deleted';
-            return (
-              <Card
-                key={item.uuid}
-                sx={isDeleted ? { opacity: 0.6, bgcolor: 'rgba(244, 67, 54, 0.04)' } : {}}
-              >
-                <CardContent sx={{ pb: '12px !important' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight="bold"
-                      sx={isDeleted ? { textDecoration: 'line-through' } : {}}
-                    >
-                      {item.name}
-                    </Typography>
-                    <Chip
-                      label={`${item.currentStock} ${item.unit}`}
-                      size="small"
-                      color={isLow ? 'error' : 'default'}
-                      variant={isLow ? 'filled' : 'outlined'}
-                    />
-                  </Box>
-                  {item.comments && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {item.comments}
-                    </Typography>
-                  )}
-                  <Typography variant="caption" color="text.secondary">
-                    Reorder at: {item.reorderLevel}
-                  </Typography>
-                  {/* Mobile is view-only for inventory items — no row actions. */}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </Stack>
-      ) : (
-        <Card>
-          <DataGrid
-            rows={items}
-            columns={columns}
-            getRowId={(row) => row.uuid}
-            getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
-            loading={loading}
-            autoHeight
-            pageSizeOptions={[10, 25, 50]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 10 } },
-            }}
-            disableRowSelectionOnClick
-            sx={{
-              border: 'none',
-              '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
-              '& .MuiDataGrid-cell': {
-                borderBottom: '1px solid #e4e9f2',
-              },
-              '& .deleted-row': {
-                opacity: 0.6,
-                backgroundColor: 'rgba(244, 67, 54, 0.04)',
-                '& .MuiDataGrid-cell:not(:last-of-type)': {
-                  textDecoration: 'line-through',
-                },
-              },
-            }}
-          />
-        </Card>
-      )}
+      <ResponsiveDataGrid
+        rows={items}
+        columns={columns}
+        getRowId={(row) => row.uuid}
+        getRowClassName={(params) => params.row.status === 'deleted' ? 'deleted-row' : ''}
+        loading={loading}
+        autoHeight
+        pageSizeOptions={[10, 25, 50]}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 10 } },
+        }}
+        disableRowSelectionOnClick
+        titleField="name"
+        primaryChipField="currentStock"
+        hideActionsOnMobile
+      />
 
       <ConfirmDialog
         open={deleteDialog.open}
