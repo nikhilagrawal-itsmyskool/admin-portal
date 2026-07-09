@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCan } from '../permissions/can';
+import { MOBILE_FEATURES } from '../mobile/mobileFeatures';
 import {
   Drawer,
   List,
@@ -278,6 +279,9 @@ export default function Sidebar({ open, onClose, isDesktop }) {
     })
     .filter(Boolean);
 
+  // On small screens the sidebar shows only the mobile-published features (flat list).
+  const mobileItems = MOBILE_FEATURES.filter((f) => !f.perm || can(f.perm));
+
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));
   };
@@ -315,6 +319,7 @@ export default function Sidebar({ open, onClose, isDesktop }) {
         </Typography>
       </Box>
 
+      {isDesktop ? (
       <List sx={{ pt: 2 }}>
         {visibleMenu.map((item) => (
           <React.Fragment key={item.title}>
@@ -429,6 +434,49 @@ export default function Sidebar({ open, onClose, isDesktop }) {
           </React.Fragment>
         ))}
       </List>
+      ) : (
+        <List sx={{ pt: 2 }}>
+          {mobileItems.map((item) => (
+            <ListItem key={item.path} disablePadding>
+              <ListItemButton
+                onClick={() => handleNavigate(item.path)}
+                sx={{
+                  px: 3,
+                  py: 1.5,
+                  backgroundColor: isActive(item.path)
+                    ? 'rgba(51, 102, 255, 0.2)'
+                    : 'transparent',
+                  borderLeft: isActive(item.path)
+                    ? '3px solid #3366ff'
+                    : '3px solid transparent',
+                  '&:hover': { backgroundColor: sidebarStyles.hover },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    color: isActive(item.path)
+                      ? sidebarStyles.textActive
+                      : sidebarStyles.text,
+                    minWidth: 40,
+                  }}
+                >
+                  <item.icon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.title}
+                  sx={{
+                    '& .MuiTypography-root': {
+                      color: isActive(item.path)
+                        ? sidebarStyles.textActive
+                        : sidebarStyles.text,
+                    },
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      )}
     </>
   );
 

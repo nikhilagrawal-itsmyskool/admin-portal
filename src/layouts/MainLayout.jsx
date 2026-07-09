@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
+import { isMobilePathAllowed } from '../mobile/mobileFeatures';
 import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
 import Sidebar, { DRAWER_WIDTH } from '../components/Sidebar';
 import Header from '../components/Header';
@@ -7,6 +8,10 @@ import Header from '../components/Header';
 export default function MainLayout() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const location = useLocation();
+  // On small screens, only the mobile-published routes are reachable; anything else
+  // bounces to the mobile home.
+  const blockedOnMobile = !isDesktop && !isMobilePathAllowed(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSidebarToggle = () => {
@@ -31,7 +36,7 @@ export default function MainLayout() {
         }}
       >
         <Toolbar />
-        <Outlet />
+        {blockedOnMobile ? <Navigate to="/" replace /> : <Outlet />}
       </Box>
     </Box>
   );

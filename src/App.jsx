@@ -118,6 +118,14 @@ import TransportAssignmentList from './pages/transport/assignments/AssignmentLis
 import TransportTakeAttendance from './pages/transport/attendance/TransportTakeAttendance';
 import TransportSessionList from './pages/transport/attendance/TransportSessionList';
 import Profile from './pages/Profile';
+import MobileHome from './pages/MobileHome';
+import { useIsMobile } from './hooks/useIsMobile';
+
+// On small screens the app is restricted to the mobile feature set (see
+// src/mobile/mobileFeatures + the MainLayout guard); "/" shows the mobile home menu.
+function HomeScreen() {
+  return useIsMobile() ? <MobileHome /> : <Dashboard />;
+}
 
 export default function App() {
   return (
@@ -132,7 +140,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<HomeScreen />} />
         <Route path="medical" element={<MedicalDashboard />} />
         <Route path="medical/items" element={<ItemList />} />
         <Route path="medical/items/add" element={<ItemForm />} />
