@@ -9,6 +9,12 @@ export const studentService = {
     return response.data;
   },
 
+  // Command-palette omni-search: matches name / admission / parent names / phone.
+  omniSearch: async (q, signal) => {
+    const response = await api.get('/students/omni-search', { params: { q }, signal });
+    return response.data; // { results: [...] }
+  },
+
   // ---- Student CRUD ----
   getStudentById: async (id) => {
     const response = await api.get(`/students/${id}`);

@@ -16,6 +16,7 @@ import {
   Logout as LogoutIcon,
   Person as PersonIcon,
   Menu as MenuIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { DRAWER_WIDTH } from './Sidebar';
@@ -75,6 +76,29 @@ export default function Header({ onMenuClick, isDesktop }) {
           <Typography variant="body2" sx={{ color: '#8f9bb3', textTransform: 'uppercase', letterSpacing: 1 }}>
             {schoolCode}
           </Typography>
+          <Box
+            onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              cursor: 'pointer',
+              color: '#8f9bb3',
+              border: isDesktop ? '1px solid #e4e9f2' : 'none',
+              borderRadius: 2,
+              px: isDesktop ? 1.5 : 0.5,
+              py: 0.5,
+              ml: 1,
+            }}
+          >
+            <SearchIcon fontSize="small" />
+            {isDesktop && <Typography variant="body2">Search students…</Typography>}
+            {isDesktop && (
+              <Box component="span" sx={{ ml: 0.5, px: 0.75, border: '1px solid #e4e9f2', borderRadius: 1, fontSize: 11, lineHeight: '18px' }}>
+                Ctrl K
+              </Box>
+            )}
+          </Box>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

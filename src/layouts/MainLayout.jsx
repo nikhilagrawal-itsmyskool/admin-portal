@@ -4,6 +4,7 @@ import { isMobilePathAllowed } from '../mobile/mobileFeatures';
 import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
 import Sidebar, { DRAWER_WIDTH } from '../components/Sidebar';
 import Header from '../components/Header';
+import CommandPalette from '../components/common/CommandPalette';
 import { useScrollRestoration } from '../hooks/useScrollRestoration';
 
 export default function MainLayout() {
@@ -31,6 +32,7 @@ export default function MainLayout() {
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar open={sidebarOpen} onClose={handleSidebarClose} isDesktop={isDesktop} />
       <Header onMenuClick={handleSidebarToggle} isDesktop={isDesktop} />
+      <CommandPalette />
       <Box
         component="main"
         ref={mainRef}
