@@ -346,6 +346,8 @@ export default function StudentDetail() {
 
   const [guardianDialog, setGuardianDialog] = useState({ open: false, initial: null });
   const [delGuardian, setDelGuardian] = useState({ open: false, item: null });
+  const [lightbox, setLightbox] = useState({ open: false, src: '', title: '' });
+  const openLightbox = (src, title) => src && setLightbox({ open: true, src, title });
   const [addressDialog, setAddressDialog] = useState({ open: false, initial: null });
   const [delAddress, setDelAddress] = useState({ open: false, item: null });
   const [siblingSearch, setSiblingSearch] = useState(false);
@@ -592,9 +594,15 @@ export default function StudentDetail() {
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar src={photoUrl} sx={{ width: 120, height: 120, mx: 'auto', mb: 1, fontSize: 40 }}>
-                {student.name?.[0]}
-              </Avatar>
+              <Tooltip title={photoUrl ? 'View original photo' : ''}>
+                <Avatar
+                  src={photoUrl}
+                  onClick={() => openLightbox(photoUrl, student.name)}
+                  sx={{ width: 120, height: 120, mx: 'auto', mb: 1, fontSize: 40, cursor: photoUrl ? 'pointer' : 'default' }}
+                >
+                  {student.name?.[0]}
+                </Avatar>
+              </Tooltip>
               {canManage && (
                 <>
                   <input ref={fileRef} type="file" accept="image/png,image/jpeg" hidden onChange={handlePhotoPick} />
@@ -676,11 +684,17 @@ export default function StudentDetail() {
                         <CardContent sx={{ pb: '12px !important' }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Tooltip title={canManage ? 'Change photo' : ''}>
+                              <Tooltip title={guardianPhotos[g.uuid] ? 'View original photo' : canManage ? 'Add photo' : ''}>
                                 <Avatar
                                   src={guardianPhotos[g.uuid]}
-                                  onClick={canManage ? () => pickGuardianPhoto(g.uuid) : undefined}
-                                  sx={{ width: 40, height: 40, cursor: canManage ? 'pointer' : 'default' }}
+                                  onClick={
+                                    guardianPhotos[g.uuid]
+                                      ? () => openLightbox(guardianPhotos[g.uuid], g.name || g.relation)
+                                      : canManage
+                                      ? () => pickGuardianPhoto(g.uuid)
+                                      : undefined
+                                  }
+                                  sx={{ width: 40, height: 40, cursor: guardianPhotos[g.uuid] || canManage ? 'pointer' : 'default' }}
                                 >
                                   {g.name?.[0] || g.relation?.[0]?.toUpperCase()}
                                 </Avatar>
@@ -697,6 +711,11 @@ export default function StudentDetail() {
                             </Box>
                             {canManage && (
                               <Box>
+                                <Tooltip title={guardianPhotos[g.uuid] ? 'Change photo' : 'Add photo'}>
+                                  <IconButton size="small" onClick={() => pickGuardianPhoto(g.uuid)}>
+                                    <PhotoIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
                                 <IconButton size="small" onClick={() => setGuardianDialog({ open: true, initial: g })}>
                                   <EditIcon fontSize="small" />
                                 </IconButton>
@@ -963,6 +982,23 @@ export default function StudentDetail() {
         onClose={() => setTcDialog({ open: false, initial: null })}
         onSave={saveTc}
       />
+
+      <Dialog open={lightbox.open} onClose={() => setLightbox({ open: false, src: '', title: '' })} maxWidth="md">
+        <DialogTitle>{lightbox.title}</DialogTitle>
+        <DialogContent>
+          <img
+            src={lightbox.src}
+            alt={lightbox.title}
+            style={{ maxWidth: '100%', maxHeight: '75vh', display: 'block', margin: '0 auto' }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button component="a" href={lightbox.src} download={`${lightbox.title || 'photo'}.jpg`}>
+            Download
+          </Button>
+          <Button onClick={() => setLightbox({ open: false, src: '', title: '' })}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
