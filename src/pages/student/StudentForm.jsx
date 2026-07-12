@@ -48,6 +48,7 @@ export default function StudentForm() {
   const [houses, setHouses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [years, setYears] = useState([]);
+  const [lookups, setLookups] = useState({}); // { category: [...], blood_group: [...], ... }
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -61,12 +62,23 @@ export default function StudentForm() {
     oldAdmissionNumber: '',
     communicationPreference: '',
     status: 'active',
+    // extended demographics
+    studentEmail: '',
+    studentMobile: '',
+    categoryCode: '',
+    bloodGroupCode: '',
+    nationalityCode: '',
+    motherTongueCode: '',
+    aadhaarNumber: '',
+    previousSchool: '',
+    admissionDate: '',
   });
   const [house, setHouse] = useState(null);
   // Initial enrollment (create only)
   const [enrollYear, setEnrollYear] = useState(null);
   const [enrollClass, setEnrollClass] = useState(null);
   const [rollNumber, setRollNumber] = useState('');
+  const [joinDate, setJoinDate] = useState('');
 
   useEffect(() => {
     loadLookups();
@@ -75,14 +87,22 @@ export default function StudentForm() {
 
   const loadLookups = async () => {
     // Each lookup loads independently — one failing API must not blank the others.
-    const [h, c, y] = await Promise.allSettled([
+    const [h, c, y, l] = await Promise.allSettled([
       studentService.getHouses(),
       classService.getClasses(),
       academicCalendarService.getAcademicYears(),
+      studentService.getLookups(), // all types; grouped below
     ]);
     if (h.status === 'fulfilled') setHouses(h.value.houses || []);
     if (c.status === 'fulfilled') setClasses(c.value || []);
     if (y.status === 'fulfilled') setYears(y.value || []);
+    if (l.status === 'fulfilled') {
+      const grouped = {};
+      for (const row of l.value.lookups || []) {
+        (grouped[row.lookupType] = grouped[row.lookupType] || []).push(row);
+      }
+      setLookups(grouped);
+    }
   };
 
   const loadStudent = async () => {
@@ -98,6 +118,15 @@ export default function StudentForm() {
         oldAdmissionNumber: s.oldAdmissionNumber || '',
         communicationPreference: s.communicationPreference || '',
         status: s.status || 'active',
+        studentEmail: s.studentEmail || '',
+        studentMobile: s.studentMobile || '',
+        categoryCode: s.categoryCode || '',
+        bloodGroupCode: s.bloodGroupCode || '',
+        nationalityCode: s.nationalityCode || '',
+        motherTongueCode: s.motherTongueCode || '',
+        aadhaarNumber: s.aadhaarNumber || '',
+        previousSchool: s.previousSchool || '',
+        admissionDate: s.admissionDate ? String(s.admissionDate).slice(0, 10) : '',
       });
       if (s.houseId) setHouse({ uuid: s.houseId, name: s.houseName });
     } catch {
@@ -119,6 +148,27 @@ export default function StudentForm() {
       communicationPreference: recipient ? `${recipient}:${channel || 'whatsapp'}` : '',
     }));
 
+  // A select backed by a per-school lookup type. Falls back to the stored code as a
+  // one-off option so an existing value still shows if it isn't in the active list.
+  const lookupSelect = (key, label, type, md = 3) => {
+    const opts = lookups[type] || [];
+    const val = form[key] || '';
+    const missing = val && !opts.some((o) => o.code === val);
+    return (
+      <Grid item xs={12} md={md}>
+        <TextField fullWidth select label={label} value={val} onChange={setField(key)} size="small">
+          <MenuItem value="">—</MenuItem>
+          {missing && <MenuItem value={val}>{val}</MenuItem>}
+          {opts.map((o) => (
+            <MenuItem key={o.uuid} value={o.code}>
+              {o.label || o.code}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Grid>
+    );
+  };
+
   const handleSave = async () => {
     setError('');
     if (!form.name.trim() || !form.admissionNumber.trim()) {
@@ -136,6 +186,7 @@ export default function StudentForm() {
           payload.academicYearId = enrollYear.uuid;
           payload.classId = enrollClass.uuid;
           if (rollNumber) payload.rollNumber = parseInt(rollNumber, 10);
+          if (joinDate) payload.joinDate = joinDate;
         }
         const created = await studentService.createStudent(payload);
         navigate(`/students/${created.uuid}`);
@@ -270,6 +321,41 @@ export default function StudentForm() {
               </Grid>
             )}
 
+            {/* ---- More details ---- */}
+            <Grid item xs={12}>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2" color="text.secondary">
+                More details
+              </Typography>
+            </Grid>
+            {lookupSelect('categoryCode', 'Category', 'category')}
+            {lookupSelect('bloodGroupCode', 'Blood group', 'blood_group')}
+            {lookupSelect('nationalityCode', 'Nationality', 'nationality')}
+            {lookupSelect('motherTongueCode', 'Mother tongue', 'mother_tongue')}
+            <Grid item xs={12} md={3}>
+              <TextField fullWidth label="Student email" value={form.studentEmail} onChange={setField('studentEmail')} size="small" />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField fullWidth label="Student mobile" value={form.studentMobile} onChange={setField('studentMobile')} size="small" />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField fullWidth label="Aadhaar number" value={form.aadhaarNumber} onChange={setField('aadhaarNumber')} size="small" />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="Date of admission"
+                type="date"
+                value={form.admissionDate}
+                onChange={setField('admissionDate')}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField fullWidth label="Previous school attended" value={form.previousSchool} onChange={setField('previousSchool')} size="small" />
+            </Grid>
+
             {!isEdit && (
               <>
                 <Grid item xs={12}>
@@ -296,7 +382,7 @@ export default function StudentForm() {
                     renderInput={(p) => <TextField {...p} label="Class" size="small" />}
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={2}>
                   <TextField
                     fullWidth
                     label="Roll number"
@@ -304,6 +390,17 @@ export default function StudentForm() {
                     value={rollNumber}
                     onChange={(e) => setRollNumber(e.target.value)}
                     size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} md={2}>
+                  <TextField
+                    fullWidth
+                    label="Date of joining"
+                    type="date"
+                    value={joinDate}
+                    onChange={(e) => setJoinDate(e.target.value)}
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
               </>
@@ -320,7 +417,7 @@ export default function StudentForm() {
           </Box>
           {!isEdit && (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-              Parents/guardians and photos are added from the student's profile after admission.
+              Guardians, addresses, siblings, photos and transfer certificate are managed from the student's profile after admission.
             </Typography>
           )}
         </CardContent>

@@ -12,7 +12,10 @@ import {
   FormControlLabel,
   useMediaQuery,
 } from "@mui/material";
-import { Print as PrintIcon } from "@mui/icons-material";
+import {
+  Print as PrintIcon,
+  ScreenRotation as ScreenRotationIcon,
+} from "@mui/icons-material";
 import TimetableGrid from "./TimetableGrid";
 import MasterTimetable from "./MasterTimetable";
 import TeacherName from "./TeacherName";
@@ -225,13 +228,24 @@ export default function GridViewer({
         </Stack>
       )}
       {isPhone && portrait && mode !== "master" && (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", mb: 1 }}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.75,
+            mb: 1,
+            px: 1,
+            py: 0.5,
+            borderRadius: 1,
+            bgcolor: "#e8f0ff",
+            color: "#1f4bd8",
+          }}
         >
-          Rotate your phone to landscape for a wider view.
-        </Typography>
+          <ScreenRotationIcon fontSize="small" />
+          <Typography variant="caption" sx={{ fontWeight: 700 }}>
+            Rotate your phone to landscape to see the full week.
+          </Typography>
+        </Box>
       )}
       {mode === "master" ? (
         <MasterTimetable config={config} entries={entries} />
@@ -248,6 +262,7 @@ export default function GridViewer({
           onChanged={onChanged}
           hideNonTeaching={effHide}
           fitToWidth={effFit}
+          isPhone={isPhone}
         />
       )}
 

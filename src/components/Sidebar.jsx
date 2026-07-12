@@ -51,6 +51,7 @@ import {
   AutoAwesome as GenerateIcon,
   EventAvailable as PublishedIcon,
   School as StudentIcon,
+  AssignmentReturn as TransferIcon,
   Home as HouseIcon,
   FactCheck as AttendanceIcon,
   EditCalendar as MarkIcon,
@@ -226,6 +227,12 @@ const menuItems = [
       { title: 'All Students', icon: PeopleIcon, path: '/students' },
       { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.manage' },
     ],
+  },
+  {
+    title: 'Transfer',
+    icon: TransferIcon,
+    path: '/transfer',
+    perm: 'transfer.view',
   },
   {
     title: 'Employees',

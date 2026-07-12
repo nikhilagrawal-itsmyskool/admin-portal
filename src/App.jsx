@@ -41,6 +41,7 @@ import FineIncidentDetail from './pages/fine/incidents/FineIncidentDetail';
 import HiringCandidateList from './pages/hiring/HiringCandidateList';
 import HiringCandidateForm from './pages/hiring/HiringCandidateForm';
 import HiringCandidateDetail from './pages/hiring/HiringCandidateDetail';
+import TransferList from './pages/transfer/TransferList';
 import UniformDashboard from './pages/uniform/UniformDashboard';
 import UniformCatalog from './pages/uniform/catalog/UniformCatalog';
 import UniformPurchaseList from './pages/uniform/purchases/UniformPurchaseList';
@@ -226,6 +227,7 @@ export default function App() {
         <Route path="students/houses" element={<HouseList />} />
         <Route path="students/:id" element={<StudentDetail />} />
         <Route path="students/:id/edit" element={<StudentForm />} />
+        <Route path="transfer" element={<TransferList />} />
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/add" element={<EmployeeForm />} />
         <Route path="employees/:id/edit" element={<EmployeeForm />} />

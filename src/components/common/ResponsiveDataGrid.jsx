@@ -236,6 +236,9 @@ export default function ResponsiveDataGrid({
 
               {actionsCol && !hideActionsOnMobile && (
                 <Box
+                  // Stop row-action clicks from bubbling to the card's onCardClick
+                  // (otherwise tapping e.g. Credentials also opens the row's view).
+                  onClick={(e) => e.stopPropagation()}
                   sx={{
                     display: "flex",
                     gap: 0.5,

@@ -4,6 +4,7 @@ import {
   FactCheck as AttendanceIcon,
   DirectionsBus as TransportIcon,
   School as StudentIcon,
+  AssignmentReturn as TransferIcon,
   People as PeopleIcon,
   PersonSearch as HiringIcon,
   Campaign as CommunicationIcon,
@@ -41,6 +42,15 @@ export const MOBILE_FEATURES = [
     path: "/students",
     perm: "student.view",
     routes: ["/students", "/students/:id"],
+  },
+  {
+    // Read-only TC search/list on mobile; tapping a row opens the student detail
+    // (permitted via the Students feature above). Apply/issue stays desktop-only.
+    title: "Transfer",
+    icon: TransferIcon,
+    path: "/transfer",
+    perm: "transfer.view",
+    routes: ["/transfer"],
   },
   { title: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view" },
   {

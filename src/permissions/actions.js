@@ -42,6 +42,8 @@ export const ACTIONS = {
   TRANSPORT_MANAGE: "transport.manage",
   TRANSPORT_ATTENDANCE_MARK: "transport.attendance.mark",
   TRANSPORT_ATTENDANCE_FINALIZE: "transport.attendance.finalize",
+  TRANSFER_VIEW: "transfer.view",
+  TRANSFER_MANAGE: "transfer.manage",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -209,5 +211,13 @@ export const ACTION_CATALOG = [
     action: ACTIONS.TRANSPORT_ATTENDANCE_FINALIZE,
     description:
       "Finalize a transport (bus) attendance session and edit records after finalize (admin/god/transport-incharge only)",
+  },
+  {
+    action: ACTIONS.TRANSFER_VIEW,
+    description: "See the Transfer menu and search/read transfer certificate records",
+  },
+  {
+    action: ACTIONS.TRANSFER_MANAGE,
+    description: "Apply for and issue transfer certificates (issuing withdraws the student)",
   },
 ];

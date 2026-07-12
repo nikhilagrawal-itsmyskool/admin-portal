@@ -47,5 +47,7 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `transport.manage` | Add/edit/delete stops, vehicles, routes, route stops & student assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | ✓ | — |
 | `transport.attendance.mark` | Reach the bus-attendance screens and mark attendance — for admin/god/transport-incharge on any route, and a transport-attendance teacher only on routes they're staffed on | ✓ | ✓ | — | — | — | — | — | — | — | — | ✓ | ✓ |
 | `transport.attendance.finalize` | Finalize a transport (bus) attendance session and edit records after finalize (admin/god/transport-incharge only) | ✓ | ✓ | — | — | — | — | — | — | — | — | ✓ | — |
+| `transfer.view` | See the Transfer menu and search/read transfer certificate records | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `transfer.manage` | Apply for and issue transfer certificates (issuing withdraws the student) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._

@@ -33,12 +33,17 @@ export default function TimetableGrid({
   onChanged,
   hideNonTeaching = true,
   fitToWidth = true,
+  isPhone = false,
 }) {
   const [editingCell, setEditingCell] = useState(null); // { day, slot, items }
   if (!config?.days?.length)
     return (
       <Typography sx={{ color: "#8f9bb3" }}>No grid configured.</Typography>
     );
+
+  // Compact sizing so all periods fit a phone (landscape) without horizontal scroll.
+  const cellMinH = isPhone ? 42 : 64;
+  const labelColW = isPhone ? 40 : 72;
 
   const days = [...config.days].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
   const seqs = [
@@ -80,13 +85,13 @@ export default function TimetableGrid({
 
   const cell = (day, seq) => {
     const slot = (day.slots || []).find((s) => s.sequence === seq);
-    if (!slot) return <Box sx={{ minHeight: 64 }} />;
+    if (!slot) return <Box sx={{ minHeight: cellMinH }} />;
     if (slot.slotType === "registration") {
       const regItems = bySlot.get(slot.uuid) || [];
       return (
         <Box
           sx={{
-            minHeight: 64,
+            minHeight: cellMinH,
             bgcolor: REG_BG,
             border: "1px solid #f0c9c9",
             borderRadius: 1,
@@ -125,7 +130,7 @@ export default function TimetableGrid({
       return (
         <Box
           sx={{
-            minHeight: 64,
+            minHeight: cellMinH,
             bgcolor: FIXED_BG,
             borderRadius: 1,
             p: 0.5,
@@ -149,7 +154,7 @@ export default function TimetableGrid({
       <Box
         onClick={canEdit ? () => setEditingCell({ day, slot, items }) : undefined}
         sx={{
-          minHeight: 64,
+          minHeight: cellMinH,
           bgcolor: TEACH_BG,
           border: "1px solid #e4e9f2",
           borderRadius: 1,
@@ -190,9 +195,14 @@ export default function TimetableGrid({
         sx={{
           display: "grid",
           gridTemplateColumns: fitToWidth
-            ? `72px repeat(${visibleSeqs.length}, 1fr)`
+            ? `${labelColW}px repeat(${visibleSeqs.length}, minmax(0, 1fr))`
             : `100px repeat(${visibleSeqs.length}, minmax(150px, 1fr))`,
           gap: 0.5,
+          // Let cell text wrap so narrow columns fit; shrink the font on phones.
+          "& .MuiTypography-root": {
+            overflowWrap: "anywhere",
+            ...(isPhone ? { fontSize: "0.62rem", lineHeight: 1.2 } : {}),
+          },
           ...(fitToWidth ? {} : { minWidth: 100 + visibleSeqs.length * 150 }),
         }}
       >
@@ -219,7 +229,9 @@ export default function TimetableGrid({
               </Typography>
             </Box>
             {visibleSeqs.map((seq) => (
-              <Box key={`${d.uuid}-${seq}`}>{cell(d, seq)}</Box>
+              <Box key={`${d.uuid}-${seq}`} sx={{ minWidth: 0 }}>
+                {cell(d, seq)}
+              </Box>
             ))}
           </React.Fragment>
         ))}

@@ -77,23 +77,82 @@ export const studentService = {
     return response.data;
   },
 
-  // ---- Photos (entityType: 'student' | 'guardian') ----
-  getPhoto: async (entityType, entityId) => {
-    const response = await api.get(`/students/photos/${entityType}/${entityId}`);
+  // ---- Lookups (per-school reference data) ----
+  getLookups: async (type) => {
+    // type: category | blood_group | nationality | country | mother_tongue | relationship | state | city | locality
+    const response = await api.get('/students/lookups', { params: type ? { type } : {} });
+    return response.data; // { lookups: [...] }
+  },
+
+  createLookup: async (data) => {
+    // { lookupType, code, label, extra? }
+    const response = await api.post('/students/lookups', data);
+    return response.data;
+  },
+
+  suggestPincode: async (pincode) => {
+    const response = await api.get(`/students/lookups/pincode/${pincode}`);
+    return response.data; // { suggestion: { stateCode, cityCode, localityCode } | null }
+  },
+
+  // ---- Addresses ----
+  getAddresses: async (studentId) => {
+    const response = await api.get(`/students/${studentId}/addresses`);
+    return response.data; // { addresses: [...] }
+  },
+
+  createAddress: async (studentId, data) => {
+    const response = await api.post(`/students/${studentId}/addresses`, data);
+    return response.data;
+  },
+
+  updateAddress: async (studentId, addressId, data) => {
+    const response = await api.put(`/students/${studentId}/addresses/${addressId}`, data);
+    return response.data;
+  },
+
+  deleteAddress: async (studentId, addressId) => {
+    const response = await api.delete(`/students/${studentId}/addresses/${addressId}`);
+    return response.data;
+  },
+
+  // ---- Siblings ----
+  getSiblings: async (studentId) => {
+    const response = await api.get(`/students/${studentId}/siblings`);
+    return response.data; // { siblings: [...] }
+  },
+
+  linkSibling: async (studentId, siblingStudentId) => {
+    const response = await api.post(`/students/${studentId}/siblings`, { siblingStudentId });
+    return response.data; // { siblings: [...] }
+  },
+
+  unlinkSibling: async (studentId, siblingStudentId) => {
+    const response = await api.delete(`/students/${studentId}/siblings/${siblingStudentId}`);
+    return response.data;
+  },
+
+  // ---- Photos (entityType: 'student' | 'guardian'; variant: 'original' | 'thumb') ----
+  getPhoto: async (entityType, entityId, variant) => {
+    const response = await api.get(`/students/photos/${entityType}/${entityId}`, {
+      params: variant ? { variant } : {},
+    });
     return response.data; // { data: base64, mimeType, ... }
   },
 
-  uploadPhoto: async (entityType, entityId, { fileName, mimeType, base64Data }) => {
+  uploadPhoto: async (entityType, entityId, { fileName, mimeType, base64Data }, variant) => {
     const response = await api.post(`/students/photos/${entityType}/${entityId}`, {
       fileName,
       mimeType,
       base64Data,
-    });
+    }, { params: variant ? { variant } : {} });
     return response.data;
   },
 
-  deletePhoto: async (entityType, entityId) => {
-    const response = await api.delete(`/students/photos/${entityType}/${entityId}`);
+  deletePhoto: async (entityType, entityId, variant) => {
+    const response = await api.delete(`/students/photos/${entityType}/${entityId}`, {
+      params: variant ? { variant } : {},
+    });
     return response.data;
   },
 

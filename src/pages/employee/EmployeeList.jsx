@@ -156,7 +156,9 @@ export default function EmployeeList() {
       renderCell: (params) => {
         const isDeleted = params.row.status === "deleted";
         return (
-          <Box>
+          // Stop action clicks bubbling to the DataGrid onRowClick (which opens the
+          // detail dialog) — otherwise Credentials/Edit also trigger the row's view.
+          <Box onClick={(e) => e.stopPropagation()}>
             {/* View: managers see all; view-only staff only their own row. */}
             {canViewEmployee(params.row) && (
               <IconButton

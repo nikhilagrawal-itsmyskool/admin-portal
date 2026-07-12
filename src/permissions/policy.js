@@ -35,6 +35,8 @@ export const ROLE_PERMISSIONS = {
     "transport.manage",
     "transport.attendance.mark",
     "transport.attendance.finalize",
+    "transfer.view",
+    "transfer.manage",
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   // No transport access by default — bus attendance needs the `transport-attendance`

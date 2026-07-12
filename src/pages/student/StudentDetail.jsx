@@ -25,6 +25,9 @@ import {
   MenuItem,
   Stack,
   Tooltip,
+  Autocomplete,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -35,7 +38,9 @@ import {
   Star as StarIcon,
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
+import { transferService } from '../../services/transferService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { maskContact } from '../../utils/mask';
@@ -47,6 +52,8 @@ const RELATIONS = [
   { value: 'other', label: 'Other' },
 ];
 
+const TC_STATUS_COLOR = { applied: 'warning', issued: 'success', cancelled: 'default' };
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -56,16 +63,18 @@ function fileToBase64(file) {
   });
 }
 
-function GuardianDialog({ open, onClose, onSave, initial }) {
-  const [g, setG] = useState({ relation: 'father', name: '', occupation: '', address: '', mobile: '', whatsapp: '', email: '', isPrimaryContact: false });
+const EMPTY_GUARDIAN = {
+  relation: 'father', relationship: '', name: '', occupation: '', designation: '',
+  organisation: '', education: '', address: '', mobile: '', whatsapp: '', email: '', isPrimaryContact: false,
+};
+
+function GuardianDialog({ open, onClose, onSave, initial, lookups }) {
+  const [g, setG] = useState(EMPTY_GUARDIAN);
   useEffect(() => {
-    if (open) {
-      setG(
-        initial || { relation: 'father', name: '', occupation: '', address: '', mobile: '', whatsapp: '', email: '', isPrimaryContact: false }
-      );
-    }
+    if (open) setG(initial ? { ...EMPTY_GUARDIAN, ...initial } : EMPTY_GUARDIAN);
   }, [open, initial]);
   const set = (k) => (e) => setG((p) => ({ ...p, [k]: e.target.value }));
+  const relationships = lookups?.relationship || [];
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{initial ? 'Edit Guardian' : 'Add Guardian'}</DialogTitle>
@@ -80,11 +89,31 @@ function GuardianDialog({ open, onClose, onSave, initial }) {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={8}>
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth select label="Relationship" value={g.relationship || ''} onChange={set('relationship')} size="small" helperText="e.g. Uncle, Sister">
+              <MenuItem value="">—</MenuItem>
+              {g.relationship && !relationships.some((o) => o.code === g.relationship) && (
+                <MenuItem value={g.relationship}>{g.relationship}</MenuItem>
+              )}
+              {relationships.map((o) => (
+                <MenuItem key={o.uuid} value={o.code}>{o.label || o.code}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={4}>
             <TextField fullWidth label="Name" value={g.name} onChange={set('name')} size="small" />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField fullWidth label="Occupation" value={g.occupation} onChange={set('occupation')} size="small" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Education" value={g.education} onChange={set('education')} size="small" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Designation" value={g.designation} onChange={set('designation')} size="small" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Organisation" value={g.organisation} onChange={set('organisation')} size="small" />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField fullWidth label="Mobile" value={g.mobile} onChange={set('mobile')} size="small" />
@@ -96,7 +125,7 @@ function GuardianDialog({ open, onClose, onSave, initial }) {
             <TextField fullWidth label="Email" value={g.email} onChange={set('email')} size="small" />
           </Grid>
           <Grid item xs={12}>
-            <TextField fullWidth label="Address" value={g.address} onChange={set('address')} size="small" multiline rows={2} />
+            <TextField fullWidth label="Address (overrides household)" value={g.address} onChange={set('address')} size="small" multiline rows={2} helperText="Leave blank to use the student's communication address" />
           </Grid>
           <Grid item xs={12}>
             <TextField
@@ -123,6 +152,169 @@ function GuardianDialog({ open, onClose, onSave, initial }) {
   );
 }
 
+const EMPTY_ADDRESS = {
+  isPermanent: false, isCommunication: false, line: '', localityCode: '', cityCode: '',
+  stateCode: '', countryCode: 'india', pincode: '',
+};
+
+function LookupAutocomplete({ label, value, options, onChange }) {
+  // freeSolo: pick an existing lookup or type a new value (backend auto-creates city/locality).
+  const selected = options.find((o) => o.code === value) || (value ? { code: value, label: value } : null);
+  return (
+    <Autocomplete
+      freeSolo
+      options={options}
+      value={selected}
+      getOptionLabel={(o) => (typeof o === 'string' ? o : o.label || o.code || '')}
+      isOptionEqualToValue={(o, v) => o.code === (v?.code ?? v)}
+      onChange={(e, v) => onChange(typeof v === 'string' ? v : v?.code || '')}
+      onInputChange={(e, v, reason) => { if (reason === 'input') onChange(v); }}
+      renderInput={(p) => <TextField {...p} label={label} size="small" />}
+    />
+  );
+}
+
+function AddressDialog({ open, onClose, onSave, initial, lookups, onSuggestPincode }) {
+  const [a, setA] = useState(EMPTY_ADDRESS);
+  useEffect(() => {
+    if (open) setA(initial ? { ...EMPTY_ADDRESS, ...initial } : EMPTY_ADDRESS);
+  }, [open, initial]);
+  const set = (k) => (e) => setA((p) => ({ ...p, [k]: e.target.value }));
+  const setVal = (k) => (v) => setA((p) => ({ ...p, [k]: v }));
+  const toggle = (k) => (e) => setA((p) => ({ ...p, [k]: e.target.checked }));
+
+  const handlePincodeBlur = async () => {
+    if (!/^\d{6}$/.test(a.pincode || '') || !onSuggestPincode) return;
+    const s = await onSuggestPincode(a.pincode);
+    if (!s) return;
+    setA((p) => ({
+      ...p,
+      stateCode: p.stateCode || s.stateCode || '',
+      cityCode: p.cityCode || s.cityCode || '',
+      localityCode: p.localityCode || s.localityCode || '',
+    }));
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>{initial ? 'Edit Address' : 'Add Address'}</DialogTitle>
+      <DialogContent>
+        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+          <Grid item xs={12}>
+            <TextField fullWidth label="Address line" value={a.line} onChange={set('line')} size="small" multiline rows={2} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <LookupAutocomplete label="Locality" value={a.localityCode} options={lookups.locality || []} onChange={setVal('localityCode')} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <LookupAutocomplete label="City" value={a.cityCode} options={lookups.city || []} onChange={setVal('cityCode')} />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth select label="State" value={a.stateCode || ''} onChange={set('stateCode')} size="small">
+              <MenuItem value="">—</MenuItem>
+              {(lookups.state || []).map((o) => (
+                <MenuItem key={o.uuid} value={o.code}>{o.label || o.code}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth select label="Country" value={a.countryCode || ''} onChange={set('countryCode')} size="small">
+              <MenuItem value="">—</MenuItem>
+              {(lookups.country || []).map((o) => (
+                <MenuItem key={o.uuid} value={o.code}>{o.label || o.code}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth label="Pincode" value={a.pincode} onChange={set('pincode')} onBlur={handlePincodeBlur} size="small" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControlLabel control={<Checkbox checked={!!a.isPermanent} onChange={toggle('isPermanent')} />} label="Permanent address" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControlLabel control={<Checkbox checked={!!a.isCommunication} onChange={toggle('isCommunication')} />} label="Communication address" />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={() => onSave(a)}>Save</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+const EMPTY_TC = {
+  applicationDate: '', srnNumber: '', issueDate: '', reasonForLeaving: '',
+  totalAttendanceDays: '', totalWorkingDays: '', status: 'applied',
+};
+
+function TcDialog({ open, onClose, onSave, initial }) {
+  const [t, setT] = useState(EMPTY_TC);
+  useEffect(() => {
+    if (open) {
+      setT(initial ? {
+        applicationDate: initial.applicationDate ? String(initial.applicationDate).slice(0, 10) : '',
+        srnNumber: initial.srnNumber || '',
+        issueDate: initial.issueDate ? String(initial.issueDate).slice(0, 10) : '',
+        reasonForLeaving: initial.reasonForLeaving || '',
+        totalAttendanceDays: initial.totalAttendanceDays ?? '',
+        totalWorkingDays: initial.totalWorkingDays ?? '',
+        status: initial.status || 'applied',
+      } : EMPTY_TC);
+    }
+  }, [open, initial]);
+  const set = (k) => (e) => setT((p) => ({ ...p, [k]: e.target.value }));
+  const issuing = t.status === 'issued';
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>{initial ? 'Update Transfer Certificate' : 'Apply for Transfer Certificate'}</DialogTitle>
+      <DialogContent>
+        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Application date" type="date" value={t.applicationDate} onChange={set('applicationDate')} size="small" InputLabelProps={{ shrink: true }} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth select label="Status" value={t.status} onChange={set('status')} size="small">
+              <MenuItem value="applied">Applied</MenuItem>
+              <MenuItem value="issued">Issued</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
+            </TextField>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth label="Reason for leaving" value={t.reasonForLeaving} onChange={set('reasonForLeaving')} size="small" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="SRN number" value={t.srnNumber} onChange={set('srnNumber')} size="small" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Date of TC issue" type="date" value={t.issueDate} onChange={set('issueDate')} size="small" InputLabelProps={{ shrink: true }} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Total attendance days" type="number" value={t.totalAttendanceDays} onChange={set('totalAttendanceDays')} size="small" />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Total working days" type="number" value={t.totalWorkingDays} onChange={set('totalWorkingDays')} size="small" />
+          </Grid>
+          {issuing && (
+            <Grid item xs={12}>
+              <Alert severity="warning">Issuing a TC withdraws the student (status becomes inactive).</Alert>
+            </Grid>
+          )}
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={() => onSave({
+          ...t,
+          totalAttendanceDays: t.totalAttendanceDays === '' ? undefined : Number(t.totalAttendanceDays),
+          totalWorkingDays: t.totalWorkingDays === '' ? undefined : Number(t.totalWorkingDays),
+        })}>Save</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function StudentDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -131,20 +323,48 @@ export default function StudentDetail() {
   const can = useCan();
   const canManage = can(ACTIONS.STUDENT_MANAGE);
   const canViewContacts = can(ACTIONS.STUDENT_VIEW_CONTACTS);
+  const canTransferView = can(ACTIONS.TRANSFER_VIEW);
+  const canTransferManage = can(ACTIONS.TRANSFER_MANAGE);
 
   const [student, setStudent] = useState(null);
   const [photoUrl, setPhotoUrl] = useState('');
   const [guardianPhotos, setGuardianPhotos] = useState({}); // guardianId -> dataUrl
   const [photoTarget, setPhotoTarget] = useState(null); // guardianId being (re)photographed
+  const [lookups, setLookups] = useState({}); // { state: [...], city: [...], relationship: [...], ... }
+  const [tcs, setTcs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [guardianDialog, setGuardianDialog] = useState({ open: false, initial: null });
   const [delGuardian, setDelGuardian] = useState({ open: false, item: null });
+  const [addressDialog, setAddressDialog] = useState({ open: false, initial: null });
+  const [delAddress, setDelAddress] = useState({ open: false, item: null });
+  const [siblingSearch, setSiblingSearch] = useState(false);
+  const [delSibling, setDelSibling] = useState({ open: false, item: null });
+  const [tcDialog, setTcDialog] = useState({ open: false, initial: null });
 
   useEffect(() => {
     load();
+    loadLookups();
   }, [id]);
+
+  const loadLookups = async () => {
+    try {
+      const { lookups: rows } = await studentService.getLookups();
+      const grouped = {};
+      for (const row of rows || []) (grouped[row.lookupType] = grouped[row.lookupType] || []).push(row);
+      setLookups(grouped);
+    } catch {
+      /* dropdowns degrade to raw codes */
+    }
+  };
+
+  // Resolve a lookup code to its label for display (falls back to the code).
+  const codeLabel = (type, code) => {
+    if (!code) return null;
+    const hit = (lookups[type] || []).find((o) => o.code === code);
+    return hit ? hit.label || hit.code : code;
+  };
 
   const load = async () => {
     setLoading(true);
@@ -154,10 +374,75 @@ export default function StudentDetail() {
       setStudent(s);
       loadPhoto();
       loadGuardianPhotos(s.guardians || []);
+      loadTcs();
     } catch {
       setError('Failed to load student');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTcs = async () => {
+    if (!canTransferView) return; // transfer is admin/god only
+    try {
+      const { tcs: rows } = await transferService.getTcs(id);
+      setTcs(rows || []);
+    } catch {
+      setTcs([]);
+    }
+  };
+
+  // ---- Address handlers ----
+  const saveAddress = async (a) => {
+    try {
+      if (a.uuid) await studentService.updateAddress(id, a.uuid, a);
+      else await studentService.createAddress(id, a);
+      setAddressDialog({ open: false, initial: null });
+      load();
+    } catch {
+      setError('Failed to save address');
+    }
+  };
+  const removeAddress = async () => {
+    try {
+      await studentService.deleteAddress(id, delAddress.item.uuid);
+      setDelAddress({ open: false, item: null });
+      load();
+    } catch {
+      setError('Failed to delete address');
+    }
+  };
+
+  // ---- Sibling handlers ----
+  const addSibling = async (stu) => {
+    setSiblingSearch(false);
+    if (!stu || stu.uuid === id) return;
+    try {
+      await studentService.linkSibling(id, stu.uuid);
+      load();
+    } catch {
+      setError('Failed to link sibling');
+    }
+  };
+  const removeSibling = async () => {
+    try {
+      await studentService.unlinkSibling(id, delSibling.item.siblingStudentId);
+      setDelSibling({ open: false, item: null });
+      load();
+    } catch {
+      setError('Failed to unlink sibling');
+    }
+  };
+
+  // ---- TC handlers ----
+  const saveTc = async (t) => {
+    try {
+      if (t.uuid) await transferService.updateTc(id, t.uuid, t);
+      else await transferService.createTc(id, t);
+      setTcDialog({ open: false, initial: null });
+      load();
+    } catch (err) {
+      setError(err?.response?.data?.error?.description || 'Failed to save transfer certificate');
     }
   };
 
@@ -297,8 +582,23 @@ export default function StudentDetail() {
                 <Fact label="House" value={student.houseName} />
                 <Fact label="Gender" value={student.gender} />
                 <Fact label="DOB" value={student.dob ? String(student.dob).slice(0, 10) : null} />
+                <Fact label="Category" value={codeLabel('category', student.categoryCode)} />
+                <Fact label="Blood group" value={codeLabel('blood_group', student.bloodGroupCode)} />
+                <Fact label="Nationality" value={codeLabel('nationality', student.nationalityCode)} />
+                <Fact label="Mother tongue" value={codeLabel('mother_tongue', student.motherTongueCode)} />
+                <Fact label="Aadhaar" value={maskContact(student.aadhaarNumber, 'aadhaar', canViewContacts)} />
+                <Fact label="Student email" value={student.studentEmail} />
+                <Fact label="Student mobile" value={maskContact(student.studentMobile, 'phone', canViewContacts)} />
+                <Fact label="Previous school" value={student.previousSchool} />
+                <Fact label="Admission date" value={student.admissionDate ? String(student.admissionDate).slice(0, 10) : null} />
                 <Fact label="Family #" value={student.familyUniqueNumber} />
                 <Fact label="Comm. pref" value={prettyPref(student.communicationPreference)} />
+                {student.status === 'inactive' && (
+                  <>
+                    <Fact label="Withdrawn" value={student.withdrawalDate ? String(student.withdrawalDate).slice(0, 10) : null} />
+                    <Fact label="Remarks" value={student.withdrawalRemarks} />
+                  </>
+                )}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
                   <Typography variant="body2" color="text.secondary">
                     Status
@@ -357,6 +657,7 @@ export default function StudentDetail() {
                               </Tooltip>
                               <Typography variant="subtitle2" sx={{ textTransform: 'capitalize' }}>
                                 {g.relation}
+                                {g.relationship && (g.relation === 'guardian' || g.relation === 'other') ? ` · ${codeLabel('relationship', g.relationship)}` : ''}
                                 {g.isPrimaryContact && (
                                   <Tooltip title="Primary contact">
                                     <StarIcon fontSize="inherit" color="warning" sx={{ ml: 0.5, verticalAlign: 'middle' }} />
@@ -376,9 +677,14 @@ export default function StudentDetail() {
                             )}
                           </Box>
                           <Typography variant="body2" sx={{ mt: 0.5 }}>{g.name || '—'}</Typography>
-                          {g.occupation && (
-                            <Typography variant="caption" color="text.secondary">
-                              {g.occupation}
+                          {(g.occupation || g.designation || g.organisation) && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              {[g.occupation, [g.designation, g.organisation].filter(Boolean).join(' @ ')].filter(Boolean).join(' · ')}
+                            </Typography>
+                          )}
+                          {g.education && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              {g.education}
                             </Typography>
                           )}
                           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -410,12 +716,13 @@ export default function StudentDetail() {
                     <TableCell>Academic Year</TableCell>
                     <TableCell>Class</TableCell>
                     <TableCell>Roll #</TableCell>
+                    <TableCell>Joined</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {(student.enrollments || []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3}>No enrollment records.</TableCell>
+                      <TableCell colSpan={4}>No enrollment records.</TableCell>
                     </TableRow>
                   ) : (
                     student.enrollments.map((e) => (
@@ -423,6 +730,7 @@ export default function StudentDetail() {
                         <TableCell>{e.academicYearName || '—'}</TableCell>
                         <TableCell>{e.className || '—'}</TableCell>
                         <TableCell>{e.rollNumber ?? '—'}</TableCell>
+                        <TableCell>{e.joinDate ? String(e.joinDate).slice(0, 10) : '—'}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -430,6 +738,134 @@ export default function StudentDetail() {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Addresses */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Addresses</Typography>
+                {canManage && (
+                  <Button size="small" startIcon={<AddIcon />} onClick={() => setAddressDialog({ open: true, initial: null })}>
+                    Add
+                  </Button>
+                )}
+              </Box>
+              {(student.addresses || []).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">No addresses added yet.</Typography>
+              ) : (
+                <Grid container spacing={2}>
+                  {student.addresses.map((a) => (
+                    <Grid item xs={12} sm={6} key={a.uuid}>
+                      <Card variant="outlined">
+                        <CardContent sx={{ pb: '12px !important' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                              {a.isPermanent && <Chip size="small" label="Permanent" color="primary" variant="outlined" />}
+                              {a.isCommunication && <Chip size="small" label="Communication" color="success" variant="outlined" />}
+                            </Box>
+                            {canManage && (
+                              <Box>
+                                <IconButton size="small" onClick={() => setAddressDialog({ open: true, initial: a })}>
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" color="error" onClick={() => setDelAddress({ open: true, item: a })}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            )}
+                          </Box>
+                          <Typography variant="body2" sx={{ mt: 0.5 }}>{a.line || '—'}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {[codeLabel('locality', a.localityCode), codeLabel('city', a.cityCode), codeLabel('state', a.stateCode), a.pincode]
+                              .filter(Boolean).join(', ') || '—'}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Siblings */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Siblings</Typography>
+                {canManage && (
+                  <Button size="small" startIcon={<AddIcon />} onClick={() => setSiblingSearch(true)}>
+                    Link
+                  </Button>
+                )}
+              </Box>
+              {(student.siblings || []).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">No siblings linked.</Typography>
+              ) : (
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                  {student.siblings.map((sib) => (
+                    <Chip
+                      key={sib.uuid}
+                      label={`${sib.name || '—'}${sib.className ? ` · ${sib.className}` : ''}${sib.admissionNumber ? ` (${sib.admissionNumber})` : ''}`}
+                      onClick={() => navigate(`/students/${sib.siblingStudentId}`)}
+                      onDelete={canManage ? () => setDelSibling({ open: true, item: sib }) : undefined}
+                      variant="outlined"
+                    />
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Transfer Certificate (admin/god only) */}
+          {canTransferView && (
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Transfer Certificate</Typography>
+                {canTransferManage && (
+                  <Button size="small" startIcon={<AddIcon />} onClick={() => setTcDialog({ open: true, initial: null })}>
+                    Apply
+                  </Button>
+                )}
+              </Box>
+              {tcs.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">No transfer certificate records.</Typography>
+              ) : (
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Status</TableCell>
+                      <TableCell>SRN</TableCell>
+                      <TableCell>Applied</TableCell>
+                      <TableCell>Issued</TableCell>
+                      <TableCell>Attendance/Working</TableCell>
+                      {canTransferManage && <TableCell align="right">Action</TableCell>}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {tcs.map((tc) => (
+                      <TableRow key={tc.uuid}>
+                        <TableCell><Chip size="small" label={tc.status} color={TC_STATUS_COLOR[tc.status] || 'default'} /></TableCell>
+                        <TableCell>{tc.srnNumber || '—'}</TableCell>
+                        <TableCell>{tc.applicationDate ? String(tc.applicationDate).slice(0, 10) : '—'}</TableCell>
+                        <TableCell>{tc.issueDate ? String(tc.issueDate).slice(0, 10) : '—'}</TableCell>
+                        <TableCell>{tc.totalAttendanceDays != null || tc.totalWorkingDays != null ? `${tc.totalAttendanceDays ?? '—'} / ${tc.totalWorkingDays ?? '—'}` : '—'}</TableCell>
+                        {canTransferManage && (
+                          <TableCell align="right">
+                            {tc.status !== 'issued' && tc.status !== 'cancelled' && (
+                              <Button size="small" onClick={() => setTcDialog({ open: true, initial: tc })}>Update</Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+          )}
 
           <Alert severity="info" sx={{ mt: 3 }}>
             360° summary (attendance, conduct, library, dues, health) is coming in a later phase.
@@ -440,6 +876,7 @@ export default function StudentDetail() {
       <GuardianDialog
         open={guardianDialog.open}
         initial={guardianDialog.initial}
+        lookups={lookups}
         onClose={() => setGuardianDialog({ open: false, initial: null })}
         onSave={saveGuardian}
       />
@@ -450,6 +887,51 @@ export default function StudentDetail() {
         message="Remove this guardian?"
         onConfirm={removeGuardian}
         onCancel={() => setDelGuardian({ open: false, item: null })}
+      />
+
+      <AddressDialog
+        open={addressDialog.open}
+        initial={addressDialog.initial}
+        lookups={lookups}
+        onSuggestPincode={async (pincode) => {
+          try {
+            const { suggestion } = await studentService.suggestPincode(pincode);
+            return suggestion;
+          } catch {
+            return null;
+          }
+        }}
+        onClose={() => setAddressDialog({ open: false, initial: null })}
+        onSave={saveAddress}
+      />
+
+      <ConfirmDialog
+        open={delAddress.open}
+        title="Delete Address"
+        message="Remove this address?"
+        onConfirm={removeAddress}
+        onCancel={() => setDelAddress({ open: false, item: null })}
+      />
+
+      <StudentSearchDialog
+        open={siblingSearch}
+        onClose={() => setSiblingSearch(false)}
+        onSelect={addSibling}
+      />
+
+      <ConfirmDialog
+        open={delSibling.open}
+        title="Unlink Sibling"
+        message="Remove this sibling link?"
+        onConfirm={removeSibling}
+        onCancel={() => setDelSibling({ open: false, item: null })}
+      />
+
+      <TcDialog
+        open={tcDialog.open}
+        initial={tcDialog.initial}
+        onClose={() => setTcDialog({ open: false, initial: null })}
+        onSave={saveTc}
       />
     </Box>
   );
