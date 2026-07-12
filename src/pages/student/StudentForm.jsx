@@ -61,7 +61,7 @@ export default function StudentForm() {
     dob: '',
     familyUniqueNumber: '',
     oldAdmissionNumber: '',
-    communicationPreference: 'father:whatsapp', // default recipient; edit loads the stored value
+    communicationPreference: 'father:sms', // default recipient + channel; edit loads the stored value
     status: 'active',
     // extended demographics
     studentEmail: '',
@@ -144,11 +144,11 @@ export default function StudentForm() {
   // Communication preference is a compact `recipient:channel` token (e.g. "mother:whatsapp");
   // empty means the (future) communication module applies its default ladder.
   const prefRecipient = (form.communicationPreference || '').split(':')[0] || '';
-  const prefChannel = (form.communicationPreference || '').split(':')[1] || 'whatsapp';
+  const prefChannel = (form.communicationPreference || '').split(':')[1] || 'sms';
   const setPref = (recipient, channel) =>
     setForm((f) => ({
       ...f,
-      communicationPreference: recipient ? `${recipient}:${channel || 'whatsapp'}` : '',
+      communicationPreference: recipient ? `${recipient}:${channel || 'sms'}` : '',
     }));
 
   // A select backed by a per-school lookup type. Falls back to the stored code as a
