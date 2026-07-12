@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Grid, TextField, MenuItem, Button, Alert, Chip,
@@ -23,7 +23,9 @@ export default function ComposeMessage() {
   const can = useCan();
   const canSend = can(ACTIONS.COMMUNICATION_SEND);
 
+  const [templates, setTemplates] = useState([]);
   const [templateKeys, setTemplateKeys] = useState([]);
+  const [autoVarsAll, setAutoVarsAll] = useState([]);
   const [classes, setClasses] = useState([]);
   const [roles, setRoles] = useState([]);
 
@@ -50,18 +52,48 @@ export default function ComposeMessage() {
   useEffect(() => {
     (async () => {
       try {
-        const [tpl, cls, rl] = await Promise.all([
+        const [tpl, cls, rl, vars] = await Promise.all([
           communicationService.listTemplates(),
           classService.getClasses(),
           employeeService.listRoles(),
+          communicationService.getVariables(),
         ]);
-        const keys = [...new Set((tpl.templates || []).map((t) => t.key))];
-        setTemplateKeys(keys);
+        const list = tpl.templates || [];
+        setTemplates(list);
+        setTemplateKeys([...new Set(list.map((t) => t.key))]);
+        setAutoVarsAll(vars.autoVariablesAll || []);
         setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
         setRoles(Array.isArray(rl) ? rl : rl?.roles || []);
       } catch { /* non-fatal; user can still type a key */ }
     })();
   }, []);
+
+  // Active template matching the current key + language (prefer exact language,
+  // then any). Drives which variables the sender is prompted for.
+  const selectedTemplate = useMemo(() => {
+    const key = templateKey.trim();
+    if (!key) return null;
+    const matches = templates.filter((t) => t.key === key && (t.status ? t.status === 'active' : true));
+    if (!matches.length) return null;
+    return matches.find((t) => (t.language || 'en') === (language || 'en')) || matches[0];
+  }, [templateKey, language, templates]);
+
+  const templateVars = Array.isArray(selectedTemplate?.variables) ? selectedTemplate.variables : [];
+  const requiredVars = templateVars.filter((v) => !autoVarsAll.includes(v));
+  const autoFilledVars = templateVars.filter((v) => autoVarsAll.includes(v));
+
+  // On selecting a known template, prefill the variable rows with its required
+  // (sender-supplied) names — locked — preserving any values already typed.
+  // Auto-injected variables (recipientName, studentName, …) are omitted.
+  useEffect(() => {
+    if (!selectedTemplate) return;
+    const vars = Array.isArray(selectedTemplate.variables) ? selectedTemplate.variables : [];
+    const required = vars.filter((v) => !autoVarsAll.includes(v));
+    setContext((prev) => required.map((name) => {
+      const existing = prev.find((r) => r.key === name);
+      return { key: name, value: existing ? existing.value : '', locked: true };
+    }));
+  }, [selectedTemplate, autoVarsAll]);
 
   const addContextRow = () => setContext((c) => [...c, { key: '', value: '' }]);
   const setContextField = (i, field, val) => setContext((c) => c.map((row, idx) => (idx === i ? { ...row, [field]: val } : row)));
@@ -249,13 +281,43 @@ export default function ComposeMessage() {
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Typography variant="h6">Variables &amp; scheduling</Typography>
-            <Button size="small" startIcon={<AddIcon />} onClick={addContextRow}>Add variable</Button>
+            {!selectedTemplate && <Button size="small" startIcon={<AddIcon />} onClick={addContextRow}>Add variable</Button>}
           </Box>
+
+          {selectedTemplate?.bodyPreview && (
+            <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>{selectedTemplate.bodyPreview}</Alert>
+          )}
+
+          {selectedTemplate && autoFilledVars.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" color="text.secondary">Filled automatically per recipient:</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+                {autoFilledVars.map((v) => <Chip key={v} size="small" variant="outlined" label={v} />)}
+              </Box>
+            </Box>
+          )}
+
+          {selectedTemplate && requiredVars.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              This template has no variables to fill.
+            </Typography>
+          )}
+
           {context.map((row, i) => (
             <Grid container spacing={1} key={i} sx={{ mb: 1 }} alignItems="center">
-              <Grid item xs={5} md={4}><TextField fullWidth size="small" label="Name" value={row.key} onChange={(e) => setContextField(i, 'key', e.target.value)} /></Grid>
-              <Grid item xs={6} md={7}><TextField fullWidth size="small" label="Value" value={row.value} onChange={(e) => setContextField(i, 'value', e.target.value)} /></Grid>
-              <Grid item xs={1}><IconButton size="small" color="error" onClick={() => removeContextRow(i)}><DeleteIcon fontSize="small" /></IconButton></Grid>
+              <Grid item xs={row.locked ? 5 : 5} md={4}>
+                <TextField
+                  fullWidth size="small" label="Name" value={row.key}
+                  onChange={(e) => setContextField(i, 'key', e.target.value)}
+                  InputProps={{ readOnly: !!row.locked }}
+                />
+              </Grid>
+              <Grid item xs={row.locked ? 7 : 6} md={row.locked ? 8 : 7}>
+                <TextField fullWidth size="small" label="Value" value={row.value} onChange={(e) => setContextField(i, 'value', e.target.value)} />
+              </Grid>
+              {!row.locked && (
+                <Grid item xs={1}><IconButton size="small" color="error" onClick={() => removeContextRow(i)}><DeleteIcon fontSize="small" /></IconButton></Grid>
+              )}
             </Grid>
           ))}
           <TextField

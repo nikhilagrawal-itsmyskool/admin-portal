@@ -7,6 +7,14 @@ export const communicationService = {
     return response.data; // { channels: [{ value, label }] }
   },
 
+  // Variables the backend auto-fills per recipient (by audience type + union).
+  // The Compose UI subtracts these from a template's variables so it only prompts
+  // for the sender-supplied ones.
+  getVariables: async () => {
+    const response = await api.get('/communication/lookups/variables');
+    return response.data; // { autoVariables: { student, employee }, autoVariablesAll: [...] }
+  },
+
   // Templates
   listTemplates: async () => {
     const response = await api.get('/communication/templates');
