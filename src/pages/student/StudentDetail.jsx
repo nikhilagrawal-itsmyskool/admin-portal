@@ -75,13 +75,20 @@ function GuardianDialog({ open, onClose, onSave, initial, lookups }) {
   }, [open, initial]);
   const set = (k) => (e) => setG((p) => ({ ...p, [k]: e.target.value }));
   const relationships = lookups?.relationship || [];
+  // "relationship" (specific label) only applies to a generic guardian/other; for
+  // father/mother the relation already says it, so the field is hidden & cleared.
+  const showRelationship = g.relation === 'guardian' || g.relation === 'other';
+  const onRelationChange = (e) => {
+    const relation = e.target.value;
+    setG((p) => ({ ...p, relation, relationship: relation === 'guardian' || relation === 'other' ? p.relationship : '' }));
+  };
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{initial ? 'Edit Guardian' : 'Add Guardian'}</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
           <Grid item xs={12} sm={4}>
-            <TextField fullWidth select label="Relation" value={g.relation} onChange={set('relation')} size="small">
+            <TextField fullWidth select label="Relation" value={g.relation} onChange={onRelationChange} size="small">
               {RELATIONS.map((r) => (
                 <MenuItem key={r.value} value={r.value}>
                   {r.label}
@@ -89,18 +96,20 @@ function GuardianDialog({ open, onClose, onSave, initial, lookups }) {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth select label="Relationship" value={g.relationship || ''} onChange={set('relationship')} size="small" helperText="e.g. Uncle, Sister">
-              <MenuItem value="">—</MenuItem>
-              {g.relationship && !relationships.some((o) => o.code === g.relationship) && (
-                <MenuItem value={g.relationship}>{g.relationship}</MenuItem>
-              )}
-              {relationships.map((o) => (
-                <MenuItem key={o.uuid} value={o.code}>{o.label || o.code}</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={4}>
+          {showRelationship && (
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth select label="Relationship" value={g.relationship || ''} onChange={set('relationship')} size="small" helperText="e.g. Uncle, Sister">
+                <MenuItem value="">—</MenuItem>
+                {g.relationship && !relationships.some((o) => o.code === g.relationship) && (
+                  <MenuItem value={g.relationship}>{g.relationship}</MenuItem>
+                )}
+                {relationships.map((o) => (
+                  <MenuItem key={o.uuid} value={o.code}>{o.label || o.code}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          )}
+          <Grid item xs={12} sm={showRelationship ? 4 : 8}>
             <TextField fullWidth label="Name" value={g.name} onChange={set('name')} size="small" />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -536,6 +545,15 @@ export default function StudentDetail() {
   if (loading) return <Typography>Loading…</Typography>;
   if (!student) return <Alert severity="error">{error || 'Not found'}</Alert>;
 
+  // Reachability: a message can go out if the student has an own contact or any
+  // guardian has one. Primary-contact + preference decide *who* (resolution lives
+  // in the communication module); here we only warn when nobody is reachable.
+  const guardianList = student.guardians || [];
+  const anyGuardianContact = guardianList.some((g) => g.mobile || g.whatsapp || g.email);
+  const studentHasContact = Boolean(student.studentMobile || student.studentWhatsapp || student.studentEmail);
+  const reachable = studentHasContact || anyGuardianContact;
+  const hasPrimaryGuardian = guardianList.some((g) => g.isPrimaryContact);
+
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
@@ -555,6 +573,17 @@ export default function StudentDetail() {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
+        </Alert>
+      )}
+
+      {!reachable && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          No contact on file — add a student mobile/email or a guardian contact so messages can reach this student.
+        </Alert>
+      )}
+      {reachable && !hasPrimaryGuardian && !student.communicationPreference && guardianList.length > 1 && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          No primary contact or preference set — messages will use the default ladder (first guardian with a contact, then the student). Mark a primary contact or set a preference to be explicit.
         </Alert>
       )}
 
@@ -589,6 +618,7 @@ export default function StudentDetail() {
                 <Fact label="Aadhaar" value={maskContact(student.aadhaarNumber, 'aadhaar', canViewContacts)} />
                 <Fact label="Student email" value={student.studentEmail} />
                 <Fact label="Student mobile" value={maskContact(student.studentMobile, 'phone', canViewContacts)} />
+                <Fact label="Student WhatsApp" value={maskContact(student.studentWhatsapp, 'phone', canViewContacts)} />
                 <Fact label="Previous school" value={student.previousSchool} />
                 <Fact label="Admission date" value={student.admissionDate ? String(student.admissionDate).slice(0, 10) : null} />
                 <Fact label="Family #" value={student.familyUniqueNumber} />
@@ -939,7 +969,7 @@ export default function StudentDetail() {
 
 // Render a compact `recipient:channel` preference token as a readable label.
 function prettyPref(pref) {
-  if (!pref) return 'Default ladder';
+  if (!pref) return 'Auto (default ladder)';
   const [recipient, channel] = String(pref).split(':');
   const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
   const channelLabel = channel === 'sms' ? 'SMS' : channel === 'whatsapp' ? 'WhatsApp' : cap(channel);

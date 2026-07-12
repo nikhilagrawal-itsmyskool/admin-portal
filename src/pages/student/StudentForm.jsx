@@ -30,6 +30,7 @@ const PREF_RECIPIENTS = [
   { value: 'father', label: 'Father' },
   { value: 'mother', label: 'Mother' },
   { value: 'guardian', label: 'Guardian' },
+  { value: 'student', label: 'Student' },
 ];
 
 export default function StudentForm() {
@@ -60,11 +61,12 @@ export default function StudentForm() {
     dob: '',
     familyUniqueNumber: '',
     oldAdmissionNumber: '',
-    communicationPreference: '',
+    communicationPreference: 'father:whatsapp', // default recipient; edit loads the stored value
     status: 'active',
     // extended demographics
     studentEmail: '',
     studentMobile: '',
+    studentWhatsapp: '',
     categoryCode: '',
     bloodGroupCode: '',
     nationalityCode: '',
@@ -120,6 +122,7 @@ export default function StudentForm() {
         status: s.status || 'active',
         studentEmail: s.studentEmail || '',
         studentMobile: s.studentMobile || '',
+        studentWhatsapp: s.studentWhatsapp || '',
         categoryCode: s.categoryCode || '',
         bloodGroupCode: s.bloodGroupCode || '',
         nationalityCode: s.nationalityCode || '',
@@ -288,12 +291,12 @@ export default function StudentForm() {
                 value={prefRecipient}
                 onChange={(e) => setPref(e.target.value, prefChannel)}
                 size="small"
-                helperText="Empty = default ladder"
+                helperText="Auto = primary guardian → student"
               >
-                <MenuItem value="">Default ladder</MenuItem>
+                <MenuItem value="">Auto (default ladder)</MenuItem>
                 {PREF_RECIPIENTS.map((r) => (
                   <MenuItem key={r.value} value={r.value}>
-                    {r.label} first
+                    {r.label}
                   </MenuItem>
                 ))}
               </TextField>
@@ -337,6 +340,9 @@ export default function StudentForm() {
             </Grid>
             <Grid item xs={12} md={3}>
               <TextField fullWidth label="Student mobile" value={form.studentMobile} onChange={setField('studentMobile')} size="small" />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField fullWidth label="Student WhatsApp" value={form.studentWhatsapp} onChange={setField('studentWhatsapp')} size="small" />
             </Grid>
             <Grid item xs={12} md={3}>
               <TextField fullWidth label="Aadhaar number" value={form.aadhaarNumber} onChange={setField('aadhaarNumber')} size="small" />
