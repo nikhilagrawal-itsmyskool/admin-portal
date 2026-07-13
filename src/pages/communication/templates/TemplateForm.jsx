@@ -60,7 +60,12 @@ export default function TemplateForm() {
       category: form.category || undefined,
       headerType: form.headerType,
       bodyPreview: form.bodyPreview || undefined,
-      variables: form.variables.split(',').map((v) => v.trim()).filter(Boolean),
+      // Tolerate JSON-ish input (e.g. pasted `["a", "b"]`): strip stray quotes
+      // and brackets so stored names stay clean and resolve at send time.
+      variables: form.variables
+        .split(',')
+        .map((v) => v.trim().replace(/^["'[\]]+/, '').replace(/["'[\]]+$/, '').trim())
+        .filter(Boolean),
     };
     try {
       if (isEdit) await communicationService.updateTemplate(id, payload);
