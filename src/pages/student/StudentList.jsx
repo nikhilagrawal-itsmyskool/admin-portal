@@ -15,9 +15,11 @@ import {
   Autocomplete,
   Paper,
   Stack,
+  Avatar,
 } from '@mui/material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import usePersistedPaginationModel from '../../hooks/usePersistedPaginationModel';
+import usePersistedState from '../../hooks/usePersistedState';
 import {
   PersonAdd as PersonAddIcon,
   Edit as EditIcon,
@@ -52,12 +54,13 @@ export default function StudentList() {
   const [error, setError] = useState('');
   const [selection, setSelection] = useState([]);
 
-  // Filters
-  const [name, setName] = useState('');
-  const [selectedClass, setSelectedClass] = useState(null);
-  const [selectedYear, setSelectedYear] = useState(null);
-  const [admissionNumber, setAdmissionNumber] = useState('');
-  const [phone, setPhone] = useState('');
+  // Filters — persisted per-session so returning from a student's detail restores
+  // the same search + results (paired with usePersistedPaginationModel + scroll).
+  const [name, setName] = usePersistedState('studentList.name', '');
+  const [selectedClass, setSelectedClass] = usePersistedState('studentList.class', null);
+  const [selectedYear, setSelectedYear] = usePersistedState('studentList.year', null);
+  const [admissionNumber, setAdmissionNumber] = usePersistedState('studentList.adm', '');
+  const [phone, setPhone] = usePersistedState('studentList.phone', '');
 
   // Dialog state
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
@@ -79,7 +82,8 @@ export default function StudentList() {
 
   useEffect(() => {
     loadLookups();
-    loadStudents({});
+    // Load using the restored filters (empty on a first-ever visit).
+    loadStudents();
   }, []);
 
   const loadLookups = async () => {
@@ -109,7 +113,7 @@ export default function StudentList() {
     setError('');
     try {
       const filters = overrideFilters !== undefined ? overrideFilters : buildFilters();
-      const data = await studentService.searchStudents(filters);
+      const data = await studentService.searchStudents({ ...filters, withPhotos: true });
       setStudents(Array.isArray(data) ? data : data.students || []);
       setSelection([]);
     } catch {
@@ -173,6 +177,18 @@ export default function StudentList() {
   };
 
   const columns = [
+    {
+      field: 'photo',
+      headerName: '',
+      width: 56,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Avatar src={params.row.photoUrl || undefined} sx={{ width: 32, height: 32 }}>
+          {params.row.name?.[0]?.toUpperCase()}
+        </Avatar>
+      ),
+    },
     { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
     {
       field: 'className',
