@@ -12,6 +12,7 @@ import {
 import { communicationService } from '../../../services/communicationService';
 import { classService } from '../../../services/classService';
 import { employeeService } from '../../../services/employeeService';
+import { transportService } from '../../../services/transportService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
 import { maskPhone } from '../../../utils/mask';
@@ -28,6 +29,7 @@ export default function ComposeMessage() {
   const [autoVarsAll, setAutoVarsAll] = useState([]);
   const [classes, setClasses] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [routes, setRoutes] = useState([]);
 
   const [templateKey, setTemplateKey] = useState('');
   const [language, setLanguage] = useState('en');
@@ -40,6 +42,7 @@ export default function ComposeMessage() {
   const [employeeAll, setEmployeeAll] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [selectedRoutes, setSelectedRoutes] = useState([]);
 
   const [context, setContext] = useState([]); // [{ key, value }]
   const [studentDialog, setStudentDialog] = useState(false);
@@ -52,11 +55,12 @@ export default function ComposeMessage() {
   useEffect(() => {
     (async () => {
       try {
-        const [tpl, cls, rl, vars] = await Promise.all([
+        const [tpl, cls, rl, vars, rts] = await Promise.all([
           communicationService.listTemplates(),
           classService.getClasses(),
           employeeService.listRoles(),
           communicationService.getVariables(),
+          transportService.getRoutes().catch(() => []),
         ]);
         const list = tpl.templates || [];
         setTemplates(list);
@@ -64,6 +68,7 @@ export default function ComposeMessage() {
         setAutoVarsAll(vars.autoVariablesAll || []);
         setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
         setRoles(Array.isArray(rl) ? rl : rl?.roles || []);
+        setRoutes(Array.isArray(rts) ? rts : rts?.routes || []);
       } catch { /* non-fatal; user can still type a key */ }
     })();
   }, []);
@@ -119,6 +124,8 @@ export default function ComposeMessage() {
       if (selectedEmployees.length) employees.employeeIds = selectedEmployees.map((e) => e.uuid);
     }
     if (Object.keys(employees).length) audience.employees = employees;
+
+    if (selectedRoutes.length) audience.transport = { routeIds: selectedRoutes.map((r) => r.uuid) };
     return audience;
   };
 
@@ -130,7 +137,7 @@ export default function ComposeMessage() {
 
   const validate = (audience) => {
     if (!templateKey.trim()) { setError('Template key is required'); return false; }
-    if (!audience.students && !audience.employees) { setError('Select an audience'); return false; }
+    if (!audience.students && !audience.employees && !audience.transport) { setError('Select an audience'); return false; }
     return true;
   };
 
@@ -274,6 +281,26 @@ export default function ComposeMessage() {
               )}
             </Grid>
           )}
+
+          <Divider sx={{ my: 2 }} />
+
+          <Typography variant="subtitle2">Transport routes</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Reaches every student assigned to the route (via their family contacts) plus the route&apos;s staff — accompanying teacher, helper and incharge.
+          </Typography>
+          <Grid container spacing={2} sx={{ mt: 0 }}>
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple
+                options={routes}
+                getOptionLabel={(o) => `${o.name || ''}${o.direction ? ` (${o.direction})` : ''}${o.vehicleRegistrationNumber ? ` · ${o.vehicleRegistrationNumber}` : ''}`}
+                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                value={selectedRoutes}
+                onChange={(_, v) => setSelectedRoutes(v)}
+                renderInput={(params) => <TextField {...params} label="By route" size="small" placeholder="Select transport routes" />}
+              />
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
