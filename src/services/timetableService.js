@@ -243,6 +243,65 @@ export const timetableService = {
     return response.data;
   },
 
+  // Seasons (bell timings): a reusable named set of per-slot clock times layered
+  // over the grid's base times. See the timetable module DESIGN.md.
+  getSeasons: async () => {
+    const response = await api.get(`${BASE}/seasons`);
+    return response.data; // { seasons: [...] }
+  },
+  getSeason: async (id) => {
+    const response = await api.get(`${BASE}/seasons/${id}`);
+    return response.data; // includes slotTimes[] + activations[]
+  },
+  createSeason: async (data) => {
+    const response = await api.post(`${BASE}/seasons`, data);
+    return response.data;
+  },
+  updateSeason: async (id, data) => {
+    const response = await api.put(`${BASE}/seasons/${id}`, data);
+    return response.data;
+  },
+  deleteSeason: async (id) => {
+    const response = await api.delete(`${BASE}/seasons/${id}`);
+    return response.data;
+  },
+  getSeasonSlotTimes: async (id) => {
+    const response = await api.get(`${BASE}/seasons/${id}/slot-times`);
+    return response.data; // { slotTimes: [...] }
+  },
+  // Bulk upsert per-slot times: { slotTimes: [{ timeSlotId, startTime, endTime }] }
+  setSeasonSlotTimes: async (id, data) => {
+    const response = await api.put(`${BASE}/seasons/${id}/slot-times`, data);
+    return response.data; // { slotTimes: [...] }
+  },
+  // Seed a season's slot times from a config's base times: { configId }
+  prefillSeason: async (id, data) => {
+    const response = await api.post(`${BASE}/seasons/${id}/prefill`, data);
+    return response.data; // { slotTimes: [...] }
+  },
+  deleteSeasonSlotTime: async (slotTimeId) => {
+    const response = await api.delete(`${BASE}/season-slot-times/${slotTimeId}`);
+    return response.data;
+  },
+
+  // Season activations: dated windows selecting which season is in effect.
+  getSeasonActivations: async (params = {}) => {
+    const response = await api.get(`${BASE}/season-activations`, { params });
+    return response.data; // { activations: [...] }
+  },
+  createSeasonActivation: async (data) => {
+    const response = await api.post(`${BASE}/season-activations`, data);
+    return response.data;
+  },
+  updateSeasonActivation: async (id, data) => {
+    const response = await api.put(`${BASE}/season-activations/${id}`, data);
+    return response.data;
+  },
+  deleteSeasonActivation: async (id) => {
+    const response = await api.delete(`${BASE}/season-activations/${id}`);
+    return response.data;
+  },
+
   // Generation
   feasibility: async (data) => {
     const response = await api.post(`${BASE}/feasibility`, data);

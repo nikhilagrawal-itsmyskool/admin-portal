@@ -10,6 +10,7 @@ import {
   Rule as ConstraintIcon,
   AutoAwesome as GenerateIcon,
   EventAvailable as PublishedIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { timetableService } from '../../services/timetableService';
 
@@ -50,6 +51,7 @@ export default function TimetableDashboard() {
     { title: 'Teacher Constraints', description: 'Day-offs, unavailable slots, weekly maximums', icon: ConstraintIcon, path: '/timetable/constraints' },
     { title: 'Generate Timetable', description: 'Run feasibility, generate candidates, review and publish', icon: GenerateIcon, path: '/timetable/generate' },
     { title: 'Published', description: 'View the active published master timetable', icon: PublishedIcon, path: '/timetable/published' },
+    { title: 'Seasons & Bell Timings', description: 'Summer/winter period times over the same grid, and when each applies (drives the app’s "happening now")', icon: ScheduleIcon, path: '/timetable/seasons' },
   ];
 
   if (loading) {
