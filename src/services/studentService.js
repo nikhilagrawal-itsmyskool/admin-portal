@@ -10,9 +10,23 @@ export const studentService = {
   },
 
   // Command-palette omni-search: matches name / admission / parent names / phone.
-  omniSearch: async (q, signal) => {
-    const response = await api.get('/students/omni-search', { params: { q }, signal });
+  // Scope defaults to the current session server-side (current-year hits ranked
+  // first, flagged inCurrentYear). Pass academicYearId to scope explicitly, or
+  // academicYearId='all' to search the whole-school population.
+  omniSearch: async (q, signal, { academicYearId } = {}) => {
+    const params = { q };
+    if (academicYearId) params.academicYearId = academicYearId;
+    const response = await api.get('/students/omni-search', { params, signal });
     return response.data; // { results: [...] }
+  },
+
+  // Class strength board: per-class active head-count + last admission for a year
+  // (defaults to the current session when academicYearId is omitted).
+  getClassStrength: async (academicYearId) => {
+    const response = await api.get('/students/class-strength', {
+      params: academicYearId ? { academicYearId } : {},
+    });
+    return response.data; // { academicYearId, classes: [...] }
   },
 
   // ---- Student CRUD ----

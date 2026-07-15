@@ -100,6 +100,7 @@ import SeasonEditor from './pages/timetable/seasons/SeasonEditor';
 import StudentList from './pages/student/StudentList';
 import StudentForm from './pages/student/StudentForm';
 import StudentDetail from './pages/student/StudentDetail';
+import ClassStrength from './pages/student/ClassStrength';
 import HouseList from './pages/student/houses/HouseList';
 import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
 import TakeAttendance from './pages/attendance/TakeAttendance';
@@ -226,6 +227,7 @@ export default function App() {
         <Route path="asset/counts" element={<AssetCounts />} />
         <Route path="students" element={<StudentList />} />
         <Route path="students/new" element={<StudentForm />} />
+        <Route path="students/class-strength" element={<ClassStrength />} />
         <Route path="students/houses" element={<HouseList />} />
         <Route path="students/:id" element={<StudentDetail />} />
         <Route path="students/:id/edit" element={<StudentForm />} />

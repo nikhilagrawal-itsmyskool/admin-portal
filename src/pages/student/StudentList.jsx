@@ -61,6 +61,9 @@ export default function StudentList() {
   const [selectedYear, setSelectedYear] = usePersistedState('studentList.year', null);
   const [admissionNumber, setAdmissionNumber] = usePersistedState('studentList.adm', '');
   const [phone, setPhone] = usePersistedState('studentList.phone', '');
+  // On the first-ever visit we pin the year filter to the current session; the
+  // flag stops us re-pinning after the user deliberately clears it (whole school).
+  const [yearPinned, setYearPinned] = usePersistedState('studentList.yearPinned', false);
 
   // Dialog state
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
@@ -81,10 +84,24 @@ export default function StudentList() {
   }, [houses]);
 
   useEffect(() => {
-    loadLookups();
-    // Load using the restored filters (empty on a first-ever visit).
-    loadStudents();
+    init();
   }, []);
+
+  const init = async () => {
+    const loadedYears = await loadLookups();
+    if (!yearPinned) {
+      // First visit: pin the filter to the current session and search within it.
+      const cur = loadedYears.find((r) => r.isCurrent) || null;
+      if (cur) setSelectedYear(cur);
+      setYearPinned(true);
+      const filters = buildFilters();
+      if (cur) filters.academicYearId = cur.uuid;
+      loadStudents(filters);
+    } else {
+      // Return visit: honour the restored filters (selectedYear included).
+      loadStudents();
+    }
+  };
 
   const loadLookups = async () => {
     // Each lookup loads independently — one failing API must not blank the others.
@@ -95,7 +112,9 @@ export default function StudentList() {
     ]);
     if (h.status === 'fulfilled') setHouses(h.value.houses || []);
     if (c.status === 'fulfilled') setClasses(c.value || []);
-    if (y.status === 'fulfilled') setYears(y.value || []);
+    const loadedYears = y.status === 'fulfilled' ? y.value || [] : [];
+    setYears(loadedYears);
+    return loadedYears;
   };
 
   const buildFilters = () => {

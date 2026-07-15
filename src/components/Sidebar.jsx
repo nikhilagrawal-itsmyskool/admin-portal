@@ -227,6 +227,7 @@ const menuItems = [
     perm: 'student.view',
     children: [
       { title: 'All Students', icon: PeopleIcon, path: '/students' },
+      { title: 'Class Strength', icon: OverviewIcon, path: '/students/class-strength' },
       { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.manage' },
     ],
   },
