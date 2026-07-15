@@ -71,6 +71,17 @@ export default function ClassStrength() {
     [classes]
   );
 
+  // School-wide last admission = the most recent per-class last-admission (each
+  // student sits in exactly one class, so the global max is the max of the maxes).
+  const schoolLastAdmission = useMemo(() => {
+    let best = null;
+    for (const c of classes) {
+      if (!c.lastAdmissionDate) continue;
+      if (!best || new Date(c.lastAdmissionDate) > new Date(best.lastAdmissionDate)) best = c;
+    }
+    return best;
+  }, [classes]);
+
   const columns = [
     { field: 'className', headerName: 'Class', flex: 1, minWidth: 120 },
     {
@@ -141,6 +152,28 @@ export default function ClassStrength() {
           </Grid>
         </CardContent>
       </Card>
+
+      {schoolLastAdmission && (
+        <Card sx={{ mb: 3, borderLeft: '4px solid', borderColor: 'primary.main', bgcolor: '#f5f8ff' }}>
+          <CardContent sx={{ pb: '16px !important' }}>
+            <Typography variant="overline" color="text.secondary">
+              Last admission to the school ({selectedYear?.name})
+            </Typography>
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 0.5, flexWrap: 'wrap' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {schoolLastAdmission.lastAdmissionName}
+              </Typography>
+              {schoolLastAdmission.lastAdmissionNumber && (
+                <Chip size="small" variant="outlined" label={schoolLastAdmission.lastAdmissionNumber} />
+              )}
+              <Chip size="small" color="primary" variant="outlined" label={schoolLastAdmission.className} />
+              <Typography variant="body2" color="text.secondary">
+                admitted {fmtDate(schoolLastAdmission.lastAdmissionDate)}
+              </Typography>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       <ResponsiveDataGrid
         emptyMessage="No enrolments for this session."
