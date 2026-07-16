@@ -39,6 +39,7 @@ import {
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { transferService } from '../../services/transferService';
+import StudentAttendancePanel from './StudentAttendancePanel';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
@@ -654,6 +655,11 @@ export default function StudentDetail() {
 
         {/* Guardians + enrollment */}
         <Grid item xs={12} md={8}>
+          {/* 360° — Attendance */}
+          <Box sx={{ mb: 3 }}>
+            <StudentAttendancePanel studentId={student.uuid} />
+          </Box>
+
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

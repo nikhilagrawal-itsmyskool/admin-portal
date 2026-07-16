@@ -208,6 +208,7 @@ const menuItems = [
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/attendance' },
       { title: 'Take Attendance', icon: MarkIcon, path: '/attendance/mark' },
+      { title: 'Register', icon: MenuBookIcon, path: '/attendance/register' },
       { title: 'History', icon: HistoryIcon, path: '/attendance/sessions' },
     ],
   },

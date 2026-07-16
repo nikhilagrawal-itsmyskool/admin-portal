@@ -42,4 +42,18 @@ export const attendanceService = {
     const response = await api.put(`/attendance/records/${recordId}`, data);
     return response.data;
   },
+
+  // A student's attendance for the 360 view: { summary, days:[{date,status,remark,className}] }
+  getStudentAttendance: async (studentId, params = {}) => {
+    // params: { academicYearId, from, to }
+    const response = await api.get(`/attendance/student/${studentId}`, { params });
+    return response.data;
+  },
+
+  // Class register grid: { dates:[...], students:[{ name, admissionNumber, rollNumber, marks:{date:status}, present, absent, leave, working, percent }] }
+  getClassRegister: async (params = {}) => {
+    // params: { classId, academicYearId, from, to }
+    const response = await api.get('/attendance/register', { params });
+    return response.data;
+  },
 };

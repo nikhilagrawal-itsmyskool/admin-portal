@@ -106,6 +106,7 @@ import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
 import TakeAttendance from './pages/attendance/TakeAttendance';
 import AttendanceSessionList from './pages/attendance/AttendanceSessionList';
 import AttendanceSessionDetail from './pages/attendance/AttendanceSessionDetail';
+import AttendanceRegister from './pages/attendance/AttendanceRegister';
 import CommunicationDashboard from './pages/communication/CommunicationDashboard';
 import TemplateList from './pages/communication/templates/TemplateList';
 import TemplateForm from './pages/communication/templates/TemplateForm';
@@ -274,6 +275,7 @@ export default function App() {
         <Route path="attendance/mark" element={<TakeAttendance />} />
         <Route path="attendance/sessions" element={<AttendanceSessionList />} />
         <Route path="attendance/sessions/:id" element={<AttendanceSessionDetail />} />
+        <Route path="attendance/register" element={<AttendanceRegister />} />
         <Route path="communication" element={<CommunicationDashboard />} />
         <Route path="communication/templates" element={<TemplateList />} />
         <Route path="communication/templates/add" element={<TemplateForm />} />
