@@ -365,4 +365,10 @@ export const timetableService = {
     const response = await api.post(`${BASE}/published/swap`, data);
     return response.data;
   },
+
+  // Today's published day for a class: { localDate, dayOfWeek, seasonName, slots:[{ timeSlotId, slotType, label, startTime, endTime, entries:[{subjectName, teacherName}] }], nowSlotId, nextSlotId, note? }
+  getClassToday: async (classId, at) => {
+    const response = await api.get(`${BASE}/today`, { params: at ? { classId, at } : { classId } });
+    return response.data;
+  },
 };

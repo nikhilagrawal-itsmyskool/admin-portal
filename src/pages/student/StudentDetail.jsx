@@ -40,6 +40,7 @@ import {
 import { studentService } from '../../services/studentService';
 import { transferService } from '../../services/transferService';
 import StudentAttendancePanel from './StudentAttendancePanel';
+import StudentTimetableToday from './StudentTimetableToday';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
@@ -655,9 +656,12 @@ export default function StudentDetail() {
 
         {/* Guardians + enrollment */}
         <Grid item xs={12} md={8}>
-          {/* 360° — Attendance */}
+          {/* 360° — Attendance + today's timetable */}
           <Box sx={{ mb: 3 }}>
             <StudentAttendancePanel studentId={student.uuid} />
+          </Box>
+          <Box sx={{ mb: 3 }}>
+            <StudentTimetableToday classId={student.currentClassId} />
           </Box>
 
           <Card sx={{ mb: 3 }}>
