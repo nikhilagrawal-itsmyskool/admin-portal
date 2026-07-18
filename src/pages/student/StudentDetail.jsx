@@ -619,6 +619,16 @@ export default function StudentDetail() {
                 <Fact label="Class" value={student.currentClassName} />
                 <Fact label="Roll #" value={student.currentRollNumber} />
                 <Fact label="House" value={student.houseName} />
+                {student.classTeacher && (
+                  <>
+                    <Fact label="Class teacher" value={student.classTeacher.name} />
+                    <Fact
+                      label="Teacher mobile"
+                      value={maskContact(student.classTeacher.mobile, 'phone', canViewContacts)}
+                    />
+                    <Fact label="Teacher subject" value={student.classTeacher.subjects} />
+                  </>
+                )}
                 <Fact label="Gender" value={student.gender} />
                 <Fact label="DOB" value={student.dob ? String(student.dob).slice(0, 10) : null} />
                 <Fact label="Category" value={codeLabel('category', student.categoryCode)} />
@@ -656,15 +666,7 @@ export default function StudentDetail() {
 
         {/* Guardians + enrollment */}
         <Grid item xs={12} md={8}>
-          {/* 360° — Attendance + today's timetable */}
-          <Box sx={{ mb: 3 }}>
-            <StudentAttendancePanel studentId={student.uuid} />
-          </Box>
-          <Box sx={{ mb: 3 }}>
-            <StudentTimetableToday classId={student.currentClassId} />
-          </Box>
-
-          <Card sx={{ mb: 3 }}>
+          <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Guardians</Typography>
@@ -764,40 +766,6 @@ export default function StudentDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Enrollment history
-              </Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Academic Year</TableCell>
-                    <TableCell>Class</TableCell>
-                    <TableCell>Roll #</TableCell>
-                    <TableCell>Joined</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {(student.enrollments || []).length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4}>No enrollment records.</TableCell>
-                    </TableRow>
-                  ) : (
-                    student.enrollments.map((e) => (
-                      <TableRow key={e.uuid}>
-                        <TableCell>{e.academicYearName || '—'}</TableCell>
-                        <TableCell>{e.className || '—'}</TableCell>
-                        <TableCell>{e.rollNumber ?? '—'}</TableCell>
-                        <TableCell>{e.joinDate ? String(e.joinDate).slice(0, 10) : '—'}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
           {/* Addresses */}
           <Card sx={{ mt: 3 }}>
             <CardContent>
@@ -846,6 +814,48 @@ export default function StudentDetail() {
               )}
             </CardContent>
           </Card>
+
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Enrollment history
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Academic Year</TableCell>
+                    <TableCell>Class</TableCell>
+                    <TableCell>Roll #</TableCell>
+                    <TableCell>Joined</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(student.enrollments || []).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4}>No enrollment records.</TableCell>
+                    </TableRow>
+                  ) : (
+                    student.enrollments.map((e) => (
+                      <TableRow key={e.uuid}>
+                        <TableCell>{e.academicYearName || '—'}</TableCell>
+                        <TableCell>{e.className || '—'}</TableCell>
+                        <TableCell>{e.rollNumber ?? '—'}</TableCell>
+                        <TableCell>{e.joinDate ? String(e.joinDate).slice(0, 10) : '—'}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* 360° — Attendance + today's timetable */}
+          <Box sx={{ mt: 3 }}>
+            <StudentAttendancePanel studentId={student.uuid} />
+          </Box>
+          <Box sx={{ mt: 3 }}>
+            <StudentTimetableToday classId={student.currentClassId} />
+          </Box>
 
           {/* Siblings */}
           <Card sx={{ mt: 3 }}>
