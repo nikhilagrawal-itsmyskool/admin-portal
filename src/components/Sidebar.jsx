@@ -289,7 +289,8 @@ const menuItems = [
     title: 'Assembly',
     icon: AssemblyIcon,
     children: [
-      { title: 'Day', icon: AssemblyIcon, path: '/assembly/day', perm: 'assembly.view' },
+      // 'Day' is a mobile-only view (wired via MOBILE_FEATURES → /assembly/day);
+      // on desktop 'This Week' already covers it, so it's intentionally omitted here.
       { title: 'This Week', icon: WeekIcon, path: '/assembly/week', perm: 'assembly.view' },
       { title: 'Calendar', icon: CalendarIcon, path: '/assembly/calendar', perm: 'assembly.view' },
       // Authoring — admin/god only (assembly.manage) and desktop-only (absent from MOBILE_FEATURES).
