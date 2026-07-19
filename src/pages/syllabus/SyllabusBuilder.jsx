@@ -369,13 +369,15 @@ export default function SyllabusBuilder() {
               <TextField fullWidth size="small" label="Pages" value={editDialog?.pageRef || ''}
                 onChange={(e) => setEditDialog({ ...editDialog, pageRef: e.target.value })} />
             </Grid>
-            <Grid item xs={6}>
-              <TextField fullWidth select size="small" label="Term" value={editDialog?.term || ''}
-                onChange={(e) => setEditDialog({ ...editDialog, term: e.target.value })}>
-                <MenuItem value="">(none)</MenuItem>
-                {terms.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
-              </TextField>
-            </Grid>
+            {['topic', 'note', 'refresher'].includes(editDialog?.entryType) && (
+              <Grid item xs={6}>
+                <TextField fullWidth select size="small" label="Term" value={editDialog?.term || ''}
+                  onChange={(e) => setEditDialog({ ...editDialog, term: e.target.value })}>
+                  <MenuItem value="">(none)</MenuItem>
+                  {terms.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+                </TextField>
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>
