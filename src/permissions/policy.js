@@ -37,6 +37,9 @@ export const ROLE_PERMISSIONS = {
     "transport.attendance.finalize",
     "transfer.view",
     "transfer.manage",
+    "syllabus.view",
+    "syllabus.manage",
+    "syllabus.progress.mark",
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   // No transport access by default — bus attendance needs the `transport-attendance`
@@ -49,6 +52,8 @@ export const ROLE_PERMISSIONS = {
     "timetable.view", // Published timetable only (menu gates the rest)
     "student.view",
     "employee.view",
+    "syllabus.view", // Read plans; class teachers also mark coverage for their section
+    "syllabus.progress.mark",
   ],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
@@ -59,6 +64,7 @@ export const ROLE_PERMISSIONS = {
   "supplies-incharge": ["supplies.*"],
   "hiring-incharge": ["hiring.*"],
   "transport-incharge": ["transport.*"],
+  "syllabus-incharge": ["syllabus.*"],
   // Route-scoped teacher: reach the bus-attendance screens and mark attendance,
   // but only for routes they are staffed on (accompanying teacher / helper /
   // route incharge). The route filtering is enforced in the attendance pages;

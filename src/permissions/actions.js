@@ -44,6 +44,9 @@ export const ACTIONS = {
   TRANSPORT_ATTENDANCE_FINALIZE: "transport.attendance.finalize",
   TRANSFER_VIEW: "transfer.view",
   TRANSFER_MANAGE: "transfer.manage",
+  SYLLABUS_VIEW: "syllabus.view",
+  SYLLABUS_MANAGE: "syllabus.manage",
+  SYLLABUS_PROGRESS_MARK: "syllabus.progress.mark",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -219,5 +222,17 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.TRANSFER_MANAGE,
     description: "Apply for and issue transfer certificates (issuing withdraws the student)",
+  },
+  {
+    action: ACTIONS.SYLLABUS_VIEW,
+    description: "See the Syllabus menu and read subjects, plans and progress",
+  },
+  {
+    action: ACTIONS.SYLLABUS_MANAGE,
+    description: "Add/edit/delete syllabus subjects, plans and their topic entries",
+  },
+  {
+    action: ACTIONS.SYLLABUS_PROGRESS_MARK,
+    description: "Mark syllabus topics covered/pending for a class section",
   },
 ];

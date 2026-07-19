@@ -49,5 +49,8 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `transport.attendance.finalize` | Finalize a transport (bus) attendance session and edit records after finalize (admin/god/transport-incharge only) | ✓ | ✓ | — | — | — | — | — | — | — | — | ✓ | — |
 | `transfer.view` | See the Transfer menu and search/read transfer certificate records | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `transfer.manage` | Apply for and issue transfer certificates (issuing withdraws the student) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `syllabus.view` | See the Syllabus menu and read subjects, plans and progress | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — |
+| `syllabus.manage` | Add/edit/delete syllabus subjects, plans and their topic entries | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `syllabus.progress.mark` | Mark syllabus topics covered/pending for a class section | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._

@@ -122,6 +122,10 @@ import RouteForm from './pages/transport/routes/RouteForm';
 import TransportAssignmentList from './pages/transport/assignments/AssignmentList';
 import TransportTakeAttendance from './pages/transport/attendance/TransportTakeAttendance';
 import TransportSessionList from './pages/transport/attendance/TransportSessionList';
+import SyllabusList from './pages/syllabus/SyllabusList';
+import SyllabusBuilder from './pages/syllabus/SyllabusBuilder';
+import SyllabusSubjectList from './pages/syllabus/subjects/SubjectList';
+import SyllabusProgress from './pages/syllabus/SyllabusProgress';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -294,6 +298,10 @@ export default function App() {
         <Route path="transport/assignments" element={<TransportAssignmentList />} />
         <Route path="transport/attendance/mark" element={<TransportTakeAttendance />} />
         <Route path="transport/attendance/sessions" element={<TransportSessionList />} />
+        <Route path="syllabus" element={<SyllabusList />} />
+        <Route path="syllabus/subjects" element={<SyllabusSubjectList />} />
+        <Route path="syllabus/progress" element={<SyllabusProgress />} />
+        <Route path="syllabus/plans/:id" element={<SyllabusBuilder />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

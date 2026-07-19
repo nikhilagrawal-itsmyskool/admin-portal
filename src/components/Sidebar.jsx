@@ -67,6 +67,10 @@ import {
   AirportShuttle as VehicleIcon,
   AltRoute as RouteIcon,
   AssignmentInd as AssignmentIcon,
+  MenuBook as SyllabusIcon,
+  LibraryBooks as PlanIcon,
+  Subject as SyllabusSubjectIcon,
+  Checklist as CoverageIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -264,6 +268,17 @@ const menuItems = [
       { title: 'Student Assignments', icon: AssignmentIcon, path: '/transport/assignments', perm: 'transport.view' },
       { title: 'Take Attendance', icon: MarkIcon, path: '/transport/attendance/mark', perm: 'transport.attendance.mark' },
       { title: 'Attendance History', icon: HistoryIcon, path: '/transport/attendance/sessions', perm: 'transport.attendance.mark' },
+    ],
+  },
+  {
+    // No parent perm: teachers (syllabus.view) see Plans + Coverage; managers also
+    // see Subjects (gated per-child by syllabus.manage).
+    title: 'Syllabus',
+    icon: SyllabusIcon,
+    children: [
+      { title: 'Subjects', icon: SyllabusSubjectIcon, path: '/syllabus/subjects', perm: 'syllabus.manage' },
+      { title: 'Plans', icon: PlanIcon, path: '/syllabus', perm: 'syllabus.view' },
+      { title: 'Coverage', icon: CoverageIcon, path: '/syllabus/progress', perm: 'syllabus.progress.mark' },
     ],
   },
 ];
