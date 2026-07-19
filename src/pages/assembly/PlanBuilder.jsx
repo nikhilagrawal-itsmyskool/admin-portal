@@ -28,6 +28,24 @@ const siblingsOf = (tree, node) => {
   return findNode(tree, node.parentId)?.children || [];
 };
 
+// Read-only render of a resolved day (effective responsible already applied).
+function ResolvedNodes({ nodes, depth = 0 }) {
+  return (nodes || []).map((n) => (
+    <Box key={n.uuid} sx={{ py: 0.5, borderLeft: depth ? '2px solid' : 'none', borderColor: 'divider', ml: depth ? 1 : 0, pl: depth ? 2 : 0 }}>
+      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Typography variant="body2" fontWeight={600}>{n.title}</Typography>
+        {n.startTime && <Chip size="small" variant="outlined" label={n.startTime} sx={{ height: 18, fontSize: 11 }} />}
+        {(n.responsible || []).map((r) => (
+          <Chip key={r.uuid} size="small" color="info" variant="outlined" sx={{ height: 18, fontSize: 11 }}
+            label={`${r.role ? r.role + ': ' : ''}${r.targetName || r.targetText || r.targetType}`} />
+        ))}
+      </Stack>
+      {n.description && <Typography variant="caption" color="text.secondary">{n.description}</Typography>}
+      <ResolvedNodes nodes={n.children} depth={depth + 1} />
+    </Box>
+  ));
+}
+
 export default function PlanBuilder() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -51,6 +69,9 @@ export default function PlanBuilder() {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, node: null });
   const [specials, setSpecials] = useState([]);
   const [specialDialog, setSpecialDialog] = useState(null); // { specialDate, title, source }
+  const [previewDate, setPreviewDate] = useState('');
+  const [preview, setPreview] = useState(null);
+  const [previewErr, setPreviewErr] = useState('');
 
   // ceilingMap[nodeId] = effective weekdays of its PARENT (plan days for roots).
   const ceilingMap = {};
@@ -144,6 +165,13 @@ export default function PlanBuilder() {
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to create special assembly');
     }
+  };
+
+  const doPreview = async () => {
+    if (!previewDate) return;
+    setPreviewErr(''); setPreview(null);
+    try { setPreview(await assemblyService.resolve(id, previewDate)); }
+    catch (err) { setPreviewErr(err.response?.data?.error?.description || 'Failed to resolve'); }
   };
 
   const move = (node, dir) => {
@@ -258,6 +286,35 @@ export default function PlanBuilder() {
                 ))}
               </List>
             )}
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography variant="subtitle2" gutterBottom>Preview a date</Typography>
+          <Typography variant="caption" color="text.secondary">See exactly what assembly resolves for a date (a published special overrides the template).</Typography>
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+            <TextField type="date" size="small" label="Date" InputLabelProps={{ shrink: true }}
+              value={previewDate} onChange={(e) => setPreviewDate(e.target.value)} />
+            <Button variant="outlined" onClick={doPreview} disabled={!previewDate}>Preview</Button>
+          </Stack>
+          {previewErr && <Alert severity="error" sx={{ mt: 2 }} onClose={() => setPreviewErr('')}>{previewErr}</Alert>}
+          {preview && (
+            <Box sx={{ mt: 2 }}>
+              {!preview.held ? (
+                <Alert severity="info">No assembly is held on this date ({preview.weekday}).</Alert>
+              ) : (
+                <>
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                    <Chip size="small" color={preview.source === 'special' ? 'secondary' : 'default'}
+                      label={preview.source === 'special' ? `Special: ${preview.title || ''}` : 'Regular template'} />
+                    {(preview.themes || []).map((t) => <Chip key={t.uuid} size="small" variant="outlined" label={`Theme: ${t.title}`} />)}
+                  </Stack>
+                  {preview.nodes?.length ? <ResolvedNodes nodes={preview.nodes} /> : <Typography variant="body2" color="text.secondary">No items resolve for this day.</Typography>}
+                </>
+              )}
+            </Box>
+          )}
         </CardContent>
       </Card>
 
