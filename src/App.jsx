@@ -132,6 +132,7 @@ import SpecialBuilder from './pages/assembly/SpecialBuilder';
 import ThemesPage from './pages/assembly/ThemesPage';
 import ScheduleWeek from './pages/assembly/ScheduleWeek';
 import ScheduleCalendar from './pages/assembly/ScheduleCalendar';
+import ScheduleDay from './pages/assembly/ScheduleDay';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -309,6 +310,7 @@ export default function App() {
         <Route path="syllabus/progress" element={<SyllabusProgress />} />
         <Route path="syllabus/plans/:id" element={<SyllabusBuilder />} />
         <Route path="assembly" element={<AssemblyList />} />
+        <Route path="assembly/day" element={<ScheduleDay />} />
         <Route path="assembly/week" element={<ScheduleWeek />} />
         <Route path="assembly/calendar" element={<ScheduleCalendar />} />
         <Route path="assembly/themes" element={<ThemesPage />} />

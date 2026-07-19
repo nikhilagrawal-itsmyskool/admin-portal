@@ -65,4 +65,9 @@ test('assembly happy path: plans list, create plan, add block, themes', async ({
   await expect(page.getByRole('heading', { name: 'Assembly — Calendar' })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText(/Badged days have a special assembly/i)).toBeVisible();
   await expect(page.getByText('Mon', { exact: true }).first()).toBeVisible(); // weekday header
+
+  // --- Schedule: Day view (mobile/PWA + student-app surface) ---
+  await page.goto('/assembly/day');
+  await expect(page.getByRole('heading', { name: 'Assembly', exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByLabel(/pick a date/i)).toBeVisible();
 });

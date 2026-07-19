@@ -289,10 +289,12 @@ const menuItems = [
     title: 'Assembly',
     icon: AssemblyIcon,
     children: [
+      { title: 'Day', icon: AssemblyIcon, path: '/assembly/day', perm: 'assembly.view' },
       { title: 'This Week', icon: WeekIcon, path: '/assembly/week', perm: 'assembly.view' },
       { title: 'Calendar', icon: CalendarIcon, path: '/assembly/calendar', perm: 'assembly.view' },
-      { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.view' },
-      { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.view' },
+      // Authoring — admin/god only (assembly.manage) and desktop-only (absent from MOBILE_FEATURES).
+      { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.manage' },
+      { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.manage' },
     ],
   },
 ];

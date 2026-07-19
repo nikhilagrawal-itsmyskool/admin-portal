@@ -15,6 +15,7 @@ import {
   SportsCricket as SportsIcon,
   Widgets as SuppliesIcon,
   Tag as CountsIcon,
+  Groups as AssemblyIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -23,6 +24,8 @@ import {
 // the feature (list + add + detail, ...); when omitted it defaults to [path].
 export const MOBILE_FEATURES = [
   { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view" },
+  // Read-only day view. Authoring (plans/themes) is intentionally desktop-only.
+  { title: "Assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view" },
   {
     title: "Take Attendance",
     icon: AttendanceIcon,
