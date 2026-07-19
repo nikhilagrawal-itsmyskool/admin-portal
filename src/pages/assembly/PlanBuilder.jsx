@@ -2,38 +2,31 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Chip, Stack, Alert, IconButton,
-  Autocomplete, TextField, Divider, CircularProgress, Tooltip,
+  Autocomplete, TextField, Divider, CircularProgress, Dialog, DialogTitle,
+  DialogContent, DialogActions,
 } from '@mui/material';
 import {
-  ArrowBack as BackIcon, Publish as PublishIcon, Save as SaveIcon,
+  ArrowBack as BackIcon, Publish as PublishIcon, Save as SaveIcon, Add as AddIcon,
 } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { classService } from '../../services/classService';
 import { useCan } from '../../permissions/can';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import AssemblyTree from './AssemblyTree';
+import NodeEditorDrawer from './NodeEditorDrawer';
 
-// Read-only render of the authored tree (interactive editing arrives in Phase B).
-function TreeView({ nodes, depth = 0 }) {
-  if (!nodes?.length) return null;
-  return (
-    <Box sx={{ pl: depth ? 3 : 0 }}>
-      {nodes.map((n) => (
-        <Box key={n.uuid} sx={{ py: 0.75, borderLeft: depth ? '2px solid' : 'none', borderColor: 'divider', pl: depth ? 2 : 0 }}>
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-            <Typography variant="body2" fontWeight={600}>{n.title}</Typography>
-            {(n.days || []).map((d) => <Chip key={d} label={d} size="small" variant="outlined" sx={{ height: 18, fontSize: 11 }} />)}
-            {(n.responsible || []).map((r) => (
-              <Chip key={r.uuid} size="small" color="info" variant="outlined" sx={{ height: 18, fontSize: 11 }}
-                label={`${r.role ? r.role + ': ' : ''}${r.targetName || r.targetText || r.targetType}`} />
-            ))}
-            {n.resources?.length ? <Chip label={`${n.resources.length} link${n.resources.length > 1 ? 's' : ''}`} size="small" sx={{ height: 18, fontSize: 11 }} /> : null}
-          </Stack>
-          {n.description && <Typography variant="caption" color="text.secondary">{n.description}</Typography>}
-          <TreeView nodes={n.children} depth={depth + 1} />
-        </Box>
-      ))}
-    </Box>
-  );
-}
+const findNode = (list, uuid) => {
+  for (const n of list) {
+    if (n.uuid === uuid) return n;
+    const c = findNode(n.children || [], uuid);
+    if (c) return c;
+  }
+  return null;
+};
+const siblingsOf = (tree, node) => {
+  if (!node.parentId) return tree;
+  return findNode(tree, node.parentId)?.children || [];
+};
 
 export default function PlanBuilder() {
   const { id } = useParams();
@@ -44,6 +37,8 @@ export default function PlanBuilder() {
   const [plan, setPlan] = useState(null);
   const [tree, setTree] = useState([]);
   const [weekdays, setWeekdays] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [targetTypes, setTargetTypes] = useState([]);
   const [classOptions, setClassOptions] = useState([]);
   const [selectedClasses, setSelectedClasses] = useState([]);
   const [dirtyClasses, setDirtyClasses] = useState(false);
@@ -51,13 +46,28 @@ export default function PlanBuilder() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
 
-  const loadPlan = useCallback(async () => {
-    const [detail, treeData] = await Promise.all([
-      assemblyService.getPlan(id),
-      assemblyService.getTree(id),
-    ]);
-    setPlan(detail);
+  const [editNode, setEditNode] = useState(null);
+  const [addDialog, setAddDialog] = useState(null); // { parentId, title }
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, node: null });
+
+  // ceilingMap[nodeId] = effective weekdays of its PARENT (plan days for roots).
+  const ceilingMap = {};
+  (function walk(list, parentEff) {
+    list.forEach((n) => {
+      ceilingMap[n.uuid] = parentEff;
+      walk(n.children || [], n.days?.length ? n.days : parentEff);
+    });
+  })(tree, plan?.days || []);
+
+  const refreshTree = useCallback(async (keepEditUuid) => {
+    const treeData = await assemblyService.getTree(id);
     setTree(treeData || []);
+    if (keepEditUuid) setEditNode(findNode(treeData || [], keepEditUuid));
+  }, [id]);
+
+  const loadPlan = useCallback(async () => {
+    const detail = await assemblyService.getPlan(id);
+    setPlan(detail);
     setSelectedClasses((detail.classes || []).map((c) => ({ uuid: c.classId, name: c.className })));
     setDirtyClasses(false);
     return detail;
@@ -69,7 +79,10 @@ export default function PlanBuilder() {
       try {
         const lookups = await assemblyService.getLookups();
         setWeekdays(lookups?.weekdays || []);
+        setRoles(lookups?.responsibleRoles || []);
+        setTargetTypes(lookups?.responsibleTargetTypes || []);
         const detail = await loadPlan();
+        await refreshTree();
         const classes = await classService.getClasses({ academic_year_id: detail.academicYearId });
         setClassOptions(Array.isArray(classes) ? classes : classes?.classes || []);
       } catch (err) {
@@ -78,37 +91,59 @@ export default function PlanBuilder() {
         setLoading(false);
       }
     })();
-  }, [loadPlan]);
+  }, [loadPlan, refreshTree]);
 
-  const toggleDay = async (value) => {
+  const wrap = async (fn, keepEditUuid) => {
+    setError('');
+    try { await fn(); await refreshTree(keepEditUuid); }
+    catch (err) { setError(err.response?.data?.error?.description || 'Action failed'); }
+  };
+
+  const toggleDay = (value) => {
     if (!canManage || !plan) return;
     const next = plan.days.includes(value) ? plan.days.filter((d) => d !== value) : [...plan.days, value];
     if (next.length === 0) { setError('A plan must keep at least one assembly weekday'); return; }
     setError('');
-    try {
-      const updated = await assemblyService.setPlanDays(id, next);
-      setPlan(updated);
-    } catch (err) {
-      setError(err.response?.data?.error?.description || 'Failed to update weekdays');
-    }
+    assemblyService.setPlanDays(id, next).then(setPlan)
+      .catch((err) => setError(err.response?.data?.error?.description || 'Failed to update weekdays'));
   };
 
   const saveClasses = async () => {
     setError(''); setMsg('');
     try {
       const updated = await assemblyService.setPlanClasses(id, selectedClasses.map((c) => c.uuid));
-      setPlan(updated);
-      setDirtyClasses(false);
-      setMsg('Audience saved');
-    } catch (err) {
-      setError(err.response?.data?.error?.description || 'Failed to save audience');
-    }
+      setPlan(updated); setDirtyClasses(false); setMsg('Audience saved');
+    } catch (err) { setError(err.response?.data?.error?.description || 'Failed to save audience'); }
   };
 
   const publish = async () => {
     setError(''); setMsg('');
     try { setPlan(await assemblyService.publishPlan(id)); setMsg('Plan published'); }
     catch (err) { setError(err.response?.data?.error?.description || 'Failed to publish'); }
+  };
+
+  const submitAdd = () => {
+    const title = (addDialog.title || '').trim();
+    if (!title) return;
+    const parentId = addDialog.parentId || undefined;
+    setAddDialog(null);
+    wrap(() => assemblyService.createNode(id, { parentId, title }));
+  };
+
+  const move = (node, dir) => {
+    const sibs = siblingsOf(tree, node);
+    const i = sibs.findIndex((s) => s.uuid === node.uuid);
+    const j = i + dir;
+    if (j < 0 || j >= sibs.length) return;
+    const order = sibs.map((s) => s.uuid);
+    [order[i], order[j]] = [order[j], order[i]];
+    wrap(() => assemblyService.reorderNodes(id, node.parentId || null, order));
+  };
+
+  const del = async () => {
+    const node = deleteDialog.node;
+    setDeleteDialog({ open: false, node: null });
+    await wrap(() => assemblyService.deleteNode(node.uuid));
   };
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>;
@@ -168,16 +203,49 @@ export default function PlanBuilder() {
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
             <Typography variant="subtitle2">Assembly structure</Typography>
-            <Tooltip title="Interactive tree editing (add / reorder / responsible / resources) is coming next">
-              <Chip label="read-only preview" size="small" variant="outlined" />
-            </Tooltip>
+            {canManage && <Button size="small" startIcon={<AddIcon />} onClick={() => setAddDialog({ parentId: null, title: '' })}>Add block</Button>}
           </Stack>
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ mb: 1 }} />
           {tree.length === 0
-            ? <Typography variant="body2" color="text.secondary">No blocks yet. The tree editor will let you build the running order (blocks → segments → …).</Typography>
-            : <TreeView nodes={tree} />}
+            ? <Typography variant="body2" color="text.secondary">No blocks yet. Add a block (e.g. Opening, Presentation, Closing) to start the running order.</Typography>
+            : <AssemblyTree
+                nodes={tree} canManage={canManage}
+                onAddChild={(n) => setAddDialog({ parentId: n.uuid, title: '' })}
+                onEdit={(n) => setEditNode(n)}
+                onMove={move}
+                onDelete={(n) => setDeleteDialog({ open: true, node: n })}
+              />}
         </CardContent>
       </Card>
+
+      <NodeEditorDrawer
+        open={Boolean(editNode)} node={editNode} onClose={() => setEditNode(null)}
+        onSaved={() => refreshTree(editNode?.uuid)}
+        weekdays={weekdays} roles={roles} targetTypes={targetTypes}
+        parentEffectiveDays={editNode ? ceilingMap[editNode.uuid] : []}
+        classOptions={classOptions} academicYearId={plan.academicYearId}
+      />
+
+      <Dialog open={Boolean(addDialog)} onClose={() => setAddDialog(null)} fullWidth maxWidth="xs">
+        <DialogTitle>{addDialog?.parentId ? 'Add child node' : 'Add block'}</DialogTitle>
+        <DialogContent>
+          <TextField autoFocus fullWidth size="small" label="Title" sx={{ mt: 1 }}
+            value={addDialog?.title || ''} onChange={(e) => setAddDialog({ ...addDialog, title: e.target.value })}
+            onKeyDown={(e) => { if (e.key === 'Enter') submitAdd(); }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddDialog(null)}>Cancel</Button>
+          <Button variant="contained" onClick={submitAdd}>Add</Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="Delete node"
+        message={`Delete "${deleteDialog.node?.title || ''}" and all its child nodes? This cannot be undone.`}
+        onConfirm={del}
+        onCancel={() => setDeleteDialog({ open: false, node: null })}
+      />
     </Box>
   );
 }
