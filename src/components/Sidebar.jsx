@@ -71,6 +71,7 @@ import {
   LibraryBooks as PlanIcon,
   Subject as SyllabusSubjectIcon,
   Checklist as CoverageIcon,
+  Groups as AssemblyIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -280,6 +281,12 @@ const menuItems = [
       { title: 'Plans', icon: PlanIcon, path: '/syllabus', perm: 'syllabus.view' },
       { title: 'Coverage', icon: CoverageIcon, path: '/syllabus/progress', perm: 'syllabus.progress.mark' },
     ],
+  },
+  {
+    title: 'Assembly',
+    icon: AssemblyIcon,
+    path: '/assembly',
+    perm: 'assembly.view',
   },
 ];
 

@@ -126,6 +126,8 @@ import SyllabusList from './pages/syllabus/SyllabusList';
 import SyllabusBuilder from './pages/syllabus/SyllabusBuilder';
 import SyllabusSubjectList from './pages/syllabus/subjects/SubjectList';
 import SyllabusProgress from './pages/syllabus/SyllabusProgress';
+import AssemblyList from './pages/assembly/AssemblyList';
+import PlanBuilder from './pages/assembly/PlanBuilder';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -302,6 +304,8 @@ export default function App() {
         <Route path="syllabus/subjects" element={<SyllabusSubjectList />} />
         <Route path="syllabus/progress" element={<SyllabusProgress />} />
         <Route path="syllabus/plans/:id" element={<SyllabusBuilder />} />
+        <Route path="assembly" element={<AssemblyList />} />
+        <Route path="assembly/plans/:id" element={<PlanBuilder />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

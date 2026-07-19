@@ -40,6 +40,8 @@ export const ROLE_PERMISSIONS = {
     "syllabus.view",
     "syllabus.manage",
     "syllabus.progress.mark",
+    "assembly.view",
+    "assembly.manage",
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   // No transport access by default — bus attendance needs the `transport-attendance`
@@ -54,6 +56,7 @@ export const ROLE_PERMISSIONS = {
     "employee.view",
     "syllabus.view", // Read plans; class teachers also mark coverage for their section
     "syllabus.progress.mark",
+    "assembly.view", // Read the assembly plan for their wing
   ],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
@@ -65,6 +68,7 @@ export const ROLE_PERMISSIONS = {
   "hiring-incharge": ["hiring.*"],
   "transport-incharge": ["transport.*"],
   "syllabus-incharge": ["syllabus.*"],
+  "assembly-incharge": ["assembly.*"],
   // Route-scoped teacher: reach the bus-attendance screens and mark attendance,
   // but only for routes they are staffed on (accompanying teacher / helper /
   // route incharge). The route filtering is enforced in the attendance pages;

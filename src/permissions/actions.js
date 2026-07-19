@@ -47,6 +47,8 @@ export const ACTIONS = {
   SYLLABUS_VIEW: "syllabus.view",
   SYLLABUS_MANAGE: "syllabus.manage",
   SYLLABUS_PROGRESS_MARK: "syllabus.progress.mark",
+  ASSEMBLY_VIEW: "assembly.view",
+  ASSEMBLY_MANAGE: "assembly.manage",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -234,5 +236,13 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.SYLLABUS_PROGRESS_MARK,
     description: "Mark syllabus topics covered/pending for a class section",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_VIEW,
+    description: "See the Assembly menu and read plans, special assemblies and themes",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_MANAGE,
+    description: "Add/edit/delete/publish assembly plans, nodes, special assemblies & themes",
   },
 ];

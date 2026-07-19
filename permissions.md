@@ -52,5 +52,7 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `syllabus.view` | See the Syllabus menu and read subjects, plans and progress | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — |
 | `syllabus.manage` | Add/edit/delete syllabus subjects, plans and their topic entries | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `syllabus.progress.mark` | Mark syllabus topics covered/pending for a class section | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — |
+| `assembly.view` | See the Assembly menu and read plans, special assemblies and themes | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — |
+| `assembly.manage` | Add/edit/delete/publish assembly plans, nodes, special assemblies & themes | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._
