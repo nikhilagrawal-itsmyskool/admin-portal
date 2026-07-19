@@ -73,6 +73,8 @@ import {
   Checklist as CoverageIcon,
   Groups as AssemblyIcon,
   Palette as ThemeIcon,
+  ViewWeek as WeekIcon,
+  CalendarMonth as CalendarIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -287,6 +289,8 @@ const menuItems = [
     title: 'Assembly',
     icon: AssemblyIcon,
     children: [
+      { title: 'This Week', icon: WeekIcon, path: '/assembly/week', perm: 'assembly.view' },
+      { title: 'Calendar', icon: CalendarIcon, path: '/assembly/calendar', perm: 'assembly.view' },
       { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.view' },
       { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.view' },
     ],

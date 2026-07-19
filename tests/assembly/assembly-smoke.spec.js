@@ -24,9 +24,11 @@ const BLOCK = `Opening ${ts}`;
 test('assembly happy path: plans list, create plan, add block, themes', async ({ page }) => {
   await loginAsEmployee(page);
 
-  // --- Plans list ---
+  // --- Plans list --- (wait for the academic-year load so create has a year)
+  const yearsLoaded = page.waitForResponse((r) => r.url().includes('/academic-years/search'), { timeout: 20000 });
   await page.goto('/assembly');
   await expect(page.getByRole('heading', { name: 'Assembly Plans' })).toBeVisible({ timeout: 15000 });
+  await yearsLoaded.catch(() => {});
 
   // --- Create a plan -> lands on the builder ---
   await page.getByRole('button', { name: /add plan/i }).click();
@@ -51,4 +53,16 @@ test('assembly happy path: plans list, create plan, add block, themes', async ({
   // --- Themes page renders ---
   await page.goto('/assembly/themes');
   await expect(page.getByRole('heading', { name: 'Assembly Themes' })).toBeVisible({ timeout: 15000 });
+
+  // --- Schedule: This Week renders (wing selector + day columns) ---
+  await page.goto('/assembly/week');
+  await expect(page.getByRole('heading', { name: 'Assembly — This Week' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/Holidays aren't reflected yet/i)).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Wing' })).toBeVisible();
+
+  // --- Schedule: Calendar renders (month grid + specials note) ---
+  await page.goto('/assembly/calendar');
+  await expect(page.getByRole('heading', { name: 'Assembly — Calendar' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/Badged days have a special assembly/i)).toBeVisible();
+  await expect(page.getByText('Mon', { exact: true }).first()).toBeVisible(); // weekday header
 });
