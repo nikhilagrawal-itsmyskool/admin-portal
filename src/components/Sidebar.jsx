@@ -72,6 +72,7 @@ import {
   Subject as SyllabusSubjectIcon,
   Checklist as CoverageIcon,
   Groups as AssemblyIcon,
+  Palette as ThemeIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -285,8 +286,10 @@ const menuItems = [
   {
     title: 'Assembly',
     icon: AssemblyIcon,
-    path: '/assembly',
-    perm: 'assembly.view',
+    children: [
+      { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.view' },
+      { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.view' },
+    ],
   },
 ];
 

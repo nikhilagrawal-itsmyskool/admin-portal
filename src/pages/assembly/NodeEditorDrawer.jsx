@@ -58,6 +58,7 @@ function TargetPicker({ type, targetId, targetName, targetText, onChange, classO
 
 export default function NodeEditorDrawer({
   open, node, onClose, onSaved, weekdays, roles, targetTypes, parentEffectiveDays, classOptions, academicYearId,
+  hideDays = false,
 }) {
   const [form, setForm] = useState({});
   const [days, setDays] = useState([]);
@@ -148,28 +149,32 @@ export default function NodeEditorDrawer({
         <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={saveContent} disabled={busy === 'content'} sx={{ alignSelf: 'flex-start' }}>Save content</Button>
       </Stack>
 
-      <Divider sx={{ my: 2 }} />
+      {!hideDays && (
+        <>
+          <Divider sx={{ my: 2 }} />
 
-      {/* Days */}
-      <Typography variant="subtitle2" gutterBottom>Weekdays</Typography>
-      <Typography variant="caption" color="text.secondary">
-        Empty = inherits parent ({ceiling.join(', ') || 'none'}). You can only pick days the parent runs.
-      </Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
-        {weekdays.map((w) => {
-          const allowed = ceiling.includes(w.value);
-          const on = days.includes(w.value);
-          return (
-            <Tooltip key={w.value} title={allowed ? '' : 'Parent does not run this day'}>
-              <span>
-                <Chip label={w.label} size="small" disabled={!allowed}
-                  color={on ? 'primary' : 'default'} variant={on ? 'filled' : 'outlined'}
-                  onClick={() => toggleDay(w.value)} clickable={allowed} />
-              </span>
-            </Tooltip>
-          );
-        })}
-      </Stack>
+          {/* Days */}
+          <Typography variant="subtitle2" gutterBottom>Weekdays</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Empty = inherits parent ({ceiling.join(', ') || 'none'}). You can only pick days the parent runs.
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+            {weekdays.map((w) => {
+              const allowed = ceiling.includes(w.value);
+              const on = days.includes(w.value);
+              return (
+                <Tooltip key={w.value} title={allowed ? '' : 'Parent does not run this day'}>
+                  <span>
+                    <Chip label={w.label} size="small" disabled={!allowed}
+                      color={on ? 'primary' : 'default'} variant={on ? 'filled' : 'outlined'}
+                      onClick={() => toggleDay(w.value)} clickable={allowed} />
+                  </span>
+                </Tooltip>
+              );
+            })}
+          </Stack>
+        </>
+      )}
 
       <Divider sx={{ my: 2 }} />
 

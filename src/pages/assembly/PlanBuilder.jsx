@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Chip, Stack, Alert, IconButton,
   Autocomplete, TextField, Divider, CircularProgress, Dialog, DialogTitle,
-  DialogContent, DialogActions,
+  DialogContent, DialogActions, MenuItem, List, ListItemButton, ListItemText,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon, Publish as PublishIcon, Save as SaveIcon, Add as AddIcon,
@@ -49,6 +49,8 @@ export default function PlanBuilder() {
   const [editNode, setEditNode] = useState(null);
   const [addDialog, setAddDialog] = useState(null); // { parentId, title }
   const [deleteDialog, setDeleteDialog] = useState({ open: false, node: null });
+  const [specials, setSpecials] = useState([]);
+  const [specialDialog, setSpecialDialog] = useState(null); // { specialDate, title, source }
 
   // ceilingMap[nodeId] = effective weekdays of its PARENT (plan days for roots).
   const ceilingMap = {};
@@ -83,6 +85,7 @@ export default function PlanBuilder() {
         setTargetTypes(lookups?.responsibleTargetTypes || []);
         const detail = await loadPlan();
         await refreshTree();
+        setSpecials((await assemblyService.getSpecials(id)) || []);
         const classes = await classService.getClasses({ academic_year_id: detail.academicYearId });
         setClassOptions(Array.isArray(classes) ? classes : classes?.classes || []);
       } catch (err) {
@@ -128,6 +131,19 @@ export default function PlanBuilder() {
     const parentId = addDialog.parentId || undefined;
     setAddDialog(null);
     wrap(() => assemblyService.createNode(id, { parentId, title }));
+  };
+
+  const submitSpecial = async () => {
+    const { specialDate, title, source } = specialDialog;
+    if (!specialDate || !title.trim()) { setError('Date and title are required'); return; }
+    setError('');
+    try {
+      const created = await assemblyService.createSpecial(id, { specialDate, title: title.trim(), source });
+      setSpecialDialog(null);
+      navigate(`/assembly/specials/${created.uuid}`);
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to create special assembly');
+    }
   };
 
   const move = (node, dir) => {
@@ -217,6 +233,54 @@ export default function PlanBuilder() {
               />}
         </CardContent>
       </Card>
+
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+            <Box>
+              <Typography variant="subtitle2">Special assemblies</Typography>
+              <Typography variant="caption" color="text.secondary">Date-specific assemblies that replace this plan for the day.</Typography>
+            </Box>
+            {canManage && <Button size="small" startIcon={<AddIcon />} onClick={() => setSpecialDialog({ specialDate: '', title: '', source: 'cloned' })}>Add special</Button>}
+          </Stack>
+          <Divider sx={{ mb: 1 }} />
+          {specials.length === 0
+            ? <Typography variant="body2" color="text.secondary">None yet.</Typography>
+            : (
+              <List dense disablePadding>
+                {specials.map((s) => (
+                  <ListItemButton key={s.uuid} onClick={() => navigate(`/assembly/specials/${s.uuid}`)}>
+                    <ListItemText primary={`${s.specialDate} — ${s.title}`} />
+                    <Chip size="small" label={s.publishStatus === 'published' ? 'Published' : 'Draft'}
+                      color={s.publishStatus === 'published' ? 'success' : 'default'}
+                      variant={s.publishStatus === 'published' ? 'filled' : 'outlined'} />
+                  </ListItemButton>
+                ))}
+              </List>
+            )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={Boolean(specialDialog)} onClose={() => setSpecialDialog(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Add special assembly</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField type="date" size="small" label="Date" InputLabelProps={{ shrink: true }}
+              value={specialDialog?.specialDate || ''} onChange={(e) => setSpecialDialog({ ...specialDialog, specialDate: e.target.value })} />
+            <TextField size="small" label="Title" placeholder="e.g. Independence Day"
+              value={specialDialog?.title || ''} onChange={(e) => setSpecialDialog({ ...specialDialog, title: e.target.value })} />
+            <TextField select size="small" label="Start from" value={specialDialog?.source || 'cloned'}
+              onChange={(e) => setSpecialDialog({ ...specialDialog, source: e.target.value })}>
+              <MenuItem value="cloned">Clone that day's template</MenuItem>
+              <MenuItem value="blank">Blank</MenuItem>
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSpecialDialog(null)}>Cancel</Button>
+          <Button variant="contained" onClick={submitSpecial}>Create &amp; edit</Button>
+        </DialogActions>
+      </Dialog>
 
       <NodeEditorDrawer
         open={Boolean(editNode)} node={editNode} onClose={() => setEditNode(null)}
