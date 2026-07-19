@@ -16,6 +16,7 @@ import {
   Widgets as SuppliesIcon,
   Tag as CountsIcon,
   Groups as AssemblyIcon,
+  MenuBook as SyllabusIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -26,6 +27,15 @@ export const MOBILE_FEATURES = [
   { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view" },
   // Read-only day view. Authoring (plans/themes) is intentionally desktop-only.
   { title: "Assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view" },
+  {
+    // Teacher's assigned syllabus plans; tap a section to mark coverage. Authoring
+    // (subjects/plans/entries) stays desktop-only.
+    title: "My Syllabus",
+    icon: SyllabusIcon,
+    path: "/syllabus/my",
+    perm: "syllabus.view",
+    routes: ["/syllabus/my", "/syllabus/my/:syllabusId/:classId"],
+  },
   {
     title: "Take Attendance",
     icon: AttendanceIcon,

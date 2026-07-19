@@ -12,6 +12,7 @@ import {
 import { syllabusService } from '../../services/syllabusService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useCan } from '../../permissions/can';
+import PlanTeachers from './PlanTeachers';
 
 const EMPTY_ENTRY = { month: '', entryType: 'topic', topicNo: '', title: '', theme: '', pageRef: '', term: '' };
 
@@ -31,7 +32,9 @@ export default function SyllabusBuilder() {
   const [plan, setPlan] = useState(null);
   const [entries, setEntries] = useState([]);
   const [lookups, setLookups] = useState({ months: [], entryTypes: [], terms: [], layouts: [] });
-  const [header, setHeader] = useState({ book: '', layout: 'junior', note: '' });
+  const [grades, setGrades] = useState([]);
+  const [header, setHeader] = useState({ grade: '', book: '', layout: 'junior', note: '' });
+  const [gradeConfirm, setGradeConfirm] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [savingHeader, setSavingHeader] = useState(false);
@@ -56,14 +59,16 @@ export default function SyllabusBuilder() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const [p, lk] = await Promise.all([
+      const [p, lk, grds] = await Promise.all([
         syllabusService.getSyllabus(id),
         syllabusService.getLookups(),
+        syllabusService.getGrades(),
       ]);
       setPlan(p);
       setEntries(p.entries || []);
-      setHeader({ book: p.book || '', layout: p.layout || 'junior', note: p.note || '' });
+      setHeader({ grade: p.grade || '', book: p.book || '', layout: p.layout || 'junior', note: p.note || '' });
       setLookups(lk || { months: [], entryTypes: [], terms: [], layouts: [] });
+      setGrades(grds || []);
     } catch {
       setError('Failed to load the syllabus plan');
     } finally {
@@ -72,18 +77,28 @@ export default function SyllabusBuilder() {
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
 
-  const saveHeader = async () => {
+  const gradeChanged = plan && header.grade && header.grade !== plan.grade;
+
+  const doSaveHeader = async () => {
     setSavingHeader(true); setError(''); setSuccess('');
     try {
-      await syllabusService.updateSyllabus(id, {
-        book: header.book.trim() || null, layout: header.layout, note: header.note.trim() || null,
+      const updated = await syllabusService.updateSyllabus(id, {
+        grade: header.grade, book: header.book.trim() || null, layout: header.layout, note: header.note.trim() || null,
       });
+      // Merge the updated header back so the title + PlanTeachers (keyed on grade) refresh.
+      if (updated) setPlan((p) => ({ ...p, ...updated }));
       setSuccess('Plan details saved');
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to save plan details');
     } finally {
       setSavingHeader(false);
     }
+  };
+
+  // Changing the grade wipes section-scoped data (teachers + coverage) — confirm first.
+  const saveHeader = () => {
+    if (gradeChanged) { setGradeConfirm(true); return; }
+    doSaveHeader();
   };
 
   const addEntry = async () => {
@@ -214,6 +229,17 @@ export default function SyllabusBuilder() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="flex-start">
+            <Grid item xs={12} sm={3}>
+              <TextField fullWidth select size="small" label="Grade" value={header.grade}
+                onChange={(e) => setHeader({ ...header, grade: e.target.value })} disabled={!canManage}
+                helperText={gradeChanged ? 'Changing grade clears teachers & coverage' : ' '}
+                error={gradeChanged}>
+                {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
+                {header.grade && !grades.some((g) => g.grade === header.grade) && (
+                  <MenuItem value={header.grade}>{header.grade}</MenuItem>
+                )}
+              </TextField>
+            </Grid>
             <Grid item xs={12} sm={4}>
               <TextField fullWidth size="small" label="Book (optional)" value={header.book}
                 onChange={(e) => setHeader({ ...header, book: e.target.value })} disabled={!canManage} />
@@ -239,6 +265,9 @@ export default function SyllabusBuilder() {
           </Grid>
         </CardContent>
       </Card>
+
+      {/* Per-section teacher assignment */}
+      <PlanTeachers syllabusId={id} grade={plan.grade} canManage={canManage} />
 
       {/* Entries */}
       <Card>
@@ -429,6 +458,14 @@ export default function SyllabusBuilder() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, item: null })}
         loading={deleting}
+      />
+
+      <ConfirmDialog
+        open={gradeConfirm}
+        title="Change grade?"
+        message={`Move this plan to grade ${header.grade}? Teacher assignments and coverage marks (which belong to ${plan.grade}'s sections) will be cleared. Entries are kept.`}
+        onConfirm={() => { setGradeConfirm(false); doSaveHeader(); }}
+        onCancel={() => setGradeConfirm(false)}
       />
     </Box>
   );

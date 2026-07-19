@@ -126,6 +126,8 @@ import SyllabusList from './pages/syllabus/SyllabusList';
 import SyllabusBuilder from './pages/syllabus/SyllabusBuilder';
 import SyllabusSubjectList from './pages/syllabus/subjects/SubjectList';
 import SyllabusProgress from './pages/syllabus/SyllabusProgress';
+import MySyllabus from './pages/syllabus/MySyllabus';
+import TeacherCoverage from './pages/syllabus/TeacherCoverage';
 import AssemblyList from './pages/assembly/AssemblyList';
 import PlanBuilder from './pages/assembly/PlanBuilder';
 import SpecialBuilder from './pages/assembly/SpecialBuilder';
@@ -309,6 +311,8 @@ export default function App() {
         <Route path="syllabus/subjects" element={<SyllabusSubjectList />} />
         <Route path="syllabus/progress" element={<SyllabusProgress />} />
         <Route path="syllabus/plans/:id" element={<SyllabusBuilder />} />
+        <Route path="syllabus/my" element={<MySyllabus />} />
+        <Route path="syllabus/my/:syllabusId/:classId" element={<TeacherCoverage />} />
         <Route path="assembly" element={<AssemblyList />} />
         <Route path="assembly/day" element={<ScheduleDay />} />
         <Route path="assembly/week" element={<ScheduleWeek />} />

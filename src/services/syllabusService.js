@@ -76,6 +76,26 @@ export const syllabusService = {
     return response.data;
   },
 
+  // ---- Plan ↔ teacher assignment (per section) ----
+  getPlanTeachers: async (syllabusId) => {
+    const response = await api.get(`/syllabus/syllabi/${syllabusId}/teachers`);
+    return response.data; // [{ uuid, classId, className, teacherId, teacherName }]
+  },
+  assignTeacher: async (syllabusId, { classId, teacherId }) => {
+    const response = await api.post(`/syllabus/syllabi/${syllabusId}/teachers`, { classId, teacherId });
+    return response.data;
+  },
+  unassignTeacher: async (assignmentId) => {
+    const response = await api.delete(`/syllabus/teachers/${assignmentId}`);
+    return response.data;
+  },
+
+  // ---- Teacher PWA: my assigned plans (employee token) ----
+  getMyPlans: async () => {
+    const response = await api.get('/syllabus/my-plans');
+    return response.data; // [{ assignmentId, syllabusId, grade, subjectName, layout, classId, className, totalTopics, coveredTopics }]
+  },
+
   // ---- Progress (per section) ----
   getProgressRoster: async (syllabusId, classId) => {
     const response = await api.get(`/syllabus/syllabi/${syllabusId}/progress`, { params: { classId } });
