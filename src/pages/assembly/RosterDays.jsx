@@ -52,7 +52,10 @@ export default function RosterDays({ days, onDayChange, onSlotChange, targetType
                   </Stack>
                   {(!s.isOptional || s.opted) && (
                     <Stack spacing={1.5}>
-                      <TextField size="small" fullWidth multiline minRows={1} label="Content" value={s.content || ''} disabled={disabled}
+                      {s.dayHint && <Chip size="small" color="primary" variant="outlined" label={`Today: ${s.dayHint}`} sx={{ alignSelf: 'flex-start' }} />}
+                      <TextField size="small" fullWidth multiline minRows={1}
+                        label="Content" placeholder={s.dayHint ? `Fill the ${s.dayHint}…` : undefined}
+                        value={s.content || ''} disabled={disabled}
                         onChange={(e) => onSlotChange(di, si, { content: e.target.value })}
                         helperText={s.options?.length ? `Options: ${s.options.join(' · ')}` : undefined} />
                       <Box>
