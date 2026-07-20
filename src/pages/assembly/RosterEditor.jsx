@@ -11,7 +11,8 @@ import { assemblyService } from '../../services/assemblyService';
 import { classService } from '../../services/classService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
-import { ParticipantList, toRows, toPayload } from './rosterParticipants';
+import { toRows, toPayload } from './rosterParticipants';
+import RosterDays from './RosterDays';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
@@ -191,61 +192,8 @@ export default function RosterEditor() {
           </Card>
 
           {/* Day accordions */}
-          {draft.days.map((d, di) => (
-            <Accordion key={d.date} defaultExpanded={di === 0}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography sx={{ fontWeight: 600 }}>{fmt(d.date)}</Typography>
-                <Box sx={{ flex: 1 }} />
-                <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>{d.slots.length} slot(s)</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" gutterBottom>Anchors (MCs)</Typography>
-                    <ParticipantList value={d.anchors} onChange={(rows) => setDay(di, { anchors: rows })}
-                      targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId}
-                      roleFixed="anchor" defaultType="student" addLabel="Add anchor" disabled={ro} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" gutterBottom>Day owner(s)</Typography>
-                    <ParticipantList value={d.owners} onChange={(rows) => setDay(di, { owners: rows })}
-                      targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId}
-                      roleFixed="day-owner" defaultType="employee" addLabel="Add owner" disabled={ro} />
-                  </Grid>
-                </Grid>
-
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle2" gutterBottom>Roster slots</Typography>
-                {d.slots.length === 0 && <Typography variant="body2" color="text.secondary">No roster slots — mark template nodes as “roster” or “optional” in the plan builder.</Typography>}
-                <Stack spacing={2}>
-                  {d.slots.map((s, si) => (
-                    <Box key={s.nodeId} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, ml: s.depth ? s.depth * 2 : 0 }}>
-                      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                        <Typography sx={{ fontWeight: 500, flex: 1 }}>{s.title}</Typography>
-                        {s.fillMode === 'roster' && <Chip size="small" label="roster" />}
-                        {s.isOptional && (
-                          <FormControlLabel control={<Switch size="small" checked={s.opted} disabled={ro} onChange={(e) => setSlot(di, si, { opted: e.target.checked })} />} label="Included" />
-                        )}
-                      </Stack>
-                      {(!s.isOptional || s.opted) && (
-                        <Stack spacing={1.5}>
-                          <TextField size="small" fullWidth multiline minRows={1} label="Content" value={s.content || ''} disabled={ro}
-                            onChange={(e) => setSlot(di, si, { content: e.target.value })}
-                            helperText={s.options?.length ? `Options: ${s.options.join(' · ')}` : undefined} />
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Speakers / performers</Typography>
-                            <ParticipantList value={s.participants} onChange={(rows) => setSlot(di, si, { participants: rows })}
-                              targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId}
-                              defaultType="student" addLabel="Add person / group" disabled={ro} emptyText="No one assigned" />
-                          </Box>
-                        </Stack>
-                      )}
-                    </Box>
-                  ))}
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+          <RosterDays days={draft.days} onDayChange={setDay} onSlotChange={setSlot}
+            targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId} disabled={ro} />
         </>
       )}
     </Box>

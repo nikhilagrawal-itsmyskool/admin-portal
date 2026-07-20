@@ -17,8 +17,9 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    // Slow down actions by 500ms when running headed for easier observation
-    ...(process.env.HEADED && { launchOptions: { slowMo: 1000 } }),
+    // Slow down actions when running headed for easier observation.
+    // Override the per-action delay with SLOWMO=<ms> (default 1000).
+    ...(process.env.HEADED && { launchOptions: { slowMo: Number(process.env.SLOWMO) || 1000 } }),
   },
 
   projects: [

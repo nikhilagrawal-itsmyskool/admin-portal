@@ -92,4 +92,14 @@ export const assemblyService = {
   saveGrade: async (weekId, data) => (await api.post(`/assembly/weeks/${weekId}/grades`, data)).data,
   deleteGrade: async (id) => (await api.delete(`/assembly/grades/${id}`)).data,
   getLeaderboard: async (from, to) => (await api.get('/assembly/leaderboard', { params: { from, to } })).data,
+
+  // ---- Teacher PWA: my house-duty roster (derived, /me/assembly/*) ----
+  myDuties: async (params = {}) => (await api.get('/assembly/me/assembly/duties', { params })).data,
+  myWeek: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}`)).data,
+  mySaveRoster: async (weekId, data) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/roster`, data)).data,
+  mySubmitWeek: async (weekId) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/submit`)).data,
+  myWeekChecklist: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}/checklist`)).data,
+  mySaveChecklist: async (weekId, ticks) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/checklist`, { ticks })).data,
+  mySignoffChecklist: async (weekId, note) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/checklist/signoff`, { note })).data,
+  mySaveGrade: async (weekId, data) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/grades`, data)).data,
 };

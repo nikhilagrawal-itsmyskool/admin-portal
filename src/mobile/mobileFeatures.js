@@ -16,6 +16,7 @@ import {
   Widgets as SuppliesIcon,
   Tag as CountsIcon,
   Groups as AssemblyIcon,
+  EditCalendar as AssemblyDutiesIcon,
   MenuBook as SyllabusIcon,
 } from "@mui/icons-material";
 
@@ -27,6 +28,16 @@ export const MOBILE_FEATURES = [
   { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view" },
   // Read-only day view. Authoring (plans/themes) is intentionally desktop-only.
   { title: "Assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view" },
+  // House mode: a teacher's own on-duty weeks — author the roster + tick the
+  // checklist on their phone. Empty for teachers who lead no house (template
+  // schools, non-in-charges). Access is derived server-side via /me/assembly/*.
+  {
+    title: "My Assembly Duties",
+    icon: AssemblyDutiesIcon,
+    path: "/assembly/my-duties",
+    perm: "assembly.view",
+    routes: ["/assembly/my-duties", "/assembly/my-weeks/:weekId"],
+  },
   {
     // Teacher's assigned syllabus plans; tap a section to mark coverage. Authoring
     // (subjects/plans/entries) stays desktop-only.
