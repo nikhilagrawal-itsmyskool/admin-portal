@@ -78,6 +78,9 @@ import {
   Settings as AsmSettingsIcon,
   Diversity3 as HouseRotationIcon,
   EditCalendar as RosterIcon,
+  FactCheck as ChecklistIcon,
+  Grading as GradingIcon,
+  EmojiEvents as LeaderboardIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -302,6 +305,9 @@ const menuItems = [
       // House mode — authoring (admin/god only). Harmless in template mode.
       { title: 'Houses & Rotation', icon: HouseRotationIcon, path: '/assembly/houses', perm: 'assembly.manage' },
       { title: 'Roster', icon: RosterIcon, path: '/assembly/roster', perm: 'assembly.manage' },
+      { title: 'Checklist', icon: ChecklistIcon, path: '/assembly/checklist', perm: 'assembly.manage' },
+      { title: 'Grading', icon: GradingIcon, path: '/assembly/grading', perm: 'assembly.manage' },
+      { title: 'Leaderboard', icon: LeaderboardIcon, path: '/assembly/leaderboard', perm: 'assembly.manage' },
       { title: 'Settings', icon: AsmSettingsIcon, path: '/assembly/settings', perm: 'assembly.manage' },
     ],
   },

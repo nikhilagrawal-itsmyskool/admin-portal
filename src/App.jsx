@@ -138,6 +138,9 @@ import ScheduleDay from './pages/assembly/ScheduleDay';
 import AssemblySettings from './pages/assembly/AssemblySettings';
 import HousesRotation from './pages/assembly/HousesRotation';
 import RosterEditor from './pages/assembly/RosterEditor';
+import ChecklistPage from './pages/assembly/ChecklistPage';
+import GradingPage from './pages/assembly/GradingPage';
+import LeaderboardPage from './pages/assembly/LeaderboardPage';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -324,6 +327,9 @@ export default function App() {
         <Route path="assembly/settings" element={<AssemblySettings />} />
         <Route path="assembly/houses" element={<HousesRotation />} />
         <Route path="assembly/roster" element={<RosterEditor />} />
+        <Route path="assembly/checklist" element={<ChecklistPage />} />
+        <Route path="assembly/grading" element={<GradingPage />} />
+        <Route path="assembly/leaderboard" element={<LeaderboardPage />} />
         <Route path="assembly/plans/:id" element={<PlanBuilder />} />
         <Route path="assembly/specials/:id" element={<SpecialBuilder />} />
         <Route path="profile" element={<Profile />} />
