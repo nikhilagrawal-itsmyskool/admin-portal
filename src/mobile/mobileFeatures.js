@@ -16,7 +16,9 @@ import {
   Widgets as SuppliesIcon,
   Tag as CountsIcon,
   Groups as AssemblyIcon,
-  EditCalendar as AssemblyDutiesIcon,
+  EditCalendar as AssemblyRosterIcon,
+  FactCheck as AssemblyChecklistIcon,
+  Grading as AssemblyGradeIcon,
   MenuBook as SyllabusIcon,
 } from "@mui/icons-material";
 
@@ -28,16 +30,14 @@ export const MOBILE_FEATURES = [
   { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view" },
   // Read-only day view. Authoring (plans/themes) is intentionally desktop-only.
   { title: "Assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view" },
-  // House mode: a teacher's own on-duty weeks — author the roster + tick the
-  // checklist on their phone. Empty for teachers who lead no house (template
-  // schools, non-in-charges). Access is derived server-side via /me/assembly/*.
-  {
-    title: "My Assembly Duties",
-    icon: AssemblyDutiesIcon,
-    path: "/assembly/my-duties",
-    perm: "assembly.view",
-    routes: ["/assembly/my-duties", "/assembly/my-weeks/:weekId"],
-  },
+  // House mode (all derived server-side via /me/assembly/*): tap and go straight
+  // to this week's data — no wing/week pickers. Non-eligible users get a short
+  // "not your week / not an evaluator" message instead.
+  //  · Roster + Checklist → the on-duty house's in-charge / co-in-charge / members.
+  //  · Grade → assigned (neutral) evaluators only; today's entry, self, no future.
+  { title: "Assembly Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view" },
+  { title: "Assembly Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view" },
+  { title: "Grade Assembly", icon: AssemblyGradeIcon, path: "/assembly/my-grade", perm: "assembly.view" },
   {
     // Teacher's assigned syllabus plans; tap a section to mark coverage. Authoring
     // (subjects/plans/entries) stays desktop-only.

@@ -141,8 +141,9 @@ import RosterEditor from './pages/assembly/RosterEditor';
 import ChecklistPage from './pages/assembly/ChecklistPage';
 import GradingPage from './pages/assembly/GradingPage';
 import LeaderboardPage from './pages/assembly/LeaderboardPage';
-import MyAssemblyDuties from './pages/assembly/MyAssemblyDuties';
-import MyWeekEditor from './pages/assembly/MyWeekEditor';
+import MyRoster from './pages/assembly/MyRoster';
+import MyChecklist from './pages/assembly/MyChecklist';
+import MyGrade from './pages/assembly/MyGrade';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -332,8 +333,9 @@ export default function App() {
         <Route path="assembly/checklist" element={<ChecklistPage />} />
         <Route path="assembly/grading" element={<GradingPage />} />
         <Route path="assembly/leaderboard" element={<LeaderboardPage />} />
-        <Route path="assembly/my-duties" element={<MyAssemblyDuties />} />
-        <Route path="assembly/my-weeks/:weekId" element={<MyWeekEditor />} />
+        <Route path="assembly/my-roster" element={<MyRoster />} />
+        <Route path="assembly/my-checklist" element={<MyChecklist />} />
+        <Route path="assembly/my-grade" element={<MyGrade />} />
         <Route path="assembly/plans/:id" element={<PlanBuilder />} />
         <Route path="assembly/specials/:id" element={<SpecialBuilder />} />
         <Route path="profile" element={<Profile />} />

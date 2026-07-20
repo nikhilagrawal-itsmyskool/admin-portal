@@ -96,6 +96,7 @@ export const assemblyService = {
 
   // ---- Teacher PWA: my house-duty roster (derived, /me/assembly/*) ----
   myDuties: async (params = {}) => (await api.get('/assembly/me/assembly/duties', { params })).data,
+  myEnsureWeek: async (planId, weekStart) => (await api.post(`/assembly/me/assembly/plans/${planId}/weeks`, { weekStart })).data,
   myWeek: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}`)).data,
   mySaveRoster: async (weekId, data) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/roster`, data)).data,
   mySubmitWeek: async (weekId) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/submit`)).data,
