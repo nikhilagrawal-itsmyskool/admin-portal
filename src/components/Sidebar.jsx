@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCan } from '../permissions/can';
-import { MOBILE_FEATURES } from '../mobile/mobileFeatures';
+import { buildMobileTiles } from '../mobile/mobileFeatures';
+import { useMobileVisibility } from '../mobile/useMobileVisibility';
 import { useIsMobile } from '../hooks/useIsMobile';
 import {
   Drawer,
@@ -10,6 +11,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   Collapse,
   Box,
   Typography,
@@ -318,6 +320,7 @@ export default function Sidebar({ open, onClose, isDesktop }) {
   const location = useLocation();
   const can = useCan();
   const isMobile = useIsMobile();
+  const { visible: mobileVisible } = useMobileVisibility(isMobile);
   const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false, Timetable: false, Attendance: false, Communication: false });
 
   // Filter the static menu by the user's permissions: a parent with its own `perm`
@@ -337,8 +340,9 @@ export default function Sidebar({ open, onClose, isDesktop }) {
     })
     .filter(Boolean);
 
-  // On small screens the sidebar shows only the mobile-published features (flat list).
-  const mobileItems = MOBILE_FEATURES.filter((f) => !f.perm || can(f.perm));
+  // On small screens the sidebar mirrors the mobile home: the Today / Modules bands,
+  // hub tiles collapsing to /hub/:key (same buildMobileTiles model + derived gating).
+  const mobileSections = buildMobileTiles(mobileVisible);
 
   const handleToggle = (title) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));
@@ -493,45 +497,62 @@ export default function Sidebar({ open, onClose, isDesktop }) {
         ))}
       </List>
       ) : (
-        <List sx={{ pt: 2 }}>
-          {mobileItems.map((item) => (
-            <ListItem key={item.path} disablePadding>
-              <ListItemButton
-                onClick={() => handleNavigate(item.path)}
+        <List sx={{ pt: 1 }}>
+          {mobileSections.map((sec) => (
+            <React.Fragment key={sec.key}>
+              <ListSubheader
                 sx={{
-                  px: 3,
-                  py: 1.5,
-                  backgroundColor: isActive(item.path)
-                    ? 'rgba(51, 102, 255, 0.2)'
-                    : 'transparent',
-                  borderLeft: isActive(item.path)
-                    ? '3px solid #3366ff'
-                    : '3px solid transparent',
-                  '&:hover': { backgroundColor: sidebarStyles.hover },
+                  bgcolor: 'transparent',
+                  color: sidebarStyles.text,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                  lineHeight: '2.4',
                 }}
               >
-                <ListItemIcon
-                  sx={{
-                    color: isActive(item.path)
-                      ? sidebarStyles.textActive
-                      : sidebarStyles.text,
-                    minWidth: 40,
-                  }}
-                >
-                  <item.icon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.title}
-                  sx={{
-                    '& .MuiTypography-root': {
-                      color: isActive(item.path)
-                        ? sidebarStyles.textActive
-                        : sidebarStyles.text,
-                    },
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
+                {sec.label}
+              </ListSubheader>
+              {sec.tiles.map((t) => (
+                <ListItem key={t.id ?? t.path} disablePadding>
+                  <ListItemButton
+                    onClick={() => handleNavigate(t.path)}
+                    sx={{
+                      px: 3,
+                      py: 1.5,
+                      backgroundColor: isActive(t.path)
+                        ? 'rgba(51, 102, 255, 0.2)'
+                        : 'transparent',
+                      borderLeft: isActive(t.path)
+                        ? '3px solid #3366ff'
+                        : '3px solid transparent',
+                      '&:hover': { backgroundColor: sidebarStyles.hover },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        color: isActive(t.path)
+                          ? sidebarStyles.textActive
+                          : sidebarStyles.text,
+                        minWidth: 40,
+                      }}
+                    >
+                      <t.icon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={t.title}
+                      sx={{
+                        '& .MuiTypography-root': {
+                          color: isActive(t.path)
+                            ? sidebarStyles.textActive
+                            : sidebarStyles.text,
+                        },
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </React.Fragment>
           ))}
         </List>
       )}

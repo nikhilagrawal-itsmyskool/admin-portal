@@ -1,22 +1,18 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Typography,
-  Card,
-  CardActionArea,
-  CardContent,
-} from "@mui/material";
-import { useCan } from "../permissions/can";
-import { MOBILE_FEATURES } from "../mobile/mobileFeatures";
+import { Box, Typography } from "@mui/material";
+import { buildMobileTiles } from "../mobile/mobileFeatures";
+import { useMobileVisibility } from "../mobile/useMobileVisibility";
+import TileGrid from "../mobile/TileGrid";
 import InstallButton from "../components/InstallButton";
 
-// Mobile landing: a tile menu of the mobile-published features the signed-in user's
-// role can access. Rendered at "/" on small screens (see App.jsx HomeScreen).
+// Mobile landing: the role's mobile features, organised into a pinned "Today" band and
+// grouped module hubs (see buildMobileTiles). Rendered at "/" on small screens
+// (App.jsx HomeScreen). Tiles either navigate straight to a page or open a hub screen.
 export default function MobileHome() {
   const navigate = useNavigate();
-  const can = useCan();
-  const items = MOBILE_FEATURES.filter((f) => !f.perm || can(f.perm));
+  const { visible } = useMobileVisibility();
+  const sections = buildMobileTiles(visible);
 
   return (
     <Box>
@@ -24,44 +20,23 @@ export default function MobileHome() {
         ItsMySkool
       </Typography>
       <InstallButton variant="contained" fullWidth sx={{ mb: 2 }} />
-      {items.length === 0 ? (
+      {sections.length === 0 ? (
         <Typography color="text.secondary">
           No mobile features are available for your role. Use a desktop for the full
           portal.
         </Typography>
       ) : (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-            gap: 1.5,
-          }}
-        >
-          {items.map((f) => {
-            const Icon = f.icon;
-            return (
-              <Card key={f.path} variant="outlined">
-                <CardActionArea onClick={() => navigate(f.path)}>
-                  <CardContent
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 1,
-                      py: 2.5,
-                      textAlign: "center",
-                    }}
-                  >
-                    <Icon sx={{ fontSize: 32, color: "#3366ff" }} />
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {f.title}
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            );
-          })}
-        </Box>
+        sections.map((sec) => (
+          <Box key={sec.key} sx={{ mb: 3 }}>
+            <Typography
+              variant="overline"
+              sx={{ color: "text.secondary", fontWeight: 700, display: "block", mb: 1 }}
+            >
+              {sec.label}
+            </Typography>
+            <TileGrid tiles={sec.tiles} onOpen={(t) => navigate(t.path)} />
+          </Box>
+        ))
       )}
     </Box>
   );

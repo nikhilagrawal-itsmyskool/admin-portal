@@ -146,6 +146,7 @@ import MyChecklist from './pages/assembly/MyChecklist';
 import MyGrade from './pages/assembly/MyGrade';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
+import HubPage from './pages/HubPage';
 import { useIsMobile } from './hooks/useIsMobile';
 
 // On small screens the app is restricted to the mobile feature set (see
@@ -168,6 +169,7 @@ export default function App() {
         }
       >
         <Route index element={<HomeScreen />} />
+        <Route path="hub/:key" element={<HubPage />} />
         <Route path="medical" element={<MedicalDashboard />} />
         <Route path="medical/items" element={<ItemList />} />
         <Route path="medical/items/add" element={<ItemForm />} />

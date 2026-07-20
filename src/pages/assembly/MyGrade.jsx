@@ -5,15 +5,23 @@ import {
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
+import { useCan } from '../../permissions/can';
+import GradingPage from './GradingPage';
 import { resolveMyGradingWeek, todayIso } from './myAssembly';
 
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const fmt = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 
-// Teacher PWA (neutral evaluators): tap "Grade" → straight into TODAY's grade
-// entry. Evaluator = me (no dropdown); date defaults to today and can move to
-// earlier days of the week, never the future.
+// Admin/god → the full grading page (rubric + evaluators + evaluator dropdown +
+// any wing/week/date); evaluator → today's self-grade (no dropdown, no future).
 export default function MyGrade() {
+  const can = useCan();
+  return can('assembly.manage') ? <GradingPage /> : <EvaluatorGrade />;
+}
+
+// Neutral evaluator: tap "Grade" → straight into TODAY's grade entry. Evaluator =
+// me (no dropdown); date defaults to today, can move to earlier days, never future.
+function EvaluatorGrade() {
   const [reason, setReason] = useState('');
   const [weekId, setWeekId] = useState('');
   const [weekStart, setWeekStart] = useState('');

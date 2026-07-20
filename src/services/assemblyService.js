@@ -95,6 +95,12 @@ export const assemblyService = {
   getLeaderboard: async (from, to) => (await api.get('/assembly/leaderboard', { params: { from, to } })).data,
 
   // ---- Teacher PWA: my house-duty roster (derived, /me/assembly/*) ----
+  // Derived roles for mobile tile gating — folded into /duties (the duties endpoint
+  // already carries isHouseMember + isEvaluator, so no extra round-trip/route needed).
+  myRoles: async () => {
+    const d = (await api.get('/assembly/me/assembly/duties')).data;
+    return { isHouseMember: !!d.isHouseMember, isEvaluator: !!d.isEvaluator };
+  },
   myDuties: async (params = {}) => (await api.get('/assembly/me/assembly/duties', { params })).data,
   myEnsureWeek: async (planId, weekStart) => (await api.post(`/assembly/me/assembly/plans/${planId}/weeks`, { weekStart })).data,
   myWeek: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}`)).data,

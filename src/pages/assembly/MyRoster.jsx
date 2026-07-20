@@ -3,16 +3,23 @@ import { Box, Typography, Card, CardContent, Button, Alert, Stack, Chip } from '
 import { Save as SaveIcon, Send as SubmitIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { classService } from '../../services/classService';
+import { useCan } from '../../permissions/can';
 import { toRows, toPayload } from './rosterParticipants';
 import RosterDays from './RosterDays';
+import RosterEditor from './RosterEditor';
 import { resolveMyRosterWeek } from './myAssembly';
 
 const STATUS_COLOR = { draft: 'default', submitted: 'warning', approved: 'success' };
 
-// Teacher PWA: tap "Roster" → straight into THIS week's roster (no pickers). The
-// server enforces that I belong to the on-duty house; otherwise a "not your week"
-// message shows.
+// Admin/god → the full wing+week picker; teacher → this week's roster (tap-and-go).
 export default function MyRoster() {
+  const can = useCan();
+  return can('assembly.manage') ? <RosterEditor /> : <TeacherRoster />;
+}
+
+// Teacher: tap "Roster" → straight into THIS week's roster (no pickers). The server
+// enforces that I belong to the on-duty house; otherwise a "not your week" message.
+function TeacherRoster() {
   const [reason, setReason] = useState('');
   const [week, setWeek] = useState(null);
   const [draft, setDraft] = useState(null);

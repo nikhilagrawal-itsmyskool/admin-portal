@@ -5,14 +5,22 @@ import {
 } from '@mui/material';
 import { Save as SaveIcon, HowToReg as SignoffIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
+import { useCan } from '../../permissions/can';
+import ChecklistPage from './ChecklistPage';
 import { resolveMyRosterWeek } from './myAssembly';
 
 const fmtShort = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
 const key = (itemId, date) => `${itemId}|${date || ''}`;
 
-// Teacher PWA: tap "Checklist" → straight into THIS week's checklist (same
-// on-duty-house population as the roster). Not-your-week shows a message.
+// Admin/god → the full checklist page (config + any week); teacher → this week.
 export default function MyChecklist() {
+  const can = useCan();
+  return can('assembly.manage') ? <ChecklistPage /> : <TeacherChecklist />;
+}
+
+// Teacher: tap "Checklist" → straight into THIS week's checklist (same on-duty-house
+// population as the roster). Not-your-week shows a message.
+function TeacherChecklist() {
   const [reason, setReason] = useState('');
   const [weekId, setWeekId] = useState('');
   const [chk, setChk] = useState(null);
