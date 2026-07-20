@@ -64,8 +64,7 @@ export default function NodeEditorDrawer({
   const [days, setDays] = useState([]);
   const [resp, setResp] = useState([]);
   const [res, setRes] = useState([]);
-  const [tmpl, setTmpl] = useState({ fillMode: 'auto', isOptional: false, options: [] });
-  const [optDraft, setOptDraft] = useState('');
+  const [dayContent, setDayContent] = useState({}); // { mon: '…', tue: '…' }
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
 
@@ -76,8 +75,7 @@ export default function NodeEditorDrawer({
       recommendation: node.recommendation || '', outcome: node.outcome || '',
       startTime: node.startTime || '', durationMinutes: node.durationMinutes ?? '',
     });
-    setTmpl({ fillMode: node.fillMode || 'auto', isOptional: !!node.isOptional, options: node.options || [] });
-    setOptDraft('');
+    setDayContent(Object.fromEntries((node.dayContent || []).map((c) => [c.weekday, c.content || ''])));
     setDays(node.days || []);
     setResp((node.responsible || []).map((r) => ({
       role: r.role || '', targetType: r.targetType, targetId: r.targetId || null,
@@ -127,19 +125,12 @@ export default function NodeEditorDrawer({
     await assemblyService.setNodeResources(node.uuid, payload);
   });
 
-  const saveTemplate = () => run('tmpl', async () => {
-    await assemblyService.updateNode(node.uuid, {
-      fillMode: tmpl.fillMode,
-      isOptional: tmpl.isOptional,
-      options: tmpl.options.length ? tmpl.options : null,
-    });
+  const saveDayContent = () => run('dayContent', async () => {
+    const content = weekdays
+      .map((w) => ({ weekday: w.value, content: (dayContent[w.value] || '').trim() }))
+      .filter((c) => c.content);
+    await assemblyService.setNodeDayContent(node.uuid, content);
   });
-  const addOption = () => {
-    const v = optDraft.trim();
-    if (!v || tmpl.options.includes(v)) return;
-    setTmpl((t) => ({ ...t, options: [...t.options, v] }));
-    setOptDraft('');
-  };
 
   const setRespAt = (i, patch) => setResp((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const setResAt = (i, patch) => setRes((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -170,35 +161,16 @@ export default function NodeEditorDrawer({
       {houseMode && (
         <>
           <Divider sx={{ my: 2 }} />
-          <Typography variant="subtitle2" gutterBottom>Roster slot (house mode)</Typography>
+          <Typography variant="subtitle2" gutterBottom>Weekday content (the daily focus)</Typography>
           <Typography variant="caption" color="text.secondary">
-            Auto = fixed template content. Roster = the house-on-duty fills this slot weekly. Optional slots can be opted out per day.
+            What this segment presents each day (e.g. Mon “Word of the Day”, Wed “Doha, Sukti…”). The house sees this as a hint in the roster and fills the actual content. Leave a day blank if it has no set focus.
           </Typography>
-          <Stack spacing={1.5} sx={{ mt: 1 }}>
-            <TextField size="small" select label="Fill mode" value={tmpl.fillMode}
-              onChange={(e) => setTmpl({ ...tmpl, fillMode: e.target.value })}>
-              <MenuItem value="auto">Auto (fixed template)</MenuItem>
-              <MenuItem value="roster">Roster (house fills weekly)</MenuItem>
-            </TextField>
-            <FormControlLabel
-              control={<Switch checked={tmpl.isOptional} onChange={(e) => setTmpl({ ...tmpl, isOptional: e.target.checked })} />}
-              label="Optional (can be opted in/out per day)" />
-            <Box>
-              <Typography variant="caption" color="text.secondary">Pick-one options (e.g. performance types)</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 0.5, mb: 1 }}>
-                {tmpl.options.map((o) => (
-                  <Chip key={o} label={o} size="small" onDelete={() => setTmpl((t) => ({ ...t, options: t.options.filter((x) => x !== o) }))} />
-                ))}
-                {tmpl.options.length === 0 && <Typography variant="caption" color="text.disabled">None</Typography>}
-              </Stack>
-              <Stack direction="row" spacing={1}>
-                <TextField size="small" fullWidth placeholder="Add option" value={optDraft}
-                  onChange={(e) => setOptDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption(); } }} />
-                <Button size="small" onClick={addOption}>Add</Button>
-              </Stack>
-            </Box>
-            <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={saveTemplate} disabled={busy === 'tmpl'} sx={{ alignSelf: 'flex-start' }}>Save roster slot</Button>
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            {weekdays.filter((w) => w.value !== 'sun').map((w) => (
+              <TextField key={w.value} size="small" label={w.label} value={dayContent[w.value] || ''}
+                onChange={(e) => setDayContent({ ...dayContent, [w.value]: e.target.value })} />
+            ))}
+            <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={saveDayContent} disabled={busy === 'dayContent'} sx={{ alignSelf: 'flex-start' }}>Save weekday content</Button>
           </Stack>
         </>
       )}

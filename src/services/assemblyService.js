@@ -25,6 +25,7 @@ export const assemblyService = {
   setNodeDays: async (id, days) => (await api.put(`/assembly/nodes/${id}/days`, { days })).data,
   setNodeResponsible: async (id, responsible) => (await api.put(`/assembly/nodes/${id}/responsible`, { responsible })).data,
   setNodeResources: async (id, resources) => (await api.put(`/assembly/nodes/${id}/resources`, { resources })).data,
+  setNodeDayContent: async (id, content) => (await api.put(`/assembly/nodes/${id}/day-content`, { content })).data,
 
   // ---- Special assemblies (nodes edited via the node endpoints above) ----
   getSpecials: async (planId, params = {}) => (await api.get(`/assembly/plans/${planId}/specials`, { params })).data,

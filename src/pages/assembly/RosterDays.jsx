@@ -42,15 +42,15 @@ export default function RosterDays({ days, onDayChange, onSlotChange, targetType
             {d.slots.length === 0 && <Typography variant="body2" color="text.secondary">No roster slots for this day.</Typography>}
             <Stack spacing={2}>
               {d.slots.map((s, si) => (
-                <Box key={s.nodeId} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, ml: s.depth ? s.depth * 2 : 0 }}>
-                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                    <Typography sx={{ fontWeight: 500, flex: 1 }}>{s.title}</Typography>
-                    {s.fillMode === 'roster' && <Chip size="small" label="roster" />}
-                    {s.isOptional && (
-                      <FormControlLabel control={<Switch size="small" checked={s.opted} disabled={disabled} onChange={(e) => onSlotChange(di, si, { opted: e.target.checked })} />} label="Included" />
-                    )}
+                <Box key={s.nodeId} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, ml: s.depth ? s.depth * 2 : 0, opacity: s.opted === false ? 0.55 : 1 }}>
+                  <Stack direction="row" alignItems="flex-start" spacing={1} sx={{ mb: 1 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontWeight: 500 }}>{s.title}</Typography>
+                      {s.description && <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{s.description}</Typography>}
+                    </Box>
+                    <FormControlLabel control={<Switch size="small" checked={s.opted !== false} disabled={disabled} onChange={(e) => onSlotChange(di, si, { opted: e.target.checked })} />} label="Included" />
                   </Stack>
-                  {(!s.isOptional || s.opted) && (
+                  {s.opted !== false && (
                     <Stack spacing={1.5}>
                       {s.dayHint && <Chip size="small" color="primary" variant="outlined" label={`Today: ${s.dayHint}`} sx={{ alignSelf: 'flex-start' }} />}
                       <TextField size="small" fullWidth multiline minRows={1}
