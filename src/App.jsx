@@ -135,6 +135,9 @@ import ThemesPage from './pages/assembly/ThemesPage';
 import ScheduleWeek from './pages/assembly/ScheduleWeek';
 import ScheduleCalendar from './pages/assembly/ScheduleCalendar';
 import ScheduleDay from './pages/assembly/ScheduleDay';
+import AssemblySettings from './pages/assembly/AssemblySettings';
+import HousesRotation from './pages/assembly/HousesRotation';
+import RosterEditor from './pages/assembly/RosterEditor';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -318,6 +321,9 @@ export default function App() {
         <Route path="assembly/week" element={<ScheduleWeek />} />
         <Route path="assembly/calendar" element={<ScheduleCalendar />} />
         <Route path="assembly/themes" element={<ThemesPage />} />
+        <Route path="assembly/settings" element={<AssemblySettings />} />
+        <Route path="assembly/houses" element={<HousesRotation />} />
+        <Route path="assembly/roster" element={<RosterEditor />} />
         <Route path="assembly/plans/:id" element={<PlanBuilder />} />
         <Route path="assembly/specials/:id" element={<SpecialBuilder />} />
         <Route path="profile" element={<Profile />} />

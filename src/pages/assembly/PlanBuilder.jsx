@@ -72,6 +72,7 @@ export default function PlanBuilder() {
   const [previewDate, setPreviewDate] = useState('');
   const [preview, setPreview] = useState(null);
   const [previewErr, setPreviewErr] = useState('');
+  const [houseMode, setHouseMode] = useState(false);
 
   // ceilingMap[nodeId] = effective weekdays of its PARENT (plan days for roots).
   const ceilingMap = {};
@@ -104,6 +105,7 @@ export default function PlanBuilder() {
         setWeekdays(lookups?.weekdays || []);
         setRoles(lookups?.responsibleRoles || []);
         setTargetTypes(lookups?.responsibleTargetTypes || []);
+        try { setHouseMode((await assemblyService.getConfig())?.mode === 'house'); } catch { /* default template */ }
         const detail = await loadPlan();
         await refreshTree();
         setSpecials((await assemblyService.getSpecials(id)) || []);
@@ -345,6 +347,7 @@ export default function PlanBuilder() {
         weekdays={weekdays} roles={roles} targetTypes={targetTypes}
         parentEffectiveDays={editNode ? ceilingMap[editNode.uuid] : []}
         classOptions={classOptions} academicYearId={plan.academicYearId}
+        houseMode={houseMode}
       />
 
       <Dialog open={Boolean(addDialog)} onClose={() => setAddDialog(null)} fullWidth maxWidth="xs">

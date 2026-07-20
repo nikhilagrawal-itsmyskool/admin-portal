@@ -75,6 +75,9 @@ import {
   Palette as ThemeIcon,
   ViewWeek as WeekIcon,
   CalendarMonth as CalendarIcon,
+  Settings as AsmSettingsIcon,
+  Diversity3 as HouseRotationIcon,
+  EditCalendar as RosterIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -296,6 +299,10 @@ const menuItems = [
       // Authoring — admin/god only (assembly.manage) and desktop-only (absent from MOBILE_FEATURES).
       { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.manage' },
       { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.manage' },
+      // House mode — authoring (admin/god only). Harmless in template mode.
+      { title: 'Houses & Rotation', icon: HouseRotationIcon, path: '/assembly/houses', perm: 'assembly.manage' },
+      { title: 'Roster', icon: RosterIcon, path: '/assembly/roster', perm: 'assembly.manage' },
+      { title: 'Settings', icon: AsmSettingsIcon, path: '/assembly/settings', perm: 'assembly.manage' },
     ],
   },
 ];

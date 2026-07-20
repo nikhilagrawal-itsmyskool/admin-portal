@@ -97,6 +97,17 @@ export const studentService = {
     return response.data;
   },
 
+  // ---- House staff (in-charge / co-in-charge / member teachers) ----
+  getHouseTeachers: async (houseId) => {
+    const response = await api.get(`/students/houses/${houseId}/teachers`);
+    return response.data; // { teachers: [...] }
+  },
+
+  setHouseTeachers: async (houseId, teachers) => {
+    const response = await api.put(`/students/houses/${houseId}/teachers`, { teachers });
+    return response.data; // { teachers: [...] }
+  },
+
   // ---- Lookups (per-school reference data) ----
   getLookups: async (type) => {
     // type: category | blood_group | nationality | country | mother_tongue | relationship | state | city | locality
