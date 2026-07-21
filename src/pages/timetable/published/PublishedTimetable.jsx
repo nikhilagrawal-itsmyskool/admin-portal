@@ -18,6 +18,7 @@ import { timetableService } from "../../../services/timetableService";
 import { AcademicYearSelect } from "../components/Selectors";
 import GridViewer from "../components/GridViewer";
 import MasterTimetable from "../components/MasterTimetable";
+import TrueMasterTimetable from "../components/TrueMasterTimetable";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function PublishedTimetable() {
@@ -27,8 +28,8 @@ export default function PublishedTimetable() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [view, setView] = useState("individual"); // 'individual' (class/teacher) | 'master'
-  const [editMode, setEditMode] = useState(false);
+  // 'individual' (class/teacher, view-only) | 'master' (per-day) | 'truemaster' (all-days block)
+  const [view, setView] = useState("individual");
   const [reloadKey, setReloadKey] = useState(0);
   const { user } = useAuth();
   // Phone = either dimension < 600px, so it stays true when rotated to landscape.
@@ -156,30 +157,24 @@ export default function PublishedTimetable() {
                 >
                   <ToggleButton value="individual">Class / Teacher</ToggleButton>
                   <ToggleButton value="master">Master</ToggleButton>
+                  {!isPhone && (
+                    <ToggleButton value="truemaster">True Master</ToggleButton>
+                  )}
                 </ToggleButtonGroup>
-                {!isPhone && view === "individual" && (
-                  <Chip
-                    label={editMode ? "Editing — click a period" : "Edit"}
-                    color={editMode ? "warning" : "default"}
-                    variant={editMode ? "filled" : "outlined"}
-                    onClick={() => setEditMode((v) => !v)}
-                  />
-                )}
               </Stack>
             )}
             {view === "individual" ? (
+              // View-only here — editing lives on the True Master.
               <GridViewer
                 config={data.config}
                 entries={data.entries || []}
-                editable={editMode && !isPhone}
-                publishedTimetableId={pt.uuid}
-                onChanged={() => setReloadKey((k) => k + 1)}
                 initialMode={iAmTeacher ? "teacher" : undefined}
                 initialSelectedId={iAmTeacher ? myTeacherId : undefined}
                 isPhone={isPhone}
                 showSelector={!simpleMobile}
+                showMaster={false}
               />
-            ) : (
+            ) : view === "master" ? (
               <MasterTimetable
                 config={data.config}
                 entries={data.entries || []}
@@ -187,6 +182,15 @@ export default function PublishedTimetable() {
                 subtitle={
                   pt?.effectiveFrom ? `Effective from ${pt.effectiveFrom}` : ""
                 }
+              />
+            ) : (
+              <TrueMasterTimetable
+                config={data.config}
+                entries={data.entries || []}
+                publishedTimetableId={pt.uuid}
+                sourceRunId={data.sourceRunId}
+                onChanged={() => setReloadKey((k) => k + 1)}
+                effectiveFrom={pt?.effectiveFrom}
               />
             )}
           </CardContent>

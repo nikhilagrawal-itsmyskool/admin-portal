@@ -40,6 +40,9 @@ export default function GridViewer({
   initialSelectedId,
   isPhone = false,
   showSelector = true,
+  // The published page has its own top-level Master / True Master views, so it hides
+  // this nested Master toggle. Other callers (generate wizard, run detail) keep it.
+  showMaster = true,
 }) {
   const { canPrint } = useTimetablePerms();
   const [mode, setMode] = useState(initialMode || "class");
@@ -164,7 +167,7 @@ export default function GridViewer({
             >
               <ToggleButton value="class">By Class</ToggleButton>
               <ToggleButton value="teacher">By Teacher</ToggleButton>
-              <ToggleButton value="master">Master</ToggleButton>
+              {showMaster && <ToggleButton value="master">Master</ToggleButton>}
             </ToggleButtonGroup>
           )}
           {showSelector && mode !== "master" && (
