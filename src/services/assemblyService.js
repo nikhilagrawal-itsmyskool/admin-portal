@@ -65,6 +65,7 @@ export const assemblyService = {
   saveRoster: async (weekId, data) => (await api.put(`/assembly/weeks/${weekId}/roster`, data)).data,
   submitWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/submit`)).data,
   approveWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/approve`)).data,
+  lockWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/lock`)).data,
   unlockWeek: async (weekId, reason) => (await api.post(`/assembly/weeks/${weekId}/unlock`, { reason })).data,
 
   // ---- Checklist (Phase C) ----

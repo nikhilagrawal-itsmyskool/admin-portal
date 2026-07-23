@@ -7,7 +7,8 @@ import { Save as SaveIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { useCan } from '../../permissions/can';
 import GradingPage from './GradingPage';
-import { MetricScorePicker, DictionPicker } from './gradeFields';
+import { MetricScorePicker, DictionPicker, StarPresenterPicker } from './gradeFields';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { resolveMyGradingWeek, todayIso } from './myAssembly';
 
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
@@ -23,6 +24,7 @@ export default function MyGrade() {
 // Neutral evaluator: tap "Grade" → straight into TODAY's grade entry. Evaluator =
 // me (no dropdown); date defaults to today, can move to earlier days, never future.
 function EvaluatorGrade() {
+  const { academicYearId } = useAcademicYear();
   const [reason, setReason] = useState('');
   const [weekId, setWeekId] = useState('');
   const [weekStart, setWeekStart] = useState('');
@@ -98,7 +100,8 @@ function EvaluatorGrade() {
                   label={`${p.name} (−${p.value})`} />
               ))}
 
-              <TextField size="small" label="Star presenter (name, class & segment)" value={form.starPresenter} onChange={(e) => setForm({ ...form, starPresenter: e.target.value })} />
+              <StarPresenterPicker value={form.starPresenter} academicYearId={academicYearId}
+                onChange={(v) => setForm((f) => ({ ...f, starPresenter: v }))} />
               <DictionPicker value={form.diction} onChange={(v) => setForm({ ...form, diction: v })} />
               <TextField size="small" label="Feedback" multiline minRows={2} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
 

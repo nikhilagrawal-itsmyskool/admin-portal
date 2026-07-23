@@ -10,7 +10,7 @@ import {
 import { assemblyService } from '../../services/assemblyService';
 import { employeeService } from '../../services/employeeService';
 import { academicCalendarService } from '../../services/academicCalendarService';
-import { MetricScorePicker, DictionPicker } from './gradeFields';
+import { MetricScorePicker, DictionPicker, StarPresenterPicker } from './gradeFields';
 import { useCan } from '../../permissions/can';
 
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -330,7 +330,8 @@ export default function GradingPage() {
               onChange={(e) => setGradeForm((f) => { const s = new Set(f.penalties); if (e.target.checked) s.add(p.uuid); else s.delete(p.uuid); return { ...f, penalties: s }; })} />}
               label={`${p.name} (−${p.value})`} />
           ))}
-          <TextField size="small" label="Star presenter (name, class & segment)" value={gradeForm?.starPresenter || ''} onChange={(e) => setGradeForm({ ...gradeForm, starPresenter: e.target.value })} />
+          <StarPresenterPicker value={gradeForm?.starPresenter || ''} academicYearId={week?.academicYearId}
+            onChange={(v) => setGradeForm((f) => ({ ...f, starPresenter: v }))} />
           <DictionPicker value={gradeForm?.diction || ''} onChange={(v) => setGradeForm({ ...gradeForm, diction: v })} />
           <TextField size="small" label="Feedback" multiline minRows={2} value={gradeForm?.feedback || ''} onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })} />
         </Stack></DialogContent>

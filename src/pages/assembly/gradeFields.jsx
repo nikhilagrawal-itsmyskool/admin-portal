@@ -1,8 +1,36 @@
-import React from 'react';
-import { Box, Typography, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Stack, ToggleButton, ToggleButtonGroup, Autocomplete, TextField } from '@mui/material';
+import { studentService } from '../../services/studentService';
 
 // The doc's Diction & Pronunciation Check — a single choice.
 export const DICTION_OPTIONS = ['Flawless', 'Average', 'Needs Heavy Correction'];
+
+// Star Presenter of the Day — pick a student (shows name + class) or, if none fits,
+// type free text. Stored as a plain string either way (name + class when picked).
+export function StarPresenterPicker({ value, onChange, academicYearId }) {
+  const [options, setOptions] = useState([]);
+  const search = async (q) => {
+    if (!q || q.trim().length < 2) { setOptions([]); return; }
+    try {
+      const r = await studentService.searchStudents({ name: q, academicYearId });
+      const list = Array.isArray(r) ? r : (r.students || r.results || []);
+      setOptions(list.map((s) => {
+        const cls = s.className || s.class_name;
+        return cls ? `${s.name} (${cls})` : s.name;
+      }));
+    } catch { /* ignore */ }
+  };
+  return (
+    <Autocomplete
+      freeSolo size="small"
+      options={options}
+      value={value || ''}
+      onInputChange={(_e, v) => { onChange(v); search(v); }}
+      onChange={(_e, v) => onChange(v || '')}
+      renderInput={(params) => <TextField {...params} label="Star presenter (pick a student or type — name, class & segment)" />}
+    />
+  );
+}
 
 // A 1..maxMarks segmented score picker per rubric metric ("circle the score").
 // values: { [metricId]: number }. onScore(metricId, number|undefined) sets one.

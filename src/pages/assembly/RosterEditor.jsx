@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon, Save as SaveIcon, Send as SubmitIcon, CheckCircle as ApproveIcon,
-  LockOpen as UnlockIcon,
+  LockOpen as UnlockIcon, Lock as LockIcon,
 } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { classService } from '../../services/classService';
@@ -127,6 +127,7 @@ export default function RosterEditor() {
   };
   const submit = act('submit', () => assemblyService.submitWeek(week.uuid), 'Submitted for approval');
   const approve = act('approve', () => assemblyService.approveWeek(week.uuid), 'Approved & locked');
+  const lock = act('lock', () => assemblyService.lockWeek(week.uuid), 'Locked — no further edits');
   const unlock = act('unlock', () => assemblyService.unlockWeek(week.uuid, 'edit after lock'), 'Re-opened for editing');
 
   const ro = !week?.editable; // read-only when not editable
@@ -186,7 +187,9 @@ export default function RosterEditor() {
                 {!ro && <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save'}>Save</Button>}
                 {!ro && week.status !== 'submitted' && <Button size="small" startIcon={<SubmitIcon />} onClick={submit} disabled={busy === 'submit'}>Submit</Button>}
                 {canManage && week.status !== 'approved' && <Button size="small" color="success" startIcon={<ApproveIcon />} onClick={approve} disabled={busy === 'approve'}>Approve</Button>}
-                {canManage && (week.locked || week.pastDeadline) && <Button size="small" color="warning" startIcon={<UnlockIcon />} onClick={unlock} disabled={busy === 'unlock'}>Unlock</Button>}
+                {canManage && (week.editable
+                  ? <Button size="small" color="warning" startIcon={<LockIcon />} onClick={lock} disabled={busy === 'lock'}>Lock</Button>
+                  : <Button size="small" color="warning" startIcon={<UnlockIcon />} onClick={unlock} disabled={busy === 'unlock'}>Unlock</Button>)}
               </Stack>
             </CardContent>
           </Card>
