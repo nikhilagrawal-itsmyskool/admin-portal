@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography, Card, CardContent, Button, Alert, Stack, Chip } from '@mui/material';
 import { Save as SaveIcon, Send as SubmitIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
@@ -7,28 +7,35 @@ import { useCan } from '../../permissions/can';
 import { toRows, toPayload } from './rosterParticipants';
 import RosterDays from './RosterDays';
 import RosterEditor from './RosterEditor';
-import { resolveMyRosterWeek } from './myAssembly';
+import { resolveMyRosterWeeks } from './myAssembly';
 
 const STATUS_COLOR = { draft: 'default', submitted: 'warning', approved: 'success' };
+const fmtWeek = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
-// Admin/god → the full wing+week picker; teacher → this week's roster (tap-and-go).
+// Admin/god → the full wing+week picker; teacher → their house's duty weeks (this
+// week + next 4), tap a week to open it.
 export default function MyRoster() {
   const can = useCan();
   return can('assembly.manage') ? <RosterEditor /> : <TeacherRoster />;
 }
 
-// Teacher: tap "Roster" → straight into THIS week's roster (no pickers). The server
-// enforces that I belong to the on-duty house; otherwise a "not your week" message.
+// Teacher: the roster for each week their house is on duty over the next 5 weeks.
+// The server enforces that they belong to the on-duty house (edits gated to
+// in-charge / co-in-charge / member); other-house weeks never appear here.
 function TeacherRoster() {
   const [reason, setReason] = useState('');
+  const [duties, setDuties] = useState([]);       // own-house weeks in the window
+  const [selected, setSelected] = useState('');   // selected weekStart
   const [week, setWeek] = useState(null);
   const [draft, setDraft] = useState(null);
   const [targetTypes, setTargetTypes] = useState([]);
   const [classOptions, setClassOptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [weekLoading, setWeekLoading] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const classesLoadedRef = useRef(false); // class options are shared across the weeks
 
   const buildDraft = (detail) => ({
     days: (detail.days || []).map((d) => ({
@@ -37,23 +44,39 @@ function TeacherRoster() {
     })),
   });
 
-  const load = useCallback(async () => {
-    setLoading(true); setError(''); setReason('');
+  // Load one duty week (ensuring it first if it hasn't been started yet).
+  const openWeek = useCallback(async (duty) => {
+    if (!duty) return;
+    setWeekLoading(true); setError(''); setMsg(''); setWeek(null); setDraft(null);
     try {
-      const r = await resolveMyRosterWeek();
-      if (r.reason) { setReason(r.reason); return; }
-      const detail = await assemblyService.myWeek(r.weekId);
+      const weekId = duty.weekId || (await assemblyService.myEnsureWeek(duty.planId, duty.weekStart)).uuid;
+      const detail = await assemblyService.myWeek(weekId);
       setWeek(detail); setDraft(buildDraft(detail));
-      const lookups = await assemblyService.getLookups();
-      setTargetTypes(lookups?.responsibleTargetTypes || []);
-      if (detail.academicYearId) {
+      if (detail.academicYearId && !classesLoadedRef.current) {
+        classesLoadedRef.current = true;
         const classes = await classService.getClasses({ academic_year_id: detail.academicYearId });
         setClassOptions((Array.isArray(classes) ? classes : classes?.classes || []).map((c) => ({ uuid: c.uuid, name: c.name })));
       }
+    } catch (err) { setError(err.response?.data?.error?.description || 'Failed to load this week'); }
+    finally { setWeekLoading(false); }
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(''); setReason('');
+    try {
+      const { duties: list } = await resolveMyRosterWeeks(4);
+      setDuties(list);
+      const lookups = await assemblyService.getLookups();
+      setTargetTypes(lookups?.responsibleTargetTypes || []);
+      if (list.length === 0) { setReason('Your house has no assembly duty in the next 5 weeks.'); return; }
+      setSelected(list[0].weekStart);
+      await openWeek(list[0]);
     } catch (err) { setError(err.response?.data?.error?.description || 'Failed to load your roster'); }
     finally { setLoading(false); }
-  }, []);
+  }, [openWeek]);
   useEffect(() => { load(); }, [load]);
+
+  const pickWeek = (duty) => { setSelected(duty.weekStart); openWeek(duty); };
 
   const ro = !week?.editable;
   const setDay = (di, patch) => setDraft((d) => ({ ...d, days: d.days.map((x, j) => (j === di ? { ...x, ...patch } : x)) }));
@@ -89,7 +112,26 @@ function TeacherRoster() {
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
       {!loading && reason && <Alert severity="info">{reason}</Alert>}
 
-      {week && draft && (
+      {/* Duty weeks (this week + next 4) — tap one to open it */}
+      {duties.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mb: 2, overflowX: 'auto', pb: 0.5 }}>
+          {duties.map((d) => (
+            <Chip
+              key={d.weekStart}
+              label={`Week of ${fmtWeek(d.weekStart)}`}
+              onClick={() => pickWeek(d)}
+              color={d.weekStart === selected ? 'primary' : 'default'}
+              variant={d.weekStart === selected ? 'filled' : 'outlined'}
+              size="small"
+              sx={{ flexShrink: 0 }}
+            />
+          ))}
+        </Stack>
+      )}
+
+      {weekLoading && <Typography variant="body2" color="text.secondary">Loading week…</Typography>}
+
+      {!weekLoading && week && draft && (
         <>
           <Card sx={{ mb: 2 }}>
             <CardContent>
@@ -101,7 +143,7 @@ function TeacherRoster() {
                 {!ro && <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save'}>Save</Button>}
                 {!ro && week.status !== 'submitted' && <Button size="small" startIcon={<SubmitIcon />} onClick={submit} disabled={busy === 'submit'}>Submit</Button>}
               </Stack>
-              {ro && <Typography variant="caption" color="text.secondary">This week is {week.locked ? 'approved & locked' : 'not open for editing'}.</Typography>}
+              {ro && <Typography variant="caption" color="text.secondary">This roster is {week.locked ? 'approved & locked' : 'not open for editing'}.</Typography>}
             </CardContent>
           </Card>
           <RosterDays days={draft.days} onDayChange={setDay} onSlotChange={setSlot}

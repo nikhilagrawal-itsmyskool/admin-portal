@@ -98,6 +98,15 @@ export default function HousesRotation() {
   const inRotation = houses.filter((h) => h.rotationOrder != null).sort((a, b) => a.rotationOrder - b.rotationOrder);
   const notInRotation = houses.filter((h) => h.rotationOrder == null);
 
+  // Always render a full candidate grid (12 Mondays from rangeStart) and overlay
+  // the backend-resolved rows. The backend returns nothing until the first week
+  // is pinned, so without this the very first pin would be unreachable.
+  const byStart = new Map(weeks.map((w) => [w.weekStart, w]));
+  const displayWeeks = Array.from({ length: 12 }, (_, i) => {
+    const ws = addWeeks(rangeStart, i);
+    return byStart.get(ws) || { weekStart: ws, source: 'unset' };
+  });
+
   // Reindex the rotation set contiguously and persist any changed orders.
   const persistOrder = async (ordered) => {
     setError('');
@@ -263,11 +272,11 @@ export default function HousesRotation() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {weeks.map((w) => (
+                {displayWeeks.map((w) => (
                   <TableRow key={w.weekStart}>
                     <TableCell>{w.weekStart}</TableCell>
                     <TableCell>{w.houseName ? <Chip size="small" label={w.houseName} /> : <em style={{ color: '#999' }}>{w.source === 'skip' ? 'Skipped' : '—'}</em>}</TableCell>
-                    <TableCell><Chip size="small" variant="outlined" label={w.source} /></TableCell>
+                    <TableCell>{w.source === 'unset' ? <em style={{ color: '#999' }}>—</em> : <Chip size="small" variant="outlined" label={w.source} />}</TableCell>
                     {canManage && (
                       <TableCell align="right">
                         <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center">
@@ -285,9 +294,6 @@ export default function HousesRotation() {
                     )}
                   </TableRow>
                 ))}
-                {weeks.length === 0 && (
-                  <TableRow><TableCell colSpan={4}><Typography variant="body2" color="text.secondary">No rotation yet — pin a house to a week to start the cycle.</Typography></TableCell></TableRow>
-                )}
               </TableBody>
             </Table>
           )}

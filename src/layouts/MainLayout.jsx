@@ -5,6 +5,7 @@ import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
 import Sidebar, { DRAWER_WIDTH } from '../components/Sidebar';
 import Header from '../components/Header';
 import CommandPalette from '../components/common/CommandPalette';
+import { AcademicYearProvider } from '../context/AcademicYearContext';
 import { useScrollRestoration } from '../hooks/useScrollRestoration';
 
 export default function MainLayout() {
@@ -29,23 +30,25 @@ export default function MainLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <Sidebar open={sidebarOpen} onClose={handleSidebarClose} isDesktop={isDesktop} />
-      <Header onMenuClick={handleSidebarToggle} isDesktop={isDesktop} />
-      <CommandPalette />
-      <Box
-        component="main"
-        ref={mainRef}
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          backgroundColor: '#edf1f7',
-          overflow: 'auto',
-        }}
-      >
-        <Toolbar />
-        {blockedOnMobile ? <Navigate to="/" replace /> : <Outlet />}
+    <AcademicYearProvider>
+      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Sidebar open={sidebarOpen} onClose={handleSidebarClose} isDesktop={isDesktop} />
+        <Header onMenuClick={handleSidebarToggle} isDesktop={isDesktop} />
+        <CommandPalette />
+        <Box
+          component="main"
+          ref={mainRef}
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            backgroundColor: '#edf1f7',
+            overflow: 'auto',
+          }}
+        >
+          <Toolbar />
+          {blockedOnMobile ? <Navigate to="/" replace /> : <Outlet />}
+        </Box>
       </Box>
-    </Box>
+    </AcademicYearProvider>
   );
 }

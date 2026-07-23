@@ -42,7 +42,7 @@ export default function WingList() {
 
   useEffect(() => {
     classService
-      .getClasses()
+      .getClasses({ includeCohort: true })
       .then((d) => setClasses(Array.isArray(d) ? d : d.classes || []))
       .catch(() => {});
   }, []);

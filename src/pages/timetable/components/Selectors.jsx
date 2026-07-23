@@ -36,7 +36,7 @@ export function ClassSelect({ value, onChange, size = 'small', sx }) {
 
   useEffect(() => {
     let active = true;
-    classService.getClasses()
+    classService.getClasses({ includeCohort: true })
       .then((data) => { if (active) setClasses(Array.isArray(data) ? data : (data.classes || [])); })
       .catch(() => {});
     return () => { active = false; };

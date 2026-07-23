@@ -27,7 +27,7 @@ function TargetPicker({ type, targetId, targetName, targetText, onChange, classO
         setOptions(arrayFrom(r, 'employees', 'results').map((e) => ({ uuid: e.uuid, name: e.name })));
       } else {
         const r = await studentService.searchStudents({ name: q, academicYearId });
-        setOptions(arrayFrom(r, 'students', 'results').map((s) => ({ uuid: s.uuid, name: s.name })));
+        setOptions(arrayFrom(r, 'students', 'results').map((s) => ({ uuid: s.uuid, name: s.name, className: s.className || s.class_name })));
       }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
@@ -48,6 +48,9 @@ function TargetPicker({ type, targetId, targetName, targetText, onChange, classO
       loading={loading}
       getOptionLabel={(o) => o.name || ''}
       isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+      renderOption={(props, o) => (
+        <li {...props} key={o.uuid}>{o.name}{o.className ? <span style={{ color: '#8f9bb3', marginLeft: 4 }}>({o.className})</span> : ''}</li>
+      )}
       value={value}
       onInputChange={(_e, v, reason) => { if (reason === 'input') search(v); }}
       onChange={(_e, v) => onChange({ targetId: v?.uuid || null, targetName: v?.name || null, targetText: null })}

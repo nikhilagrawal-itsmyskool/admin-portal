@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, TextField, MenuItem, Button, Alert, Stack,
   Chip, IconButton, Table, TableBody, TableCell, TableHead, TableRow, Checkbox,
-  Dialog, DialogTitle, DialogContent, DialogActions, Divider, Tooltip,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Save as SaveIcon, HowToReg as SignoffIcon,
@@ -14,7 +14,7 @@ import { useCan } from '../../permissions/can';
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return iso(x); };
-const fmtShort = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
+const fmtDay = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
 const key = (itemId, date) => `${itemId}|${date || ''}`;
 
 export default function ChecklistPage() {
@@ -85,28 +85,21 @@ export default function ChecklistPage() {
     return next;
   });
 
-  const saveTicks = async () => {
-    setBusy('save'); setError(''); setMsg('');
-    try {
-      const ticks = [...checked].map((k) => { const [itemId, date] = k.split('|'); return { itemId, date: date || undefined }; });
-      const c = await assemblyService.saveWeekChecklist(weekId, ticks);
-      setChk(c); setChecked(new Set((c.ticks || []).map((t) => key(t.itemId, t.date)))); setMsg('Checklist saved');
-    } catch (err) { setError(err.response?.data?.error?.description || 'Failed to save checklist'); }
+  const apply = (c) => { setChk(c); setChecked(new Set((c.ticks || []).map((t) => key(t.itemId, t.date)))); };
+  const ticksFor = (its, date) => its.filter((it) => checked.has(key(it.uuid, date))).map((it) => ({ itemId: it.uuid, date: date || undefined }));
+  const run = async (tag, fn) => {
+    setBusy(tag); setError(''); setMsg('');
+    try { await fn(); } catch (err) { setError(err.response?.data?.error?.description || 'Something went wrong'); }
     finally { setBusy(''); }
   };
-
-  const signoff = async () => {
-    setBusy('signoff');
-    try { const c = await assemblyService.signoffChecklist(weekId, ''); setChk(c); setMsg('Signed off'); }
-    catch (err) { setError(err.response?.data?.error?.description || 'Failed to sign off'); }
-    finally { setBusy(''); }
-  };
-  const clearSignoff = async () => {
-    setBusy('signoff');
-    try { const c = await assemblyService.clearChecklistSignoff(weekId); setChk(c); }
-    catch (err) { setError(err.response?.data?.error?.description || 'Failed'); }
-    finally { setBusy(''); }
-  };
+  // date null = the weekly block; a date = that assembly day. Admin can reopen a
+  // submitted block (the teacher PWA cannot).
+  const doSave = (date) => run(`save-${date || 'w'}`, async () => { apply(await assemblyService.saveWeekChecklist(weekId, ticksFor(date ? dayItems : weekItems, date), date ? 'day' : 'week', date)); setMsg('Saved'); });
+  const doSubmit = (date) => run(`sub-${date || 'w'}`, async () => {
+    await assemblyService.saveWeekChecklist(weekId, ticksFor(date ? dayItems : weekItems, date), date ? 'day' : 'week', date);
+    apply(await assemblyService.signoffChecklist(weekId, '', date ? 'day' : 'week', date)); setMsg('Submitted');
+  });
+  const doReopen = (date) => run(`open-${date || 'w'}`, async () => { apply(await assemblyService.clearChecklistSignoff(weekId, date || undefined)); setMsg('Reopened'); });
 
   // ── Item config ────────────────────────────────────────────────────────────
   const saveItem = async () => {
@@ -127,6 +120,46 @@ export default function ChecklistPage() {
   const weekItems = chk?.weekItems || [];
   const dayItems = chk?.dayItems || [];
   const dates = chk?.dates || [];
+  const weeklySigned = !!chk?.signoff;
+  const daySignedSet = new Set((chk?.daySignoffs || []).map((d) => d.date));
+
+  // One panel (weekly = date null, or a day). Submitted shows a Reopen (admin only).
+  const renderPanel = (title, subtitle, panelItems, date, signed) => {
+    const doneCount = panelItems.filter((it) => checked.has(key(it.uuid, date))).length;
+    return (
+      <Card key={date || 'weekly'} variant="outlined" sx={{ mb: 1.5, ...(date ? {} : { borderLeft: 3, borderColor: 'primary.main' }) }}>
+        <CardContent sx={{ py: 1.5 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700}>{title}</Typography>
+              {subtitle && <Typography variant="caption" color="text.secondary" display="block">{subtitle}</Typography>}
+            </Box>
+            {signed
+              ? <Chip size="small" color="success" icon={<SignoffIcon />} label="Submitted" />
+              : <Chip size="small" variant="outlined" color={doneCount ? 'warning' : 'default'} label={doneCount ? `${doneCount} of ${panelItems.length}` : 'Not started'} />}
+          </Stack>
+          <Stack>
+            {panelItems.map((it) => (
+              <Stack key={it.uuid} direction="row" alignItems="flex-start">
+                <Checkbox size="small" sx={{ pt: 0.25 }} checked={checked.has(key(it.uuid, date))} onChange={() => toggle(it.uuid, date)} disabled={!canManage || signed} />
+                <Typography variant="body2" sx={{ mt: 0.75 }}>{it.text}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+          {canManage && (
+            <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 1 }}>
+              {signed
+                ? <Button size="small" onClick={() => doReopen(date)} disabled={busy.startsWith('open')}>Reopen</Button>
+                : <>
+                    <Button size="small" startIcon={<SaveIcon />} onClick={() => doSave(date)} disabled={busy.startsWith('save') || busy.startsWith('sub')}>Save</Button>
+                    <Button size="small" variant="contained" startIcon={<SignoffIcon />} onClick={() => doSubmit(date)} disabled={busy.startsWith('save') || busy.startsWith('sub')}>Submit</Button>
+                  </>}
+            </Stack>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Box>
@@ -194,57 +227,14 @@ export default function ChecklistPage() {
           {!weekId && <Typography variant="body2" color="text.secondary">No roster week here yet — start it in Roster first.</Typography>}
 
           {weekId && chk && (
-            <>
-              {weekItems.length > 0 && (
+            weekItems.length === 0 && dayItems.length === 0
+              ? <Typography variant="body2" color="text.secondary">No checklist items configured.</Typography>
+              : (
                 <>
-                  <Typography variant="subtitle2" gutterBottom>Weekly</Typography>
-                  <Stack sx={{ mb: 2 }}>
-                    {weekItems.map((it) => (
-                      <Stack key={it.uuid} direction="row" alignItems="center">
-                        <Checkbox size="small" checked={checked.has(key(it.uuid, null))} onChange={() => toggle(it.uuid, null)} disabled={!canManage} />
-                        <Typography variant="body2">{it.phase ? `${it.phase}: ` : ''}{it.text}</Typography>
-                      </Stack>
-                    ))}
-                  </Stack>
+                  {weekItems.length > 0 && renderPanel('Weekly checks', 'Submit before the roster week', weekItems, null, weeklySigned)}
+                  {dayItems.length > 0 && dates.map((d) => renderPanel(fmtDay(d), null, dayItems, d, daySignedSet.has(d)))}
                 </>
-              )}
-
-              {dayItems.length > 0 && dates.length > 0 && (
-                <>
-                  <Typography variant="subtitle2" gutterBottom>Per day</Typography>
-                  <Box sx={{ overflowX: 'auto' }}>
-                    <Table size="small">
-                      <TableHead><TableRow>
-                        <TableCell>Item</TableCell>
-                        {dates.map((d) => <TableCell key={d} align="center">{fmtShort(d)}</TableCell>)}
-                      </TableRow></TableHead>
-                      <TableBody>
-                        {dayItems.map((it) => (
-                          <TableRow key={it.uuid}>
-                            <TableCell>{it.text}</TableCell>
-                            {dates.map((d) => (
-                              <TableCell key={d} align="center" padding="none">
-                                <Checkbox size="small" checked={checked.has(key(it.uuid, d))} onChange={() => toggle(it.uuid, d)} disabled={!canManage} />
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
-                </>
-              )}
-
-              {weekItems.length === 0 && dayItems.length === 0 && <Typography variant="body2" color="text.secondary">No checklist items configured.</Typography>}
-
-              <Divider sx={{ my: 2 }} />
-              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
-                {canManage && <Button variant="contained" startIcon={<SaveIcon />} onClick={saveTicks} disabled={busy === 'save'}>Save ticks</Button>}
-                {chk.signoff
-                  ? <Chip color="success" icon={<SignoffIcon />} label={`Signed off${chk.signoff.signedAt ? ` · ${new Date(chk.signoff.signedAt).toLocaleDateString()}` : ''}`} onDelete={canManage ? clearSignoff : undefined} />
-                  : (canManage && <Tooltip title="Mark the week's checklist as signed off"><Button startIcon={<SignoffIcon />} onClick={signoff} disabled={busy === 'signoff'}>Sign off</Button></Tooltip>)}
-              </Stack>
-            </>
+              )
           )}
         </CardContent>
       </Card>

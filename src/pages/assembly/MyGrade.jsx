@@ -7,6 +7,7 @@ import { Save as SaveIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { useCan } from '../../permissions/can';
 import GradingPage from './GradingPage';
+import { MetricScorePicker, DictionPicker } from './gradeFields';
 import { resolveMyGradingWeek, todayIso } from './myAssembly';
 
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
@@ -86,10 +87,9 @@ function EvaluatorGrade() {
               {rubric.metrics.length === 0 && <Alert severity="info">No rubric configured yet.</Alert>}
 
               <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Scores</Typography></Divider>
-              {rubric.metrics.map((m) => (
-                <TextField key={m.uuid} size="small" type="number" label={`${m.name} (0–${m.maxMarks})`} value={form.metrics[m.uuid] ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, metrics: { ...f.metrics, [m.uuid]: e.target.value } }))} />
-              ))}
+              <MetricScorePicker metrics={rubric.metrics} values={form.metrics}
+                onScore={(id, v) => setForm((f) => { const m2 = { ...f.metrics }; if (v === undefined) delete m2[id]; else m2[id] = v; return { ...f, metrics: m2 }; })} />
+
 
               {rubric.penalties.length > 0 && <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Penalties</Typography></Divider>}
               {rubric.penalties.map((p) => (
@@ -98,8 +98,8 @@ function EvaluatorGrade() {
                   label={`${p.name} (−${p.value})`} />
               ))}
 
-              <TextField size="small" label="Star presenter" value={form.starPresenter} onChange={(e) => setForm({ ...form, starPresenter: e.target.value })} />
-              <TextField size="small" label="Diction" value={form.diction} onChange={(e) => setForm({ ...form, diction: e.target.value })} />
+              <TextField size="small" label="Star presenter (name, class & segment)" value={form.starPresenter} onChange={(e) => setForm({ ...form, starPresenter: e.target.value })} />
+              <DictionPicker value={form.diction} onChange={(v) => setForm({ ...form, diction: v })} />
               <TextField size="small" label="Feedback" multiline minRows={2} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
 
               <Box>

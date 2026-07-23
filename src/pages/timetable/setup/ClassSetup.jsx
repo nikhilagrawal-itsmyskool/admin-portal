@@ -1204,7 +1204,7 @@ function CloneSetupDialog({ targetClassId, academicYearId, onClose, onCloned }) 
   useEffect(() => {
     let active = true;
     classService
-      .getClasses()
+      .getClasses({ includeCohort: true })
       .then((data) => {
         if (active)
           setClasses(Array.isArray(data) ? data : data.classes || []);

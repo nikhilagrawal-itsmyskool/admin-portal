@@ -10,6 +10,8 @@ import {
   Box,
   Avatar,
   Divider,
+  FormControl,
+  Select,
 } from '@mui/material';
 import {
   AccountCircle,
@@ -19,12 +21,14 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useAcademicYear } from '../context/AcademicYearContext';
 import { DRAWER_WIDTH } from './Sidebar';
 import { getShortDisplayName, getFirstNameInitial } from '../utils/userDisplay';
 import InstallButton from './InstallButton';
 
 export default function Header({ onMenuClick, isDesktop }) {
   const { user, logout, schoolCode } = useAuth();
+  const { years, academicYearId, setAcademicYearId } = useAcademicYear();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -99,6 +103,27 @@ export default function Header({ onMenuClick, isDesktop }) {
               </Box>
             )}
           </Box>
+
+          {isDesktop && years.length > 0 && (
+            <FormControl size="small" sx={{ ml: 1.5, minWidth: 128 }}>
+              <Select
+                value={academicYearId}
+                onChange={(e) => setAcademicYearId(e.target.value)}
+                displayEmpty
+                title="Academic year — scopes the data shown across the portal"
+                sx={{
+                  height: 34, fontSize: 13, color: '#222b45', backgroundColor: '#fff',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e4e9f2' },
+                }}
+              >
+                {years.map((y) => (
+                  <MenuItem key={y.uuid} value={y.uuid} sx={{ fontSize: 13 }}>
+                    {y.name}{y.isCurrent ? ' • current' : ''}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

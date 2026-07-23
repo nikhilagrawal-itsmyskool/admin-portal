@@ -10,6 +10,7 @@ import {
 import { assemblyService } from '../../services/assemblyService';
 import { employeeService } from '../../services/employeeService';
 import { academicCalendarService } from '../../services/academicCalendarService';
+import { MetricScorePicker, DictionPicker } from './gradeFields';
 import { useCan } from '../../permissions/can';
 
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -131,7 +132,7 @@ export default function GradingPage() {
     if (existing) {
       setGradeForm({
         gradeDate: existing.gradeDate, evaluatorId: existing.evaluatorEmployeeId,
-        metrics: Object.fromEntries((existing.metrics || []).map((m) => [m.metricId, m.score])),
+        metrics: Object.fromEntries((existing.metrics || []).map((m) => [m.metricId, Number(m.score)])),
         penalties: new Set(existing.penalties || []),
         starPresenter: existing.starPresenter || '', diction: existing.diction || '', feedback: existing.feedback || '',
       });
@@ -320,18 +321,17 @@ export default function GradingPage() {
             </Grid>
           </Grid>
           <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Scores</Typography></Divider>
-          {rubric.metrics.map((m) => (
-            <TextField key={m.uuid} size="small" type="number" label={`${m.name} (0–${m.maxMarks})`} value={gradeForm?.metrics[m.uuid] ?? ''}
-              onChange={(e) => setGradeForm((f) => ({ ...f, metrics: { ...f.metrics, [m.uuid]: e.target.value } }))} />
-          ))}
+          <MetricScorePicker metrics={rubric.metrics} values={gradeForm?.metrics || {}}
+            onScore={(id, v) => setGradeForm((f) => { const m2 = { ...f.metrics }; if (v === undefined) delete m2[id]; else m2[id] = v; return { ...f, metrics: m2 }; })} />
+
           {rubric.penalties.length > 0 && <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Penalties</Typography></Divider>}
           {rubric.penalties.map((p) => (
             <FormControlLabel key={p.uuid} control={<Checkbox size="small" checked={gradeForm?.penalties?.has(p.uuid) || false}
               onChange={(e) => setGradeForm((f) => { const s = new Set(f.penalties); if (e.target.checked) s.add(p.uuid); else s.delete(p.uuid); return { ...f, penalties: s }; })} />}
               label={`${p.name} (−${p.value})`} />
           ))}
-          <TextField size="small" label="Star presenter" value={gradeForm?.starPresenter || ''} onChange={(e) => setGradeForm({ ...gradeForm, starPresenter: e.target.value })} />
-          <TextField size="small" label="Diction" value={gradeForm?.diction || ''} onChange={(e) => setGradeForm({ ...gradeForm, diction: e.target.value })} />
+          <TextField size="small" label="Star presenter (name, class & segment)" value={gradeForm?.starPresenter || ''} onChange={(e) => setGradeForm({ ...gradeForm, starPresenter: e.target.value })} />
+          <DictionPicker value={gradeForm?.diction || ''} onChange={(v) => setGradeForm({ ...gradeForm, diction: v })} />
           <TextField size="small" label="Feedback" multiline minRows={2} value={gradeForm?.feedback || ''} onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })} />
         </Stack></DialogContent>
         <DialogActions><Button onClick={() => setGradeForm(null)}>Cancel</Button><Button variant="contained" startIcon={<SaveIcon />} onClick={saveGrade} disabled={busy === 'grade'}>Save grade</Button></DialogActions>

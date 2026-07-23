@@ -73,9 +73,9 @@ export const assemblyService = {
   updateChecklistItem: async (id, data) => (await api.put(`/assembly/checklist/items/${id}`, data)).data,
   deleteChecklistItem: async (id) => (await api.delete(`/assembly/checklist/items/${id}`)).data,
   getWeekChecklist: async (weekId) => (await api.get(`/assembly/weeks/${weekId}/checklist`)).data,
-  saveWeekChecklist: async (weekId, ticks) => (await api.put(`/assembly/weeks/${weekId}/checklist`, { ticks })).data,
-  signoffChecklist: async (weekId, note) => (await api.post(`/assembly/weeks/${weekId}/checklist/signoff`, { note })).data,
-  clearChecklistSignoff: async (weekId) => (await api.delete(`/assembly/weeks/${weekId}/checklist/signoff`)).data,
+  saveWeekChecklist: async (weekId, ticks, scope, date) => (await api.put(`/assembly/weeks/${weekId}/checklist`, { ticks, scope, date })).data,
+  signoffChecklist: async (weekId, note, scope, date) => (await api.post(`/assembly/weeks/${weekId}/checklist/signoff`, { note, scope, date })).data,
+  clearChecklistSignoff: async (weekId, date) => (await api.delete(`/assembly/weeks/${weekId}/checklist/signoff`, { params: date ? { date } : {} })).data,
 
   // ---- Grading + leaderboard (Phase D) ----
   getRubric: async () => (await api.get('/assembly/rubric')).data, // { metrics, penalties, config }
@@ -107,7 +107,7 @@ export const assemblyService = {
   mySaveRoster: async (weekId, data) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/roster`, data)).data,
   mySubmitWeek: async (weekId) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/submit`)).data,
   myWeekChecklist: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}/checklist`)).data,
-  mySaveChecklist: async (weekId, ticks) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/checklist`, { ticks })).data,
-  mySignoffChecklist: async (weekId, note) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/checklist/signoff`, { note })).data,
+  mySaveChecklist: async (weekId, ticks, scope, date) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/checklist`, { ticks, scope, date })).data,
+  mySignoffChecklist: async (weekId, note, scope, date) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/checklist/signoff`, { note, scope, date })).data,
   mySaveGrade: async (weekId, data) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/grades`, data)).data,
 };

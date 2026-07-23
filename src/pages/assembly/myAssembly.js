@@ -7,6 +7,18 @@ export const mondayOf = (d) => {
   return iso(x);
 };
 export const todayIso = () => iso(new Date());
+export const addWeeks = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n * 7); return iso(x); };
+
+// The logged-in teacher's own-house roster duties over this week + the next N weeks
+// (default 4 → a 5-week window). Sorted earliest first. Weeks that don't exist yet
+// come back without a weekId (the editor ensures them on open).
+export async function resolveMyRosterWeeks(weeksAhead = 4) {
+  const thisMon = mondayOf(new Date());
+  const to = addWeeks(thisMon, weeksAhead);
+  const d = await assemblyService.myDuties({ from: thisMon, to });
+  const duties = (d.rosterDuties || []).slice().sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+  return { duties, isHouseMember: d.isHouseMember };
+}
 
 // Resolve THIS week's roster duty for the logged-in teacher (single-wing: take the
 // first). Auto-starts the week if it doesn't exist yet. Returns { weekId } or

@@ -67,7 +67,7 @@ export default function GridViewer({
 
   useEffect(() => {
     classService
-      .getClasses()
+      .getClasses({ includeCohort: true })
       .then((data) => {
         const list = Array.isArray(data) ? data : data.classes || [];
         const map = {};
