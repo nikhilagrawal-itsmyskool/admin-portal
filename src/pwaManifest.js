@@ -76,7 +76,9 @@ export function injectPwaManifest() {
       document.head.appendChild(link);
     }
     link.setAttribute('href', href);
-    document.title = `${name} — ItsMySkool`;
+    // Browser tab title uses the plain school brand (no "Staff"); the PWA install
+    // name above keeps "<School> Staff".
+    document.title = brand === 'ItsMySkool' ? 'ItsMySkool' : `${brand} — ItsMySkool`;
   } catch {
     // Non-fatal: keep the build-time static manifest.
   }
