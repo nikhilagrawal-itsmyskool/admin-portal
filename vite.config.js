@@ -12,8 +12,14 @@ export default defineConfig({
       // automatically (injectRegister defaults to 'auto').
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon-32x32.png', 'apple-touch-icon.png'],
+      // Static fallback manifest. At runtime src/pwaManifest.js swaps in a
+      // per-school branded manifest ("<SCHOOL> Staff"); this generic one is what
+      // ships in the build and is used if a browser rejects the runtime blob
+      // manifest. `id` is pinned so the app identity never forks for existing
+      // installs (it equals the previous implicit identity, start_url '/').
       manifest: {
-        name: 'ItsMySkool Admin Portal',
+        id: '/',
+        name: 'ItsMySkool Staff',
         short_name: 'ItsMySkool',
         description: 'ItsMySkool staff portal — timetable, attendance, inventory and more.',
         theme_color: '#3366ff',

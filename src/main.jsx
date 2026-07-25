@@ -5,7 +5,12 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import App from "./App";
 import theme from "./theme";
 import { AuthProvider } from "./context/AuthContext";
+import { injectPwaManifest } from "./pwaManifest";
 import "./print.css";
+
+// Per-school PWA manifest (name/icons) — must run before the browser evaluates
+// installability and before the install prompt is captured below.
+injectPwaManifest();
 
 // Capture the PWA install prompt as early as possible — it can fire before React mounts
 // and won't necessarily fire again. InstallButton reads window.deferredInstallPrompt and

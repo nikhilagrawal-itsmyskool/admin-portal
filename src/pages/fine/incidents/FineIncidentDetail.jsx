@@ -309,7 +309,7 @@ export default function FineIncidentDetail() {
 </head>
 <body>
   <h2>Fine Collection Receipt</h2>
-  <p class="sub">ItsMySkool Admin Portal</p>
+  <p class="sub">ItsMySkool Staff Portal</p>
   <div class="center"><span class="receipt-no">${col.receiptNumber}</span></div>
   <table>
     <tr><td>Incident Date</td><td>${formatDate(incident.incidentDate)}</td></tr>

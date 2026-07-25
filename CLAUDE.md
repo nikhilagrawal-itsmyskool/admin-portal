@@ -77,10 +77,15 @@ src/
 - All API calls include `X-School-Code` header automatically
 
 **Authentication Flow**:
-- Login calls `/auth/employee/login` with username/password
+- Login endpoint depends on the selected user type: `/auth/employee/login` or `/auth/student/login`
+- **Viewport-based login options** (decision): on the **mobile surface** (phones, `< sm` breakpoint) the login is **employee-only** — students get a dedicated app, so the Student/Employee toggle is hidden and the type is pinned to `employee`. On **`sm` and up** (tablets/desktop) **both** options are shown. If the viewport shrinks below `sm` while `student` was selected, the effective type falls back to `employee`.
 - JWT token stored in localStorage
 - Token automatically attached to API requests via axios interceptor
 - 401 responses trigger automatic logout and redirect to login
+
+**Responsive breakpoints** (convention):
+- Use MUI **theme breakpoints**, never hardcoded pixel media queries. Prefer the shared `useIsMobile()` hook (`src/hooks/useIsMobile.js`) which is `useMediaQuery(theme.breakpoints.down('sm'))` — "mobile" = `< sm` (phones only; tablets get the full portal). This aligns with `ResponsiveDataGrid` (cards `< sm`) and action-gating sx.
+- The drawer layout switches at `md` in `MainLayout` (permanent sidebar `>= md`, hamburger below) — a separate breakpoint from the mobile/phone surface.
 
 **Adding New Modules**:
 1. Add menu item in `src/components/Sidebar.jsx` menuItems array

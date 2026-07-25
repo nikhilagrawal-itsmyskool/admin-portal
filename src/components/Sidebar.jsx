@@ -393,7 +393,7 @@ export default function Sidebar({ open, onClose, isDesktop }) {
           ItsMySkool
         </Typography>
         <Typography variant="caption" sx={{ color: sidebarStyles.text }}>
-          Admin Portal
+          Staff Portal
         </Typography>
       </Box>
 

@@ -18,13 +18,20 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { getSchoolCode } from '../config/api';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
 
-  const [userType, setUserType] = useState('student');
+  // Mobile surface (phones, < sm breakpoint) is employee-only — students get a
+  // dedicated app. Larger screens keep both login options. Falls back to employee
+  // if the viewport shrinks below the breakpoint while 'student' was selected.
+  const isMobile = useIsMobile();
+  const [userType, setUserType] = useState('employee');
+  const effectiveUserType = isMobile ? 'employee' : userType;
+
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -59,7 +66,7 @@ export default function Login() {
     setError('');
 
     try {
-      await login(formData.username, formData.password, userType);
+      await login(formData.username, formData.password, effectiveUserType);
       navigate(from, { replace: true });
     } catch (err) {
       const message = err.response?.data?.error?.description || 'Login failed. Please try again.';
@@ -87,7 +94,7 @@ export default function Login() {
               ItsMySkool
             </Typography>
             <Typography variant="body2" sx={{ color: '#8f9bb3', mt: 1 }}>
-              Admin Portal
+              Staff Portal
             </Typography>
             <Typography
               variant="caption"
@@ -107,22 +114,24 @@ export default function Login() {
             </Typography>
           </Box>
 
-          <ToggleButtonGroup
-            value={userType}
-            exclusive
-            onChange={handleUserTypeChange}
-            fullWidth
-            sx={{ mb: 3 }}
-          >
-            <ToggleButton value="student" sx={{ py: 1.5 }}>
-              <StudentIcon sx={{ mr: 1 }} />
-              Student
-            </ToggleButton>
-            <ToggleButton value="employee" sx={{ py: 1.5 }}>
-              <EmployeeIcon sx={{ mr: 1 }} />
-              Employee
-            </ToggleButton>
-          </ToggleButtonGroup>
+          {!isMobile && (
+            <ToggleButtonGroup
+              value={effectiveUserType}
+              exclusive
+              onChange={handleUserTypeChange}
+              fullWidth
+              sx={{ mb: 3 }}
+            >
+              <ToggleButton value="student" sx={{ py: 1.5 }}>
+                <StudentIcon sx={{ mr: 1 }} />
+                Student
+              </ToggleButton>
+              <ToggleButton value="employee" sx={{ py: 1.5 }}>
+                <EmployeeIcon sx={{ mr: 1 }} />
+                Employee
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
