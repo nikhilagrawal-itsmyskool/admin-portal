@@ -46,7 +46,8 @@ export function injectPwaManifest() {
     const manifest = {
       id: `${origin}/`,
       name,
-      short_name: brand,
+      // Keep the home-screen label identical to the install-prompt name.
+      short_name: name,
       description: `${brand} staff portal — timetable, attendance, inventory and more.`,
       theme_color: '#3366ff',
       background_color: '#3366ff',

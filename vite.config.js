@@ -20,7 +20,7 @@ export default defineConfig({
       manifest: {
         id: '/',
         name: 'ItsMySkool Staff',
-        short_name: 'ItsMySkool',
+        short_name: 'ItsMySkool Staff',
         description: 'ItsMySkool staff portal — timetable, attendance, inventory and more.',
         theme_color: '#3366ff',
         background_color: '#3366ff',
