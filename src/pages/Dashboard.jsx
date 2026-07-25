@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   CardActionArea,
+  Divider,
 } from "@mui/material";
 import {
   LocalHospital as MedicalIcon,
@@ -24,10 +25,15 @@ import {
   Campaign as CommunicationIcon,
   PersonSearch as HiringIcon,
   DirectionsBus as TransportIcon,
+  School as StudentIcon,
+  AssignmentReturn as TransferIcon,
+  LibraryBooks as SyllabusIcon,
+  Groups as AssemblyIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useCan } from "../permissions/can";
 import { getFirstName } from "../utils/userDisplay";
+import { groupByModule } from "../config/moduleGroups";
 
 // `perm` mirrors the left-menu gating in Sidebar.jsx — cards lead into a module, so a
 // user only sees the card if they can reach that module. Cards with no `perm` are open
@@ -154,6 +160,38 @@ const modules = [
     color: "#ff6f00",
     perm: "transport.view",
   },
+  {
+    title: "Students",
+    description: "Search students, class strength, and houses",
+    icon: StudentIcon,
+    path: "/students",
+    color: "#3d5afe",
+    perm: "student.view",
+  },
+  {
+    title: "Transfer Certs",
+    description: "Apply for and issue transfer certificates",
+    icon: TransferIcon,
+    path: "/transfer",
+    color: "#607d8b",
+    perm: "transfer.view",
+  },
+  {
+    title: "Syllabus",
+    description: "Plan month-wise syllabus and track coverage",
+    icon: SyllabusIcon,
+    path: "/syllabus",
+    color: "#8e24aa",
+    perm: "syllabus.view",
+  },
+  {
+    title: "Assembly",
+    description: "Plan the morning assembly, roster, and grading",
+    icon: AssemblyIcon,
+    path: "/assembly/week",
+    color: "#1e88e5",
+    perm: "assembly.view",
+  },
 ];
 
 export default function Dashboard() {
@@ -173,46 +211,61 @@ export default function Dashboard() {
         Select a module to get started
       </Typography>
 
-      <Grid container spacing={3}>
-        {visibleModules.map((module) => (
-          <Grid item xs={12} sm={6} md={4} key={module.title}>
-            <Card>
-              <CardActionArea
-                onClick={() =>
-                  navigate(
-                    typeof module.path === "function"
-                      ? module.path(can)
-                      : module.path,
-                  )
-                }
+      {groupByModule(visibleModules).map((group) => (
+        <Box key={group.key} sx={{ mb: 4 }}>
+          {group.label && (
+            <>
+              <Typography
+                variant="overline"
+                sx={{ color: "#8f9bb3", fontWeight: 700, letterSpacing: 1 }}
               >
-                <CardContent sx={{ p: 3 }}>
-                  <Box
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 2,
-                      backgroundColor: `${module.color}15`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      mb: 2,
-                    }}
+                {group.label}
+              </Typography>
+              <Divider sx={{ mb: 2, mt: 0.5 }} />
+            </>
+          )}
+          <Grid container spacing={3}>
+            {group.items.map((module) => (
+              <Grid item xs={12} sm={6} md={4} key={module.title}>
+                <Card>
+                  <CardActionArea
+                    onClick={() =>
+                      navigate(
+                        typeof module.path === "function"
+                          ? module.path(can)
+                          : module.path,
+                      )
+                    }
                   >
-                    <module.icon sx={{ fontSize: 28, color: module.color }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ mb: 1 }}>
-                    {module.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#8f9bb3" }}>
-                    {module.description}
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 2,
+                          backgroundColor: `${module.color}15`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          mb: 2,
+                        }}
+                      >
+                        <module.icon sx={{ fontSize: 28, color: module.color }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ mb: 1 }}>
+                        {module.title}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#8f9bb3" }}>
+                        {module.description}
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
+        </Box>
+      ))}
     </Box>
   );
 }

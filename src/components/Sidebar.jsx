@@ -13,9 +13,11 @@ import {
   ListItemText,
   ListSubheader,
   Collapse,
+  Divider,
   Box,
   Typography,
 } from '@mui/material';
+import { groupByModule } from '../config/moduleGroups';
 import {
   Dashboard as DashboardIcon,
   LocalHospital as MedicalIcon,
@@ -249,7 +251,7 @@ const menuItems = [
     ],
   },
   {
-    title: 'Transfer',
+    title: 'Transfer Certs',
     icon: TransferIcon,
     path: '/transfer',
     perm: 'transfer.view',
@@ -340,6 +342,20 @@ export default function Sidebar({ open, onClose, isDesktop }) {
     })
     .filter(Boolean);
 
+  // Desktop menu: pin Dashboard on top, then the rest split into labelled groups
+  // (People & Staff / Academics / Operations / Stores & Inventory) with a divider each.
+  // Flatten to a single list of entries (item | divider | label) so the render loop keeps
+  // the existing per-item markup and just interleaves separators.
+  const dashboardItem = visibleMenu.find((i) => i.title === 'Dashboard');
+  const groupedMenu = groupByModule(visibleMenu.filter((i) => i.title !== 'Dashboard'));
+  const desktopEntries = [];
+  if (dashboardItem) desktopEntries.push({ type: 'item', item: dashboardItem });
+  groupedMenu.forEach((group) => {
+    desktopEntries.push({ type: 'divider', key: `div-${group.key}` });
+    if (group.label) desktopEntries.push({ type: 'label', key: `lbl-${group.key}`, label: group.label });
+    group.items.forEach((item) => desktopEntries.push({ type: 'item', item }));
+  });
+
   // On small screens the sidebar mirrors the mobile home: the Today / Modules bands,
   // hub tiles collapsing to /hub/:key (same buildMobileTiles model + derived gating).
   const mobileSections = buildMobileTiles(mobileVisible);
@@ -383,7 +399,30 @@ export default function Sidebar({ open, onClose, isDesktop }) {
 
       {!isMobile ? (
       <List sx={{ pt: 2 }}>
-        {visibleMenu.map((item) => (
+        {desktopEntries.map((entry) => {
+          if (entry.type === 'divider') {
+            return <Divider key={entry.key} sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1 }} />;
+          }
+          if (entry.type === 'label') {
+            return (
+              <ListSubheader
+                key={entry.key}
+                sx={{
+                  bgcolor: 'transparent',
+                  color: sidebarStyles.text,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                  lineHeight: '2.4',
+                }}
+              >
+                {entry.label}
+              </ListSubheader>
+            );
+          }
+          const item = entry.item;
+          return (
           <React.Fragment key={item.title}>
             {item.children ? (
               <>
@@ -494,7 +533,8 @@ export default function Sidebar({ open, onClose, isDesktop }) {
               </ListItem>
             )}
           </React.Fragment>
-        ))}
+          );
+        })}
       </List>
       ) : (
         <List sx={{ pt: 1 }}>
