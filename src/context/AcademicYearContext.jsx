@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { academicCalendarService } from '../services/academicCalendarService';
-import { setCurrentAcademicYear } from '../services/classService';
+import { setCurrentAcademicYear, markAcademicYearReady } from '../services/classService';
 
 // Portal-wide selected academic year. Defaults to the current year and is used to
 // scope data fetches (starting with the class dropdowns). The selected id is also
@@ -22,7 +22,10 @@ export function AcademicYearProvider({ children }) {
         const id = current?.uuid || '';
         setYear(id);
         setCurrentAcademicYear(id);
-      } catch { /* years are optional; dropdowns fall back to all classes */ }
+      } catch {
+        /* years are optional; unblock class dropdowns so they fall back to all classes */
+        markAcademicYearReady();
+      }
     })();
   }, []);
 
