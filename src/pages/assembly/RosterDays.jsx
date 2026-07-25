@@ -35,6 +35,18 @@ export default function RosterDays({ days, onDayChange, onSlotChange, targetType
                   targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId}
                   roleFixed="day-owner" defaultType="employee" addLabel="Add owner" disabled={disabled} />
               </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" gutterBottom>Assembly commander(s)</Typography>
+                <ParticipantList value={d.commanders} onChange={(rows) => onDayChange(di, { commanders: rows })}
+                  targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId}
+                  roleFixed="commander" defaultType="student" addLabel="Add commander" disabled={disabled} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" gutterBottom>Assembly drummer(s)</Typography>
+                <ParticipantList value={d.drummers} onChange={(rows) => onDayChange(di, { drummers: rows })}
+                  targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId}
+                  roleFixed="drummer" defaultType="student" addLabel="Add drummer" disabled={disabled} />
+              </Grid>
             </Grid>
 
             <Divider sx={{ my: 2 }} />

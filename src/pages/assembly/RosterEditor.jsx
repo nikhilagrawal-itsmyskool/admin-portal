@@ -70,6 +70,7 @@ export default function RosterEditor() {
     days: (detail.days || []).map((d) => ({
       date: d.date, weekday: d.weekday,
       anchors: toRows(d.anchors), owners: toRows(d.owners),
+      commanders: toRows(d.commanders), drummers: toRows(d.drummers),
       slots: (d.slots || []).map((s) => ({ ...s, participants: toRows(s.participants) })),
     })),
   });
@@ -107,7 +108,11 @@ export default function RosterEditor() {
     setBusy('save'); setError(''); setMsg('');
     try {
       const payload = {
-        days: draft.days.map((d) => ({ date: d.date, anchors: toPayload(d.anchors, 'anchor'), owners: toPayload(d.owners, 'day-owner') })),
+        days: draft.days.map((d) => ({
+          date: d.date,
+          anchors: toPayload(d.anchors, 'anchor'), owners: toPayload(d.owners, 'day-owner'),
+          commanders: toPayload(d.commanders, 'commander'), drummers: toPayload(d.drummers, 'drummer'),
+        })),
         entries: draft.days.flatMap((d) => d.slots.map((s) => ({
           date: d.date, nodeId: s.nodeId, opted: s.opted, content: (s.content || '').trim() || null,
           participants: toPayload(s.participants),
