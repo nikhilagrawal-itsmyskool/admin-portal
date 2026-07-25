@@ -1,18 +1,17 @@
-// Partial redaction helpers for sensitive contact fields. Used to hide parent/
-// guardian phone, WhatsApp and email from users who lack `student.contacts.view`.
-// These are UI-only — the backend still returns full values today.
+// Partial redaction helpers for sensitive contact fields. Hide parent/guardian/
+// employee/driver phone, WhatsApp and email from users who lack `student.contacts.view`
+// (admin/god only). The backend now masks these too for non-admin/god callers, so this
+// is a defense-in-depth / consistent-format layer, not the sole gate.
 
 const DOT = '•'; // •
 
-// Keep the first 2 and last 2 visible: "9810054521" -> "98••••••21".
-// Short values (<= 4 chars) are fully masked.
+// Keep only the last 2 visible: "9810054521" -> "••••••••21" (matches the backend
+// maskPhone). Short values (<= 2 chars) are fully masked to a minimum of 4 dots.
 export function maskPhone(value) {
   if (!value) return value || '';
   const v = String(value).trim();
-  if (v.length <= 4) return DOT.repeat(v.length);
-  const first = v.slice(0, 2);
-  const last = v.slice(-2);
-  return `${first}${DOT.repeat(v.length - 4)}${last}`;
+  if (v.length <= 2) return DOT.repeat(Math.max(v.length, 4));
+  return `${DOT.repeat(v.length - 2)}${v.slice(-2)}`;
 }
 
 // Keep the first local char + domain: "raj@gmail.com" -> "r••@gmail.com".
