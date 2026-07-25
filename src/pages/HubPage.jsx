@@ -23,6 +23,7 @@ export default function HubPage() {
     title: f.hubLabel || f.title,
     icon: f.icon,
     path: f.path,
+    color: hub.color, // the actions inside a hub share the module accent
   }));
 
   return (

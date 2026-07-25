@@ -157,12 +157,12 @@ const menuItems = [
     icon: SportsIcon,
     perm: 'sports.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/sports' },
+      { title: 'Overview', icon: OverviewIcon, path: '/sports', perm: 'sports.manage' },
       { title: 'In-charges', icon: SportsIcon, path: '/sports/incharges', perm: 'sports.manage' },
       { title: 'Inventory Items', icon: InventoryIcon, path: '/sports/items' },
-      { title: 'Purchase Log', icon: PurchaseIcon, path: '/sports/purchases' },
-      { title: 'Issue Log', icon: IssueIcon, path: '/sports/issues' },
-      { title: 'Breakage Log', icon: BrokenImageIcon, path: '/sports/breakages' },
+      { title: 'Purchase Log', icon: PurchaseIcon, path: '/sports/purchases', perm: 'sports.manage' },
+      { title: 'Issue Log', icon: IssueIcon, path: '/sports/issues', perm: 'sports.manage' },
+      { title: 'Breakage Log', icon: BrokenImageIcon, path: '/sports/breakages', perm: 'sports.manage' },
     ],
   },
   {
@@ -181,11 +181,11 @@ const menuItems = [
     icon: LibraryIcon,
     perm: 'library.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/library' },
+      { title: 'Overview', icon: OverviewIcon, path: '/library', perm: 'library.manage' },
       { title: 'Catalog', icon: CatalogIcon, path: '/library/catalog' },
       { title: 'Circulation', icon: CirculationIcon, path: '/library/circulation' },
-      { title: 'Fines', icon: GavelIcon, path: '/library/fines' },
-      { title: 'Settings', icon: TypeIcon, path: '/library/settings' },
+      { title: 'Fines', icon: GavelIcon, path: '/library/fines', perm: 'library.manage' },
+      { title: 'Settings', icon: TypeIcon, path: '/library/settings', perm: 'library.manage' },
     ],
   },
   {
@@ -193,12 +193,12 @@ const menuItems = [
     icon: SuppliesIcon,
     perm: 'supplies.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/supplies' },
-      { title: 'Categories', icon: CategoryIcon, path: '/supplies/categories' },
+      { title: 'Overview', icon: OverviewIcon, path: '/supplies', perm: 'supplies.manage' },
+      { title: 'Categories', icon: CategoryIcon, path: '/supplies/categories', perm: 'supplies.manage' },
       { title: 'Inventory Items', icon: InventoryIcon, path: '/supplies/items' },
-      { title: 'Purchase Log', icon: PurchaseIcon, path: '/supplies/purchases' },
-      { title: 'Issue Log', icon: IssueIcon, path: '/supplies/issues' },
-      { title: 'Wastage Log', icon: WastageIcon, path: '/supplies/wastages' },
+      { title: 'Purchase Log', icon: PurchaseIcon, path: '/supplies/purchases', perm: 'supplies.manage' },
+      { title: 'Issue Log', icon: IssueIcon, path: '/supplies/issues', perm: 'supplies.manage' },
+      { title: 'Wastage Log', icon: WastageIcon, path: '/supplies/wastages', perm: 'supplies.manage' },
     ],
   },
   {
@@ -223,6 +223,7 @@ const menuItems = [
   {
     title: 'Attendance',
     icon: AttendanceIcon,
+    perm: 'attendance.mark',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/attendance' },
       { title: 'Take Attendance', icon: MarkIcon, path: '/attendance/mark' },
@@ -233,6 +234,7 @@ const menuItems = [
   {
     title: 'Communication',
     icon: CommunicationIcon,
+    perm: 'communication.send',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/communication' },
       { title: 'Compose', icon: ComposeIcon, path: '/communication/compose' },

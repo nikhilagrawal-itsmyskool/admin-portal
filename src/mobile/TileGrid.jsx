@@ -16,6 +16,7 @@ export default function TileGrid({ tiles, onOpen }) {
       {tiles.map((t) => {
         const Icon = t.icon;
         const isHub = t.kind === "hub";
+        const color = t.color || "#3366ff";
         return (
           <Card key={t.id ?? t.path} variant="outlined">
             <CardActionArea onClick={() => onOpen(t)}>
@@ -35,7 +36,19 @@ export default function TileGrid({ tiles, onOpen }) {
                     sx={{ position: "absolute", top: 6, right: 6, fontSize: 18, color: "text.disabled" }}
                   />
                 )}
-                <Icon sx={{ fontSize: 32, color: "#3366ff" }} />
+                <Box
+                  sx={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 2,
+                    backgroundColor: `${color}1f`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon sx={{ fontSize: 26, color }} />
+                </Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {t.title}
                 </Typography>

@@ -128,6 +128,7 @@ const modules = [
     icon: AttendanceIcon,
     path: "/attendance",
     color: "#43a047",
+    perm: "attendance.mark",
   },
   {
     title: "Communication",
@@ -135,6 +136,7 @@ const modules = [
     icon: CommunicationIcon,
     path: "/communication",
     color: "#e91e63",
+    perm: "communication.send",
   },
   {
     title: "Employees",

@@ -20,30 +20,29 @@ import {
   FactCheck as AssemblyChecklistIcon,
   Grading as AssemblyGradeIcon,
   MenuBook as SyllabusIcon,
-  Business as OfficeIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
 // desktop-only. A tile shows on the mobile home + nav when the user's role grants its
-// `perm` (or it has none). `routes` lists every path the mobile route-guard permits for
-// the feature (list + add + detail, ...); when omitted it defaults to [path].
+// `perm` (or it has none). `routes` lists every path the mobile route-guard permits.
 //
-// The home is organised in two bands (`section`): "today" (the daily-touch tiles) and
-// "modules". Features that share a `hub` key collapse into ONE tile that opens a little
-// hub screen (/hub/:key) listing its actions — so Assembly's day/roster/checklist/grade,
-// Library's catalog/circulation, and each inventory module's items/issues are one tile
-// each, not four/two. A hub with only ONE visible action for you doesn't add a tap: its
-// tile links straight to that action (see buildMobileTiles). `hubLabel` is the child's
-// name inside the hub; `derived` is an extra runtime gate (house member / evaluator)
-// resolved via /me/assembly/duties (see useMobileVisibility).
+// The home has three bands (`section`): "today" (the daily-touch tiles), then the module
+// groups "people" (People & Staff) and "stores" (Stores & Inventory) — the same grouping
+// the desktop sidebar uses. Features that share a `hub` key collapse into ONE tile that
+// opens a hub screen (/hub/:key); a hub with only one visible action for you links
+// straight to it (see buildMobileTiles). `color` is the tile's module accent (mirrors the
+// desktop dashboard); on a hub the color comes from MOBILE_HUBS. `derived` is an extra
+// runtime gate (house member / evaluator) resolved via /me/assembly/duties.
 export const MOBILE_FEATURES = [
   // ── Today ──────────────────────────────────────────────────────────────────
-  { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view", section: "today" },
+  { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view", section: "today", color: "#f4b400" },
   {
     title: "Take Attendance",
     icon: AttendanceIcon,
     path: "/attendance/mark",
+    perm: "attendance.mark", // class teachers (+ admin/god); marking only, finalize is admin
     section: "today",
+    color: "#43a047",
     routes: ["/attendance/mark", "/attendance/sessions", "/attendance/sessions/:id"],
   },
   {
@@ -52,11 +51,12 @@ export const MOBILE_FEATURES = [
     path: "/syllabus/my",
     perm: "syllabus.view",
     section: "today",
+    color: "#8e24aa",
     routes: ["/syllabus/my", "/syllabus/my/:syllabusId/:classId"],
   },
   // Assembly hub: the read-only day view (everyone with assembly.view) + the house
-  // member's roster/checklist + the evaluator's grade. A plain teacher only has the
-  // day view, so their Assembly tile links straight to it (no hub screen).
+  // member's roster/checklist + the evaluator's grade. A plain teacher only has the day
+  // view, so their Assembly tile links straight to it (no hub screen).
   { title: "Today's assembly", hubLabel: "Today's assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view", section: "today", hub: "assembly" },
   { title: "My Roster", hubLabel: "My Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
   { title: "My Checklist", hubLabel: "My Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
@@ -67,57 +67,61 @@ export const MOBILE_FEATURES = [
     path: "/transport/attendance/mark",
     perm: "transport.attendance.mark",
     section: "today",
+    color: "#ff6f00",
     routes: ["/transport/attendance/mark", "/transport/attendance/sessions"],
   },
+  // Send Message — a daily action, pulled up out of the old "Office" hub.
+  { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
 
-  // ── Modules ────────────────────────────────────────────────────────────────
-  { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.view", section: "modules", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
-  { title: "Library Circulation", hubLabel: "Circulation", icon: CirculationIcon, path: "/library/circulation", perm: "library.view", section: "modules", hub: "library" },
-
-  { title: "Sports Items", hubLabel: "Items", icon: SportsIcon, path: "/sports/items", perm: "sports.view", section: "modules", hub: "sports" },
-  // Issuing/wastage is a write op → the in-charge's action (sports.manage), not every
-  // teacher's. Plain teachers keep read-only "Items" (sports.view).
-  { title: "Sports Issues", hubLabel: "Issues", icon: SportsIcon, path: "/sports/issues", perm: "sports.manage", section: "modules", hub: "sports", routes: ["/sports/issues", "/sports/issues/add"] },
-
-  { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.view", section: "modules", hub: "supplies" },
-  { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.manage", section: "modules", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },
-
-  { title: "Medical Items", hubLabel: "Items", icon: MedicalIcon, path: "/medical/items", perm: "medical.view", section: "modules", hub: "medical" },
-  { title: "Medical Issues", hubLabel: "Issues", icon: MedicalIcon, path: "/medical/issues", perm: "medical.view", section: "modules", hub: "medical", routes: ["/medical/issues", "/medical/issues/add"] },
-
-  { title: "Lab Items", hubLabel: "Items", icon: ScienceIcon, path: "/lab/items", perm: "lab.view", section: "modules", hub: "lab" },
-  { title: "Lab Issues", hubLabel: "Issues", icon: ScienceIcon, path: "/lab/issues", perm: "lab.view", section: "modules", hub: "lab", routes: ["/lab/issues", "/lab/issues/add"] },
-
-  { title: "Students", hubLabel: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "modules", hub: "people", routes: ["/students", "/students/:id"] },
-  { title: "Employees", hubLabel: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view", section: "modules", hub: "people" },
-
-  { title: "Hiring", hubLabel: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "modules", hub: "office", routes: ["/hiring", "/hiring/:id"] },
+  // ── People & Staff ───────────────────────────────────────────────────────────
+  { title: "Students", hubLabel: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", hub: "people", routes: ["/students", "/students/:id"] },
+  { title: "Employees", hubLabel: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view", section: "people", hub: "people" },
+  { title: "Hiring", hubLabel: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "people", hub: "people", routes: ["/hiring", "/hiring/:id"] },
   // Read-only TC search/list on mobile; tapping a row opens the student detail
   // (permitted via the Students feature). Apply/issue stays desktop-only.
-  { title: "Transfer", hubLabel: "Transfer", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "modules", hub: "office", routes: ["/transfer"] },
-  { title: "Send Message", hubLabel: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "modules", hub: "office" },
+  { title: "Transfer", hubLabel: "Transfer", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", hub: "people", routes: ["/transfer"] },
+
+  // ── Stores & Inventory ───────────────────────────────────────────────────────
+  { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.view", section: "stores", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
+  { title: "Library Circulation", hubLabel: "Circulation", icon: CirculationIcon, path: "/library/circulation", perm: "library.view", section: "stores", hub: "library" },
+
+  { title: "Lab Items", hubLabel: "Items", icon: ScienceIcon, path: "/lab/items", perm: "lab.view", section: "stores", hub: "lab" },
+  { title: "Lab Issues", hubLabel: "Issues", icon: ScienceIcon, path: "/lab/issues", perm: "lab.view", section: "stores", hub: "lab", routes: ["/lab/issues", "/lab/issues/add"] },
+
+  { title: "Medical Items", hubLabel: "Items", icon: MedicalIcon, path: "/medical/items", perm: "medical.view", section: "stores", hub: "medical" },
+  { title: "Medical Issues", hubLabel: "Issues", icon: MedicalIcon, path: "/medical/issues", perm: "medical.view", section: "stores", hub: "medical", routes: ["/medical/issues", "/medical/issues/add"] },
+
+  { title: "Sports Items", hubLabel: "Items", icon: SportsIcon, path: "/sports/items", perm: "sports.view", section: "stores", hub: "sports" },
+  // Issuing/wastage is a write op → the in-charge's action (sports.manage), not every
+  // teacher's. Plain teachers keep read-only "Items" (sports.view).
+  { title: "Sports Issues", hubLabel: "Issues", icon: SportsIcon, path: "/sports/issues", perm: "sports.manage", section: "stores", hub: "sports", routes: ["/sports/issues", "/sports/issues/add"] },
+
+  { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.view", section: "stores", hub: "supplies" },
+  { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.manage", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },
 
   // Physical stock-count is the assets-incharge's job (asset.manage), not every teacher's.
-  { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.manage", section: "modules" },
+  { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.manage", section: "stores", color: "#8d6e63" },
 ];
 
-// Hub display metadata, keyed by the `hub` field above.
+// Hub display metadata (title, icon, module accent color), keyed by the `hub` field above.
 export const MOBILE_HUBS = {
-  assembly: { title: "Assembly", icon: AssemblyIcon },
-  library: { title: "Library", icon: LibraryIcon },
-  sports: { title: "Sports", icon: SportsIcon },
-  supplies: { title: "Supplies", icon: SuppliesIcon },
-  medical: { title: "Medical", icon: MedicalIcon },
-  lab: { title: "Lab", icon: ScienceIcon },
-  people: { title: "People", icon: PeopleIcon },
-  office: { title: "Office", icon: OfficeIcon },
+  assembly: { title: "Assembly", icon: AssemblyIcon, color: "#1e88e5" },
+  people: { title: "People", icon: PeopleIcon, color: "#3d5afe" },
+  library: { title: "Library", icon: LibraryIcon, color: "#5e35b1" },
+  lab: { title: "Lab", icon: ScienceIcon, color: "#00b887" },
+  medical: { title: "Medical", icon: MedicalIcon, color: "#3366ff" },
+  sports: { title: "Sports", icon: SportsIcon, color: "#0095ff" },
+  supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
 };
 
-// The home bands, in display order.
+// The home bands, in display order (mirrors the desktop groups; "Today" is mobile-first).
 export const MOBILE_SECTIONS = [
   { key: "today", label: "Today" },
-  { key: "modules", label: "Modules" },
+  { key: "people", label: "People & Staff" },
+  { key: "stores", label: "Stores & Inventory" },
 ];
+
+const DEFAULT_COLOR = "#3366ff";
 
 export const getHub = (key) => MOBILE_HUBS[key];
 
@@ -141,13 +145,14 @@ export function buildMobileTiles(visible) {
         const kids = hubChildren(f.hub, visible);
         if (kids.length === 0) continue;
         const hub = MOBILE_HUBS[f.hub];
+        const color = hub.color || DEFAULT_COLOR;
         tiles.push(
           kids.length === 1
-            ? { kind: "link", id: f.hub, title: hub.title, icon: hub.icon, path: kids[0].path }
-            : { kind: "hub", id: f.hub, title: hub.title, icon: hub.icon, path: `/hub/${f.hub}`, count: kids.length },
+            ? { kind: "link", id: f.hub, title: hub.title, icon: hub.icon, path: kids[0].path, color }
+            : { kind: "hub", id: f.hub, title: hub.title, icon: hub.icon, path: `/hub/${f.hub}`, count: kids.length, color },
         );
       } else if (visible(f)) {
-        tiles.push({ kind: "link", id: f.path, title: f.title, icon: f.icon, path: f.path });
+        tiles.push({ kind: "link", id: f.path, title: f.title, icon: f.icon, path: f.path, color: f.color || DEFAULT_COLOR });
       }
     }
     return { ...sec, tiles };

@@ -26,6 +26,7 @@ export const ROLE_PERMISSIONS = {
     "student.view",
     "student.manage",
     "student.contacts.view",
+    "attendance.mark",
     "attendance.finalize",
     "communication.send",
     "communication.template.manage",
@@ -48,7 +49,6 @@ export const ROLE_PERMISSIONS = {
   // role below (and route assignment), not plain `teacher`.
   teacher: [
     "sports.view",
-    "asset.view",
     "library.view",
     "supplies.view",
     "timetable.view", // Published timetable only (menu gates the rest)
@@ -58,6 +58,10 @@ export const ROLE_PERMISSIONS = {
     "syllabus.progress.mark",
     "assembly.view", // Read the assembly plan for their wing
   ],
+  // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
+  // can cover for an absent colleague). Finalizing a session stays admin/god. Additive to
+  // the `teacher` role.
+  "class-teacher": ["attendance.mark"],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
   "lab-incharge": ["lab.*"],
@@ -81,6 +85,7 @@ export const DOC_ROLES = [
   "god",
   "admin",
   "teacher",
+  "class-teacher",
   "medical-incharge",
   "lab-incharge",
   "sports-incharge",
