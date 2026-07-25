@@ -836,14 +836,37 @@ export default function StudentDetail() {
                       <TableCell colSpan={4}>No enrollment records.</TableCell>
                     </TableRow>
                   ) : (
-                    student.enrollments.map((e) => (
-                      <TableRow key={e.uuid}>
-                        <TableCell>{e.academicYearName || '—'}</TableCell>
-                        <TableCell>{e.className || '—'}{e.streamCode ? ` · ${e.streamName || e.streamCode}` : ''}</TableCell>
-                        <TableCell>{e.rollNumber ?? '—'}</TableCell>
-                        <TableCell>{e.joinDate ? String(e.joinDate).slice(0, 10) : '—'}</TableCell>
-                      </TableRow>
-                    ))
+                    student.enrollments.map((e) => {
+                      const isGap = e.kind === 'gap';
+                      const isHistorical = e.kind === 'historical';
+                      return (
+                        <TableRow
+                          key={e.uuid}
+                          sx={isGap ? { '& td': { color: 'text.disabled', fontStyle: 'italic' } } : undefined}
+                        >
+                          <TableCell>{e.academicYearName || '—'}</TableCell>
+                          <TableCell>
+                            {isGap ? (
+                              <Chip size="small" label="Gap year — not enrolled" color="warning" variant="outlined" />
+                            ) : (
+                              <>
+                                {e.className || '—'}{e.streamCode ? ` · ${e.streamName || e.streamCode}` : ''}
+                                {isHistorical && (
+                                  <Chip
+                                    size="small"
+                                    label="prev. admission"
+                                    variant="outlined"
+                                    sx={{ ml: 1 }}
+                                  />
+                                )}
+                              </>
+                            )}
+                          </TableCell>
+                          <TableCell>{isGap ? '—' : (e.rollNumber ?? '—')}</TableCell>
+                          <TableCell>{isGap ? '—' : (e.joinDate ? String(e.joinDate).slice(0, 10) : '—')}</TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
