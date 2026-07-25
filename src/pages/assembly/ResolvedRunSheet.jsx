@@ -38,6 +38,18 @@ export default function ResolvedRunSheet({ resolved, showThemes = true }) {
       {showThemes && (resolved.themes || []).map((t) => (
         <Chip key={t.uuid} size="small" variant="outlined" sx={{ mb: 0.5, mr: 0.5 }} label={t.title} />
       ))}
+      {/* Day roster people — who's been assigned each responsibility. */}
+      {[
+        ['Anchor', resolved.anchors],
+        ['Owner', resolved.dayOwners],
+        ['Commander', resolved.commanders],
+        ['Drummer', resolved.drummers],
+      ].map(([label, arr]) => {
+        const names = (arr || []).map((p) => p.name || p.className || p.studentId).filter(Boolean).join(', ');
+        return names ? (
+          <Chip key={label} size="small" color="success" variant="outlined" sx={{ mb: 0.5, mr: 0.5 }} label={`${label}: ${names}`} />
+        ) : null;
+      })}
       {resolved.nodes?.length
         ? <RunNodes nodes={resolved.nodes} />
         : <Typography variant="caption" color="text.secondary">No items for this day.</Typography>}

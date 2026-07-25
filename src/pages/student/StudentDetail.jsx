@@ -617,7 +617,7 @@ export default function StudentDetail() {
               <Stack spacing={0.5} sx={{ textAlign: 'left' }}>
                 <Fact label="Admission #" value={student.admissionNumber} />
                 <Fact label="Class" value={student.currentClassName} />
-                {student.currentStreamCode && <Fact label="Stream" value={student.currentStreamCode} />}
+                {student.currentStreamCode && <Fact label="Stream" value={student.currentStreamName || student.currentStreamCode} />}
                 <Fact label="Roll #" value={student.currentRollNumber} />
                 <Fact label="House" value={student.houseName} />
                 {student.classTeacher && (
@@ -839,7 +839,7 @@ export default function StudentDetail() {
                     student.enrollments.map((e) => (
                       <TableRow key={e.uuid}>
                         <TableCell>{e.academicYearName || '—'}</TableCell>
-                        <TableCell>{e.className || '—'}{e.streamCode ? ` · ${e.streamCode}` : ''}</TableCell>
+                        <TableCell>{e.className || '—'}{e.streamCode ? ` · ${e.streamName || e.streamCode}` : ''}</TableCell>
                         <TableCell>{e.rollNumber ?? '—'}</TableCell>
                         <TableCell>{e.joinDate ? String(e.joinDate).slice(0, 10) : '—'}</TableCell>
                       </TableRow>
