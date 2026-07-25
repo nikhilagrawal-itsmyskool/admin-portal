@@ -1,7 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#3366ff"/>
-  <polygon points="256,150 410,210 256,270 102,210" fill="#ffffff"/>
-  <path d="M170 232 L170 298 C170 298 256 338 342 298 L342 232 L256 268 Z" fill="#ffffff"/>
-  <line x1="410" y1="210" x2="410" y2="305" stroke="#ffffff" stroke-width="7"/>
-  <circle cx="410" cy="316" r="11" fill="#ffffff"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(103,106) scale(12.5)" fill="none" stroke="#ffffff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10" cy="8" r="3.3"/>
+    <path d="M4 19.5c.5-3.7 3-5.6 6-5.6 1 0 2 .2 2.9.7M14.5 17l2 2 4-4.4"/>
+  </g>
 </svg>
