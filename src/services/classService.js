@@ -46,6 +46,14 @@ export const classService = {
     return response.data;
   },
 
+  // Streams offered under a base class (e.g. XI-A -> [{code:'SCI',name:'Science'}, ...]).
+  // Empty array for ordinary classes. Drives the stream picker on student admission/edit.
+  getClassStreams: async (baseClassId) => {
+    if (!baseClassId) return [];
+    const response = await api.get('/classes/streams', { params: { baseClassId } });
+    return response.data || [];
+  },
+
   getSections: async (classId) => {
     const response = await api.get(`/classes/${classId}/sections`);
     return response.data;

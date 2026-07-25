@@ -81,11 +81,29 @@ export default function StudentForm() {
   const [enrollClass, setEnrollClass] = useState(null);
   const [rollNumber, setRollNumber] = useState('');
   const [joinDate, setJoinDate] = useState('');
+  // Stream (only for classes that offer streams, e.g. XI/XII Science/Commerce).
+  const [streams, setStreams] = useState([]);       // [{ code, name }] for the selected/current class
+  const [streamCode, setStreamCode] = useState('');
+  const [currentClass, setCurrentClass] = useState(null); // edit: the current enrollment's class
 
   useEffect(() => {
     loadLookups();
     if (isEdit) loadStudent();
   }, [id]);
+
+  // Create: when the enrollment class changes, load the streams it offers (empty for
+  // ordinary classes) and reset the picked stream. Edit loads streams in loadStudent.
+  useEffect(() => {
+    if (isEdit) return;
+    const base = enrollClass?.uuid;
+    if (!base) { setStreams([]); setStreamCode(''); return; }
+    let active = true;
+    classService
+      .getClassStreams(base)
+      .then((s) => { if (active) { setStreams(s || []); setStreamCode(''); } })
+      .catch(() => { if (active) { setStreams([]); setStreamCode(''); } });
+    return () => { active = false; };
+  }, [enrollClass, isEdit]);
 
   const loadLookups = async () => {
     // Each lookup loads independently — one failing API must not blank the others.
@@ -132,6 +150,16 @@ export default function StudentForm() {
         admissionDate: s.admissionDate ? String(s.admissionDate).slice(0, 10) : '',
       });
       if (s.houseId) setHouse({ uuid: s.houseId, name: s.houseName });
+      // Current enrollment class + its stream (if the class offers streams).
+      if (s.currentClassId) {
+        setCurrentClass({ uuid: s.currentClassId, name: s.currentClassName });
+        setStreamCode(s.currentStreamCode || '');
+        try {
+          setStreams((await classService.getClassStreams(s.currentClassId)) || []);
+        } catch {
+          setStreams([]);
+        }
+      }
     } catch {
       setError('Failed to load student');
     } finally {
@@ -182,12 +210,15 @@ export default function StudentForm() {
     try {
       const payload = { ...form, houseId: house?.uuid || null };
       if (isEdit) {
+        // Only touch the stream when the current class offers one (send '' to clear).
+        if (streams.length > 0) payload.streamCode = streamCode || '';
         await studentService.updateStudent(id, payload);
         navigate(`/students/${id}`);
       } else {
         if (enrollYear && enrollClass) {
           payload.academicYearId = enrollYear.uuid;
           payload.classId = enrollClass.uuid;
+          if (streamCode) payload.streamCode = streamCode;
           if (rollNumber) payload.rollNumber = parseInt(rollNumber, 10);
           if (joinDate) payload.joinDate = joinDate;
         }
@@ -323,6 +354,38 @@ export default function StudentForm() {
                 </TextField>
               </Grid>
             )}
+            {/* Stream for the current enrollment — only for classes that offer streams. */}
+            {isEdit && streams.length > 0 && (
+              <>
+                <Grid item xs={12} md={3}>
+                  <TextField
+                    fullWidth
+                    label="Current class"
+                    value={currentClass?.name || ''}
+                    size="small"
+                    disabled
+                    helperText="Change class via Promote"
+                  />
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <TextField
+                    fullWidth
+                    select
+                    label="Stream"
+                    value={streamCode}
+                    onChange={(e) => setStreamCode(e.target.value)}
+                    size="small"
+                  >
+                    <MenuItem value="">—</MenuItem>
+                    {streams.map((s) => (
+                      <MenuItem key={s.code} value={s.code}>
+                        {s.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              </>
+            )}
 
             {/* ---- More details ---- */}
             <Grid item xs={12}>
@@ -388,6 +451,25 @@ export default function StudentForm() {
                     renderInput={(p) => <TextField {...p} label="Class" size="small" />}
                   />
                 </Grid>
+                {streams.length > 0 && (
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      select
+                      label="Stream"
+                      value={streamCode}
+                      onChange={(e) => setStreamCode(e.target.value)}
+                      size="small"
+                    >
+                      <MenuItem value="">—</MenuItem>
+                      {streams.map((s) => (
+                        <MenuItem key={s.code} value={s.code}>
+                          {s.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                )}
                 <Grid item xs={12} md={2}>
                   <TextField
                     fullWidth
