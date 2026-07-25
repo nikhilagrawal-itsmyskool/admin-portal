@@ -30,12 +30,32 @@ const api = axios.create({
   },
 });
 
+// The JWT is an 8h token (JWT_ADMIN_EXPIRY_TIME). The app used to keep users
+// "logged in" by token presence alone, so an expired token was still sent and the
+// backend — which now verifies it (e.g. contact masking) — silently treated the
+// caller as unprivileged. Detect an expired `exp` up front and force a re-login
+// instead of sending a dead token.
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp && payload.exp * 1000 <= Date.now();
+  } catch {
+    return false; // unparseable — let the server decide
+  }
+}
+
 api.interceptors.request.use(
   (config) => {
     config.headers['X-School-Code'] = getSchoolCode();
 
     const token = localStorage.getItem('auth_token');
     if (token) {
+      if (isTokenExpired(token)) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') window.location.href = '/login';
+        return Promise.reject(new Error('Session expired — please sign in again'));
+      }
       config.headers['Authorization'] = `Bearer ${token}`;
     }
 
