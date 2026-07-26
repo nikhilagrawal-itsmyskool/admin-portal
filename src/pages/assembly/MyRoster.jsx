@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography, Card, CardContent, Button, Alert, Stack, Chip } from '@mui/material';
-import { Save as SaveIcon, Send as SubmitIcon } from '@mui/icons-material';
+import { Save as SaveIcon, Send as SubmitIcon, Undo as RecallIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { classService } from '../../services/classService';
 import { useCan } from '../../permissions/can';
@@ -109,6 +109,12 @@ function TeacherRoster() {
     catch (err) { setError(err.response?.data?.error?.description || 'Failed to submit'); }
     finally { setBusy(''); }
   };
+  const recall = async () => {
+    setBusy('recall'); setError(''); setMsg('');
+    try { const d = await assemblyService.myRecallWeek(week.uuid); setWeek(d); setDraft(buildDraft(d)); setMsg('Recalled to draft — you can edit again'); }
+    catch (err) { setError(err.response?.data?.error?.description || 'Failed to recall'); }
+    finally { setBusy(''); }
+  };
 
   return (
     <Box>
@@ -147,8 +153,9 @@ function TeacherRoster() {
                 <Box sx={{ flex: 1 }} />
                 {!ro && <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save'}>Save</Button>}
                 {!ro && week.status !== 'submitted' && <Button size="small" startIcon={<SubmitIcon />} onClick={submit} disabled={busy === 'submit'}>Submit</Button>}
+                {week.status === 'submitted' && <Button size="small" startIcon={<RecallIcon />} onClick={recall} disabled={busy === 'recall'}>Recall</Button>}
               </Stack>
-              {ro && <Typography variant="caption" color="text.secondary">This roster is {week.locked ? 'approved & locked' : 'not open for editing'}.</Typography>}
+              {ro && <Typography variant="caption" color="text.secondary">This roster is {week.locked ? 'approved & locked' : week.status === 'submitted' ? 'submitted for approval — Recall it to make changes' : 'not open for editing'}.</Typography>}
             </CardContent>
           </Card>
           <RosterDays days={draft.days} onDayChange={setDay} onSlotChange={setSlot}

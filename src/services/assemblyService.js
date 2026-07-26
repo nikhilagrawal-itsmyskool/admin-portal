@@ -65,6 +65,7 @@ export const assemblyService = {
   saveRoster: async (weekId, data) => (await api.put(`/assembly/weeks/${weekId}/roster`, data)).data,
   submitWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/submit`)).data,
   approveWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/approve`)).data,
+  recallWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/recall`)).data,
   lockWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/lock`)).data,
   unlockWeek: async (weekId, reason) => (await api.post(`/assembly/weeks/${weekId}/unlock`, { reason })).data,
 
@@ -107,6 +108,7 @@ export const assemblyService = {
   myWeek: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}`)).data,
   mySaveRoster: async (weekId, data) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/roster`, data)).data,
   mySubmitWeek: async (weekId) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/submit`)).data,
+  myRecallWeek: async (weekId) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/recall`)).data,
   myWeekChecklist: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}/checklist`)).data,
   mySaveChecklist: async (weekId, ticks, scope, date) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/checklist`, { ticks, scope, date })).data,
   mySignoffChecklist: async (weekId, note, scope, date) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/checklist/signoff`, { note, scope, date })).data,
