@@ -101,6 +101,30 @@ export const syllabusService = {
     return response.data; // [{ assignmentId, syllabusId, grade, subjectName, layout, classId, className, totalTopics, coveredTopics }]
   },
 
+  // ---- Model papers ----
+  getModelPapers: async (params = {}) => {
+    // params: { academicYearId, grade, streamCode, subjectId, exam }
+    const response = await api.get('/syllabus/model-papers', { params });
+    return response.data; // [{ uuid, subjectId, subjectName, streamCode, exam, answerKeyReleased, docs:[...] }]
+  },
+  uploadModelPaper: async (data) => {
+    // { academicYearId, grade, streamCode?, subjectId, exam, docType, fileName, base64Data, pdfFileName?, pdfBase64Data? }
+    const response = await api.post('/syllabus/model-papers/upload', data);
+    return response.data; // the refreshed paper
+  },
+  setAnswerKeyReleased: async (paperId, released) => {
+    const response = await api.put(`/syllabus/model-papers/${paperId}/answer-key`, { released });
+    return response.data;
+  },
+  deleteModelPaperDoc: async (docId) => {
+    const response = await api.delete(`/syllabus/model-papers/docs/${docId}`);
+    return response.data;
+  },
+  getModelPaperFile: async (docId, format = 'pdf') => {
+    const response = await api.get(`/syllabus/model-papers/docs/${docId}/file`, { params: { format } });
+    return response.data; // { fileName, mimeType, base64Data }
+  },
+
   // ---- Progress (per section) ----
   getProgressRoster: async (syllabusId, classId) => {
     const response = await api.get(`/syllabus/syllabi/${syllabusId}/progress`, { params: { classId } });
