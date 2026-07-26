@@ -293,6 +293,7 @@ const menuItems = [
     icon: SyllabusIcon,
     children: [
       { title: 'Subjects', icon: SyllabusSubjectIcon, path: '/syllabus/subjects', perm: 'syllabus.manage' },
+      { title: 'Offerings', icon: SyllabusSubjectIcon, path: '/syllabus/offerings', perm: 'syllabus.manage' },
       { title: 'Plans', icon: PlanIcon, path: '/syllabus', perm: 'syllabus.view' },
       { title: 'Coverage', icon: CoverageIcon, path: '/syllabus/progress', perm: 'syllabus.progress.mark' },
     ],

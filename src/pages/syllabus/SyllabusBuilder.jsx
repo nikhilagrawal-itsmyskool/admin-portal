@@ -33,7 +33,8 @@ export default function SyllabusBuilder() {
   const [entries, setEntries] = useState([]);
   const [lookups, setLookups] = useState({ months: [], entryTypes: [], terms: [], layouts: [] });
   const [grades, setGrades] = useState([]);
-  const [header, setHeader] = useState({ grade: '', book: '', layout: 'junior', note: '' });
+  const [streams, setStreams] = useState([]);
+  const [header, setHeader] = useState({ grade: '', streamCode: '', book: '', layout: 'junior', note: '' });
   const [gradeConfirm, setGradeConfirm] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -59,16 +60,18 @@ export default function SyllabusBuilder() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const [p, lk, grds] = await Promise.all([
+      const [p, lk, grds, strms] = await Promise.all([
         syllabusService.getSyllabus(id),
         syllabusService.getLookups(),
         syllabusService.getGrades(),
+        syllabusService.getStreams(),
       ]);
       setPlan(p);
       setEntries(p.entries || []);
-      setHeader({ grade: p.grade || '', book: p.book || '', layout: p.layout || 'junior', note: p.note || '' });
+      setHeader({ grade: p.grade || '', streamCode: p.streamCode || '', book: p.book || '', layout: p.layout || 'junior', note: p.note || '' });
       setLookups(lk || { months: [], entryTypes: [], terms: [], layouts: [] });
       setGrades(grds || []);
+      setStreams(strms || []);
     } catch {
       setError('Failed to load the syllabus plan');
     } finally {
@@ -78,12 +81,16 @@ export default function SyllabusBuilder() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
 
   const gradeChanged = plan && header.grade && header.grade !== plan.grade;
+  const streamChanged = plan && (header.streamCode || '') !== (plan.streamCode || '');
+  const scopeChanged = gradeChanged || streamChanged;
+  const hasStreams = streams.length > 0;
+  const streamName = (code) => streams.find((s) => (s.code || '').toLowerCase() === (code || '').toLowerCase())?.name || code;
 
   const doSaveHeader = async () => {
     setSavingHeader(true); setError(''); setSuccess('');
     try {
       const updated = await syllabusService.updateSyllabus(id, {
-        grade: header.grade, book: header.book.trim() || null, layout: header.layout, note: header.note.trim() || null,
+        grade: header.grade, streamCode: header.streamCode || null, book: header.book.trim() || null, layout: header.layout, note: header.note.trim() || null,
       });
       // Merge the updated header back so the title + PlanTeachers (keyed on grade) refresh.
       if (updated) setPlan((p) => ({ ...p, ...updated }));
@@ -95,9 +102,10 @@ export default function SyllabusBuilder() {
     }
   };
 
-  // Changing the grade wipes section-scoped data (teachers + coverage) — confirm first.
+  // Changing grade or stream re-scopes the plan and wipes section-scoped data
+  // (teachers + coverage) — confirm first.
   const saveHeader = () => {
-    if (gradeChanged) { setGradeConfirm(true); return; }
+    if (scopeChanged) { setGradeConfirm(true); return; }
     doSaveHeader();
   };
 
@@ -218,6 +226,9 @@ export default function SyllabusBuilder() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3, flexWrap: 'wrap' }}>
         <Button startIcon={<BackIcon />} onClick={() => navigate('/syllabus')}>Back</Button>
         <Typography variant="h4">{plan.grade} — {plan.subjectName || 'Syllabus'}</Typography>
+        {plan.streamCode
+          ? <Chip size="small" color="info" label={streamName(plan.streamCode)} />
+          : hasStreams && <Chip size="small" variant="outlined" label="Common" />}
         <Chip size="small" variant="outlined" label={header.layout === 'senior' ? 'Senior' : 'Junior'} />
         <Chip size="small" variant="outlined" label={`${entries.length} entries`} />
       </Box>
@@ -232,15 +243,25 @@ export default function SyllabusBuilder() {
             <Grid item xs={12} sm={3}>
               <TextField fullWidth select size="small" label="Grade" value={header.grade}
                 onChange={(e) => setHeader({ ...header, grade: e.target.value })} disabled={!canManage}
-                helperText={gradeChanged ? 'Changing grade clears teachers & coverage' : ' '}
-                error={gradeChanged}>
+                helperText={scopeChanged ? 'Changing grade/stream clears teachers & coverage' : ' '}
+                error={scopeChanged}>
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
                 {header.grade && !grades.some((g) => g.grade === header.grade) && (
                   <MenuItem value={header.grade}>{header.grade}</MenuItem>
                 )}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            {hasStreams && (
+              <Grid item xs={12} sm={3}>
+                <TextField fullWidth select size="small" label="Stream" value={header.streamCode}
+                  onChange={(e) => setHeader({ ...header, streamCode: e.target.value })} disabled={!canManage}
+                  helperText={scopeChanged ? ' ' : 'Common = every stream'} error={streamChanged}>
+                  <MenuItem value="">Common (all streams)</MenuItem>
+                  {streams.map((s) => <MenuItem key={s.code} value={s.code}>{s.name}</MenuItem>)}
+                </TextField>
+              </Grid>
+            )}
+            <Grid item xs={12} sm={hasStreams ? 3 : 4}>
               <TextField fullWidth size="small" label="Book (optional)" value={header.book}
                 onChange={(e) => setHeader({ ...header, book: e.target.value })} disabled={!canManage} />
             </Grid>
@@ -462,8 +483,8 @@ export default function SyllabusBuilder() {
 
       <ConfirmDialog
         open={gradeConfirm}
-        title="Change grade?"
-        message={`Move this plan to grade ${header.grade}? Teacher assignments and coverage marks (which belong to ${plan.grade}'s sections) will be cleared. Entries are kept.`}
+        title="Re-scope this plan?"
+        message={`Move this plan to ${header.grade}${header.streamCode ? ` (${streamName(header.streamCode)})` : ' (Common)'}? Teacher assignments and coverage marks (which belong to the old scope's sections) will be cleared. Entries are kept.`}
         onConfirm={() => { setGradeConfirm(false); doSaveHeader(); }}
         onCancel={() => setGradeConfirm(false)}
       />

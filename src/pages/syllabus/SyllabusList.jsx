@@ -20,8 +20,9 @@ export default function SyllabusList() {
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [layouts, setLayouts] = useState([]);
+  const [streams, setStreams] = useState([]);
 
-  const [filter, setFilter] = useState({ academicYearId: '', grade: '', subjectId: '' });
+  const [filter, setFilter] = useState({ academicYearId: '', grade: '', streamCode: '', subjectId: '' });
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,17 +35,19 @@ export default function SyllabusList() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, grds, subs, lookups] = await Promise.all([
+        const [yrs, grds, subs, lookups, strms] = await Promise.all([
           academicCalendarService.getAcademicYears(),
           syllabusService.getGrades(),
           syllabusService.getSubjects(),
           syllabusService.getLookups(),
+          syllabusService.getStreams(),
         ]);
         const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
         setYears(yearList);
         setGrades(grds || []);
         setSubjects(subs || []);
         setLayouts(lookups?.layouts || []);
+        setStreams(strms || []);
         const cur = yearList.find((y) => y.isCurrent) || yearList[0];
         if (cur?.uuid) setFilter((f) => ({ ...f, academicYearId: cur.uuid }));
       } catch {
@@ -59,6 +62,7 @@ export default function SyllabusList() {
     try {
       const params = { academicYearId: f.academicYearId };
       if (f.grade) params.grade = f.grade;
+      if (f.streamCode) params.streamCode = f.streamCode;
       if (f.subjectId) params.subjectId = f.subjectId;
       setPlans((await syllabusService.getSyllabi(params)) || []);
     } catch {
@@ -67,9 +71,12 @@ export default function SyllabusList() {
       setLoading(false);
     }
   };
-  useEffect(() => { if (filter.academicYearId) load(); /* eslint-disable-next-line */ }, [filter.academicYearId, filter.grade, filter.subjectId]);
+  useEffect(() => { if (filter.academicYearId) load(); /* eslint-disable-next-line */ }, [filter.academicYearId, filter.grade, filter.streamCode, filter.subjectId]);
 
-  const openCreate = () => setDialog({ grade: '', subjectId: '', layout: 'junior', book: '', note: '' });
+  const hasStreams = streams.length > 0;
+  const streamName = (code) => streams.find((s) => (s.code || '').toLowerCase() === (code || '').toLowerCase())?.name || code;
+
+  const openCreate = () => setDialog({ grade: '', streamCode: '', subjectId: '', layout: 'junior', book: '', note: '' });
 
   const create = async () => {
     if (!dialog.grade || !dialog.subjectId) { setError('Grade and subject are required'); return; }
@@ -78,6 +85,7 @@ export default function SyllabusList() {
       const created = await syllabusService.createSyllabus({
         academicYearId: filter.academicYearId,
         grade: dialog.grade,
+        streamCode: dialog.streamCode || undefined,
         subjectId: dialog.subjectId,
         layout: dialog.layout,
         book: dialog.book.trim() || undefined,
@@ -107,7 +115,13 @@ export default function SyllabusList() {
   };
 
   const columns = [
-    { field: 'grade', headerName: 'Grade', width: 110 },
+    { field: 'grade', headerName: 'Grade', width: 90 },
+    ...(hasStreams ? [{
+      field: 'streamCode', headerName: 'Stream', width: 120, sortable: false,
+      renderCell: (p) => (p.value
+        ? <Chip size="small" color="info" variant="outlined" label={streamName(p.value)} />
+        : <Chip size="small" variant="outlined" label="Common" />),
+    }] : []),
     { field: 'subjectName', headerName: 'Subject', flex: 1, minWidth: 160, valueFormatter: (v) => v || '-' },
     {
       field: 'layout', headerName: 'Layout', width: 110,
@@ -137,20 +151,30 @@ export default function SyllabusList() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={hasStreams ? 3 : 4}>
               <TextField fullWidth select size="small" label="Academic Year" value={filter.academicYearId}
                 onChange={(e) => setFilter({ ...filter, academicYearId: e.target.value })}>
                 {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={hasStreams ? 3 : 4}>
               <TextField fullWidth select size="small" label="Grade" value={filter.grade}
                 onChange={(e) => setFilter({ ...filter, grade: e.target.value })}>
                 <MenuItem value="">All grades</MenuItem>
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={4}>
+            {hasStreams && (
+              <Grid item xs={12} md={3}>
+                <TextField fullWidth select size="small" label="Stream" value={filter.streamCode}
+                  onChange={(e) => setFilter({ ...filter, streamCode: e.target.value })}>
+                  <MenuItem value="">All streams</MenuItem>
+                  <MenuItem value="common">Common (no stream)</MenuItem>
+                  {streams.map((s) => <MenuItem key={s.code} value={s.code}>{s.name}</MenuItem>)}
+                </TextField>
+              </Grid>
+            )}
+            <Grid item xs={12} md={hasStreams ? 3 : 4}>
               <TextField fullWidth select size="small" label="Subject" value={filter.subjectId}
                 onChange={(e) => setFilter({ ...filter, subjectId: e.target.value })}>
                 <MenuItem value="">All subjects</MenuItem>
@@ -183,6 +207,16 @@ export default function SyllabusList() {
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
               </TextField>
             </Grid>
+            {hasStreams && (
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth select size="small" label="Stream" value={dialog?.streamCode || ''}
+                  onChange={(e) => setDialog({ ...dialog, streamCode: e.target.value })}
+                  helperText="Leave as Common if the subject applies to every stream">
+                  <MenuItem value="">Common (all streams)</MenuItem>
+                  {streams.map((s) => <MenuItem key={s.code} value={s.code}>{s.name}</MenuItem>)}
+                </TextField>
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <TextField fullWidth select size="small" label="Subject" value={dialog?.subjectId || ''}
                 onChange={(e) => setDialog({ ...dialog, subjectId: e.target.value })}>

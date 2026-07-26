@@ -6,10 +6,15 @@ export const syllabusService = {
     const response = await api.get('/syllabus/lookups');
     return response.data;
   },
-  // Grades derived from class names, each with its sections
+  // Grades derived from base class names, each with its base sections
   getGrades: async (params = {}) => {
     const response = await api.get('/syllabus/grades', { params });
     return response.data; // [{ grade, sections: [{ classId, className }] }]
+  },
+  // Stream catalog (class_stream), e.g. [{ code: 'SCI', name: 'Science' }]
+  getStreams: async () => {
+    const response = await api.get('/syllabus/streams');
+    return response.data;
   },
 
   // ---- Subjects ----
