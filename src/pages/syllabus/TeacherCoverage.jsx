@@ -24,12 +24,22 @@ export default function TeacherCoverage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState({});
   const [month, setMonth] = useState(null);
+  const [mySections, setMySections] = useState([]); // this teacher's sections for this plan
+  const [alsoMark, setAlsoMark] = useState(() => new Set()); // extra sections to co-mark
 
   useEffect(() => {
+    setAlsoMark(new Set());
     (async () => {
       setLoading(true); setError('');
       try {
-        setRoster(await syllabusService.getProgressRoster(syllabusId, classId));
+        const [r, mine] = await Promise.all([
+          syllabusService.getProgressRoster(syllabusId, classId),
+          syllabusService.getMyPlans().catch(() => []),
+        ]);
+        setRoster(r);
+        setMySections((mine || [])
+          .filter((p) => p.syllabusId === syllabusId)
+          .map((p) => ({ classId: p.classId, className: p.className })));
       } catch {
         setError('Failed to load coverage');
       } finally {
@@ -52,6 +62,7 @@ export default function TeacherCoverage() {
   }, [months]);
 
   const current = months.find((g) => g.month === month);
+  const others = mySections.filter((s) => s.classId !== classId);
 
   const toggle = async (entry) => {
     if (!canMark) return;
@@ -62,8 +73,9 @@ export default function TeacherCoverage() {
       const covered = entries.filter((e) => e.entryType === 'topic' && e.covered).length;
       return { ...r, entries, counts: { total: r.counts.total, covered, pending: r.counts.total - covered } };
     });
+    const targets = [classId, ...Array.from(alsoMark)];
     try {
-      await syllabusService.markProgress({ entryId: entry.uuid, classId, status: next ? 'covered' : 'pending' });
+      await Promise.all(targets.map((cid) => syllabusService.markProgress({ entryId: entry.uuid, classId: cid, status: next ? 'covered' : 'pending' })));
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to update');
       setRoster((r) => {
@@ -99,6 +111,30 @@ export default function TeacherCoverage() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Batch marking: co-mark the same topic in the teacher's other sections */}
+      {canMark && others.length > 0 && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mb: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>Also mark in:</Typography>
+          {others.map((s) => {
+            const on = alsoMark.has(s.classId);
+            return (
+              <Chip key={s.classId} size="small" label={s.className} clickable
+                color={on ? 'primary' : 'default'} variant={on ? 'filled' : 'outlined'}
+                onClick={() => setAlsoMark((prev) => {
+                  const n = new Set(prev);
+                  if (n.has(s.classId)) n.delete(s.classId); else n.add(s.classId);
+                  return n;
+                })} />
+            );
+          })}
+          {alsoMark.size > 0 && (
+            <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>
+              ticks apply to {alsoMark.size + 1} sections
+            </Typography>
+          )}
+        </Box>
+      )}
 
       {/* Month pager */}
       <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 1 }}>
