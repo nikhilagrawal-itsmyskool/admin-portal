@@ -49,6 +49,8 @@ export const ACTIONS = {
   SYLLABUS_PROGRESS_MARK: "syllabus.progress.mark",
   ASSEMBLY_VIEW: "assembly.view",
   ASSEMBLY_MANAGE: "assembly.manage",
+  HOMEWORK_POST: "homework.post",
+  HOMEWORK_MANAGE: "homework.manage",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -244,5 +246,13 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.ASSEMBLY_MANAGE,
     description: "Add/edit/delete/publish assembly plans, nodes, special assemblies & themes",
+  },
+  {
+    action: ACTIONS.HOMEWORK_POST,
+    description: "Post, edit, remove and publish/unpublish a class's daily homework photos",
+  },
+  {
+    action: ACTIONS.HOMEWORK_MANAGE,
+    description: "Override which teacher is the homework class-teacher for a class",
   },
 ];

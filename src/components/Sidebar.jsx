@@ -85,6 +85,7 @@ import {
   FactCheck as ChecklistIcon,
   Grading as GradingIcon,
   EmojiEvents as LeaderboardIcon,
+  PhotoCamera as HomeworkIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -297,6 +298,16 @@ const menuItems = [
       { title: 'Plans', icon: PlanIcon, path: '/syllabus', perm: 'syllabus.view' },
       { title: 'Model Papers', icon: SyllabusSubjectIcon, path: '/syllabus/model-papers', perm: 'syllabus.view' },
       { title: 'Coverage', icon: CoverageIcon, path: '/syllabus/progress', perm: 'syllabus.progress.mark' },
+    ],
+  },
+  {
+    // No parent perm: class teachers (homework.post) see Post Homework; admins also
+    // see Class Teachers (the mapping override, gated by homework.manage).
+    title: 'Homework',
+    icon: HomeworkIcon,
+    children: [
+      { title: 'Post Homework', icon: HomeworkIcon, path: '/homework', perm: 'homework.post' },
+      { title: 'Class Teachers', icon: PeopleIcon, path: '/homework/class-teachers', perm: 'homework.manage' },
     ],
   },
   {

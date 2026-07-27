@@ -43,6 +43,8 @@ export const ROLE_PERMISSIONS = {
     "syllabus.progress.mark",
     "assembly.view",
     "assembly.manage",
+    "homework.post",
+    "homework.manage",
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   // No transport access by default — bus attendance needs the `transport-attendance`
@@ -59,9 +61,10 @@ export const ROLE_PERMISSIONS = {
     "assembly.view", // Read the assembly plan for their wing
   ],
   // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
-  // can cover for an absent colleague). Finalizing a session stays admin/god. Additive to
-  // the `teacher` role.
-  "class-teacher": ["attendance.mark"],
+  // can cover for an absent colleague) and to POST their class's daily homework photos.
+  // Finalizing attendance stays admin/god; the class→teacher homework mapping override
+  // (homework.manage) stays admin/god. Additive to the `teacher` role.
+  "class-teacher": ["attendance.mark", "homework.post"],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
   "lab-incharge": ["lab.*"],

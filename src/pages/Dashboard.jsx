@@ -29,6 +29,7 @@ import {
   AssignmentReturn as TransferIcon,
   LibraryBooks as SyllabusIcon,
   Groups as AssemblyIcon,
+  PhotoCamera as HomeworkIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useCan } from "../permissions/can";
@@ -193,6 +194,14 @@ const modules = [
     path: "/assembly/week",
     color: "#1e88e5",
     perm: "assembly.view",
+  },
+  {
+    title: "Homework",
+    description: "Post the day's homework photos for your class",
+    icon: HomeworkIcon,
+    path: "/homework",
+    color: "#d97706",
+    perm: "homework.post",
   },
 ];
 

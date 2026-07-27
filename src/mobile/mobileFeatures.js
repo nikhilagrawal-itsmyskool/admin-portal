@@ -20,6 +20,7 @@ import {
   FactCheck as AssemblyChecklistIcon,
   Grading as AssemblyGradeIcon,
   MenuBook as SyllabusIcon,
+  PhotoCamera as HomeworkIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -70,6 +71,8 @@ export const MOBILE_FEATURES = [
     color: "#ff6f00",
     routes: ["/transport/attendance/mark", "/transport/attendance/sessions"],
   },
+  // My Homework — the class teacher posts the day's homework photos (pick class + date).
+  { title: "My Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.post", section: "today", color: "#d97706" },
   // Send Message — a daily action, pulled up out of the old "Office" hub.
   { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
 
