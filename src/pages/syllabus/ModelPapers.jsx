@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip,
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Switch, IconButton,
@@ -7,7 +7,9 @@ import {
 import {
   UploadFile as UploadIcon, PictureAsPdf as PdfIcon, Description as WordIcon,
   Delete as DeleteIcon, HourglassEmpty as PendingIcon, ErrorOutline as FailIcon,
+  DeleteForever as DeleteRowIcon, Download as DownloadIcon,
 } from '@mui/icons-material';
+import { renderAsync } from 'docx-preview';
 import { syllabusService } from '../../services/syllabusService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
@@ -17,6 +19,7 @@ const DOC_TYPES = [
   { value: 'answer_key', label: 'Answer Key' },
   { value: 'blueprint', label: 'Blueprint' },
 ];
+const DOC_TYPE_LABEL = Object.fromEntries(DOC_TYPES.map((d) => [d.value, d.label]));
 
 function b64toBlob(b64, mime) {
   const bin = atob(b64);
@@ -50,6 +53,82 @@ function detectFromName(name, grades, exams) {
   return out;
 }
 
+// Inline document viewer — renders the .docx straight in the browser (docx-preview)
+// so staff can read a paper without leaving the page. Falls back to an iframe for
+// a ready PDF. The Word file is always available even while PDF conversion is off.
+function PreviewDialog({ target, onClose }) {
+  const bodyRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const open = Boolean(target);
+  useEffect(() => {
+    if (!open) return undefined;
+    let cancelled = false;
+    setLoading(true); setError('');
+    (async () => {
+      try {
+        const r = await syllabusService.getModelPaperFile(target.docId, target.format);
+        if (cancelled) return;
+        const blob = b64toBlob(r.base64Data, r.mimeType);
+        const container = bodyRef.current;
+        if (!container) return;
+        container.innerHTML = '';
+        if (target.format === 'docx') {
+          await renderAsync(blob, container, null, {
+            className: 'docx-render', inWrapper: true, ignoreWidth: false,
+            ignoreHeight: false, breakPages: true, renderHeaders: true, renderFooters: true,
+          });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const frame = document.createElement('iframe');
+          frame.src = url;
+          frame.style.cssText = 'width:100%;height:100%;min-height:70vh;border:0;';
+          container.appendChild(frame);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.response?.data?.error?.description || 'Failed to load document');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, target?.docId, target?.format]);
+
+  const download = async () => {
+    try {
+      const r = await syllabusService.getModelPaperFile(target.docId, target.format);
+      const url = URL.createObjectURL(b64toBlob(r.base64Data, r.mimeType));
+      const a = document.createElement('a');
+      a.href = url; a.download = r.fileName || 'document';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" PaperProps={{ sx: { height: '90vh' } }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 6 }}>
+        {target?.format === 'docx' ? <WordIcon fontSize="small" /> : <PdfIcon fontSize="small" />}
+        <Typography variant="subtitle1" sx={{ flex: 1, minWidth: 0 }} noWrap>{target?.title}</Typography>
+        <Button size="small" startIcon={<DownloadIcon />} onClick={download}>Download</Button>
+      </DialogTitle>
+      <DialogContent dividers sx={{ p: 0, bgcolor: '#e9ecef', position: 'relative' }}>
+        {loading && (
+          <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+            <CircularProgress />
+          </Box>
+        )}
+        {error && <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>}
+        <Box ref={bodyRef} sx={{ height: '100%', overflow: 'auto', '& .docx-render': { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 2 } }} />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function ModelPapers() {
   const can = useCan();
   const canManage = can('syllabus.manage');
@@ -66,8 +145,11 @@ export default function ModelPapers() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [dialog, setDialog] = useState(null); // { subjectId, exam, streamCode, docType, file, pdfFile }
+  const [dialog, setDialog] = useState(null); // { grade, subjectId, exam, streamCode, docType, file, pdfFile }
   const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState(null); // { docId, format, title }
+  const [confirmDelete, setConfirmDelete] = useState(null); // the paper row to remove
+  const [deleting, setDeleting] = useState(false);
 
   const hasStreams = streams.length > 0;
   const streamName = (code) => streams.find((s) => (s.code || '').toLowerCase() === (code || '').toLowerCase())?.name || code;
@@ -114,22 +196,11 @@ export default function ModelPapers() {
 
   const showStreamCol = hasStreams && !filter.streamCode;
 
-  const openFile = async (docId, format, download = false) => {
-    setError('');
-    try {
-      const r = await syllabusService.getModelPaperFile(docId, format);
-      const url = URL.createObjectURL(b64toBlob(r.base64Data, r.mimeType));
-      if (format === 'pdf' && !download) {
-        window.open(url, '_blank', 'noopener');
-      } else {
-        const a = document.createElement('a');
-        a.href = url; a.download = r.fileName || 'file';
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch (err) {
-      setError(err.response?.data?.error?.description || 'Failed to open file');
-    }
+  const openPreview = (doc, docType, paper) => {
+    // Prefer the Word file (always present); use the PDF only if that's all there is.
+    const format = doc.hasDocx ? 'docx' : 'pdf';
+    const title = `${paper.grade || filter.grade} · ${paper.subjectName || ''} · ${DOC_TYPE_LABEL[docType] || docType}`;
+    setPreview({ docId: doc.uuid, format, title });
   };
 
   const toggleRelease = async (paper) => {
@@ -152,7 +223,23 @@ export default function ModelPapers() {
     }
   };
 
+  const deleteRow = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true); setError('');
+    try {
+      await syllabusService.deleteModelPaper(confirmDelete.uuid);
+      setSuccess('Model paper row deleted.');
+      setConfirmDelete(null);
+      loadPapers();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to delete row');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const openUpload = (prefill = {}) => setDialog({
+    grade: prefill.grade || filter.grade,
     subjectId: prefill.subjectId || '',
     exam: prefill.exam || filter.exam,
     streamCode: prefill.streamCode !== undefined ? prefill.streamCode : (filter.streamCode && filter.streamCode !== 'common' ? filter.streamCode : ''),
@@ -167,14 +254,15 @@ export default function ModelPapers() {
     setDialog((d) => ({
       ...d,
       file,
+      grade: det.grade || d.grade,
       docType: det.docType || d.docType,
       exam: det.exam || d.exam,
     }));
   };
 
   const submitUpload = async () => {
-    if (!dialog.subjectId || !dialog.exam || !dialog.docType || !dialog.file) {
-      setError('Subject, exam, document type and a Word file are required');
+    if (!dialog.grade || !dialog.subjectId || !dialog.exam || !dialog.docType || !dialog.file) {
+      setError('Grade, subject, exam, document type and a Word file are required');
       return;
     }
     setSaving(true); setError('');
@@ -183,7 +271,7 @@ export default function ModelPapers() {
       const pdfBase64Data = dialog.pdfFile ? await readFileB64(dialog.pdfFile) : undefined;
       await syllabusService.uploadModelPaper({
         academicYearId: filter.academicYearId,
-        grade: filter.grade,
+        grade: dialog.grade,
         streamCode: dialog.streamCode || undefined,
         subjectId: dialog.subjectId,
         exam: dialog.exam,
@@ -193,9 +281,12 @@ export default function ModelPapers() {
         pdfFileName: dialog.pdfFile?.name,
         pdfBase64Data,
       });
-      setSuccess('Uploaded. PDF will be generated shortly.');
+      setSuccess('Uploaded.');
+      const uploadedGrade = dialog.grade;
+      const uploadedExam = dialog.exam;
       setDialog(null);
-      loadPapers();
+      // Jump the view to what was just uploaded so it's visible.
+      setFilter((f) => ({ ...f, grade: uploadedGrade, exam: uploadedExam }));
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to upload');
     } finally {
@@ -207,25 +298,27 @@ export default function ModelPapers() {
     const doc = paper.docs.find((d) => d.docType === docType);
     if (!doc) {
       return canManage
-        ? <Button size="small" startIcon={<UploadIcon fontSize="small" />} onClick={() => openUpload({ subjectId: paper.subjectId, streamCode: paper.streamCode || '', docType })}>Upload</Button>
+        ? <Button size="small" startIcon={<UploadIcon fontSize="small" />} onClick={() => openUpload({ grade: paper.grade, subjectId: paper.subjectId, streamCode: paper.streamCode || '', docType })}>Upload</Button>
         : <Typography variant="caption" color="text.secondary">—</Typography>;
     }
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-        {doc.hasPdf ? (
-          <Chip size="small" color="primary" variant="outlined" icon={<PdfIcon />} label="PDF" onClick={() => openFile(doc.uuid, 'pdf')} clickable />
-        ) : doc.pdfStatus === 'pending' ? (
-          <Chip size="small" color="warning" variant="outlined" icon={<PendingIcon />} label="Generating…" />
-        ) : doc.pdfStatus === 'failed' ? (
-          <Tooltip title="Conversion failed — re-upload"><Chip size="small" color="error" variant="outlined" icon={<FailIcon />} label="PDF failed" /></Tooltip>
-        ) : null}
         {doc.hasDocx && (
-          <Chip size="small" variant="outlined" icon={<WordIcon />} label="Word" onClick={() => openFile(doc.uuid, 'docx', true)} clickable />
+          <Tooltip title="View inline">
+            <Chip size="small" color="primary" variant="outlined" icon={<WordIcon />} label="View" onClick={() => openPreview(doc, docType, paper)} clickable />
+          </Tooltip>
         )}
+        {doc.hasPdf ? (
+          <Chip size="small" variant="outlined" icon={<PdfIcon />} label="PDF" onClick={() => setPreview({ docId: doc.uuid, format: 'pdf', title: `${paper.grade || filter.grade} · ${paper.subjectName || ''} · ${DOC_TYPE_LABEL[docType] || docType}` })} clickable />
+        ) : doc.pdfStatus === 'pending' ? (
+          <Chip size="small" color="warning" variant="outlined" icon={<PendingIcon />} label="PDF…" />
+        ) : doc.pdfStatus === 'failed' ? (
+          <Tooltip title="PDF conversion failed — the Word view still works"><Chip size="small" color="error" variant="outlined" icon={<FailIcon />} label="PDF failed" /></Tooltip>
+        ) : null}
         {canManage && (
           <>
-            <Tooltip title="Replace"><IconButton size="small" onClick={() => openUpload({ subjectId: paper.subjectId, streamCode: paper.streamCode || '', docType })}><UploadIcon fontSize="small" /></IconButton></Tooltip>
-            <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => deleteDoc(doc.uuid)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+            <Tooltip title="Replace"><IconButton size="small" onClick={() => openUpload({ grade: paper.grade, subjectId: paper.subjectId, streamCode: paper.streamCode || '', docType })}><UploadIcon fontSize="small" /></IconButton></Tooltip>
+            <Tooltip title="Delete this document"><IconButton size="small" color="error" onClick={() => deleteDoc(doc.uuid)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
           </>
         )}
       </Box>
@@ -233,6 +326,7 @@ export default function ModelPapers() {
   };
 
   const examLabel = useMemo(() => Object.fromEntries(exams.map((e) => [e.value, e.label])), [exams]);
+  const emptyColSpan = (showStreamCol ? 6 : 5) + (canManage ? 1 : 0);
 
   return (
     <Box>
@@ -298,11 +392,12 @@ export default function ModelPapers() {
                     <TableCell sx={{ fontWeight: 600 }}>Answer Key</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Blueprint</TableCell>
                     <TableCell sx={{ width: 150, fontWeight: 600 }} align="center">Answer key → students</TableCell>
+                    {canManage && <TableCell sx={{ width: 48, fontWeight: 600 }} align="center">Row</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {papers.length === 0 ? (
-                    <TableRow><TableCell colSpan={showStreamCol ? 6 : 5} align="center" sx={{ py: 3 }}>
+                    <TableRow><TableCell colSpan={emptyColSpan} align="center" sx={{ py: 3 }}>
                       No papers yet for {filter.grade} · {examLabel[filter.exam] || filter.exam}. {canManage && 'Use “Upload paper”.'}
                     </TableCell></TableRow>
                   ) : papers.map((p) => {
@@ -326,6 +421,13 @@ export default function ModelPapers() {
                             </span>
                           </Tooltip>
                         </TableCell>
+                        {canManage && (
+                          <TableCell align="center">
+                            <Tooltip title="Delete entire row (all documents)">
+                              <IconButton size="small" color="error" onClick={() => setConfirmDelete(p)}><DeleteRowIcon fontSize="small" /></IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
@@ -336,18 +438,25 @@ export default function ModelPapers() {
         </CardContent>
       </Card>
 
+      {/* Upload dialog */}
       <Dialog open={Boolean(dialog)} onClose={() => setDialog(null)} fullWidth maxWidth="sm">
-        <DialogTitle>Upload document · {filter.grade} · {examLabel[filter.exam] || filter.exam}</DialogTitle>
+        <DialogTitle>Upload document</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0 }}>
-            <Grid item xs={12} sm={hasStreams ? 6 : 12}>
+            <Grid item xs={6} sm={hasStreams ? 3 : 4}>
+              <TextField fullWidth select size="small" label="Grade" value={dialog?.grade || ''}
+                onChange={(e) => setDialog({ ...dialog, grade: e.target.value })}>
+                {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
+              </TextField>
+            </Grid>
+            <Grid item xs={6} sm={hasStreams ? 5 : 8}>
               <TextField fullWidth select size="small" label="Subject" value={dialog?.subjectId || ''}
                 onChange={(e) => setDialog({ ...dialog, subjectId: e.target.value })}>
                 {subjects.map((s) => <MenuItem key={s.uuid} value={s.uuid}>{s.name}</MenuItem>)}
               </TextField>
             </Grid>
             {hasStreams && (
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField fullWidth select size="small" label="Stream" value={dialog?.streamCode || ''}
                   onChange={(e) => setDialog({ ...dialog, streamCode: e.target.value })} helperText="Common = every stream">
                   <MenuItem value="">Common (all streams)</MenuItem>
@@ -355,13 +464,13 @@ export default function ModelPapers() {
                 </TextField>
               </Grid>
             )}
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={6} sm={6}>
               <TextField fullWidth select size="small" label="Exam" value={dialog?.exam || ''}
                 onChange={(e) => setDialog({ ...dialog, exam: e.target.value })}>
                 {exams.map((e) => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={6} sm={6}>
               <TextField fullWidth select size="small" label="Document" value={dialog?.docType || 'model_paper'}
                 onChange={(e) => setDialog({ ...dialog, docType: e.target.value })}>
                 {DOC_TYPES.map((d) => <MenuItem key={d.value} value={d.value}>{d.label}</MenuItem>)}
@@ -373,12 +482,12 @@ export default function ModelPapers() {
                 <input hidden type="file" accept=".doc,.docx" onChange={(e) => onPickFile(e.target.files?.[0])} />
               </Button>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                We keep the Word file and generate a PDF for viewing. Fields auto-fill from the file name where possible.
+                We keep the Word file and show it inline. Grade, exam and type auto-fill from the file name where possible.
               </Typography>
             </Grid>
             <Grid item xs={12}>
               <Button component="label" variant="text" size="small" startIcon={<PdfIcon />}>
-                {dialog?.pdfFile ? dialog.pdfFile.name : 'Optionally attach a ready PDF (skips conversion)'}
+                {dialog?.pdfFile ? dialog.pdfFile.name : 'Optionally attach a ready PDF'}
                 <input hidden type="file" accept=".pdf" onChange={(e) => setDialog({ ...dialog, pdfFile: e.target.files?.[0] || null })} />
               </Button>
             </Grid>
@@ -386,11 +495,31 @@ export default function ModelPapers() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialog(null)}>Cancel</Button>
-          <Button variant="contained" onClick={submitUpload} disabled={saving || !dialog?.subjectId || !dialog?.file}>
+          <Button variant="contained" onClick={submitUpload} disabled={saving || !dialog?.grade || !dialog?.subjectId || !dialog?.file}>
             {saving ? 'Uploading…' : 'Upload'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Row-delete confirmation */}
+      <Dialog open={Boolean(confirmDelete)} onClose={() => !deleting && setConfirmDelete(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete this row?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            This removes <b>{confirmDelete?.subjectName || 'this subject'}</b>
+            {confirmDelete?.streamCode ? ` (${streamName(confirmDelete.streamCode)})` : ''} for {filter.grade} · {examLabel[filter.exam] || filter.exam},
+            including every document on the row (model paper, answer key, blueprint). This cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(null)} disabled={deleting}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={deleteRow} disabled={deleting}>
+            {deleting ? 'Deleting…' : 'Delete row'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <PreviewDialog target={preview} onClose={() => setPreview(null)} />
     </Box>
   );
 }

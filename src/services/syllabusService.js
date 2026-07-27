@@ -124,6 +124,11 @@ export const syllabusService = {
     const response = await api.delete(`/syllabus/model-papers/docs/${docId}`);
     return response.data;
   },
+  deleteModelPaper: async (paperId) => {
+    // Removes the whole row (header + every document). Admin/god only.
+    const response = await api.delete(`/syllabus/model-papers/${paperId}`);
+    return response.data;
+  },
   getModelPaperFile: async (docId, format = 'pdf') => {
     const response = await api.get(`/syllabus/model-papers/docs/${docId}/file`, { params: { format } });
     return response.data; // { fileName, mimeType, base64Data }
