@@ -80,10 +80,12 @@ function TeacherRoster() {
   const pickWeek = (duty) => { setSelected(duty.weekStart); openWeek(duty); };
 
   const ro = !week?.editable;
-  const setDay = (di, patch) => setDraft((d) => ({ ...d, days: d.days.map((x, j) => (j === di ? { ...x, ...patch } : x)) }));
-  const setSlot = (di, si, patch) => setDraft((d) => ({
+  // Stable identities (functional updates → no deps) so the memoized RosterDays
+  // subtree only re-renders the day/slot/row a keystroke actually touches.
+  const setDay = useCallback((di, patch) => setDraft((d) => ({ ...d, days: d.days.map((x, j) => (j === di ? { ...x, ...patch } : x)) })), []);
+  const setSlot = useCallback((di, si, patch) => setDraft((d) => ({
     ...d, days: d.days.map((x, j) => (j === di ? { ...x, slots: x.slots.map((s, k) => (k === si ? { ...s, ...patch } : s)) } : x)),
-  }));
+  })), []);
 
   const save = async () => {
     setBusy('save'); setError(''); setMsg('');
