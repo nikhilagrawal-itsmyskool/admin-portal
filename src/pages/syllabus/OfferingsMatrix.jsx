@@ -5,7 +5,7 @@ import {
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Autocomplete, ToggleButton,
   ToggleButtonGroup, Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, OpenInNew as OpenIcon } from '@mui/icons-material';
+import { Add as AddIcon, OpenInNew as OpenIcon, AutoFixHigh as AutoFillIcon } from '@mui/icons-material';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -32,9 +32,12 @@ export default function OfferingsMatrix() {
 
   const [filter, setFilter] = useState({ academicYearId: '', grade: '', streamCode: '' });
   const [plans, setPlans] = useState([]);
-  const [teachersByPlan, setTeachersByPlan] = useState({}); // syllabusId -> assignments[]
+  const [teachersByPlan, setTeachersByPlan] = useState({}); // syllabusId -> assignments[] (overrides)
+  const [suggestionsByPlan, setSuggestionsByPlan] = useState({}); // syllabusId -> timetable suggestions[]
   const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const [dialog, setDialog] = useState(null); // { subjectId, layout, streamCode }
   const [saving, setSaving] = useState(false);
@@ -74,17 +77,19 @@ export default function OfferingsMatrix() {
   }, [grades, filter.grade]);
 
   const loadMatrix = async (f = filter) => {
-    if (!f.academicYearId || !f.grade) { setPlans([]); setTeachersByPlan({}); return; }
+    if (!f.academicYearId || !f.grade) { setPlans([]); setTeachersByPlan({}); setSuggestionsByPlan({}); return; }
     setLoading(true); setError('');
     try {
       const params = { academicYearId: f.academicYearId, grade: f.grade };
       if (f.streamCode) params.streamCode = f.streamCode;
       const pl = (await syllabusService.getSyllabi(params)) || [];
       setPlans(pl);
-      const pairs = await Promise.all(
-        pl.map((p) => syllabusService.getPlanTeachers(p.uuid).then((t) => [p.uuid, t || []]).catch(() => [p.uuid, []])),
-      );
-      setTeachersByPlan(Object.fromEntries(pairs));
+      const [teacherPairs, suggPairs] = await Promise.all([
+        Promise.all(pl.map((p) => syllabusService.getPlanTeachers(p.uuid).then((t) => [p.uuid, t || []]).catch(() => [p.uuid, []]))),
+        Promise.all(pl.map((p) => syllabusService.getTeacherSuggestions(p.uuid).then((t) => [p.uuid, t || []]).catch(() => [p.uuid, []]))),
+      ]);
+      setTeachersByPlan(Object.fromEntries(teacherPairs));
+      setSuggestionsByPlan(Object.fromEntries(suggPairs));
     } catch {
       setError('Failed to load offerings');
     } finally {
@@ -95,6 +100,32 @@ export default function OfferingsMatrix() {
 
   const cellAssignments = (planId, classId) =>
     (teachersByPlan[planId] || []).filter((a) => a.classId === classId);
+  const cellSuggestion = (planId, classId) =>
+    (suggestionsByPlan[planId] || []).find((s) => s.classId === classId) || null;
+
+  // Pin every timetable suggestion that isn't already assigned (the "auto-assign"
+  // function) — commits each as a syllabus_plan_teacher override.
+  const applyAllSuggestions = async () => {
+    setApplying(true); setError(''); setNotice('');
+    try {
+      let count = 0;
+      for (const p of plans) {
+        const existing = teachersByPlan[p.uuid] || [];
+        for (const sg of (suggestionsByPlan[p.uuid] || [])) {
+          if (existing.some((a) => a.classId === sg.classId && a.teacherId === sg.teacherId)) continue;
+          // eslint-disable-next-line no-await-in-loop
+          await syllabusService.assignTeacher(p.uuid, { classId: sg.classId, teacherId: sg.teacherId });
+          count += 1;
+        }
+      }
+      await loadMatrix();
+      setNotice(count ? `Pinned ${count} teacher${count === 1 ? '' : 's'} from the timetable.` : 'Everything already matches the timetable.');
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to apply timetable teachers');
+    } finally {
+      setApplying(false);
+    }
+  };
 
   const addTeacher = async (planId, classId, teacher) => {
     if (!teacher) return;
@@ -155,11 +186,22 @@ export default function OfferingsMatrix() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">Offerings</Typography>
         {canManage && filter.grade && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add subject</Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="Pin every teacher the timetable already assigns to these class+subjects">
+              <span>
+                <Button variant="outlined" startIcon={<AutoFillIcon />} onClick={applyAllSuggestions}
+                  disabled={applying || plans.length === 0}>
+                  {applying ? 'Applying…' : 'Fill from timetable'}
+                </Button>
+              </span>
+            </Tooltip>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add subject</Button>
+          </Box>
         )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice('')}>{notice}</Alert>}
 
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
@@ -230,16 +272,30 @@ export default function OfferingsMatrix() {
                         const rows = cellAssignments(p.uuid, s.classId);
                         const takenIds = new Set(rows.map((a) => a.teacherId));
                         const options = employees.filter((e) => !takenIds.has(e.uuid));
+                        const suggestion = cellSuggestion(p.uuid, s.classId);
+                        const showSuggestion = suggestion && !takenIds.has(suggestion.teacherId);
                         return (
                           <TableCell key={s.classId} sx={{ verticalAlign: 'top' }}>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: rows.length ? 1 : 0 }}>
-                              {rows.length === 0 && !canManage && (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: (rows.length || showSuggestion) ? 1 : 0 }}>
+                              {rows.length === 0 && !showSuggestion && !canManage && (
                                 <Typography variant="caption" color="text.secondary">—</Typography>
                               )}
                               {rows.map((a) => (
                                 <Chip key={a.uuid} size="small" label={a.teacherName || a.teacherId}
                                   onDelete={canManage ? () => removeTeacher(p.uuid, a.uuid) : undefined} />
                               ))}
+                              {showSuggestion && (
+                                <Tooltip title={canManage
+                                  ? `From timetable (${suggestion.matchedSubject}) — click to pin`
+                                  : `From timetable (${suggestion.matchedSubject})`}>
+                                  <Chip size="small" variant="outlined" color="primary"
+                                    icon={canManage ? <AddIcon fontSize="small" /> : undefined}
+                                    label={suggestion.teacherName || suggestion.teacherId}
+                                    clickable={canManage}
+                                    onClick={canManage ? () => addTeacher(p.uuid, s.classId, { uuid: suggestion.teacherId, name: suggestion.teacherName }) : undefined}
+                                    sx={{ borderStyle: 'dashed', color: 'text.secondary' }} />
+                                </Tooltip>
+                              )}
                             </Box>
                             {canManage && (
                               <Autocomplete

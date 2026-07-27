@@ -90,6 +90,12 @@ export const syllabusService = {
     const response = await api.get(`/syllabus/syllabi/${syllabusId}/teachers`);
     return response.data; // [{ uuid, classId, className, teacherId, teacherName }]
   },
+  getTeacherSuggestions: async (syllabusId) => {
+    // Live timetable resolve: per section, the teacher who teaches the matching
+    // subject in the timetable. [{ classId, className, teacherId, teacherName, matchedSubject }]
+    const response = await api.get(`/syllabus/syllabi/${syllabusId}/teacher-suggestions`);
+    return response.data;
+  },
   assignTeacher: async (syllabusId, { classId, teacherId }) => {
     const response = await api.post(`/syllabus/syllabi/${syllabusId}/teachers`, { classId, teacherId });
     return response.data;
