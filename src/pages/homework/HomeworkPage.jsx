@@ -9,7 +9,6 @@ import {
   Edit as EditIcon, Publish as PublishIcon, Unpublished as UnpublishIcon,
 } from '@mui/icons-material';
 import { homeworkService } from '../../services/homeworkService';
-import { classService } from '../../services/classService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
@@ -75,21 +74,32 @@ export default function HomeworkPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [cls, yrs] = await Promise.all([
-          classService.getClasses(),
-          academicCalendarService.getAcademicYears(),
-        ]);
-        setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
+        const yrs = await academicCalendarService.getAcademicYears();
         setYears(Array.isArray(yrs) ? yrs : yrs?.academicYears || []);
         try {
           const cur = await academicCalendarService.getCurrentAcademicYear();
           if (cur?.uuid) setAcademicYearId(cur.uuid);
         } catch { /* no current year configured */ }
       } catch {
-        setError('Failed to load classes / academic years');
+        setError('Failed to load academic years');
       }
     })();
   }, []);
+
+  // Postable classes for the chosen year: non-streamed base classes + the stream
+  // children (XI-A Science / Commerce) of streamed sections. Each has its own
+  // homework + class teacher, so streamed sections show as separate options.
+  useEffect(() => {
+    if (!academicYearId) return;
+    (async () => {
+      try {
+        const cls = await homeworkService.getClasses(academicYearId);
+        setClasses((cls || []).map((c) => ({ uuid: c.classId, name: c.name, streamCode: c.streamCode })));
+      } catch {
+        setClasses([]);
+      }
+    })();
+  }, [academicYearId]);
 
   const hw = day?.day || null;
   const published = hw?.status === 'published';
@@ -208,7 +218,7 @@ export default function HomeworkPage() {
               />
             </Grid>
             <Grid item xs={12} md={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>
+              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => { setAcademicYearId(e.target.value); setSelectedClass(null); setDay(null); }}>
                 {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}</MenuItem>)}
               </TextField>
             </Grid>

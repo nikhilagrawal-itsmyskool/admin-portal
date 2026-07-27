@@ -5,6 +5,14 @@ import api from '../config/api';
 // draft to fix. The admin surface (below) acts on any class; the teacher PWA uses
 // the /me mirrors (scoped to the resolved class teacher).
 export const homeworkService = {
+  // Classes homework can be posted for in a year: non-streamed base classes plus the
+  // stream-child classes (XI-A Science / Commerce) of streamed sections. Each item is
+  // { classId, name, baseClassId, streamCode, streamName }.
+  getClasses: async (academicYearId) => {
+    const response = await api.get('/homework/classes', { params: { academicYearId } });
+    return response.data;
+  },
+
   // The day's header + items (each item has a presigned imageUrl in prod).
   getDay: async ({ classId, date, academicYearId }) => {
     const response = await api.get('/homework/day', { params: { classId, date, academicYearId } });

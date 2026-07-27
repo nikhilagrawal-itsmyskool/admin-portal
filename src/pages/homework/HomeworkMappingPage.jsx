@@ -121,7 +121,12 @@ export default function HomeworkMappingPage() {
                 <TableRow><TableCell colSpan={4} align="center">No classes found</TableCell></TableRow>
               ) : rows.map((r) => (
                 <TableRow key={r.classId}>
-                  <TableCell>{r.className}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {r.className}
+                      {r.streamCode && <Chip size="small" label={r.streamCode} color="secondary" variant="outlined" />}
+                    </Box>
+                  </TableCell>
                   <TableCell>{r.teacherName || <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
                   <TableCell>{sourceChip(r)}</TableCell>
                   <TableCell>
