@@ -8,6 +8,7 @@ import {
 import {
   ArrowBack as BackIcon, Save as SaveIcon, ArrowUpward as UpIcon, ArrowDownward as DownIcon,
   Delete as DeleteIcon, Add as AddIcon, PlaylistAdd as BulkIcon, Edit as EditIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { syllabusService } from '../../services/syllabusService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -79,6 +80,24 @@ export default function SyllabusBuilder() {
     }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
+
+  // Download the stored source Word doc (base64 -> blob).
+  const downloadSource = async () => {
+    setError('');
+    try {
+      const r = await syllabusService.getSyllabusSource(id);
+      const bin = atob(r.base64Data);
+      const bytes = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k += 1) bytes[k] = bin.charCodeAt(k);
+      const url = URL.createObjectURL(new Blob([bytes], { type: r.mimeType || 'application/octet-stream' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = r.fileName || 'syllabus.docx';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'No source document for this plan');
+    }
+  };
 
   const gradeChanged = plan && header.grade && header.grade !== plan.grade;
   const streamChanged = plan && (header.streamCode || '') !== (plan.streamCode || '');
@@ -231,7 +250,21 @@ export default function SyllabusBuilder() {
           : hasStreams && <Chip size="small" variant="outlined" label="Common" />}
         <Chip size="small" variant="outlined" label={header.layout === 'senior' ? 'Senior' : 'Junior'} />
         <Chip size="small" variant="outlined" label={`${entries.length} entries`} />
+        <Box sx={{ flex: 1 }} />
+        {plan.sourceFileId && (
+          <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={downloadSource}>Download Word</Button>
+        )}
       </Box>
+
+      {/* Component layout (the activity columns for this subject), if any */}
+      {Array.isArray(plan.componentLayout) && plan.componentLayout.length > 0 && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mb: 2 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>Components:</Typography>
+          {plan.componentLayout.map((cmp) => (
+            <Chip key={cmp.key || cmp.label} size="small" color="info" variant="outlined" label={cmp.label} />
+          ))}
+        </Box>
+      )}
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
@@ -351,6 +384,7 @@ export default function SyllabusBuilder() {
                   <TableCell sx={{ width: 100 }}>Type</TableCell>
                   <TableCell sx={{ width: 60 }}>No.</TableCell>
                   <TableCell>Title</TableCell>
+                  <TableCell sx={{ width: 140 }}>Component</TableCell>
                   <TableCell>Theme</TableCell>
                   <TableCell sx={{ width: 80 }}>Pages</TableCell>
                   <TableCell sx={{ width: 90 }}>Term</TableCell>
@@ -359,14 +393,18 @@ export default function SyllabusBuilder() {
               </TableHead>
               <TableBody>
                 {entries.length === 0 ? (
-                  <TableRow><TableCell colSpan={canManage ? 9 : 8} align="center" sx={{ py: 3 }}>No entries yet. Add rows above or use “Bulk paste”.</TableCell></TableRow>
-                ) : entries.map((e, i) => (
-                  <TableRow key={e.uuid} hover>
+                  <TableRow><TableCell colSpan={canManage ? 10 : 9} align="center" sx={{ py: 3 }}>No entries yet. Add rows above or use “Bulk paste”.</TableCell></TableRow>
+                ) : entries.map((e, i) => {
+                  const isItem = e.entryType === 'item';
+                  const isGroup = ['chapter', 'unit', 'section'].includes(e.entryType);
+                  return (
+                  <TableRow key={e.uuid} hover sx={isGroup ? { bgcolor: 'action.hover' } : undefined}>
                     <TableCell>{e.seq}</TableCell>
                     <TableCell>{monthLabel[e.month] || e.month}</TableCell>
                     <TableCell><Chip size="small" variant="outlined" color={typeChipColor(e.entryType)} label={e.entryType} /></TableCell>
                     <TableCell>{e.topicNo || '-'}</TableCell>
-                    <TableCell>{e.title}</TableCell>
+                    <TableCell sx={{ pl: isItem ? 4 : undefined, fontWeight: isGroup ? 700 : 400 }}>{e.title}</TableCell>
+                    <TableCell>{e.component || '-'}</TableCell>
                     <TableCell>{e.theme || '-'}</TableCell>
                     <TableCell>{e.pageRef || '-'}</TableCell>
                     <TableCell>{e.term === 'half_yearly' ? 'Half-yr' : e.term === 'annual' ? 'Annual' : '-'}</TableCell>
@@ -379,7 +417,8 @@ export default function SyllabusBuilder() {
                       </TableCell>
                     )}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </Box>

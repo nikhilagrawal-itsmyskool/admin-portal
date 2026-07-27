@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, IconButton, Alert, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField,
+  DialogActions, TextField, MenuItem, Chip,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
@@ -13,37 +13,45 @@ export default function SubjectList() {
   const can = useCan();
   const canManage = can('syllabus.manage');
 
+  const [grades, setGrades] = useState([]);
+  const [filterGrade, setFilterGrade] = useState('');
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dialog, setDialog] = useState({ open: false, item: null, name: '', description: '' });
+  const [dialog, setDialog] = useState({ open: false, item: null, grade: '', name: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
 
-  const load = async () => {
+  useEffect(() => {
+    (async () => {
+      try { setGrades((await syllabusService.getGrades()) || []); } catch { /* noop */ }
+    })();
+  }, []);
+
+  const load = async (grade = filterGrade) => {
     setLoading(true); setError('');
     try {
-      setSubjects((await syllabusService.getSubjects()) || []);
+      setSubjects((await syllabusService.getSubjects(grade ? { grade } : {})) || []);
     } catch {
       setError('Failed to load subjects');
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filterGrade]);
 
-  const openAdd = () => setDialog({ open: true, item: null, name: '', description: '' });
-  const openEdit = (item) => setDialog({ open: true, item, name: item.name || '', description: item.description || '' });
+  const openAdd = () => setDialog({ open: true, item: null, grade: filterGrade || '', name: '', description: '' });
+  const openEdit = (item) => setDialog({ open: true, item, grade: item.grade || '', name: item.name || '', description: item.description || '' });
 
   const save = async () => {
     if (!dialog.name.trim()) { setError('Subject name is required'); return; }
     setSaving(true); setError('');
     try {
-      const payload = { name: dialog.name.trim(), description: dialog.description.trim() || undefined };
+      const payload = { grade: dialog.grade || null, name: dialog.name.trim(), description: dialog.description.trim() || undefined };
       if (dialog.item) await syllabusService.updateSubject(dialog.item.uuid, payload);
       else await syllabusService.createSubject(payload);
-      setDialog({ open: false, item: null, name: '', description: '' });
+      setDialog({ open: false, item: null, grade: '', name: '', description: '' });
       load();
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to save subject');
@@ -67,6 +75,10 @@ export default function SubjectList() {
   };
 
   const columns = [
+    {
+      field: 'grade', headerName: 'Grade', width: 90,
+      renderCell: (p) => (p.value ? <Chip size="small" label={p.value} /> : <Chip size="small" variant="outlined" label="—" />),
+    },
     { field: 'name', headerName: 'Subject', flex: 1, minWidth: 180 },
     { field: 'description', headerName: 'Description', flex: 2, minWidth: 200, valueFormatter: (v) => v || '-' },
     {
@@ -82,9 +94,16 @@ export default function SubjectList() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2, flexWrap: 'wrap' }}>
         <Typography variant="h4">Syllabus Subjects</Typography>
-        {canManage && <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add Subject</Button>}
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <TextField select size="small" label="Grade" value={filterGrade} sx={{ minWidth: 160 }}
+            onChange={(e) => setFilterGrade(e.target.value)}>
+            <MenuItem value="">All grades</MenuItem>
+            {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
+          </TextField>
+          {canManage && <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add Subject</Button>}
+        </Box>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
@@ -96,7 +115,7 @@ export default function SubjectList() {
         loading={loading}
         autoHeight
         pageSizeOptions={[10, 25, 50]}
-        initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+        initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
         disableRowSelectionOnClick
         sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 } }}
       />
@@ -104,7 +123,13 @@ export default function SubjectList() {
       <Dialog open={dialog.open} onClose={() => setDialog({ ...dialog, open: false })} fullWidth maxWidth="sm">
         <DialogTitle>{dialog.item ? 'Edit Subject' : 'Add Subject'}</DialogTitle>
         <DialogContent>
-          <TextField autoFocus fullWidth label="Subject Name" value={dialog.name} sx={{ mt: 1, mb: 2 }}
+          <TextField select fullWidth label="Grade" value={dialog.grade} sx={{ mt: 1, mb: 2 }} size="small"
+            onChange={(e) => setDialog({ ...dialog, grade: e.target.value })}
+            helperText="Subjects are scoped per grade">
+            <MenuItem value="">No grade (shared)</MenuItem>
+            {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
+          </TextField>
+          <TextField autoFocus fullWidth label="Subject Name" value={dialog.name} sx={{ mb: 2 }}
             onChange={(e) => setDialog({ ...dialog, name: e.target.value })} size="small" />
           <TextField fullWidth label="Description (optional)" value={dialog.description}
             onChange={(e) => setDialog({ ...dialog, description: e.target.value })} size="small" />

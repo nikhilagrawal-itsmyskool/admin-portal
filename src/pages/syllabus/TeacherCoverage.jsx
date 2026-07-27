@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Card, CardContent, Alert, Chip, Checkbox, LinearProgress, CircularProgress,
-  Button, List, ListItem, ListItemIcon, ListItemText, Divider,
+  Box, Typography, Card, CardContent, Alert, Chip, LinearProgress, CircularProgress, Button,
 } from '@mui/material';
 import { ArrowBack as BackIcon } from '@mui/icons-material';
 import { syllabusService } from '../../services/syllabusService';
 import { useCan } from '../../permissions/can';
+import CoverageTree from './CoverageTree';
 
-// April→March teaching order and calendar-month → academic-month anchor.
 const MONTHS = ['april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'january', 'february', 'march'];
 const LABEL = { april: 'Apr', may: 'May', june: 'Jun', july: 'Jul', august: 'Aug', september: 'Sep', october: 'Oct', november: 'Nov', december: 'Dec', january: 'Jan', february: 'Feb', march: 'Mar' };
 const CAL_TO_MONTH = MONTHS.reduce((acc, m, i) => { acc[[3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2][i]] = m; return acc; }, {});
@@ -23,7 +22,6 @@ export default function TeacherCoverage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState({});
-  const [month, setMonth] = useState(null);
   const [mySections, setMySections] = useState([]); // this teacher's sections for this plan
   const [alsoMark, setAlsoMark] = useState(() => new Set()); // extra sections to co-mark
 
@@ -48,41 +46,26 @@ export default function TeacherCoverage() {
     })();
   }, [syllabusId, classId]);
 
-  const months = useMemo(() => {
-    if (!roster) return [];
-    return MONTHS
-      .map((m) => ({ month: m, entries: roster.entries.filter((e) => e.month === m) }))
-      .filter((g) => g.entries.length > 0);
-  }, [roster]);
-
-  useEffect(() => {
-    if (months.length === 0) { setMonth(null); return; }
-    const anchor = CAL_TO_MONTH[new Date().getMonth()];
-    setMonth((prev) => prev || (months.some((g) => g.month === anchor) ? anchor : months[0].month));
-  }, [months]);
-
-  const current = months.find((g) => g.month === month);
   const others = mySections.filter((s) => s.classId !== classId);
+  const currentMonth = CAL_TO_MONTH[new Date().getMonth()];
 
   const toggle = async (entry) => {
     if (!canMark) return;
     const next = !entry.covered;
     setSaving((s) => ({ ...s, [entry.uuid]: true }));
-    setRoster((r) => {
-      const entries = r.entries.map((e) => (e.uuid === entry.uuid ? { ...e, covered: next } : e));
-      const covered = entries.filter((e) => e.entryType === 'topic' && e.covered).length;
+    // Optimistic: flip this leaf and adjust the leaf-based count by one.
+    const adjust = (r, cov) => {
+      const entries = r.entries.map((e) => (e.uuid === entry.uuid ? { ...e, covered: cov } : e));
+      const covered = r.counts.covered + (cov ? 1 : -1);
       return { ...r, entries, counts: { total: r.counts.total, covered, pending: r.counts.total - covered } };
-    });
+    };
+    setRoster((r) => adjust(r, next));
     const targets = [classId, ...Array.from(alsoMark)];
     try {
       await Promise.all(targets.map((cid) => syllabusService.markProgress({ entryId: entry.uuid, classId: cid, status: next ? 'covered' : 'pending' })));
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to update');
-      setRoster((r) => {
-        const entries = r.entries.map((e) => (e.uuid === entry.uuid ? { ...e, covered: !next } : e));
-        const covered = entries.filter((e) => e.entryType === 'topic' && e.covered).length;
-        return { ...r, entries, counts: { total: r.counts.total, covered, pending: r.counts.total - covered } };
-      });
+      setRoster((r) => adjust(r, !next));
     } finally {
       setSaving((s) => { const n = { ...s }; delete n[entry.uuid]; return n; });
     }
@@ -112,7 +95,7 @@ export default function TeacherCoverage() {
         </CardContent>
       </Card>
 
-      {/* Batch marking: co-mark the same topic in the teacher's other sections */}
+      {/* Batch marking: co-mark the same item in the teacher's other sections */}
       {canMark && others.length > 0 && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mb: 1.5 }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>Also mark in:</Typography>
@@ -136,44 +119,11 @@ export default function TeacherCoverage() {
         </Box>
       )}
 
-      {/* Month pager */}
-      <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 1, mb: 1 }}>
-        {months.map((g) => {
-          const isNow = g.month === CAL_TO_MONTH[new Date().getMonth()];
-          return (
-            <Chip key={g.month} label={LABEL[g.month]} clickable color={g.month === month ? 'primary' : 'default'}
-              variant={g.month === month ? 'filled' : 'outlined'} onClick={() => setMonth(g.month)}
-              sx={{ fontWeight: 700, ...(isNow && g.month !== month ? { borderColor: 'error.main', color: 'error.main' } : {}) }} />
-          );
-        })}
-      </Box>
-
       <Card>
-        <List dense disablePadding>
-          {(current?.entries ?? []).map((e, i) => {
-            const isTopic = e.entryType === 'topic';
-            return (
-              <React.Fragment key={e.uuid}>
-                {i > 0 && <Divider component="li" />}
-                <ListItem sx={{ bgcolor: e.covered ? 'action.hover' : 'inherit' }}
-                  secondaryAction={!isTopic ? <Chip size="small" variant="outlined" label={e.entryType} /> : null}>
-                  {isTopic && (
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      <Checkbox edge="start" checked={Boolean(e.covered)} disabled={!canMark || Boolean(saving[e.uuid])}
-                        onChange={() => toggle(e)} />
-                    </ListItemIcon>
-                  )}
-                  <ListItemText
-                    inset={!isTopic}
-                    primary={`${e.topicNo ? `${e.topicNo}. ` : ''}${e.title}`}
-                    secondary={[e.theme, e.pageRef ? `p. ${e.pageRef}` : null].filter(Boolean).join(' · ') || null}
-                    primaryTypographyProps={{ fontWeight: isTopic ? 500 : 700, fontSize: 14 }}
-                  />
-                </ListItem>
-              </React.Fragment>
-            );
-          })}
-        </List>
+        <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+          <CoverageTree entries={roster.entries} monthLabel={LABEL} canMark={canMark}
+            savingIds={saving} onToggle={toggle} currentMonth={currentMonth} />
+        </CardContent>
       </Card>
     </Box>
   );

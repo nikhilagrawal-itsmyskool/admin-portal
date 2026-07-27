@@ -43,7 +43,11 @@ export const syllabusService = {
   },
   getSyllabus: async (id) => {
     const response = await api.get(`/syllabus/syllabi/${id}`);
-    return response.data; // header + subjectName + ordered entries
+    return response.data; // header + subjectName + componentLayout + ordered entries
+  },
+  getSyllabusSource: async (id) => {
+    const response = await api.get(`/syllabus/syllabi/${id}/source`);
+    return response.data; // { fileName, mimeType, base64Data }
   },
   createSyllabus: async (data) => {
     const response = await api.post('/syllabus/syllabi', data);

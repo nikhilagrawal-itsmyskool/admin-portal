@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip, Checkbox,
-  Table, TableBody, TableCell, TableHead, TableRow, CircularProgress, LinearProgress, Tooltip,
+  Box, Typography, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip,
+  CircularProgress, LinearProgress,
 } from '@mui/material';
 import { syllabusService } from '../../services/syllabusService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
+import CoverageTree from './CoverageTree';
+
+const CAL_TO_MONTH = { 0: 'january', 1: 'february', 2: 'march', 3: 'april', 4: 'may', 5: 'june', 6: 'july', 7: 'august', 8: 'september', 9: 'october', 10: 'november', 11: 'december' };
 
 export default function SyllabusProgress() {
   const can = useCan();
@@ -27,16 +30,14 @@ export default function SyllabusProgress() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, grds, subs, lookups] = await Promise.all([
+        const [yrs, grds, lookups] = await Promise.all([
           academicCalendarService.getAcademicYears(),
           syllabusService.getGrades(),
-          syllabusService.getSubjects(),
           syllabusService.getLookups(),
         ]);
         const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
         setYears(yearList);
         setGrades(grds || []);
-        setSubjects(subs || []);
         const ml = {}; (lookups?.months || []).forEach((m) => { ml[m.value] = m.label; });
         setMonthLabel(ml);
         const cur = yearList.find((y) => y.isCurrent) || yearList[0];
@@ -51,6 +52,14 @@ export default function SyllabusProgress() {
     () => grades.find((g) => g.grade === sel.grade)?.sections || [],
     [grades, sel.grade],
   );
+  const currentMonth = CAL_TO_MONTH[new Date().getMonth()];
+
+  // Subjects are grade-scoped — reload when the grade changes.
+  useEffect(() => {
+    (async () => {
+      try { setSubjects((await syllabusService.getSubjects(sel.grade ? { grade: sel.grade } : {})) || []); } catch { /* noop */ }
+    })();
+  }, [sel.grade]);
 
   // Resolve the plan whenever year + grade + subject are all chosen.
   useEffect(() => {
@@ -89,26 +98,20 @@ export default function SyllabusProgress() {
     if (!canMark || !roster) return;
     const nextCovered = !entry.covered;
     setSavingIds((s) => ({ ...s, [entry.uuid]: true }));
-    // Optimistic update of the row + counts.
-    setRoster((r) => {
-      const entries = r.entries.map((e) => (e.uuid === entry.uuid ? { ...e, covered: nextCovered } : e));
-      const covered = entries.filter((e) => e.entryType === 'topic' && e.covered).length;
-      const total = r.counts.total;
-      return { ...r, entries, counts: { total, covered, pending: total - covered } };
-    });
+    // Optimistic: flip this leaf and adjust the leaf-based count by one.
+    const adjust = (r, cov) => {
+      const entries = r.entries.map((e) => (e.uuid === entry.uuid ? { ...e, covered: cov } : e));
+      const covered = r.counts.covered + (cov ? 1 : -1);
+      return { ...r, entries, counts: { total: r.counts.total, covered, pending: r.counts.total - covered } };
+    };
+    setRoster((r) => adjust(r, nextCovered));
     try {
       await syllabusService.markProgress({
         entryId: entry.uuid, classId: sel.classId, status: nextCovered ? 'covered' : 'pending',
       });
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to update coverage');
-      // Revert on failure.
-      setRoster((r) => {
-        const entries = r.entries.map((e) => (e.uuid === entry.uuid ? { ...e, covered: !nextCovered } : e));
-        const covered = entries.filter((e) => e.entryType === 'topic' && e.covered).length;
-        const total = r.counts.total;
-        return { ...r, entries, counts: { total, covered, pending: total - covered } };
-      });
+      setRoster((r) => adjust(r, !nextCovered));
     } finally {
       setSavingIds((s) => { const n = { ...s }; delete n[entry.uuid]; return n; });
     }
@@ -132,7 +135,7 @@ export default function SyllabusProgress() {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField fullWidth select size="small" label="Grade" value={sel.grade}
-                onChange={(e) => setSel({ ...sel, grade: e.target.value, classId: '' })}>
+                onChange={(e) => setSel({ ...sel, grade: e.target.value, classId: '', subjectId: '' })}>
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
               </TextField>
             </Grid>
@@ -168,52 +171,14 @@ export default function SyllabusProgress() {
               <Box sx={{ flex: 1, minWidth: 160 }}>
                 <LinearProgress variant="determinate" value={pct} sx={{ height: 8, borderRadius: 1 }} />
               </Box>
-              <Typography variant="body2" color="text.secondary">{pct}% of {roster.counts.total} topics</Typography>
+              <Typography variant="body2" color="text.secondary">{pct}% of {roster.counts.total} items</Typography>
             </Box>
 
             {loadingRoster ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
             ) : (
-              <Box sx={{ overflowX: 'auto' }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ width: 60 }} align="center">Done</TableCell>
-                      <TableCell sx={{ width: 110 }}>Month</TableCell>
-                      <TableCell sx={{ width: 60 }}>No.</TableCell>
-                      <TableCell>Title</TableCell>
-                      <TableCell>Theme</TableCell>
-                      <TableCell sx={{ width: 120 }}>Covered on</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {roster.entries.map((e) => {
-                      const isTopic = e.entryType === 'topic';
-                      return (
-                        <TableRow key={e.uuid} hover sx={{ bgcolor: e.covered ? 'action.hover' : 'inherit' }}>
-                          <TableCell align="center">
-                            {isTopic ? (
-                              <Tooltip title={canMark ? '' : 'You cannot mark coverage'}>
-                                <span>
-                                  <Checkbox size="small" checked={Boolean(e.covered)} disabled={!canMark || Boolean(savingIds[e.uuid])}
-                                    onChange={() => toggle(e)} />
-                                </span>
-                              </Tooltip>
-                            ) : (
-                              <Chip size="small" variant="outlined" label={e.entryType} />
-                            )}
-                          </TableCell>
-                          <TableCell>{monthLabel[e.month] || e.month}</TableCell>
-                          <TableCell>{e.topicNo || '-'}</TableCell>
-                          <TableCell sx={{ fontWeight: isTopic ? 400 : 600 }}>{e.title}</TableCell>
-                          <TableCell>{e.theme || '-'}</TableCell>
-                          <TableCell>{e.covered && e.coveredDate ? e.coveredDate : '-'}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </Box>
+              <CoverageTree entries={roster.entries} monthLabel={monthLabel} canMark={canMark}
+                savingIds={savingIds} onToggle={toggle} currentMonth={currentMonth} />
             )}
           </CardContent>
         </Card>
