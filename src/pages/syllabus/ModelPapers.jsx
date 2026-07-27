@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip,
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Switch, IconButton,
@@ -7,9 +7,9 @@ import {
 import {
   UploadFile as UploadIcon, PictureAsPdf as PdfIcon, Description as WordIcon,
   Delete as DeleteIcon, HourglassEmpty as PendingIcon, ErrorOutline as FailIcon,
-  DeleteForever as DeleteRowIcon, Download as DownloadIcon,
+  DeleteForever as DeleteRowIcon,
 } from '@mui/icons-material';
-import { renderAsync } from 'docx-preview';
+import DocPreviewDialog from './DocPreviewDialog';
 import { syllabusService } from '../../services/syllabusService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
@@ -21,12 +21,6 @@ const DOC_TYPES = [
 ];
 const DOC_TYPE_LABEL = Object.fromEntries(DOC_TYPES.map((d) => [d.value, d.label]));
 
-function b64toBlob(b64, mime) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: mime || 'application/octet-stream' });
-}
 function readFileB64(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -51,82 +45,6 @@ function detectFromName(name, grades, exams) {
   else if (/annual/i.test(name)) out.exam = 'annual';
   if (!out.exam && (exams || []).length === 1) out.exam = exams[0].value;
   return out;
-}
-
-// Inline document viewer — renders the .docx straight in the browser (docx-preview)
-// so staff can read a paper without leaving the page. Falls back to an iframe for
-// a ready PDF. The Word file is always available even while PDF conversion is off.
-function PreviewDialog({ target, onClose }) {
-  const bodyRef = useRef(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const open = Boolean(target);
-  useEffect(() => {
-    if (!open) return undefined;
-    let cancelled = false;
-    setLoading(true); setError('');
-    (async () => {
-      try {
-        const r = await syllabusService.getModelPaperFile(target.docId, target.format);
-        if (cancelled) return;
-        const blob = b64toBlob(r.base64Data, r.mimeType);
-        const container = bodyRef.current;
-        if (!container) return;
-        container.innerHTML = '';
-        if (target.format === 'docx') {
-          await renderAsync(blob, container, null, {
-            className: 'docx-render', inWrapper: true, ignoreWidth: false,
-            ignoreHeight: false, breakPages: true, renderHeaders: true, renderFooters: true,
-          });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const frame = document.createElement('iframe');
-          frame.src = url;
-          frame.style.cssText = 'width:100%;height:100%;min-height:70vh;border:0;';
-          container.appendChild(frame);
-        }
-      } catch (e) {
-        if (!cancelled) setError(e.response?.data?.error?.description || 'Failed to load document');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [open, target?.docId, target?.format]);
-
-  const download = async () => {
-    try {
-      const r = await syllabusService.getModelPaperFile(target.docId, target.format);
-      const url = URL.createObjectURL(b64toBlob(r.base64Data, r.mimeType));
-      const a = document.createElement('a');
-      a.href = url; a.download = r.fileName || 'document';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch { /* ignore */ }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" PaperProps={{ sx: { height: '90vh' } }}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 6 }}>
-        {target?.format === 'docx' ? <WordIcon fontSize="small" /> : <PdfIcon fontSize="small" />}
-        <Typography variant="subtitle1" sx={{ flex: 1, minWidth: 0 }} noWrap>{target?.title}</Typography>
-        <Button size="small" startIcon={<DownloadIcon />} onClick={download}>Download</Button>
-      </DialogTitle>
-      <DialogContent dividers sx={{ p: 0, bgcolor: '#e9ecef', position: 'relative' }}>
-        {loading && (
-          <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-            <CircularProgress />
-          </Box>
-        )}
-        {error && <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>}
-        <Box ref={bodyRef} sx={{ height: '100%', overflow: 'auto', '& .docx-render': { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 2 } }} />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Close</Button>
-      </DialogActions>
-    </Dialog>
-  );
 }
 
 export default function ModelPapers() {
@@ -519,7 +437,7 @@ export default function ModelPapers() {
         </DialogActions>
       </Dialog>
 
-      <PreviewDialog target={preview} onClose={() => setPreview(null)} />
+      <DocPreviewDialog target={preview} onClose={() => setPreview(null)} />
     </Box>
   );
 }

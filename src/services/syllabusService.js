@@ -110,6 +110,11 @@ export const syllabusService = {
     const response = await api.get('/syllabus/my-plans');
     return response.data; // [{ assignmentId, syllabusId, grade, subjectName, layout, classId, className, totalTopics, coveredTopics }]
   },
+  getMyModelPapers: async () => {
+    // Papers for the subjects this teacher is assigned to (offerings mapping).
+    const response = await api.get('/syllabus/my-papers');
+    return response.data; // [{ syllabusId, subjectName, grade, papers:[{ uuid, exam, docs:[{ uuid, docType, hasDocx, hasPdf }] }] }]
+  },
 
   // ---- Model papers ----
   getModelPapers: async (params = {}) => {
