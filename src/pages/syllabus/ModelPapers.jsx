@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip,
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Switch, IconButton,
@@ -245,6 +246,10 @@ export default function ModelPapers() {
 
   const examLabel = useMemo(() => Object.fromEntries(exams.map((e) => [e.value, e.label])), [exams]);
   const emptyColSpan = (showStreamCol ? 6 : 5) + (canManage ? 1 : 0);
+
+  // Managing model papers is admin/god only. Teachers reach their own subjects'
+  // papers through My Syllabus (scoped), not this full grid.
+  if (!canManage) return <Navigate to="/syllabus/my" replace />;
 
   return (
     <Box>
