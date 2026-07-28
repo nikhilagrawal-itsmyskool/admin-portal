@@ -3,9 +3,17 @@ import api from '../config/api';
 export const studentService = {
   // ---- Search / list ----
   searchStudents: async (params = {}, signal) => {
-    // params: { name, classId, academicYearId, admissionNumber, phone }
+    // params: { name, classId, academicYearId, admissionNumber, phone, unreachable }
     // signal: optional AbortSignal so callers (e.g. type-ahead) can cancel stale requests
     const response = await api.get('/students/search', { params, signal });
+    return response.data;
+  },
+
+  // Effective-contact breakdown for a cohort (counts only — no numbers). Same
+  // filters as searchStudents; ignores the `unreachable` flag server-side so the
+  // summary always covers the whole cohort. Returns { total, unreachable, breakdown }.
+  getCommsSummary: async (params = {}, signal) => {
+    const response = await api.get('/students/comms-summary', { params, signal });
     return response.data;
   },
 

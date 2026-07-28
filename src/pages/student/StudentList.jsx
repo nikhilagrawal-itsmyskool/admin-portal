@@ -16,6 +16,9 @@ import {
   Paper,
   Stack,
   Avatar,
+  Checkbox,
+  FormControlLabel,
+  Tooltip,
 } from '@mui/material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import usePersistedPaginationModel from '../../hooks/usePersistedPaginationModel';
@@ -61,6 +64,10 @@ export default function StudentList() {
   const [selectedYear, setSelectedYear] = usePersistedState('studentList.year', null);
   const [admissionNumber, setAdmissionNumber] = usePersistedState('studentList.adm', '');
   const [phone, setPhone] = usePersistedState('studentList.phone', '');
+  // Comms data-quality: show only students no notification can reach.
+  const [unreachable, setUnreachable] = usePersistedState('studentList.unreachable', false);
+  // Effective-contact breakdown for the current cohort ({ total, unreachable, breakdown }).
+  const [commsSummary, setCommsSummary] = useState(null);
   // On the first-ever visit we pin the year filter to the current session; the
   // flag stops us re-pinning after the user deliberately clears it (whole school).
   const [yearPinned, setYearPinned] = usePersistedState('studentList.yearPinned', false);
@@ -124,6 +131,7 @@ export default function StudentList() {
     if (selectedYear) f.academicYearId = selectedYear.uuid;
     if (admissionNumber) f.admissionNumber = admissionNumber;
     if (phone) f.phone = phone;
+    if (unreachable) f.unreachable = true;
     return f;
   };
 
@@ -135,11 +143,29 @@ export default function StudentList() {
       const data = await studentService.searchStudents({ ...filters, withPhotos: true });
       setStudents(Array.isArray(data) ? data : data.students || []);
       setSelection([]);
+      // Breakdown covers the whole cohort — drop the unreachable toggle so the
+      // summary doesn't collapse to just the unreachable rows. Never blocks the list.
+      const { unreachable: _drop, ...cohort } = filters;
+      studentService
+        .getCommsSummary(cohort)
+        .then(setCommsSummary)
+        .catch(() => setCommsSummary(null));
     } catch {
       setError('Failed to load students');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Toggle the "unreachable only" quick filter and re-run immediately (state is
+  // async, so search with an explicit override).
+  const toggleUnreachable = (next) => {
+    setUnreachable(next);
+    setPaginationModel((p) => ({ ...p, page: 0 }));
+    const f = buildFilters();
+    if (next) f.unreachable = true;
+    else delete f.unreachable;
+    loadStudents(f);
   };
 
   // Never leave the user stranded past the last page (new search, deletes).
@@ -162,6 +188,7 @@ export default function StudentList() {
     setSelectedYear(null);
     setAdmissionNumber('');
     setPhone('');
+    setUnreachable(false);
     setPaginationModel((p) => ({ ...p, page: 0 }));
     loadStudents({});
   };
@@ -355,6 +382,18 @@ export default function StudentList() {
                 </Button>
               </Box>
             </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={unreachable}
+                    onChange={(e) => toggleUnreachable(e.target.checked)}
+                  />
+                }
+                label="Only unreachable (no mobile or WhatsApp on father, mother & guardian)"
+              />
+            </Grid>
           </Grid>
         </CardContent>
       </Card>
@@ -390,6 +429,35 @@ export default function StudentList() {
           >
             Graduate
           </Button>
+        </Paper>
+      )}
+
+      {/* Effective-contact breakdown for the cohort — who the sender's WhatsApp-first
+          ladder would actually reach first. The "Unreachable" chip doubles as a filter. */}
+      {commsSummary && commsSummary.total > 0 && (
+        <Paper variant="outlined" sx={{ mb: 2, p: 1.5 }}>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Typography variant="body2" sx={{ fontWeight: 600, mr: 0.5 }}>
+              Reached first via:
+            </Typography>
+            {commsSummary.breakdown.map((b) => (
+              <Chip
+                key={`${b.role}:${b.channel}`}
+                size="small"
+                variant="outlined"
+                label={`${roleLabel(b.role)} · ${channelLabel(b.channel)} — ${b.count}`}
+              />
+            ))}
+            <Tooltip title="No mobile or WhatsApp on father, mother or guardian — a notification can never reach them. Click to filter the list.">
+              <Chip
+                size="small"
+                color={commsSummary.unreachable > 0 ? 'error' : 'default'}
+                variant={unreachable ? 'filled' : 'outlined'}
+                onClick={() => toggleUnreachable(!unreachable)}
+                label={`Unreachable — ${commsSummary.unreachable}`}
+              />
+            </Tooltip>
+          </Stack>
         </Paper>
       )}
 
@@ -462,3 +530,7 @@ export default function StudentList() {
     </Box>
   );
 }
+
+// Labels for the effective-contact breakdown chips.
+const roleLabel = (r) => ({ father: 'Father', mother: 'Mother', guardian: 'Guardian' }[r] || r);
+const channelLabel = (c) => (c === 'sms' ? 'SMS' : c === 'whatsapp' ? 'WhatsApp' : c);
