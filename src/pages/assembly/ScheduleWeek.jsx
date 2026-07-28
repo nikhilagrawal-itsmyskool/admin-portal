@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, TextField, MenuItem, Stack, IconButton,
-  Alert, CircularProgress, Button, Divider,
+  Alert, CircularProgress, Button, Divider, FormControlLabel, Checkbox,
 } from '@mui/material';
-import { ChevronLeft as PrevIcon, ChevronRight as NextIcon, Today as TodayIcon } from '@mui/icons-material';
+import {
+  ChevronLeft as PrevIcon, ChevronRight as NextIcon, Today as TodayIcon,
+  ArrowBack as BackIcon, OpenInFull as ExpandIcon,
+} from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import ResolvedRunSheet from './ResolvedRunSheet';
@@ -17,6 +20,8 @@ export default function ScheduleWeek() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [noteOpen, setNoteOpen] = useState(true);
+  const [showContent, setShowContent] = useState(true); // hide the description/content lines
+  const [focusedDate, setFocusedDate] = useState(null); // when set, one day fills the page
 
   const monday = mondayOf(refDate);
   const dates = weekDates(monday, 6); // Mon..Sat
@@ -64,10 +69,15 @@ export default function ScheduleWeek() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }} justifyContent="space-between">
-            <TextField select size="small" label="Wing" sx={{ minWidth: 220 }} value={planId}
-              onChange={(e) => setPlanId(e.target.value)} disabled={!plans.length}>
-              {plans.map((p) => <MenuItem key={p.uuid} value={p.uuid}>{p.name}{p.scopeLabel ? ` (${p.scopeLabel})` : ''}</MenuItem>)}
-            </TextField>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <TextField select size="small" label="Wing" sx={{ minWidth: 220 }} value={planId}
+                onChange={(e) => setPlanId(e.target.value)} disabled={!plans.length}>
+                {plans.map((p) => <MenuItem key={p.uuid} value={p.uuid}>{p.name}{p.scopeLabel ? ` (${p.scopeLabel})` : ''}</MenuItem>)}
+              </TextField>
+              <FormControlLabel sx={{ whiteSpace: 'nowrap' }}
+                control={<Checkbox size="small" checked={showContent} onChange={(e) => setShowContent(e.target.checked)} />}
+                label="Show details" />
+            </Stack>
             <Stack direction="row" spacing={1} alignItems="center">
               <IconButton size="small" onClick={() => setRefDate(addWeek(monday, -1))}><PrevIcon /></IconButton>
               <Typography variant="subtitle1" sx={{ minWidth: 150, textAlign: 'center' }}>{fmtRange(dates[0], dates[5])}</Typography>
@@ -82,6 +92,22 @@ export default function ScheduleWeek() {
         <Alert severity="info">No assembly plans for the current year yet. Create one under Assembly → Plans.</Alert>
       ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>
+      ) : focusedDate ? (
+        <Box>
+          <Button size="small" startIcon={<BackIcon />} onClick={() => setFocusedDate(null)} sx={{ mb: 1 }}>Back to week</Button>
+          <Card variant="outlined" sx={{ borderColor: focusedDate === today ? 'primary.main' : 'divider', borderWidth: focusedDate === today ? 2 : 1 }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography variant="h6" color={focusedDate === today ? 'primary' : 'text.primary'}>
+                  {fmtDay(focusedDate)} <Typography component="span" variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>· {weekdayOf(focusedDate)}</Typography>
+                </Typography>
+                {focusedDate === today && <Typography variant="caption" color="primary">Today</Typography>}
+              </Stack>
+              <Divider sx={{ my: 1 }} />
+              <ResolvedRunSheet resolved={results[focusedDate]} showContent={showContent} />
+            </CardContent>
+          </Card>
+        </Box>
       ) : (
         <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1 }}>
           {dates.map((d) => {
@@ -89,13 +115,18 @@ export default function ScheduleWeek() {
             return (
               <Card key={d} variant="outlined" sx={{ minWidth: 240, flex: '1 0 240px', borderColor: isToday ? 'primary.main' : 'divider', borderWidth: isToday ? 2 : 1 }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Stack direction="row" alignItems="center" justifyContent="space-between">
+                  <Stack direction="row" alignItems="center" justifyContent="space-between"
+                    onClick={() => setFocusedDate(d)}
+                    sx={{ cursor: 'pointer', '&:hover .expandIcon': { color: 'primary.main' } }}>
                     <Typography variant="subtitle2" color={isToday ? 'primary' : 'text.primary'}>{fmtDay(d)}</Typography>
-                    {isToday && <Typography variant="caption" color="primary">Today</Typography>}
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      {isToday && <Typography variant="caption" color="primary">Today</Typography>}
+                      <ExpandIcon className="expandIcon" sx={{ fontSize: 15, color: 'text.disabled' }} />
+                    </Stack>
                   </Stack>
                   <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{weekdayOf(d)}</Typography>
                   <Divider sx={{ my: 1 }} />
-                  <ResolvedRunSheet resolved={results[d]} />
+                  <ResolvedRunSheet resolved={results[d]} showContent={showContent} />
                 </CardContent>
               </Card>
             );
