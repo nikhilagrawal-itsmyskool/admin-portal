@@ -224,11 +224,13 @@ export default function ModelPapers() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
         {doc.hasDocx && (
           <Tooltip title="View inline">
-            <Chip size="small" color="primary" variant="outlined" icon={<WordIcon />} label="View" onClick={() => openPreview(doc, docType, paper)} clickable />
+            <Chip size="small" color="primary" variant="outlined" icon={<WordIcon />} label="View Word" onClick={() => openPreview(doc, docType, paper)} clickable />
           </Tooltip>
         )}
         {doc.hasPdf ? (
-          <Chip size="small" variant="outlined" icon={<PdfIcon />} label="PDF" onClick={() => setPreview({ docId: doc.uuid, format: 'pdf', title: `${paper.grade || filter.grade} · ${paper.subjectName || ''} · ${DOC_TYPE_LABEL[docType] || docType}` })} clickable />
+          <Tooltip title="View inline">
+            <Chip size="small" color="primary" variant="outlined" icon={<PdfIcon />} label="View PDF" onClick={() => setPreview({ docId: doc.uuid, format: 'pdf', title: `${paper.grade || filter.grade} · ${paper.subjectName || ''} · ${DOC_TYPE_LABEL[docType] || docType}` })} clickable />
+          </Tooltip>
         ) : doc.pdfStatus === 'pending' ? (
           <Chip size="small" color="warning" variant="outlined" icon={<PendingIcon />} label="PDF…" />
         ) : doc.pdfStatus === 'failed' ? (
