@@ -78,17 +78,17 @@ const ParticipantRow = memo(function ParticipantRow({
             onChange={(e) => onRowChange(index, { role: e.target.value })} />
         </Grid>
       )}
-      <Grid item xs={5} sm={roleFixed ? 4 : 3}>
+      <Grid item xs={12} sm={roleFixed ? 4 : 3}>
         <TextField size="small" select fullWidth value={row.targetType} disabled={disabled}
           onChange={(e) => onRowChange(index, { targetType: e.target.value, targetId: null, targetName: null, targetText: null })}>
           {targetTypes.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
         </TextField>
       </Grid>
-      <Grid item xs={6} sm={roleFixed ? 7 : 5}>
+      <Grid item xs={10} sm={roleFixed ? 7 : 5}>
         <TargetPicker type={row.targetType} targetId={row.targetId} targetName={row.targetName} targetText={row.targetText}
           onChange={onTarget} classOptions={classOptions} academicYearId={academicYearId} disabled={disabled} />
       </Grid>
-      <Grid item xs={1} sm={1} textAlign="right">
+      <Grid item xs={2} sm={1} textAlign="right">
         {!disabled && <IconButton size="small" color="error" onClick={() => onRemove(index)}><DeleteIcon fontSize="small" /></IconButton>}
       </Grid>
     </Grid>
