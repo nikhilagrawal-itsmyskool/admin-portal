@@ -8,11 +8,20 @@ import {
 } from '@mui/icons-material';
 import { renderAsync } from 'docx-preview';
 import * as pdfjsLib from 'pdfjs-dist';
-import PdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
 import { syllabusService } from '../../services/syllabusService';
 
-// pdf.js renders in a web worker; point it at the bundled worker (Vite emits a URL).
-pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorkerUrl;
+// pdf.js renders in a web worker. Import it via Vite's ?worker so it's emitted as a
+// bundled .js chunk and instantiated as a real Worker — NOT ?url, which leaves a raw
+// .mjs asset. Amplify's SPA rewrite allow-list excludes .mjs, so a .mjs request falls
+// back to index.html (served as text/html) and the browser refuses to run it as a
+// worker → "failed to load document".
+let pdfWorkerReady = false;
+function ensurePdfWorker() {
+  if (pdfWorkerReady) return;
+  pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
+  pdfWorkerReady = true;
+}
 
 export function b64toBlob(b64, mime) {
   const bin = atob(b64);
@@ -31,6 +40,7 @@ function b64toBytes(b64) {
 // Uses pdf.js so it renders on every browser — mobile Safari/Chrome won't show a
 // PDF in an <iframe>, which is why the old inline preview came up blank on phones.
 async function renderPdf(base64, container, isCancelled) {
+  ensurePdfWorker();
   const bytes = b64toBytes(base64);
   const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
