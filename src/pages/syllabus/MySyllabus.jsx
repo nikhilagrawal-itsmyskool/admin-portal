@@ -56,9 +56,11 @@ export default function MySyllabus() {
     return arr;
   }, [plans]);
 
+  // Prefer the PDF (the clean rendered output) when it's ready; fall back to the
+  // Word source only if there's no PDF yet.
   const openDoc = (doc, subjectName, paper) => setPreview({
     docId: doc.uuid,
-    format: doc.hasDocx ? 'docx' : 'pdf',
+    format: doc.hasPdf ? 'pdf' : 'docx',
     title: `${subjectName || 'Paper'} · ${EXAM_LABEL[paper.exam] || paper.exam} · ${DOC_LABEL[doc.docType] || doc.docType}`,
   });
 
@@ -93,7 +95,7 @@ export default function MySyllabus() {
                         </Typography>
                         {pp.docs.map((d) => (
                           <Chip key={d.uuid} size="small" variant="outlined" clickable
-                            icon={d.hasDocx ? <WordIcon /> : <PdfIcon />}
+                            icon={d.hasPdf ? <PdfIcon /> : <WordIcon />}
                             label={DOC_LABEL[d.docType] || d.docType}
                             onClick={() => openDoc(d, g.subjectName, pp)} />
                         ))}
