@@ -1,11 +1,35 @@
 import React from 'react';
-import { Box, Typography, Chip, Stack } from '@mui/material';
+import { Box, Typography, Chip, Stack, Avatar } from '@mui/material';
+import { Cake as CakeIcon } from '@mui/icons-material';
 
 // Person label with the student's section in brackets: "Siddhi Rathore (VIII-A)".
 const personName = (p) => {
   const name = p.targetName || p.name || p.targetText || p.targetType || p.studentId;
   return name && p.className ? `${name} (${p.className})` : name;
 };
+
+const initials = (name) => (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+
+// The birthday-spotlight list (students of the plan's classes, ordered smaller→
+// higher class, then staff), each with a small photo or an initials avatar.
+function Birthdays({ people }) {
+  if (!people?.length) return null;
+  return (
+    <Stack spacing={0.5} sx={{ pl: 0.5, mt: 0.25 }}>
+      {people.map((p) => (
+        <Stack key={`${p.kind}-${p.id}`} direction="row" spacing={1} alignItems="center">
+          <Avatar src={p.photoUrl || undefined} sx={{ width: 26, height: 26, fontSize: 11, bgcolor: p.kind === 'employee' ? 'secondary.light' : 'primary.light' }}>
+            {initials(p.name)}
+          </Avatar>
+          <Typography variant="body2">{p.name}</Typography>
+          {p.kind === 'employee'
+            ? <Chip size="small" variant="outlined" color="secondary" label="Staff" sx={{ height: 18, fontSize: 10 }} />
+            : p.className && <Chip size="small" variant="outlined" label={p.className} sx={{ height: 18, fontSize: 10 }} />}
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
 
 // Compact read-only render of a /resolve result. Shows a "no assembly" state
 // when not held (a non-assembly weekday now; a holiday once the academic
@@ -28,6 +52,11 @@ function RunNodes({ nodes, depth = 0, showDescriptions = true, showContent = tru
         <Typography variant="body2" sx={{ pl: 0.5, whiteSpace: 'pre-wrap', fontStyle: n.contentFromRoster ? 'normal' : 'italic', color: n.contentFromRoster ? 'primary.main' : 'text.secondary' }}>
           {n.content}
         </Typography>
+      )}
+      {n.dynamicSource === 'birthday' && (
+        n.birthdays?.length
+          ? <Birthdays people={n.birthdays} />
+          : <Stack direction="row" spacing={0.5} alignItems="center" sx={{ pl: 0.5, color: 'text.secondary' }}><CakeIcon sx={{ fontSize: 15 }} /><Typography variant="caption">No birthdays today</Typography></Stack>
       )}
       <RunNodes nodes={n.children} depth={depth + 1} showDescriptions={showDescriptions} showContent={showContent} />
     </Box>

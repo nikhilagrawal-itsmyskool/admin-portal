@@ -77,6 +77,7 @@ export default function NodeEditorDrawer({
       title: node.title || '', description: node.description || '', expectation: node.expectation || '',
       recommendation: node.recommendation || '', outcome: node.outcome || '',
       startTime: node.startTime || '', durationMinutes: node.durationMinutes ?? '',
+      dynamicSource: node.dynamicSource || '',
     });
     setDayContent(Object.fromEntries((node.dayContent || []).map((c) => [c.weekday, c.content || ''])));
     setDays(node.days || []);
@@ -104,6 +105,7 @@ export default function NodeEditorDrawer({
       recommendation: form.recommendation, outcome: form.outcome,
       startTime: form.startTime || null,
       durationMinutes: form.durationMinutes === '' ? null : Number(form.durationMinutes),
+      dynamicSource: form.dynamicSource || null,
     });
   });
 
@@ -158,6 +160,12 @@ export default function NodeEditorDrawer({
           <Grid item xs={6}><TextField size="small" fullWidth label="Start time" placeholder="HH:MM" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} /></Grid>
           <Grid item xs={6}><TextField size="small" fullWidth type="number" label="Duration (min)" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })} /></Grid>
         </Grid>
+        <TextField size="small" select label="Auto-fill" value={form.dynamicSource || ''}
+          onChange={(e) => setForm({ ...form, dynamicSource: e.target.value })}
+          helperText="Auto-populate this node from live data when the assembly is viewed">
+          <MenuItem value="">None</MenuItem>
+          <MenuItem value="birthday">Today’s birthdays (students + staff)</MenuItem>
+        </TextField>
         <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={saveContent} disabled={busy === 'content'} sx={{ alignSelf: 'flex-start' }}>Save content</Button>
       </Stack>
 
