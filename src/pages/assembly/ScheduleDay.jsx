@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, TextField, MenuItem, Stack, IconButton,
-  Alert, CircularProgress, Button, Divider,
+  Alert, CircularProgress, Button, Divider, FormControlLabel, Checkbox,
 } from '@mui/material';
 import { ChevronLeft as PrevIcon, ChevronRight as NextIcon, Today as TodayIcon } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
@@ -19,6 +19,8 @@ export default function ScheduleDay() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [noteOpen, setNoteOpen] = useState(true);
+  const [showContent, setShowContent] = useState(true); // the per-day content text
+  const [showDescriptions, setShowDescriptions] = useState(false); // the "— …" labels
   const today = todayISO();
 
   useEffect(() => {
@@ -76,6 +78,14 @@ export default function ScheduleDay() {
                 value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
               <Button size="small" startIcon={<TodayIcon />} onClick={() => setDate(today)} disabled={date === today}>Today</Button>
             </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <FormControlLabel sx={{ whiteSpace: 'nowrap' }}
+                control={<Checkbox size="small" checked={showContent} onChange={(e) => setShowContent(e.target.checked)} />}
+                label="Content" />
+              <FormControlLabel sx={{ whiteSpace: 'nowrap' }}
+                control={<Checkbox size="small" checked={showDescriptions} onChange={(e) => setShowDescriptions(e.target.checked)} />}
+                label="Descriptions" />
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
@@ -89,7 +99,7 @@ export default function ScheduleDay() {
             <Divider sx={{ mb: 1.5 }} />
             {loading
               ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress size={28} /></Box>
-              : <ResolvedRunSheet resolved={resolved} />}
+              : <ResolvedRunSheet resolved={resolved} showDescriptions={showDescriptions} showContent={showContent} />}
           </CardContent>
         </Card>
       )}

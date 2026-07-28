@@ -20,7 +20,8 @@ export default function ScheduleWeek() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [noteOpen, setNoteOpen] = useState(true);
-  const [showContent, setShowContent] = useState(true); // hide the description/content lines
+  const [showContent, setShowContent] = useState(true); // the per-day content text
+  const [showDescriptions, setShowDescriptions] = useState(false); // the "— Invocation & Prayer" labels
   const [focusedDate, setFocusedDate] = useState(null); // when set, one day fills the page
 
   const monday = mondayOf(refDate);
@@ -76,7 +77,10 @@ export default function ScheduleWeek() {
               </TextField>
               <FormControlLabel sx={{ whiteSpace: 'nowrap' }}
                 control={<Checkbox size="small" checked={showContent} onChange={(e) => setShowContent(e.target.checked)} />}
-                label="Show details" />
+                label="Content" />
+              <FormControlLabel sx={{ whiteSpace: 'nowrap' }}
+                control={<Checkbox size="small" checked={showDescriptions} onChange={(e) => setShowDescriptions(e.target.checked)} />}
+                label="Descriptions" />
             </Stack>
             <Stack direction="row" spacing={1} alignItems="center">
               <IconButton size="small" onClick={() => setRefDate(addWeek(monday, -1))}><PrevIcon /></IconButton>
@@ -104,7 +108,7 @@ export default function ScheduleWeek() {
                 {focusedDate === today && <Typography variant="caption" color="primary">Today</Typography>}
               </Stack>
               <Divider sx={{ my: 1 }} />
-              <ResolvedRunSheet resolved={results[focusedDate]} showContent={showContent} />
+              <ResolvedRunSheet resolved={results[focusedDate]} showDescriptions={showDescriptions} showContent={showContent} />
             </CardContent>
           </Card>
         </Box>
@@ -126,7 +130,7 @@ export default function ScheduleWeek() {
                   </Stack>
                   <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{weekdayOf(d)}</Typography>
                   <Divider sx={{ my: 1 }} />
-                  <ResolvedRunSheet resolved={results[d]} showContent={showContent} />
+                  <ResolvedRunSheet resolved={results[d]} showDescriptions={showDescriptions} showContent={showContent} />
                 </CardContent>
               </Card>
             );
