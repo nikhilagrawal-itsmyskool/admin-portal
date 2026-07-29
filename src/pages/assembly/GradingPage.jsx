@@ -12,6 +12,7 @@ import { employeeService } from '../../services/employeeService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { MetricScorePicker, DictionPicker, StarPresenterPicker } from './gradeFields';
 import { useCan } from '../../permissions/can';
+import ReferenceDocCard from './ReferenceDocCard';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
@@ -167,6 +168,13 @@ export default function GradingPage() {
       <Typography variant="h4" sx={{ mb: 3 }}>Assembly Grading</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
+
+      <ReferenceDocCard
+        kind="grading"
+        title="Grading document"
+        hint="The source grading document these metrics & penalties were built from. Kept for reference — download, edit and re-upload anytime."
+        canManage={canManage}
+      />
 
       <Grid container spacing={3}>
         {/* Rubric */}

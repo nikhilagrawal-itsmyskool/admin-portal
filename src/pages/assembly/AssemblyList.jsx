@@ -12,6 +12,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { assemblyService } from '../../services/assemblyService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
+import ReferenceDocCard from './ReferenceDocCard';
 
 const emptyForm = { name: '', scopeLabel: '', days: [] };
 
@@ -138,6 +139,13 @@ export default function AssemblyList() {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+
+      <ReferenceDocCard
+        kind="plan"
+        title="Assembly plan document"
+        hint="The source document this assembly plan was built from (e.g. the Word file). Kept for reference — download, edit and re-upload anytime."
+        canManage={canManage}
+      />
 
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>

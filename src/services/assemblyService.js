@@ -4,6 +4,12 @@ import api from '../config/api';
 export const assemblyService = {
   getLookups: async () => (await api.get('/assembly/lookups')).data,
 
+  // ---- Reference documents (source Word/PDF the assembly was built from) ----
+  getDocuments: async () => (await api.get('/assembly/documents')).data, // [{ uuid, kind, fileName, sizeBytes, uploadedAt, uploadedByName }]
+  uploadDocument: async (data) => (await api.post('/assembly/documents', data)).data, // { kind, fileName, mimeType, base64Data } -> refreshed list
+  getDocumentFile: async (id) => (await api.get(`/assembly/documents/${id}/file`)).data, // { fileName, mimeType, base64Data }
+  deleteDocument: async (id) => (await api.delete(`/assembly/documents/${id}`)).data, // refreshed list
+
   // ---- Plans ----
   getPlans: async (params = {}) => (await api.get('/assembly/plans', { params })).data,
   getPlan: async (id) => (await api.get(`/assembly/plans/${id}`)).data, // plan + classes + days

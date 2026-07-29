@@ -10,6 +10,7 @@ import {
 import { assemblyService } from '../../services/assemblyService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
+import ReferenceDocCard from './ReferenceDocCard';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
@@ -166,6 +167,13 @@ export default function ChecklistPage() {
       <Typography variant="h4" sx={{ mb: 3 }}>Assembly Checklist</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
+
+      <ReferenceDocCard
+        kind="checklist"
+        title="Checklist document"
+        hint="The source checklist document these items were built from. Kept for reference — download, edit and re-upload anytime."
+        canManage={canManage}
+      />
 
       {/* Config */}
       <Card sx={{ mb: 3 }}>
