@@ -318,6 +318,12 @@ const menuItems = [
       // on desktop 'This Week' already covers it, so it's intentionally omitted here.
       { title: 'This Week', icon: WeekIcon, path: '/assembly/week', perm: 'assembly.view' },
       { title: 'Calendar', icon: CalendarIcon, path: '/assembly/calendar', perm: 'assembly.view' },
+      // House-duty screens for teachers — shown only to the relevant house member /
+      // evaluator (derived via /me/assembly/duties), hidden from admins who use the
+      // authoring entries below. Mirrors the mobile "my" tiles onto desktop.
+      { title: 'My Roster', icon: RosterIcon, path: '/assembly/my-roster', perm: 'assembly.view', derived: 'houseMember' },
+      { title: 'My Checklist', icon: ChecklistIcon, path: '/assembly/my-checklist', perm: 'assembly.view', derived: 'houseMember' },
+      { title: 'My Grading', icon: GradingIcon, path: '/assembly/my-grade', perm: 'assembly.view', derived: 'evaluator' },
       // Authoring — admin/god only (assembly.manage) and desktop-only (absent from MOBILE_FEATURES).
       { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.manage' },
       { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.manage' },
@@ -337,7 +343,9 @@ export default function Sidebar({ open, onClose, isDesktop }) {
   const location = useLocation();
   const can = useCan();
   const isMobile = useIsMobile();
-  const { visible: mobileVisible } = useMobileVisibility(isMobile);
+  // Enabled on mobile (home tiles) and, on desktop, for anyone with assembly.view so
+  // the derived "My Roster/Checklist/Grading" sidebar entries can resolve house roles.
+  const { visible: mobileVisible } = useMobileVisibility(isMobile || can('assembly.view'));
   const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false, Timetable: false, Attendance: false, Communication: false });
 
   // Filter the static menu by the user's permissions: a parent with its own `perm`
@@ -351,7 +359,11 @@ export default function Sidebar({ open, onClose, isDesktop }) {
       if (item.perm && !can(item.perm)) return null;
       const children = item.children.filter((c) => {
         const perm = c.perm ?? item.perm;
-        return !perm || can(perm);
+        if (perm && !can(perm)) return false;
+        // Derived "my" entries (house member / evaluator): shown to the matching
+        // teacher only; admins use the authoring entries instead.
+        if (c.derived) return !can('assembly.manage') && mobileVisible(c);
+        return true;
       });
       return children.length ? { ...item, children } : null;
     })
