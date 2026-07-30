@@ -21,6 +21,7 @@ import {
   Grading as AssemblyGradeIcon,
   MenuBook as SyllabusIcon,
   PhotoCamera as HomeworkIcon,
+  RecordVoiceOver as AssistantIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -36,6 +37,8 @@ import {
 // runtime gate (house member / evaluator) resolved via /me/assembly/duties.
 export const MOBILE_FEATURES = [
   // ── Today ──────────────────────────────────────────────────────────────────
+  // Voice/LLM student assistant — god-only (assistant.use is granted to no role).
+  { title: "Assistant", icon: AssistantIcon, path: "/assistant", perm: "assistant.use", section: "today", color: "#3366ff" },
   { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view", section: "today", color: "#f4b400" },
   {
     title: "Take Attendance",
