@@ -56,6 +56,7 @@ import {
   EventAvailable as PublishedIcon,
   Schedule as ScheduleIcon,
   School as StudentIcon,
+  RecordVoiceOver as AssistantIcon,
   AssignmentReturn as TransferIcon,
   Home as HouseIcon,
   FactCheck as AttendanceIcon,
@@ -242,6 +243,12 @@ const menuItems = [
       { title: 'Templates', icon: TemplateIcon, path: '/communication/templates' },
       { title: 'Sent Messages', icon: SentIcon, path: '/communication/messages' },
     ],
+  },
+  {
+    title: 'Assistant',
+    icon: AssistantIcon,
+    path: '/assistant',
+    perm: 'assistant.use',
   },
   {
     title: 'Students',

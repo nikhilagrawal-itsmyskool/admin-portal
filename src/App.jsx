@@ -98,6 +98,7 @@ import PublishedTimetable from './pages/timetable/published/PublishedTimetable';
 import SeasonList from './pages/timetable/seasons/SeasonList';
 import SeasonEditor from './pages/timetable/seasons/SeasonEditor';
 import StudentList from './pages/student/StudentList';
+import AssistantPage from './pages/assistant/AssistantPage';
 import StudentForm from './pages/student/StudentForm';
 import StudentDetail from './pages/student/StudentDetail';
 import ClassStrength from './pages/student/ClassStrength';
@@ -255,6 +256,7 @@ export default function App() {
         <Route path="asset/types" element={<AssetTypeList />} />
         <Route path="asset/counts" element={<AssetCounts />} />
         <Route path="students" element={<StudentList />} />
+        <Route path="assistant" element={<AssistantPage />} />
         <Route path="students/new" element={<StudentForm />} />
         <Route path="students/class-strength" element={<ClassStrength />} />
         <Route path="students/houses" element={<HouseList />} />

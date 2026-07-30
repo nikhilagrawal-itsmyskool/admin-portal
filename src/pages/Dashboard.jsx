@@ -26,6 +26,7 @@ import {
   PersonSearch as HiringIcon,
   DirectionsBus as TransportIcon,
   School as StudentIcon,
+  RecordVoiceOver as AssistantIcon,
   AssignmentReturn as TransferIcon,
   LibraryBooks as SyllabusIcon,
   Groups as AssemblyIcon,
@@ -162,6 +163,14 @@ const modules = [
     path: "/transport",
     color: "#ff6f00",
     perm: "transport.view",
+  },
+  {
+    title: "Assistant",
+    description: "Ask about a student by voice and follow up",
+    icon: AssistantIcon,
+    path: "/assistant",
+    color: "#3366ff",
+    perm: "assistant.use",
   },
   {
     title: "Students",

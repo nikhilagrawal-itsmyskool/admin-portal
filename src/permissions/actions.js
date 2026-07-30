@@ -51,6 +51,8 @@ export const ACTIONS = {
   ASSEMBLY_MANAGE: "assembly.manage",
   HOMEWORK_POST: "homework.post",
   HOMEWORK_MANAGE: "homework.manage",
+  // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
+  ASSISTANT_USE: "assistant.use",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -254,5 +256,9 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.HOMEWORK_MANAGE,
     description: "Override which teacher is the homework class-teacher for a class",
+  },
+  {
+    action: ACTIONS.ASSISTANT_USE,
+    description: "Use the voice/LLM student assistant (god-only)",
   },
 ];
