@@ -91,7 +91,9 @@ export default function ModelPapers() {
         const ex = lookups?.exams || [{ value: 'half_yearly', label: 'Half Yearly' }, { value: 'annual', label: 'Annual' }];
         setExams(ex);
         const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        setFilter((f) => ({ ...f, academicYearId: cur?.uuid || '', grade: (grds || [])[0]?.grade || '', exam: ex[0]?.value || '' }));
+        // Default to the current year but ALL grades / exams, so the grid opens
+        // showing everything; grade & exam are optional filters.
+        setFilter((f) => ({ ...f, academicYearId: cur?.uuid || '' }));
       } catch {
         setError('Failed to load model-paper filters');
       }
@@ -99,10 +101,12 @@ export default function ModelPapers() {
   }, []);
 
   const loadPapers = async (f = filter) => {
-    if (!f.academicYearId || !f.grade || !f.exam) { setPapers([]); return; }
+    if (!f.academicYearId) { setPapers([]); return; }
     setLoading(true); setError('');
     try {
-      const params = { academicYearId: f.academicYearId, grade: f.grade, exam: f.exam };
+      const params = { academicYearId: f.academicYearId };
+      if (f.grade) params.grade = f.grade;
+      if (f.exam) params.exam = f.exam;
       if (f.streamCode) params.streamCode = f.streamCode;
       setPapers((await syllabusService.getModelPapers(params)) || []);
     } catch {
@@ -201,11 +205,8 @@ export default function ModelPapers() {
         pdfBase64Data,
       });
       setSuccess('Uploaded.');
-      const uploadedGrade = dialog.grade;
-      const uploadedExam = dialog.exam;
       setDialog(null);
-      // Jump the view to what was just uploaded so it's visible.
-      setFilter((f) => ({ ...f, grade: uploadedGrade, exam: uploadedExam }));
+      loadPapers();
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to upload');
     } finally {
@@ -247,7 +248,7 @@ export default function ModelPapers() {
   };
 
   const examLabel = useMemo(() => Object.fromEntries(exams.map((e) => [e.value, e.label])), [exams]);
-  const emptyColSpan = (showStreamCol ? 6 : 5) + (canManage ? 1 : 0);
+  const emptyColSpan = (showStreamCol ? 8 : 7) + (canManage ? 1 : 0);
 
   // Managing model papers is admin/god only. Teachers reach their own subjects'
   // papers through My Syllabus (scoped), not this full grid.
@@ -257,7 +258,7 @@ export default function ModelPapers() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">Model Papers</Typography>
-        {canManage && filter.grade && filter.exam && (
+        {canManage && (
           <Button variant="contained" startIcon={<UploadIcon />} onClick={() => openUpload()}>Upload paper</Button>
         )}
       </Box>
@@ -277,12 +278,14 @@ export default function ModelPapers() {
             <Grid item xs={6} md={2}>
               <TextField fullWidth select size="small" label="Grade" value={filter.grade}
                 onChange={(e) => setFilter({ ...filter, grade: e.target.value })}>
+                <MenuItem value="">All grades</MenuItem>
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={6} md={3}>
               <TextField fullWidth select size="small" label="Exam" value={filter.exam}
                 onChange={(e) => setFilter({ ...filter, exam: e.target.value })}>
+                <MenuItem value="">All exams</MenuItem>
                 {exams.map((e) => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
               </TextField>
             </Grid>
@@ -304,13 +307,15 @@ export default function ModelPapers() {
         <CardContent>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
-          ) : !filter.grade || !filter.exam ? (
-            <Alert severity="info">Pick a grade and exam to manage its model papers.</Alert>
+          ) : !filter.academicYearId ? (
+            <Alert severity="info">Pick an academic year.</Alert>
           ) : (
             <Box sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
+                    <TableCell sx={{ width: 70, fontWeight: 600 }}>Grade</TableCell>
+                    <TableCell sx={{ width: 120, fontWeight: 600 }}>Exam</TableCell>
                     <TableCell sx={{ minWidth: 150, fontWeight: 600 }}>Subject</TableCell>
                     {showStreamCol && <TableCell sx={{ width: 110, fontWeight: 600 }}>Stream</TableCell>}
                     <TableCell sx={{ fontWeight: 600 }}>Model Paper</TableCell>
@@ -323,12 +328,14 @@ export default function ModelPapers() {
                 <TableBody>
                   {papers.length === 0 ? (
                     <TableRow><TableCell colSpan={emptyColSpan} align="center" sx={{ py: 3 }}>
-                      No papers yet for {filter.grade} · {examLabel[filter.exam] || filter.exam}. {canManage && 'Use “Upload paper”.'}
+                      No model papers{filter.grade ? ` for ${filter.grade}` : ''}{filter.exam ? ` · ${examLabel[filter.exam] || filter.exam}` : ''}. {canManage && 'Use “Upload paper”.'}
                     </TableCell></TableRow>
                   ) : papers.map((p) => {
                     const hasAnswerDoc = p.docs.some((d) => d.docType === 'answer_key');
                     return (
                       <TableRow key={p.uuid} hover>
+                        <TableCell><Chip size="small" label={p.grade} /></TableCell>
+                        <TableCell>{examLabel[p.exam] || p.exam}</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>{p.subjectName || '-'}</TableCell>
                         {showStreamCol && (
                           <TableCell>{p.streamCode
@@ -432,7 +439,7 @@ export default function ModelPapers() {
         <DialogContent>
           <Typography variant="body2">
             This removes <b>{confirmDelete?.subjectName || 'this subject'}</b>
-            {confirmDelete?.streamCode ? ` (${streamName(confirmDelete.streamCode)})` : ''} for {filter.grade} · {examLabel[filter.exam] || filter.exam},
+            {confirmDelete?.streamCode ? ` (${streamName(confirmDelete.streamCode)})` : ''} for {confirmDelete?.grade} · {examLabel[confirmDelete?.exam] || confirmDelete?.exam},
             including every document on the row (model paper, answer key, blueprint). This cannot be undone.
           </Typography>
         </DialogContent>

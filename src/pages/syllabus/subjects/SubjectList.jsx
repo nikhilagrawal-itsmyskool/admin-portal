@@ -114,8 +114,8 @@ export default function SubjectList() {
         getRowId={(row) => row.uuid}
         loading={loading}
         autoHeight
-        pageSizeOptions={[10, 25, 50]}
-        initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+        pageSizeOptions={[10, 25, 50, 100]}
+        initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
         disableRowSelectionOnClick
         sx={{ border: 'none', '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 } }}
       />
