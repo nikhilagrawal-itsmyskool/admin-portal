@@ -129,6 +129,11 @@ export default function SyllabusList() {
     },
     { field: 'book', headerName: 'Book', flex: 1, minWidth: 120, valueFormatter: (v) => v || '-' },
     {
+      field: 'uploadedAt', headerName: 'Uploaded', width: 170,
+      valueGetter: (value, row) => row.updatedAt || row.createdAt || null,
+      valueFormatter: (v) => (v ? new Date(v).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'),
+    },
+    {
       field: 'actions', headerName: 'Actions', width: 110, sortable: false,
       renderCell: (params) => (
         <Box>
@@ -159,7 +164,7 @@ export default function SyllabusList() {
             </Grid>
             <Grid item xs={12} md={hasStreams ? 3 : 4}>
               <TextField fullWidth select size="small" label="Grade" value={filter.grade}
-                onChange={(e) => setFilter({ ...filter, grade: e.target.value })}>
+                onChange={(e) => setFilter({ ...filter, grade: e.target.value, subjectId: '' })}>
                 <MenuItem value="">All grades</MenuItem>
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
               </TextField>
@@ -178,7 +183,7 @@ export default function SyllabusList() {
               <TextField fullWidth select size="small" label="Subject" value={filter.subjectId}
                 onChange={(e) => setFilter({ ...filter, subjectId: e.target.value })}>
                 <MenuItem value="">All subjects</MenuItem>
-                {subjects.map((s) => <MenuItem key={s.uuid} value={s.uuid}>{s.name}</MenuItem>)}
+                {subjects.filter((s) => !filter.grade || String(s.grade || '').toLowerCase() === String(filter.grade).toLowerCase()).map((s) => <MenuItem key={s.uuid} value={s.uuid}>{s.name}</MenuItem>)}
               </TextField>
             </Grid>
           </Grid>
@@ -203,7 +208,7 @@ export default function SyllabusList() {
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12} sm={6}>
               <TextField fullWidth select size="small" label="Grade" value={dialog?.grade || ''}
-                onChange={(e) => setDialog({ ...dialog, grade: e.target.value })}>
+                onChange={(e) => setDialog({ ...dialog, grade: e.target.value, subjectId: '' })}>
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
               </TextField>
             </Grid>
@@ -220,7 +225,7 @@ export default function SyllabusList() {
             <Grid item xs={12} sm={6}>
               <TextField fullWidth select size="small" label="Subject" value={dialog?.subjectId || ''}
                 onChange={(e) => setDialog({ ...dialog, subjectId: e.target.value })}>
-                {subjects.map((s) => <MenuItem key={s.uuid} value={s.uuid}>{s.name}</MenuItem>)}
+                {subjects.filter((s) => !dialog?.grade || String(s.grade || '').toLowerCase() === String(dialog.grade).toLowerCase()).map((s) => <MenuItem key={s.uuid} value={s.uuid}>{s.name}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
