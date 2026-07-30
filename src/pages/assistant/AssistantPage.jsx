@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, TextField, MenuItem, Button, IconButton,
   Chip, Stack, Avatar, CircularProgress, Alert, Tooltip, Divider,
+  ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import {
   Mic as MicIcon, Stop as StopIcon, Send as SendIcon, VolumeUp as SpeakIcon,
@@ -91,16 +92,18 @@ export default function AssistantPage() {
   const can = useCan();
   const canView = can('assistant.use');
 
-  const [messages, setMessages] = useState([]); // {role:'user'|'assistant', text, card?, candidates?}
-  const [context, setContext] = useState(null);
+  const [messages, setMessages] = useState([]); // {role:'user'|'assistant', text, card?}
+  const [context, setContext] = useState(null); // opaque Convo blob {history, focusStudentId, focusName}
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [listening, setListening] = useState(false);
   const [typed, setTyped] = useState('');
   const [classes, setClasses] = useState([]);
   const [pickClass, setPickClass] = useState('');
+  const [lang, setLang] = useState('en'); // 'en' | 'hi' — reply + speech language
   const recogRef = useRef(null);
   const threadRef = useRef(null);
+  const focusName = context?.focusName || null;
 
   useEffect(() => {
     classService.getClasses().then((c) => setClasses(Array.isArray(c) ? c : c?.classes || [])).catch(() => {});
@@ -110,41 +113,41 @@ export default function AssistantPage() {
   }, [messages, busy]);
   useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch { /* noop */ } }, []);
 
-  const speak = useCallback((text) => {
+  const speak = useCallback((text, lng = lang) => {
     if (!CAN_SPEAK || !text) return;
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.03; u.lang = 'en-IN';
+      u.rate = 1.03; u.lang = lng === 'hi' ? 'hi-IN' : 'en-IN';
+      const voices = window.speechSynthesis.getVoices() || [];
+      const v = voices.find((x) => x.lang === u.lang) || voices.find((x) => x.lang?.startsWith(lng === 'hi' ? 'hi' : 'en'));
+      if (v) u.voice = v;
       window.speechSynthesis.speak(u);
     } catch { /* noop */ }
-  }, []);
+  }, [lang]);
 
-  const send = useCallback(async (question, extra = {}) => {
+  const send = useCallback(async (question) => {
     const q = (question || '').trim();
-    if (!q && !extra.studentId) return;
+    if (!q) return;
     setError(''); setBusy(true);
-    setMessages((m) => [...m, { role: 'user', text: q || '(selected)' }]);
+    setMessages((m) => [...m, { role: 'user', text: q }]);
     try {
-      const payload = { question: q || 'Give me a summary', ...extra };
-      if (extra.studentId === undefined) payload.context = context || undefined;
-      const r = await assistantService.ask(payload);
-      setMessages((m) => [...m, { role: 'assistant', text: r.speech, card: r.card, candidates: r.candidates }]);
+      const r = await assistantService.ask({ question: q, context: context || undefined, lang });
+      setMessages((m) => [...m, { role: 'assistant', text: r.speech, card: r.card }]);
       if (r.context) setContext(r.context);
-      else if (r.needsDisambiguation) setContext(null);
       speak(r.speech);
     } catch (e) {
       setError(e.response?.data?.error?.description || 'Something went wrong. Please try again.');
     } finally {
       setBusy(false);
     }
-  }, [context, speak]);
+  }, [context, speak, lang]);
 
   const startMic = () => {
     if (!SR) { setError('Voice input needs Chrome (desktop or Android). You can type instead.'); return; }
     try {
       const r = new SR();
-      r.lang = 'en-IN'; r.interimResults = false; r.maxAlternatives = 1;
+      r.lang = lang === 'hi' ? 'hi-IN' : 'en-IN'; r.interimResults = false; r.maxAlternatives = 1;
       r.onresult = (e) => { setListening(false); send(e.results[0][0].transcript); };
       r.onerror = () => setListening(false);
       r.onend = () => setListening(false);
@@ -176,7 +179,11 @@ export default function AssistantPage() {
             Ask about a student, then follow up — "his father's mobile?", "any siblings?", "attendance this month?"
           </Typography>
         </Box>
-        {context && <Chip color="primary" variant="outlined" icon={<StudentIcon />} label={`On: ${context.name}`} sx={{ mr: 1 }} />}
+        {focusName && <Chip color="primary" variant="outlined" icon={<StudentIcon />} label={`On: ${focusName}`} sx={{ mr: 1 }} />}
+        <ToggleButtonGroup size="small" exclusive value={lang} onChange={(_e, v) => v && setLang(v)} sx={{ mr: 1 }}>
+          <ToggleButton value="en">EN</ToggleButton>
+          <ToggleButton value="hi">हिंदी</ToggleButton>
+        </ToggleButtonGroup>
         <Tooltip title="New student / clear"><span><IconButton onClick={reset} disabled={busy}><ResetIcon /></IconButton></span></Tooltip>
       </Box>
 
@@ -212,16 +219,6 @@ export default function AssistantPage() {
                 )}
               </Box>
               {m.card && <StudentCard card={m.card} />}
-              {m.candidates?.length > 0 && (
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {m.candidates.map((c) => (
-                    <Button key={c.studentId} variant="outlined" size="small" sx={{ justifyContent: 'flex-start' }}
-                      onClick={() => send('Give me a summary', { studentId: c.studentId })}>
-                      {c.name}{c.className ? ` · ${c.className}` : ''}{c.roll != null ? ` · Roll ${c.roll}` : ''}{c.admissionNumber ? ` · ${c.admissionNumber}` : ''}
-                    </Button>
-                  ))}
-                </Stack>
-              )}
             </Box>
           </Box>
         ))}
@@ -245,9 +242,9 @@ export default function AssistantPage() {
               </span>
             </Tooltip>
             <TextField
-              size="small" fullWidth placeholder={context ? `Ask about ${context.name}, or type a new name…` : 'Student name'}
+              size="small" fullWidth placeholder={focusName ? `Ask about ${focusName}, or type a new name…` : 'Ask about a student…'}
               value={typed} onChange={(e) => setTyped(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { context ? send(typed) && setTyped('') : askTyped(); } }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && typed.trim()) { context ? (send(typed), setTyped('')) : askTyped(); } }}
             />
             {!context && (
               <TextField select size="small" label="Class" value={pickClass} onChange={(e) => setPickClass(e.target.value)} sx={{ minWidth: 130 }}>
