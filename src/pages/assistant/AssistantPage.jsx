@@ -17,6 +17,14 @@ import { useCan } from '../../permissions/can';
 const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 const CAN_SPEAK = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
+// Read long digit runs (phone numbers) digit-by-digit — otherwise TTS says "eight billion…".
+// Runs of 7+ digits only, so years (2026), attendance (94, 47) and admission ("1041") are
+// left to read naturally. A comma every 5 digits gives a natural pause.
+function forSpeech(text) {
+  return String(text || '').replace(/\d{7,}/g, (run) =>
+    run.split('').map((d, i) => (i > 0 && i % 5 === 0 ? ', ' : '') + d).join(' '));
+}
+
 // The summary "student card" the assistant returns on a new student (card = context).
 function StudentCard({ card }) {
   const father = (card.guardians || []).find((g) => g.relation === 'father');
@@ -117,7 +125,7 @@ export default function AssistantPage() {
     if (!CAN_SPEAK || !text) return;
     try {
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      const u = new SpeechSynthesisUtterance(forSpeech(text));
       u.rate = 1.03; u.lang = lng === 'hi' ? 'hi-IN' : 'en-IN';
       const voices = window.speechSynthesis.getVoices() || [];
       const v = voices.find((x) => x.lang === u.lang) || voices.find((x) => x.lang?.startsWith(lng === 'hi' ? 'hi' : 'en'));
