@@ -90,6 +90,8 @@ import {
   Payments as FeesIcon,
   PointOfSale as CollectIcon,
   RequestQuote as StructureIcon,
+  MoneyOff as WaiverIcon,
+  Undo as RefundIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -144,6 +146,9 @@ const menuItems = [
       { title: 'Fee Structure', icon: StructureIcon, path: '/fees/structure', perm: 'fee.manage' },
       { title: 'Concessions', icon: GavelIcon, path: '/fees/concessions', perm: 'fee.manage' },
       { title: 'Transport Slabs', icon: TransportIcon, path: '/fees/transport-slabs', perm: 'fee.manage' },
+      { title: 'Late Fees', icon: ScheduleIcon, path: '/fees/late-fees', perm: 'fee.manage' },
+      { title: 'Waivers', icon: WaiverIcon, path: '/fees/waivers', perm: 'fee.manage' },
+      { title: 'Refunds', icon: RefundIcon, path: '/fees/refunds', perm: 'fee.collect' },
     ],
   },
   {
