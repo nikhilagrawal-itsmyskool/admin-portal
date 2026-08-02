@@ -8,7 +8,7 @@ import { PersonSearch as PersonSearchIcon, Add as AddIcon, Delete as DeleteIcon 
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import CommandPalette from '../../components/common/CommandPalette';
-import { errMsg, inr, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
+import { errMsg, inr, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
 
 const PAY_MODES = ['cash', 'online', 'card', 'cheque', 'draft', 'neft', 'ecs', 'bank-deposit', 'rte'];
 const RECEIVED = ['father', 'mother', 'guardian', 'other'];
@@ -77,7 +77,7 @@ export default function CollectFees() {
         paymentMode: pay.mode, receivedFrom: pay.receivedFrom, receiptDate: pay.date, remarks: pay.remarks || null,
       });
       setOk(`Receipt ${receipt.receiptNo || ''} created for ${inr(receipt.totalPaid)}.`);
-      window.open(feesService.receiptPrintUrl(receipt.uuid), '_blank');
+      openReceipt(receipt.uuid);
       chooseStudent(student); // refresh ledger
     } catch (err) { setError(errMsg(err)); }
     finally { setCollecting(false); }
@@ -90,7 +90,7 @@ export default function CollectFees() {
     try {
       const receipt = await feesService.collectAdhoc({ academicYearId, payerName: adhoc.payerName || null, paymentMode: adhoc.mode, receiptDate: adhoc.date, remarks: adhoc.remarks || null, lines });
       setOk(`Adhoc receipt ${receipt.receiptNo || ''} created.`);
-      window.open(feesService.receiptPrintUrl(receipt.uuid), '_blank');
+      openReceipt(receipt.uuid);
       setAdhoc({ payerName: '', mode: 'cash', date: today(), remarks: '', lines: [{ headLabel: '', amount: '' }], saving: false });
     } catch (err) { setError(errMsg(err)); setAdhoc((s) => ({ ...s, saving: false })); }
   };

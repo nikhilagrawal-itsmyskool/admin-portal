@@ -10,7 +10,7 @@ import {
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
-import { inr, inrShort, errMsg, fmtDate, PAYMENT_MODE_LABELS, FEE_COLORS } from './feesUi';
+import { inr, inrShort, errMsg, fmtDate, openReceipt, PAYMENT_MODE_LABELS, FEE_COLORS } from './feesUi';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -160,7 +160,7 @@ export default function FeesDashboard() {
                   <TableCell><Chip size="small" variant="outlined" label={PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'} /></TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>{fmtDate(r.receiptDate)}</TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" title="Print" onClick={() => window.open(feesService.receiptPrintUrl(r.uuid), '_blank')}>
+                    <IconButton size="small" title="Print" onClick={() => openReceipt(r.uuid)}>
                       <PrintIcon fontSize="small" />
                     </IconButton>
                   </TableCell>

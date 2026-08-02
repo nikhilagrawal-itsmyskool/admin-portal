@@ -3,11 +3,11 @@ import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, IconButton,
   CircularProgress, Table, TableHead, TableBody, TableRow, TableCell,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, InputAdornment,
+  FormControlLabel, Switch,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
-import { studentService } from '../../services/studentService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { errMsg, inr, FEE_COLORS, CONCESSION_TYPE_LABELS } from './feesUi';
@@ -26,6 +26,7 @@ export default function ConcessionList() {
   const [selected, setSelected] = useState(null);
   const [roster, setRoster] = useState([]);
   const [rosterLoading, setRosterLoading] = useState(false);
+  const [onlyCurrent, setOnlyCurrent] = useState(false);
 
   const [dlg, setDlg] = useState({ open: false, data: emptyC, id: null, saving: false });
   const [pickStu, setPickStu] = useState(false);
@@ -54,12 +55,8 @@ export default function ConcessionList() {
   const selectTemplate = async (t) => {
     setSelected(t); setRosterLoading(true);
     try {
-      const rows = await feesService.getConcessionStudents(t.uuid);
-      const withNames = await Promise.all(rows.map(async (r) => {
-        try { const s = await studentService.getStudentById(r.studentId); return { ...r, name: s?.name, className: s?.currentClassName || s?.className, admissionNumber: s?.admissionNumber }; }
-        catch { return { ...r, name: r.studentId }; }
-      }));
-      setRoster(withNames);
+      // backend joins student + class, so names arrive in one call (no per-student lookups)
+      setRoster(await feesService.getConcessionStudents(t.uuid));
     } catch (err) { setError(errMsg(err)); }
     finally { setRosterLoading(false); }
   };
@@ -94,6 +91,7 @@ export default function ConcessionList() {
 
   const valueLabel = (c) => (c.valueType === 'percent' ? `${c.value}%` : inr(c.value));
   const headName = (id) => heads.find((h) => h.uuid === id)?.name || (id ? '—' : 'All');
+  const shownRoster = onlyCurrent ? roster.filter((r) => r.enrolledThisYear) : roster;
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
 
@@ -146,15 +144,28 @@ export default function ConcessionList() {
               </Box>
               {selected && <Button size="small" variant="contained" startIcon={<PersonAddIcon />} onClick={() => setPickStu(true)}>Add student</Button>}
             </CardContent>
+            {selected && (
+              <CardContent sx={{ py: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>{shownRoster.length} student{shownRoster.length === 1 ? '' : 's'}</Typography>
+                <FormControlLabel
+                  control={<Switch size="small" checked={onlyCurrent} onChange={(e) => setOnlyCurrent(e.target.checked)} />}
+                  label={<span style={{ fontSize: 12 }}>Enrolled this year only</span>}
+                />
+              </CardContent>
+            )}
             <CardContent sx={{ pt: 0 }}>
               {!selected && <Typography sx={{ color: FEE_COLORS.muted }}>Select a template to manage its students.</Typography>}
               {selected && rosterLoading && <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>}
-              {selected && !rosterLoading && roster.length === 0 && <Typography sx={{ color: FEE_COLORS.muted, py: 2 }}>No students attached yet.</Typography>}
-              {selected && !rosterLoading && roster.map((r) => (
+              {selected && !rosterLoading && shownRoster.length === 0 && <Typography sx={{ color: FEE_COLORS.muted, py: 2 }}>No students attached{onlyCurrent ? ' for this year' : ''} yet.</Typography>}
+              {selected && !rosterLoading && shownRoster.map((r) => (
                 <Box key={r.uuid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: `1px solid ${FEE_COLORS.border}` }}>
-                  <span>{r.name || r.studentId}{r.className && <span style={{ color: FEE_COLORS.muted }}> · {r.className}</span>}</span>
+                  <span>
+                    {r.studentName || r.studentId}
+                    {r.className && <span style={{ color: FEE_COLORS.muted }}> · {r.className}</span>}
+                    {r.admissionNumber && <span style={{ color: FEE_COLORS.muted }}> · {r.admissionNumber}</span>}
+                  </span>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    {r.cycleScope && <Chip size="small" variant="outlined" label={r.cycleScope} />}
+                    {!r.enrolledThisYear && <Chip size="small" color="warning" variant="outlined" label="not this year" />}
                     <IconButton size="small" color="error" onClick={() => removeStudent(r.studentId)}><DeleteIcon fontSize="small" /></IconButton>
                   </Box>
                 </Box>

@@ -1,3 +1,20 @@
+import { feesService } from '../../services/feesService';
+
+// Open a receipt for print. The /print endpoint is auth-gated, so a plain window.open(url)
+// (no Authorization header) 401s — instead fetch the HTML via the authenticated client and
+// write it into a new window. The window is opened synchronously on the click to dodge popup blockers.
+export async function openReceipt(id) {
+  const w = window.open('', '_blank');
+  try {
+    const html = await feesService.getReceiptHtml(id);
+    if (w) { w.document.open(); w.document.write(html); w.document.close(); }
+    return true;
+  } catch (e) {
+    if (w) w.close();
+    return false;
+  }
+}
+
 // Shared UI helpers + tokens for the Fees screens (mirrors the approved mockup).
 export const FEE_COLORS = {
   primary: '#3366ff',
