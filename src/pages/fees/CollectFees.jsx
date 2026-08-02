@@ -27,6 +27,7 @@ export default function CollectFees() {
   const [loadingLedger, setLoadingLedger] = useState(false);
   const [sel, setSel] = useState({}); // chargeId -> { checked, amount }
   const [pay, setPay] = useState({ mode: 'cash', receivedFrom: 'father', date: today(), remarks: '', notify: true });
+  const [useAdvance, setUseAdvance] = useState(false);
   const [collecting, setCollecting] = useState(false);
 
   // adhoc
@@ -41,6 +42,7 @@ export default function CollectFees() {
         feesService.getStudentSummary(s.uuid, academicYearId).catch(() => null),
       ]);
       setLedger(l); setSummary(sm);
+      setUseAdvance(Number(sm?.advance || 0) > 0);
       const due = (l.lines || []).filter((ln) => ln.remaining > 0);
       const init = {};
       due.forEach((ln) => { init[ln.chargeId] = { checked: false, amount: String(ln.remaining) }; });
@@ -55,6 +57,10 @@ export default function CollectFees() {
     return e?.checked ? s + (Number(e.amount) || 0) : s;
   }, 0);
 
+  const advanceAvail = Number(summary?.advance || 0);
+  const advanceApplied = useAdvance ? Math.min(advanceAvail, selectedTotal) : 0;
+  const payable = Math.max(0, selectedTotal - advanceApplied);
+
   const toggle = (id, checked) => setSel((p) => ({ ...p, [id]: { ...p[id], checked } }));
   const setAmt = (id, amount) => setSel((p) => ({ ...p, [id]: { ...p[id], amount } }));
 
@@ -67,6 +73,7 @@ export default function CollectFees() {
     try {
       const receipt = await feesService.collect({
         studentId: student.uuid, academicYearId, allocations,
+        advanceApplied: useAdvance ? Math.min(advanceAvail, allocations.reduce((s, a) => s + a.amount, 0)) : 0,
         paymentMode: pay.mode, receivedFrom: pay.receivedFrom, receiptDate: pay.date, remarks: pay.remarks || null,
       });
       setOk(`Receipt ${receipt.receiptNo || ''} created for ${inr(receipt.totalPaid)}.`);
@@ -190,11 +197,21 @@ export default function CollectFees() {
                   <CardContent>
                     <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>Payment</Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
-                      <span>Outstanding</span><b>{inr(summary?.outstanding || 0)}</b>
+                      <span>Selected</span><b>{inr(selectedTotal)}</b>
                     </Box>
+                    {advanceAvail > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5, color: FEE_COLORS.warning }}>
+                        <FormControlLabel
+                          sx={{ m: 0 }}
+                          control={<Checkbox size="small" checked={useAdvance} onChange={(e) => setUseAdvance(e.target.checked)} />}
+                          label={<span style={{ fontSize: 13 }}>Apply advance <span style={{ color: FEE_COLORS.muted }}>({inr(advanceAvail)} available)</span></span>}
+                        />
+                        <span>− {inr(advanceApplied)}</span>
+                      </Box>
+                    )}
                     <Divider />
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1.5, fontSize: 18 }}>
-                      <b>Payable</b><b style={{ color: FEE_COLORS.primary }}>{inr(selectedTotal)}</b>
+                      <b>Payable</b><b style={{ color: FEE_COLORS.primary }}>{inr(payable)}</b>
                     </Box>
                     <Divider sx={{ mb: 2 }} />
                     <Grid container spacing={2}>
@@ -205,7 +222,7 @@ export default function CollectFees() {
                     </Grid>
                     <FormControlLabel sx={{ mt: 1 }} control={<Checkbox size="small" checked={pay.notify} onChange={(e) => setPay((p) => ({ ...p, notify: e.target.checked }))} />} label={<span style={{ fontSize: 13 }}>Send payment SMS/WhatsApp</span>} />
                     <Button fullWidth variant="contained" sx={{ mt: 2, py: 1.2 }} disabled={collecting || selectedTotal <= 0} onClick={collect}>
-                      {collecting ? 'Collecting…' : `Collect ${inr(selectedTotal)} & print`}
+                      {collecting ? 'Collecting…' : `Collect ${inr(payable)} & print`}
                     </Button>
                     <Typography sx={{ textAlign: 'center', mt: 1, fontSize: 11, color: FEE_COLORS.muted }}>Excess payment is stored as advance automatically.</Typography>
                   </CardContent>
