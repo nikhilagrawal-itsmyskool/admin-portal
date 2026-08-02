@@ -60,6 +60,15 @@ export function toDateInput(v) {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
 }
 
+// Sortable rank for a class name like "III-A" (NURSERY→…→XII, then section). No class → end.
+const GRADE_ORDER = ['NURSERY', 'LKG', 'UKG', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+export function classRank(className) {
+  if (!className) return 100000;
+  const [grade, section = ''] = String(className).split('-');
+  const gi = GRADE_ORDER.indexOf(grade.toUpperCase().trim());
+  return (gi === -1 ? 900 : gi) * 100 + (section.toUpperCase().charCodeAt(0) || 0);
+}
+
 export const PAYMENT_MODE_LABELS = {
   cash: 'Cash',
   cheque: 'Cheque',

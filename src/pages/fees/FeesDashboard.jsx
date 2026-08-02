@@ -90,7 +90,7 @@ export default function FeesDashboard() {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={6} md={2.4}><Kpi label="Collected today" value={inr(collectedToday)} accent={FEE_COLORS.primary} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="This month" value={inrShort(overview?.collectedMonth)} accent={FEE_COLORS.success} /></Grid>
-        <Grid item xs={6} md={2.4}><Kpi label="Outstanding" value={inrShort(overview?.outstanding)} sub={overview ? `${overview.duesStudents || 0} students with dues` : '—'} subColor={FEE_COLORS.danger} accent={FEE_COLORS.danger} /></Grid>
+        <Grid item xs={6} md={2.4}><Kpi label="Outstanding (due now)" value={inrShort(overview?.dueNow)} sub={overview ? `Full year ${inrShort(overview.outstanding)} · ${overview.duesStudents || 0} due` : '—'} subColor={FEE_COLORS.danger} accent={FEE_COLORS.danger} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="Advance held" value={inrShort(overview?.advance)} sub={overview ? `${overview.advanceStudents || 0} students` : '—'} accent={FEE_COLORS.warning} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="Concessions (yr)" value={inrShort(overview?.concessionYtd)} accent={FEE_COLORS.primaryLight} /></Grid>
       </Grid>

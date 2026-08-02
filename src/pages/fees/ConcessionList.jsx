@@ -10,7 +10,8 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { errMsg, inr, FEE_COLORS, CONCESSION_TYPE_LABELS } from './feesUi';
+import { errMsg, inr, classRank, FEE_COLORS, CONCESSION_TYPE_LABELS } from './feesUi';
+import { SwapVert as SortIcon } from '@mui/icons-material';
 
 const TYPE_COLOR = { sibling: 'primary', sibling_elder: 'primary', sibling_younger: 'primary', staff: 'warning', ews: 'success', other: 'default' };
 const emptyC = { name: '', type: 'sibling_younger', valueType: 'amount', value: '', feeHeadId: '' };
@@ -27,6 +28,7 @@ export default function ConcessionList() {
   const [roster, setRoster] = useState([]);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [onlyCurrent, setOnlyCurrent] = useState(false);
+  const [sortDir, setSortDir] = useState('asc'); // class order
 
   const [dlg, setDlg] = useState({ open: false, data: emptyC, id: null, saving: false });
   const [pickStu, setPickStu] = useState(false);
@@ -43,9 +45,8 @@ export default function ConcessionList() {
         feesService.getLookups().catch(() => ({ concessionTypes: [] })),
       ]);
       setList(c || []); setHeads(h || []); setTypes(lk.concessionTypes || []);
-      // roster counts (few templates)
-      const cs = await Promise.all((c || []).map((t) => feesService.getConcessionStudents(t.uuid).then((r) => [t.uuid, r.length]).catch(() => [t.uuid, 0])));
-      setCounts(Object.fromEntries(cs));
+      // count comes from the list query now (one call), not one roster fetch per template
+      setCounts(Object.fromEntries((c || []).map((t) => [t.uuid, Number(t.studentCount) || 0])));
       if (c && c.length && !selected) selectTemplate(c[0]);
       else if (selected) { const still = (c || []).find((t) => t.uuid === selected.uuid); setSelected(still || null); if (still) selectTemplate(still); }
     } catch (err) { setError(errMsg(err, 'Failed to load concessions')); }
@@ -91,7 +92,10 @@ export default function ConcessionList() {
 
   const valueLabel = (c) => (c.valueType === 'percent' ? `${c.value}%` : inr(c.value));
   const headName = (id) => heads.find((h) => h.uuid === id)?.name || (id ? '—' : 'All');
-  const shownRoster = onlyCurrent ? roster.filter((r) => r.enrolledThisYear) : roster;
+  const shownRoster = (onlyCurrent ? roster.filter((r) => r.enrolledThisYear) : roster)
+    .slice()
+    .sort((a, b) => (classRank(a.className) - classRank(b.className)) * (sortDir === 'asc' ? 1 : -1)
+      || (a.studentName || '').localeCompare(b.studentName || ''));
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
 
@@ -145,8 +149,13 @@ export default function ConcessionList() {
               {selected && <Button size="small" variant="contained" startIcon={<PersonAddIcon />} onClick={() => setPickStu(true)}>Add student</Button>}
             </CardContent>
             {selected && (
-              <CardContent sx={{ py: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>{shownRoster.length} student{shownRoster.length === 1 ? '' : 's'}</Typography>
+              <CardContent sx={{ py: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>{shownRoster.length} student{shownRoster.length === 1 ? '' : 's'}</Typography>
+                  <Button size="small" startIcon={<SortIcon fontSize="small" />} onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))} sx={{ textTransform: 'none', fontSize: 12 }}>
+                    Class {sortDir === 'asc' ? 'low→high' : 'high→low'}
+                  </Button>
+                </Box>
                 <FormControlLabel
                   control={<Switch size="small" checked={onlyCurrent} onChange={(e) => setOnlyCurrent(e.target.checked)} />}
                   label={<span style={{ fontSize: 12 }}>Enrolled this year only</span>}

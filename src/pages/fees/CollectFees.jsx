@@ -45,13 +45,15 @@ export default function CollectFees() {
       setUseAdvance(Number(sm?.advance || 0) > 0);
       const due = (l.lines || []).filter((ln) => ln.remaining > 0);
       const init = {};
-      due.forEach((ln) => { init[ln.chargeId] = { checked: false, amount: String(ln.remaining) }; });
+      due.forEach((ln) => { init[ln.chargeId] = { checked: !!ln.due, amount: String(ln.remaining) }; }); // pre-tick due-now
       setSel(init);
     } catch (err) { setError(errMsg(err, 'Failed to load the ledger')); }
     finally { setLoadingLedger(false); }
   };
 
   const dueLines = (ledger?.lines || []).filter((ln) => ln.remaining > 0);
+  const dueNowLines = dueLines.filter((ln) => ln.due);
+  const upcomingLines = dueLines.filter((ln) => !ln.due);
   const selectedTotal = dueLines.reduce((s, ln) => {
     const e = sel[ln.chargeId];
     return e?.checked ? s + (Number(e.amount) || 0) : s;
@@ -63,6 +65,30 @@ export default function CollectFees() {
 
   const toggle = (id, checked) => setSel((p) => ({ ...p, [id]: { ...p[id], checked } }));
   const setAmt = (id, amount) => setSel((p) => ({ ...p, [id]: { ...p[id], amount } }));
+
+  const renderDueRow = (ln, upcoming) => {
+    const e = sel[ln.chargeId] || {};
+    return (
+      <TableRow key={ln.chargeId} hover selected={!!e.checked} sx={upcoming ? { opacity: 0.75 } : undefined}>
+        <TableCell padding="checkbox"><Checkbox size="small" checked={!!e.checked} onChange={(ev) => toggle(ln.chargeId, ev.target.checked)} /></TableCell>
+        <TableCell>{ln.cycleLabel || '—'}</TableCell>
+        <TableCell>
+          {ln.headLabel}
+          {ln.status === 'partial' && <Chip size="small" color="warning" label="Part-paid" sx={{ ml: 1, height: 18 }} />}
+          {ln.category && ln.category !== 'fee' && <Chip size="small" variant="outlined" label={ln.category} sx={{ ml: 1, height: 18 }} />}
+        </TableCell>
+        <TableCell align="right">{inr(ln.charged)}</TableCell>
+        <TableCell align="right">{ln.concession ? '−' + inr(ln.concession) : '0'}</TableCell>
+        <TableCell align="right">{inr(ln.paid)}</TableCell>
+        <TableCell align="right" sx={{ fontWeight: 700 }}>{inr(ln.remaining)}</TableCell>
+        <TableCell align="right" sx={{ p: 0.5 }}>
+          <TextField size="small" variant="standard" type="number" disabled={!e.checked}
+            value={e.amount ?? ''} onChange={(ev) => setAmt(ln.chargeId, ev.target.value)}
+            inputProps={{ style: { textAlign: 'right', width: 78 }, max: ln.remaining }} />
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   const collect = async () => {
     const allocations = dueLines
@@ -158,29 +184,11 @@ export default function CollectFees() {
                       </TableHead>
                       <TableBody>
                         {dueLines.length === 0 && <TableRow><TableCell colSpan={8} align="center" sx={{ color: FEE_COLORS.success, py: 3 }}>All settled — nothing outstanding. 🎉</TableCell></TableRow>}
-                        {dueLines.map((ln) => {
-                          const e = sel[ln.chargeId] || {};
-                          return (
-                            <TableRow key={ln.chargeId} hover selected={!!e.checked}>
-                              <TableCell padding="checkbox"><Checkbox size="small" checked={!!e.checked} onChange={(ev) => toggle(ln.chargeId, ev.target.checked)} /></TableCell>
-                              <TableCell>{ln.cycleLabel || '—'}</TableCell>
-                              <TableCell>
-                                {ln.headLabel}
-                                {ln.status === 'partial' && <Chip size="small" color="warning" label="Part-paid" sx={{ ml: 1, height: 18 }} />}
-                                {ln.category && ln.category !== 'fee' && <Chip size="small" variant="outlined" label={ln.category} sx={{ ml: 1, height: 18 }} />}
-                              </TableCell>
-                              <TableCell align="right">{inr(ln.charged)}</TableCell>
-                              <TableCell align="right">{ln.concession ? '−' + inr(ln.concession) : '0'}</TableCell>
-                              <TableCell align="right">{inr(ln.paid)}</TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 700 }}>{inr(ln.remaining)}</TableCell>
-                              <TableCell align="right" sx={{ p: 0.5 }}>
-                                <TextField size="small" variant="standard" type="number" disabled={!e.checked}
-                                  value={e.amount ?? ''} onChange={(ev) => setAmt(ln.chargeId, ev.target.value)}
-                                  inputProps={{ style: { textAlign: 'right', width: 78 }, max: ln.remaining }} />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        {dueNowLines.map((ln) => renderDueRow(ln, false))}
+                        {upcomingLines.length > 0 && (
+                          <TableRow><TableCell colSpan={8} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>not yet due — later this year (tick to collect in advance)</TableCell></TableRow>
+                        )}
+                        {upcomingLines.map((ln) => renderDueRow(ln, true))}
                       </TableBody>
                     </Table>
                   </Box>
@@ -196,6 +204,10 @@ export default function CollectFees() {
                 <Card sx={{ position: 'sticky', top: 80 }}>
                   <CardContent>
                     <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>Payment</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, fontSize: 12.5, color: FEE_COLORS.muted }}>
+                      <span>Due now {inr(summary?.dueNow || 0)}</span>
+                      <span>Full year {inr(summary?.outstanding || 0)}</span>
+                    </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
                       <span>Selected</span><b>{inr(selectedTotal)}</b>
                     </Box>

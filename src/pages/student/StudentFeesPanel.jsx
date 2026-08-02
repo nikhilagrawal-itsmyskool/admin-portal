@@ -37,9 +37,10 @@ export default function StudentFeesPanel({ studentId }) {
   }, [studentId, academicYearId]);
 
   const due = lines.filter((l) => l.remaining > 0);
-  const dueTotal = due.reduce((s, l) => s + Number(l.remaining || 0), 0);
-  const paidCount = lines.filter((l) => l.remaining <= 0 && l.paid > 0).length;
-  const rows = due;
+  const dueNowLines = due.filter((l) => l.due);
+  const upcomingLines = due.filter((l) => !l.due);
+  const dueNowTotal = dueNowLines.reduce((s, l) => s + Number(l.remaining || 0), 0);
+  const fullYearTotal = due.reduce((s, l) => s + Number(l.remaining || 0), 0);
 
   const kpi = (label, value, color) => (
     <Card variant="outlined" sx={{ borderLeft: `4px solid ${color}` }}>
@@ -65,47 +66,59 @@ export default function StudentFeesPanel({ studentId }) {
         {!loading && !error && (
           <>
             <Grid container spacing={2} sx={{ mb: 1 }}>
-              <Grid item xs={4}>{kpi('Paid this year', inr(summary?.paid || 0), FEE_COLORS.success)}</Grid>
-              <Grid item xs={4}>{kpi('Outstanding', inr(summary?.outstanding || 0), FEE_COLORS.danger)}</Grid>
-              <Grid item xs={4}>{kpi('Advance held', inr(summary?.advance || 0), FEE_COLORS.warning)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Due now', inr(summary?.dueNow ?? dueNowTotal), FEE_COLORS.danger)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Full year', inr(summary?.outstanding ?? fullYearTotal), FEE_COLORS.primary)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Paid this year', inr(summary?.paid || 0), FEE_COLORS.success)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Advance held', inr(summary?.advance || 0), FEE_COLORS.warning)}</Grid>
             </Grid>
 
             <Box sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead><TableRow><TableCell>Status</TableCell><TableCell>Cycle</TableCell><TableCell>Head</TableCell><TableCell align="right">Due</TableCell></TableRow></TableHead>
                 <TableBody>
-                  {rows.length === 0 && <TableRow><TableCell colSpan={4} align="center" sx={{ color: FEE_COLORS.success, py: 2 }}>{lines.length ? 'All settled — nothing outstanding.' : 'No fee activity this year.'}</TableCell></TableRow>}
-                  {rows.map((l) => (
-                    <TableRow key={l.chargeId} hover>
-                      <TableCell>
-                        {l.status === 'partial'
-                          ? <Chip size="small" color="warning" label="Part-paid" />
-                          : <Chip size="small" color="error" label="Due" />}
-                      </TableCell>
-                      <TableCell>{l.cycleLabel || '—'}</TableCell>
-                      <TableCell>{l.headLabel}</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.danger }}>{inr(l.remaining)}</TableCell>
-                    </TableRow>
-                  ))}
+                  {due.length === 0 && <TableRow><TableCell colSpan={4} align="center" sx={{ color: FEE_COLORS.success, py: 2 }}>{lines.length ? 'All settled — nothing outstanding.' : 'No fee activity this year.'}</TableCell></TableRow>}
+                  {dueNowLines.map((l) => <LedgerRow key={l.chargeId} l={l} />)}
+                  {upcomingLines.length > 0 && (
+                    <TableRow><TableCell colSpan={4} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>not yet due — later this year</TableCell></TableRow>
+                  )}
+                  {upcomingLines.map((l) => <LedgerRow key={l.chargeId} l={l} upcoming />)}
                 </TableBody>
-                {rows.length > 0 && (
+                {due.length > 0 && (
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={3} sx={{ fontWeight: 700, color: 'text.primary' }}>Total outstanding ({rows.length} component{rows.length === 1 ? '' : 's'}{paidCount ? `, ${paidCount} fully paid` : ''})</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(dueTotal)}</TableCell>
+                      <TableCell colSpan={3} sx={{ fontWeight: 700, color: 'text.primary' }}>Due now</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(dueNowTotal)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell colSpan={3} sx={{ color: FEE_COLORS.muted }}>Full year</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.muted }}>{inr(fullYearTotal)}</TableCell>
                     </TableRow>
                   </TableFooter>
                 )}
               </Table>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
-              <Typography sx={{ fontSize: 11, color: FEE_COLORS.muted }}>Read-only summary · fines pulled into the ledger.</Typography>
-              <Typography sx={{ fontWeight: 700 }}>Outstanding: <span style={{ color: FEE_COLORS.danger }}>{inr(summary?.outstanding || 0)}</span></Typography>
-            </Box>
+            <Typography sx={{ fontSize: 11, color: FEE_COLORS.muted, mt: 1.5 }}>Read-only summary · &quot;Due now&quot; = cycles whose due date has passed · fines pulled into the ledger.</Typography>
           </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function LedgerRow({ l, upcoming }) {
+  return (
+    <TableRow hover sx={upcoming ? { opacity: 0.7 } : undefined}>
+      <TableCell>
+        {upcoming
+          ? <Chip size="small" variant="outlined" label="Upcoming" />
+          : l.status === 'partial'
+            ? <Chip size="small" color="warning" label="Part-paid" />
+            : <Chip size="small" color="error" label="Due" />}
+      </TableCell>
+      <TableCell>{l.cycleLabel || '—'}</TableCell>
+      <TableCell>{l.headLabel}</TableCell>
+      <TableCell align="right" sx={{ fontWeight: 600, color: upcoming ? FEE_COLORS.muted : FEE_COLORS.danger }}>{inr(l.remaining)}</TableCell>
+    </TableRow>
   );
 }
