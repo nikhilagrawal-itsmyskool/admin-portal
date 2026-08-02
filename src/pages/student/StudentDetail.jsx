@@ -41,6 +41,7 @@ import { studentService } from '../../services/studentService';
 import { transferService } from '../../services/transferService';
 import StudentAttendancePanel from './StudentAttendancePanel';
 import StudentTimetableToday from './StudentTimetableToday';
+import StudentFeesPanel from './StudentFeesPanel';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
@@ -880,6 +881,9 @@ export default function StudentDetail() {
           <Box sx={{ mt: 3 }}>
             <StudentTimetableToday classId={student.currentEffectiveClassId || student.currentClassId} />
           </Box>
+
+          {/* 360° — Fees & Dues (admin/god only) */}
+          {can('fee.view') && <StudentFeesPanel studentId={student.uuid} />}
 
           {/* Siblings */}
           <Card sx={{ mt: 3 }}>

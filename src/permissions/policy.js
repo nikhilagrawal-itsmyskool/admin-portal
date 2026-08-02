@@ -13,6 +13,7 @@ export const ROLE_PERMISSIONS = {
     "medical.*",
     "lab.*",
     "fine.*",
+    "fee.*",
     "uniform.*",
     "shop.*",
     "sports.*",
@@ -68,6 +69,7 @@ export const ROLE_PERMISSIONS = {
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
   "lab-incharge": ["lab.*"],
+  "fees-incharge": ["fee.*"],
   "sports-incharge": ["sports.*"],
   "assets-incharge": ["asset.*"],
   "library-incharge": ["library.*"],

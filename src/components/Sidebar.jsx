@@ -87,6 +87,9 @@ import {
   Grading as GradingIcon,
   EmojiEvents as LeaderboardIcon,
   PhotoCamera as HomeworkIcon,
+  Payments as FeesIcon,
+  PointOfSale as CollectIcon,
+  RequestQuote as StructureIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -128,6 +131,19 @@ const menuItems = [
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/fine' },
       { title: 'Incidents', icon: GavelIcon, path: '/fine/incidents' },
+    ],
+  },
+  {
+    title: 'Fees',
+    icon: FeesIcon,
+    perm: 'fee.view',
+    children: [
+      { title: 'Overview', icon: OverviewIcon, path: '/fees' },
+      { title: 'Collect Fees', icon: CollectIcon, path: '/fees/collect', perm: 'fee.collect' },
+      { title: 'Setup', icon: TypeIcon, path: '/fees/setup', perm: 'fee.manage' },
+      { title: 'Fee Structure', icon: StructureIcon, path: '/fees/structure', perm: 'fee.manage' },
+      { title: 'Concessions', icon: GavelIcon, path: '/fees/concessions', perm: 'fee.manage' },
+      { title: 'Transport Slabs', icon: TransportIcon, path: '/fees/transport-slabs', perm: 'fee.manage' },
     ],
   },
   {

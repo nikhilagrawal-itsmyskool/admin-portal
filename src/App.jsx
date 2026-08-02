@@ -38,6 +38,12 @@ import FineDashboard from './pages/fine/FineDashboard';
 import FineIncidentList from './pages/fine/incidents/FineIncidentList';
 import FineIncidentForm from './pages/fine/incidents/FineIncidentForm';
 import FineIncidentDetail from './pages/fine/incidents/FineIncidentDetail';
+import FeesDashboard from './pages/fees/FeesDashboard';
+import FeesSetup from './pages/fees/FeesSetup';
+import FeeStructure from './pages/fees/FeeStructure';
+import ConcessionList from './pages/fees/ConcessionList';
+import CollectFees from './pages/fees/CollectFees';
+import TransportSlabList from './pages/fees/TransportSlabList';
 import HiringCandidateList from './pages/hiring/HiringCandidateList';
 import HiringCandidateForm from './pages/hiring/HiringCandidateForm';
 import HiringCandidateDetail from './pages/hiring/HiringCandidateDetail';
@@ -225,6 +231,12 @@ export default function App() {
         <Route path="fine/incidents/new" element={<FineIncidentForm />} />
         <Route path="fine/incidents/:id" element={<FineIncidentDetail />} />
         <Route path="fine/incidents/:id/edit" element={<FineIncidentForm />} />
+        <Route path="fees" element={<FeesDashboard />} />
+        <Route path="fees/collect" element={<CollectFees />} />
+        <Route path="fees/setup" element={<FeesSetup />} />
+        <Route path="fees/structure" element={<FeeStructure />} />
+        <Route path="fees/concessions" element={<ConcessionList />} />
+        <Route path="fees/transport-slabs" element={<TransportSlabList />} />
         <Route path="hiring" element={<HiringCandidateList />} />
         <Route path="hiring/new" element={<HiringCandidateForm />} />
         <Route path="hiring/:id" element={<HiringCandidateDetail />} />

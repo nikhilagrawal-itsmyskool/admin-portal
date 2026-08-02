@@ -9,6 +9,9 @@ export const ACTIONS = {
   LAB_MANAGE: "lab.manage",
   FINE_VIEW: "fine.view",
   FINE_MANAGE: "fine.manage",
+  FEE_VIEW: "fee.view",
+  FEE_MANAGE: "fee.manage",
+  FEE_COLLECT: "fee.collect",
   UNIFORM_VIEW: "uniform.view",
   UNIFORM_MANAGE: "uniform.manage",
   SHOP_VIEW: "shop.view",
@@ -80,6 +83,18 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.FINE_MANAGE,
     description: "Add/edit/delete fine incidents",
+  },
+  {
+    action: ACTIONS.FEE_VIEW,
+    description: "See the Fees menu, read the overview, structure, concessions & a student's fee ledger",
+  },
+  {
+    action: ACTIONS.FEE_MANAGE,
+    description: "Add/edit/delete fee heads, cycles, structure, concessions, waivers & transport slabs",
+  },
+  {
+    action: ACTIONS.FEE_COLLECT,
+    description: "Collect fees, issue/cancel receipts, apply advance & record refunds",
   },
   {
     action: ACTIONS.UNIFORM_VIEW,
