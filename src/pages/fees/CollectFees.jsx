@@ -7,7 +7,7 @@ import {
 import { PersonSearch as PersonSearchIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
-import StudentSearchDialog from '../../components/common/StudentSearchDialog';
+import CommandPalette from '../../components/common/CommandPalette';
 import { errMsg, inr, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
 
 const PAY_MODES = ['cash', 'online', 'card', 'cheque', 'draft', 'neft', 'ecs', 'bank-deposit', 'rte'];
@@ -255,7 +255,7 @@ export default function CollectFees() {
         </Card>
       )}
 
-      <StudentSearchDialog open={pick} onClose={() => setPick(false)} onSelect={chooseStudent} />
+      <CommandPalette pick open={pick} onClose={() => setPick(false)} onSelect={chooseStudent} />
     </Box>
   );
 }

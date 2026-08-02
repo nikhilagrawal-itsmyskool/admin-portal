@@ -22,12 +22,16 @@ import { ACTIONS } from '../../permissions/actions';
 
 // Global "type anything, get the student" palette. Open with Ctrl/⌘+K (or the
 // window 'open-command-palette' event fired by the header search button).
-export default function CommandPalette() {
+//
+// Reusable as a student PICKER: pass `pick` + `open` + `onClose` + `onSelect(row)` and
+// it becomes a controlled dialog that returns the chosen student instead of navigating.
+export default function CommandPalette({ pick = false, open: openProp, onClose, onSelect } = {}) {
   const navigate = useNavigate();
   const can = useCan();
   const enabled = can(ACTIONS.STUDENT_VIEW);
 
-  const [open, setOpen] = useState(false);
+  const [openState, setOpen] = useState(false);
+  const open = pick ? !!openProp : openState;
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,9 +43,9 @@ export default function CommandPalette() {
   const abortRef = useRef(null);
   const listRef = useRef(null);
 
-  // Global shortcut + external open event.
+  // Global shortcut + external open event (only when mounted as the global palette).
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (!enabled || pick) return undefined;
     const onKey = (e) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
@@ -55,7 +59,7 @@ export default function CommandPalette() {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('open-command-palette', onOpen);
     };
-  }, [enabled]);
+  }, [enabled, pick]);
 
   // Resolve the current session once the palette opens (for the scope pin + the
   // "not in <year>" divider label).
@@ -96,20 +100,21 @@ export default function CommandPalette() {
   }, [q, open, scope, currentYear]);
 
   const close = useCallback(() => {
-    setOpen(false);
+    if (pick) onClose?.(); else setOpen(false);
     setQ('');
     setResults([]);
     setActive(0);
     setScope('current');
-  }, []);
+  }, [pick, onClose]);
 
   const choose = useCallback(
     (row) => {
       if (!row) return;
       close();
-      navigate(`/students/${row.uuid}`);
+      if (pick) onSelect?.(row);
+      else navigate(`/students/${row.uuid}`);
     },
-    [close, navigate]
+    [close, navigate, pick, onSelect]
   );
 
   const onKeyDown = (e) => {
@@ -131,7 +136,7 @@ export default function CommandPalette() {
     if (el) el.scrollIntoView({ block: 'nearest' });
   }, [active]);
 
-  if (!enabled) return null;
+  if (!pick && !enabled) return null;
 
   return (
     <Dialog

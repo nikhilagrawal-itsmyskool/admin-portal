@@ -62,22 +62,33 @@ export default function FeeStructure() {
     finally { setLoading(false); }
   };
 
-  const cellValue = (classId, headId) => {
-    const k = key(classId, headId, cycleId);
+  const cellValue = (classId, headId, cyc) => {
+    const k = key(classId, headId, cyc);
     if (edits[k] !== undefined) return edits[k];
     const r = rowByKey[k];
     return r ? String(r.amount) : '';
   };
 
-  const setCell = (classId, headId, val) => {
-    const k = key(classId, headId, cycleId);
+  const setCell = (classId, headId, cyc, val) => {
+    const k = key(classId, headId, cyc);
     setEdits((e) => ({ ...e, [k]: val }));
   };
+
+  // Columns: one per head for a single cycle, or every (head, cycle) combo present when "All".
+  const columns = useMemo(() => {
+    if (cycleId !== 'ALL') return heads.map((h) => ({ headId: h.uuid, cycleId, label: h.name, sub: null }));
+    const headOrder = Object.fromEntries(heads.map((h, i) => [h.uuid, i]));
+    const cycOrder = Object.fromEntries(cycles.map((c, i) => [c.uuid, i]));
+    const combos = new Set();
+    [...Object.keys(rowByKey), ...Object.keys(edits)].forEach((k) => { const [, h, cy] = k.split('|'); if (h && cy) combos.add(`${h}|${cy}`); });
+    return [...combos].map((hc) => { const [h, cy] = hc.split('|'); return { headId: h, cycleId: cy, label: heads.find((x) => x.uuid === h)?.name || h, sub: cycles.find((x) => x.uuid === cy)?.name || cy }; })
+      .sort((a, b) => (headOrder[a.headId] ?? 99) - (headOrder[b.headId] ?? 99) || (cycOrder[a.cycleId] ?? 99) - (cycOrder[b.cycleId] ?? 99));
+  }, [cycleId, heads, cycles, rowByKey, edits]);
 
   const saveGrid = async () => {
     setSaving(true); setError(''); setOk('');
     try {
-      const entries = Object.entries(edits).filter(([k]) => k.endsWith(`|${cycleId}`));
+      const entries = Object.entries(edits); // every key is fully qualified class|head|cycle
       let n = 0;
       for (const [k, valStr] of entries) {
         const [classId, headId, cyc] = k.split('|');
@@ -103,7 +114,7 @@ export default function FeeStructure() {
       await feesService.bulkStructure({
         academicYearId, feeHeadId: bulk.headId, amount: Number(bulk.amount),
         classIds: bulk.classIds.length ? bulk.classIds : classes.map((c) => c.uuid),
-        cycleIds: bulk.cycleIds.length ? bulk.cycleIds : [cycleId],
+        cycleIds: bulk.cycleIds.length ? bulk.cycleIds : (cycleId !== 'ALL' ? [cycleId] : []),
       });
       setBulk({ open: false, headId: '', amount: '', classIds: [], cycleIds: [], saving: false });
       setOk('Bulk amounts applied.'); load();
@@ -139,7 +150,7 @@ export default function FeeStructure() {
 
   const headName = (id) => heads.find((h) => h.uuid === id)?.name || id;
   const cycleName = (id) => cycles.find((c) => c.uuid === id)?.name || id;
-  const dirtyCount = useMemo(() => Object.keys(edits).filter((k) => k.endsWith(`|${cycleId}`)).length, [edits, cycleId]);
+  const dirtyCount = useMemo(() => Object.keys(edits).length, [edits]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
 
@@ -163,34 +174,39 @@ export default function FeeStructure() {
         <Card>
           <CardContent sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', borderBottom: `1px solid ${FEE_COLORS.border}` }}>
             <TextField size="small" select label="Cycle" value={cycleId} onChange={(e) => setCycleId(e.target.value)} sx={{ minWidth: 160 }}>
+              <MenuItem value="ALL">All cycles (wide)</MenuItem>
               {cycles.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
             </TextField>
             <Box sx={{ flex: 1 }} />
             <Button variant="outlined" onClick={() => setCopy({ open: true, fromClassId: '', toClassIds: [], saving: false })}>Copy from class</Button>
-            <Button variant="outlined" onClick={() => setBulk({ open: true, headId: heads[0]?.uuid || '', amount: '', classIds: [], cycleIds: [cycleId], saving: false })}>Bulk apply</Button>
+            <Button variant="outlined" onClick={() => setBulk({ open: true, headId: heads[0]?.uuid || '', amount: '', classIds: [], cycleIds: cycleId === 'ALL' ? [] : [cycleId], saving: false })}>Bulk apply</Button>
             <Button variant="contained" disabled={saving || dirtyCount === 0} onClick={saveGrid}>{saving ? 'Saving…' : `Save changes${dirtyCount ? ` (${dirtyCount})` : ''}`}</Button>
           </CardContent>
           <Box sx={{ overflowX: 'auto' }}>
             <Table size="small" sx={{ minWidth: 600 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper' }}>Class</TableCell>
-                  {heads.map((h) => <TableCell key={h.uuid} align="right">{h.name}</TableCell>)}
+                  <TableCell sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>Class</TableCell>
+                  {columns.map((col) => (
+                    <TableCell key={`${col.headId}|${col.cycleId}`} align="right" sx={{ whiteSpace: 'nowrap' }}>
+                      {col.label}
+                      {col.sub && <><br /><span style={{ fontWeight: 400, color: FEE_COLORS.muted, fontSize: 11 }}>{col.sub}</span></>}
+                    </TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {classes.length === 0 && <TableRow><TableCell colSpan={heads.length + 1} align="center" sx={{ color: FEE_COLORS.muted, py: 3 }}>No classes found for this year.</TableCell></TableRow>}
+                {classes.length === 0 && <TableRow><TableCell colSpan={columns.length + 1} align="center" sx={{ color: FEE_COLORS.muted, py: 3 }}>No classes found for this year.</TableCell></TableRow>}
                 {classes.map((cl) => (
                   <TableRow key={cl.uuid} hover>
-                    <TableCell sx={{ fontWeight: 600, position: 'sticky', left: 0, bgcolor: 'background.paper' }}>{cl.name}</TableCell>
-                    {heads.map((h) => (
-                      <TableCell key={h.uuid} align="right" sx={{ p: 0.5 }}>
+                    <TableCell sx={{ fontWeight: 600, position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>{cl.name}</TableCell>
+                    {columns.map((col) => (
+                      <TableCell key={`${col.headId}|${col.cycleId}`} align="right" sx={{ p: 0.5 }}>
                         <TextField
                           size="small" variant="standard" type="number"
-                          value={cellValue(cl.uuid, h.uuid)}
-                          onChange={(e) => setCell(cl.uuid, h.uuid, e.target.value)}
+                          value={cellValue(cl.uuid, col.headId, col.cycleId)}
+                          onChange={(e) => setCell(cl.uuid, col.headId, col.cycleId, e.target.value)}
                           inputProps={{ style: { textAlign: 'right', width: 78, fontVariantNumeric: 'tabular-nums' } }}
-                          InputProps={{ disableUnderline: false }}
                         />
                       </TableCell>
                     ))}

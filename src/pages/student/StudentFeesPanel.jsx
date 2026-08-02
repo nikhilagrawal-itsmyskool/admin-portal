@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Grid, Chip, Button, CircularProgress, Alert,
-  Table, TableHead, TableBody, TableRow, TableCell,
+  Table, TableHead, TableBody, TableRow, TableCell, TableFooter,
 } from '@mui/material';
 import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
@@ -36,9 +36,10 @@ export default function StudentFeesPanel({ studentId }) {
     return () => { alive = false; };
   }, [studentId, academicYearId]);
 
-  const due = lines.filter((l) => l.remaining > 0).slice(0, 6);
-  const paidLines = lines.filter((l) => l.remaining <= 0 && l.paid > 0).slice(0, 2);
-  const rows = [...due, ...paidLines];
+  const due = lines.filter((l) => l.remaining > 0);
+  const dueTotal = due.reduce((s, l) => s + Number(l.remaining || 0), 0);
+  const paidCount = lines.filter((l) => l.remaining <= 0 && l.paid > 0).length;
+  const rows = due;
 
   const kpi = (label, value, color) => (
     <Card variant="outlined" sx={{ borderLeft: `4px solid ${color}` }}>
@@ -73,22 +74,28 @@ export default function StudentFeesPanel({ studentId }) {
               <Table size="small">
                 <TableHead><TableRow><TableCell>Status</TableCell><TableCell>Cycle</TableCell><TableCell>Head</TableCell><TableCell align="right">Due</TableCell></TableRow></TableHead>
                 <TableBody>
-                  {rows.length === 0 && <TableRow><TableCell colSpan={4} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No fee activity this year.</TableCell></TableRow>}
+                  {rows.length === 0 && <TableRow><TableCell colSpan={4} align="center" sx={{ color: FEE_COLORS.success, py: 2 }}>{lines.length ? 'All settled — nothing outstanding.' : 'No fee activity this year.'}</TableCell></TableRow>}
                   {rows.map((l) => (
                     <TableRow key={l.chargeId} hover>
                       <TableCell>
-                        {l.remaining <= 0
-                          ? <Chip size="small" color="success" label="Paid" />
-                          : l.status === 'partial'
-                            ? <Chip size="small" color="warning" label="Part-paid" />
-                            : <Chip size="small" color="error" label="Due" />}
+                        {l.status === 'partial'
+                          ? <Chip size="small" color="warning" label="Part-paid" />
+                          : <Chip size="small" color="error" label="Due" />}
                       </TableCell>
                       <TableCell>{l.cycleLabel || '—'}</TableCell>
                       <TableCell>{l.headLabel}</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600, color: l.remaining > 0 ? FEE_COLORS.danger : FEE_COLORS.muted }}>{inr(l.remaining)}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.danger }}>{inr(l.remaining)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
+                {rows.length > 0 && (
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={3} sx={{ fontWeight: 700, color: 'text.primary' }}>Total outstanding ({rows.length} component{rows.length === 1 ? '' : 's'}{paidCount ? `, ${paidCount} fully paid` : ''})</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(dueTotal)}</TableCell>
+                    </TableRow>
+                  </TableFooter>
+                )}
               </Table>
             </Box>
 

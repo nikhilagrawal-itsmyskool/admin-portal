@@ -28,6 +28,21 @@ export function errMsg(err, fallback = 'Something went wrong') {
   return err?.response?.data?.error?.description || err?.message || fallback;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Server sends date columns as ISO datetime ("2026-03-01T00:00:00.000Z"); show a plain date.
+// String-sliced (no Date()) so no timezone day-shift.
+export function fmtDate(v) {
+  if (!v) return '—';
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}` : String(v);
+}
+// For <input type="date"> which needs YYYY-MM-DD.
+export function toDateInput(v) {
+  if (!v) return '';
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+}
+
 export const PAYMENT_MODE_LABELS = {
   cash: 'Cash',
   cheque: 'Cheque',

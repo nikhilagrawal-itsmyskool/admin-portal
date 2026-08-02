@@ -9,7 +9,7 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { errMsg, FEE_COLORS } from './feesUi';
+import { errMsg, FEE_COLORS, fmtDate, toDateInput } from './feesUi';
 
 const KIND_CHIP = {
   recurring: { label: 'Monthly', color: 'primary' },
@@ -175,11 +175,11 @@ export default function FeesSetup() {
                   {cycles.map((c) => (
                     <TableRow key={c.uuid} hover>
                       <TableCell sx={{ fontWeight: 600 }}>{c.name}</TableCell>
-                      <TableCell>{c.fromDate || '—'}</TableCell>
-                      <TableCell>{c.toDate || '—'}</TableCell>
-                      <TableCell>{c.dueDate || '—'}</TableCell>
+                      <TableCell>{fmtDate(c.fromDate)}</TableCell>
+                      <TableCell>{fmtDate(c.toDate)}</TableCell>
+                      <TableCell>{fmtDate(c.dueDate)}</TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                        <IconButton size="small" onClick={() => setCycleDlg({ open: true, id: c.uuid, saving: false, data: { name: c.name || '', abbreviation: c.abbreviation || '', fromDate: c.fromDate || '', toDate: c.toDate || '', dueDate: c.dueDate || '', sortOrder: c.sortOrder ?? '' } })}><EditIcon fontSize="small" /></IconButton>
+                        <IconButton size="small" onClick={() => setCycleDlg({ open: true, id: c.uuid, saving: false, data: { name: c.name || '', abbreviation: c.abbreviation || '', fromDate: toDateInput(c.fromDate), toDate: toDateInput(c.toDate), dueDate: toDateInput(c.dueDate), sortOrder: c.sortOrder ?? '' } })}><EditIcon fontSize="small" /></IconButton>
                         <IconButton size="small" color="error" onClick={() => setDel({ open: true, kind: 'cycle', row: c, loading: false })}><DeleteIcon fontSize="small" /></IconButton>
                       </TableCell>
                     </TableRow>
