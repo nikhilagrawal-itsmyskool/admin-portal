@@ -883,7 +883,7 @@ export default function StudentDetail() {
           </Box>
 
           {/* 360° — Fees & Dues (admin/god only) */}
-          {can('fee.view') && <StudentFeesPanel studentId={student.uuid} />}
+          {can('fee.view') && <StudentFeesPanel studentId={student.uuid} student={student} />}
 
           {/* Siblings */}
           <Card sx={{ mt: 3 }}>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, Divider,
   Table, TableHead, TableBody, TableRow, TableCell, TextField, MenuItem,
@@ -16,6 +17,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function CollectFees() {
   const { academicYearId } = useAcademicYear();
+  const location = useLocation();
   const [tab, setTab] = useState('fee');
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
@@ -50,6 +52,13 @@ export default function CollectFees() {
     } catch (err) { setError(errMsg(err, 'Failed to load the ledger')); }
     finally { setLoadingLedger(false); }
   };
+
+  // pre-load a student passed via navigation (e.g. the Collect button on the student 360 panel)
+  useEffect(() => {
+    const pre = location.state?.student;
+    if (pre?.uuid && academicYearId && student?.uuid !== pre.uuid) chooseStudent(pre);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, academicYearId]);
 
   const dueLines = (ledger?.lines || []).filter((ln) => ln.remaining > 0);
   const dueNowLines = dueLines.filter((ln) => ln.due);
