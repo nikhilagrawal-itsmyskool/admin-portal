@@ -31,7 +31,8 @@ export default function FeeStructure() {
 
   const [bulk, setBulk] = useState({ open: false, headId: '', amount: '', classIds: [], cycleIds: [], saving: false });
   const [copy, setCopy] = useState({ open: false, fromClassId: '', toClassIds: [], saving: false });
-  const [gen, setGen] = useState({ open: false, classId: '', fullYear: true, loading: false, preview: null, posting: false });
+  const [gen, setGen] = useState({ open: false, fullYear: true, loadingCands: false, cands: [], extra: [], sel: {}, preview: null, previewing: false, posting: false });
+  const [genPick, setGenPick] = useState(false);
 
   // student overrides
   const [stu, setStu] = useState(null);
@@ -131,23 +132,41 @@ export default function FeeStructure() {
     } catch (err) { setError(errMsg(err)); setCopy((s) => ({ ...s, saving: false })); }
   };
 
-  // ---- generate charges (charge-run) ----
-  const genArgs = () => ({ academicYearId, ...(gen.classId ? { classId: gen.classId } : {}), fullYear: gen.fullYear });
-  const runGenPreview = async () => {
-    setGen((s) => ({ ...s, loading: true })); setError('');
+  // ---- generate charges (charge-run) — target students who have no charges yet ----
+  const genList = [...gen.cands, ...gen.extra];
+  const genSelectedIds = genList.filter((x) => gen.sel[x.studentId]).map((x) => x.studentId);
+
+  const openGen = async () => {
+    setGen({ open: true, fullYear: true, loadingCands: true, cands: [], extra: [], sel: {}, preview: null, previewing: false, posting: false });
     try {
-      const res = await feesService.chargeRun({ ...genArgs(), dryRun: true });
-      setGen((s) => ({ ...s, loading: false, preview: res }));
-    } catch (err) { setError(errMsg(err)); setGen((s) => ({ ...s, loading: false })); }
+      const cands = await feesService.getUngeneratedStudents(academicYearId);
+      const sel = {}; (cands || []).forEach((c) => (sel[c.studentId] = true));
+      setGen((s) => ({ ...s, loadingCands: false, cands: cands || [], sel }));
+    } catch (err) { setError(errMsg(err)); setGen((s) => ({ ...s, loadingCands: false })); }
   };
-  const runGenCommit = async () => {
-    setGen((s) => ({ ...s, posting: true })); setError('');
+  const toggleGen = (id) => setGen((s) => ({ ...s, sel: { ...s.sel, [id]: !s.sel[id] }, preview: null }));
+  const setAllGen = (on) => setGen((s) => ({ ...s, sel: Object.fromEntries([...s.cands, ...s.extra].map((x) => [x.studentId, on])), preview: null }));
+  const addGenStudent = (stu) => {
+    setGenPick(false);
+    setGen((s) => {
+      if (s.cands.some((c) => c.studentId === stu.uuid) || s.extra.some((e) => e.studentId === stu.uuid)) return s;
+      const e = { studentId: stu.uuid, name: stu.name, admissionNumber: stu.admissionNumber, className: stu.currentClassName || stu.className, added: true };
+      return { ...s, extra: [...s.extra, e], sel: { ...s.sel, [stu.uuid]: true }, preview: null };
+    });
+  };
+  const runGen = async (dryRun) => {
+    const studentIds = genSelectedIds;
+    if (!studentIds.length) return;
+    setGen((s) => ({ ...s, [dryRun ? 'previewing' : 'posting']: true })); setError('');
     try {
-      const res = await feesService.chargeRun({ ...genArgs(), dryRun: false });
-      setGen({ open: false, classId: '', fullYear: true, loading: false, preview: null, posting: false });
-      setOk(`Generated ${res.posted} charge${res.posted === 1 ? '' : 's'} for ${res.studentsAffected} student${res.studentsAffected === 1 ? '' : 's'}.`);
-      load();
-    } catch (err) { setError(errMsg(err)); setGen((s) => ({ ...s, posting: false })); }
+      const res = await feesService.chargeRun({ academicYearId, studentIds, fullYear: gen.fullYear, dryRun });
+      if (dryRun) setGen((s) => ({ ...s, previewing: false, preview: res }));
+      else {
+        setGen((s) => ({ ...s, open: false, posting: false }));
+        setOk(`Generated ${res.posted} charge${res.posted === 1 ? '' : 's'} for ${res.studentsAffected} student${res.studentsAffected === 1 ? '' : 's'}.`);
+        load();
+      }
+    } catch (err) { setError(errMsg(err)); setGen((s) => ({ ...s, previewing: false, posting: false })); }
   };
 
   // ---- student overrides ----
@@ -203,7 +222,7 @@ export default function FeeStructure() {
             <Box sx={{ flex: 1 }} />
             <Button variant="outlined" onClick={() => setCopy({ open: true, fromClassId: '', toClassIds: [], saving: false })}>Copy from class</Button>
             <Button variant="outlined" onClick={() => setBulk({ open: true, headId: heads[0]?.uuid || '', amount: '', classIds: [], cycleIds: cycleId === 'ALL' ? [] : [cycleId], saving: false })}>Bulk apply</Button>
-            <Button variant="outlined" color="secondary" onClick={() => setGen({ open: true, classId: '', fullYear: true, loading: false, preview: null, posting: false })}>Generate charges</Button>
+            <Button variant="outlined" color="secondary" onClick={openGen}>Generate charges</Button>
             <Button variant="contained" disabled={saving || dirtyCount === 0} onClick={saveGrid}>{saving ? 'Saving…' : `Save changes${dirtyCount ? ` (${dirtyCount})` : ''}`}</Button>
           </CardContent>
           <Box sx={{ overflowX: 'auto' }}>
@@ -336,70 +355,112 @@ export default function FeeStructure() {
         </DialogActions>
       </Dialog>
 
-      {/* Generate charges (charge-run) */}
+      {/* Generate charges (charge-run) — target students with no charges yet */}
       <Dialog open={gen.open} onClose={() => !gen.posting && setGen((s) => ({ ...s, open: false }))} maxWidth="sm" fullWidth>
         <DialogTitle>Generate charges</DialogTitle>
         <DialogContent>
           <Alert severity="info" icon={false} sx={{ mb: 2, fontSize: 12.5 }}>
-            Creates fee charges from the structure for students who don't have them yet (e.g. new admissions).
-            <b> Safe to re-run</b> — charges a student already has are skipped, never duplicated. Discounts and waivers are applied automatically.
+            Creates fee charges from the structure for the selected students. Students with no fees yet
+            (new admissions) are pre-selected. <b>Safe to re-run</b> — a charge a student already has is skipped;
+            re-running only adds a <b>newly-added</b> structure component (not amount edits). Discounts &amp; waivers applied automatically.
           </Alert>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <TextField size="small" select label="Scope" value={gen.classId}
-              onChange={(e) => setGen((s) => ({ ...s, classId: e.target.value, preview: null }))} sx={{ minWidth: 200 }}>
-              <MenuItem value="">All classes</MenuItem>
-              {classes.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
-            </TextField>
+
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
             <FormControlLabel
               control={<Checkbox size="small" checked={gen.fullYear} onChange={(e) => setGen((s) => ({ ...s, fullYear: e.target.checked, preview: null }))} />}
               label={<span style={{ fontSize: 13 }}>Full year (all cycles)</span>} />
-            <Button variant="outlined" onClick={runGenPreview} disabled={gen.loading}>{gen.loading ? 'Checking…' : 'Preview'}</Button>
+            <Box sx={{ flex: 1 }} />
+            <Button size="small" onClick={() => setAllGen(true)}>All</Button>
+            <Button size="small" onClick={() => setAllGen(false)}>None</Button>
+            <Button size="small" variant="outlined" startIcon={<PersonSearchIcon />} onClick={() => setGenPick(true)}>Add student</Button>
           </Box>
 
-          {gen.preview && (
-            <Box sx={{ mt: 2 }}>
-              {gen.preview.charges === 0 ? (
-                <Alert severity="success">Nothing to generate — every targeted student already has their charges.</Alert>
-              ) : (
-                <>
-                  <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 1.5 }}>
-                    {stat('Students', gen.preview.studentsAffected)}
-                    {stat('New charges', gen.preview.charges)}
-                    {stat('Charge total', inr(gen.preview.totalCharge))}
-                    {gen.preview.concessions > 0 && stat('Discounts', `${gen.preview.concessions} · −${inr(gen.preview.totalConcession)}`)}
-                    {gen.preview.waivers > 0 && stat('Waivers', gen.preview.waivers)}
-                  </Box>
-                  <Box sx={{ maxHeight: 260, overflowY: 'auto', border: `1px solid ${FEE_COLORS.border}`, borderRadius: 1 }}>
-                    <Table size="small" stickyHeader>
-                      <TableHead><TableRow>
-                        <TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell>
-                        <TableCell align="right">Charges</TableCell><TableCell align="right">Amount</TableCell>
-                      </TableRow></TableHead>
-                      <TableBody>
-                        {gen.preview.affected.map((a) => (
-                          <TableRow key={a.studentId} hover>
-                            <TableCell>{a.className || '—'}</TableCell>
-                            <TableCell>{a.admissionNumber || '—'}</TableCell>
-                            <TableCell>{a.name || a.studentId}</TableCell>
-                            <TableCell align="right">{a.charges}</TableCell>
-                            <TableCell align="right">{inr(a.amount)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
-                </>
+          {gen.loadingCands ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>
+          ) : (
+            <>
+              <Typography sx={{ fontSize: 12.5, color: FEE_COLORS.muted, mb: 0.5 }}>
+                {gen.cands.length} student{gen.cands.length === 1 ? '' : 's'} with no fees yet
+                {gen.extra.length ? ` · ${gen.extra.length} added` : ''} · <b>{genSelectedIds.length} selected</b>
+              </Typography>
+              <Box sx={{ maxHeight: 220, overflowY: 'auto', border: `1px solid ${FEE_COLORS.border}`, borderRadius: 1 }}>
+                {genList.length === 0 ? (
+                  <Typography sx={{ p: 2, fontSize: 13, color: FEE_COLORS.muted }}>
+                    Every enrolled student already has fees. Use <b>Add student</b> to re-check specific students for newly-added structure components.
+                  </Typography>
+                ) : (
+                  <Table size="small" stickyHeader>
+                    <TableHead><TableRow>
+                      <TableCell padding="checkbox" /><TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell>
+                    </TableRow></TableHead>
+                    <TableBody>
+                      {genList.map((x) => (
+                        <TableRow key={x.studentId} hover selected={!!gen.sel[x.studentId]}>
+                          <TableCell padding="checkbox"><Checkbox size="small" checked={!!gen.sel[x.studentId]} onChange={() => toggleGen(x.studentId)} /></TableCell>
+                          <TableCell>{x.className || '—'}</TableCell>
+                          <TableCell>{x.admissionNumber || '—'}</TableCell>
+                          <TableCell>{x.name || x.studentId}{x.added && <Chip size="small" variant="outlined" label="added" sx={{ ml: 1, height: 18 }} />}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </Box>
+
+              <Box sx={{ mt: 1.5 }}>
+                <Button variant="outlined" onClick={() => runGen(true)} disabled={gen.previewing || !genSelectedIds.length}>
+                  {gen.previewing ? 'Checking…' : `Preview (${genSelectedIds.length})`}
+                </Button>
+              </Box>
+
+              {gen.preview && (
+                <Box sx={{ mt: 2 }}>
+                  {gen.preview.charges === 0 ? (
+                    <Alert severity="success">Nothing to generate — the selected students already have all their charges.</Alert>
+                  ) : (
+                    <>
+                      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 1.5 }}>
+                        {stat('Students', gen.preview.studentsAffected)}
+                        {stat('New charges', gen.preview.charges)}
+                        {stat('Charge total', inr(gen.preview.totalCharge))}
+                        {gen.preview.concessions > 0 && stat('Discounts', `${gen.preview.concessions} · −${inr(gen.preview.totalConcession)}`)}
+                        {gen.preview.waivers > 0 && stat('Waivers', gen.preview.waivers)}
+                      </Box>
+                      <Box sx={{ maxHeight: 220, overflowY: 'auto', border: `1px solid ${FEE_COLORS.border}`, borderRadius: 1 }}>
+                        <Table size="small" stickyHeader>
+                          <TableHead><TableRow>
+                            <TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell>
+                            <TableCell align="right">Charges</TableCell><TableCell align="right">Amount</TableCell>
+                          </TableRow></TableHead>
+                          <TableBody>
+                            {gen.preview.affected.map((a) => (
+                              <TableRow key={a.studentId} hover>
+                                <TableCell>{a.className || '—'}</TableCell>
+                                <TableCell>{a.admissionNumber || '—'}</TableCell>
+                                <TableCell>{a.name || a.studentId}</TableCell>
+                                <TableCell align="right">{a.charges}</TableCell>
+                                <TableCell align="right">{inr(a.amount)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    </>
+                  )}
+                </Box>
               )}
-            </Box>
+            </>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setGen((s) => ({ ...s, open: false }))} disabled={gen.posting}>Close</Button>
-          <Button variant="contained" disabled={gen.posting || !gen.preview || gen.preview.charges === 0} onClick={runGenCommit}>
+          <Button variant="contained" disabled={gen.posting || !gen.preview || gen.preview.charges === 0} onClick={() => runGen(false)}>
             {gen.posting ? 'Generating…' : gen.preview && gen.preview.charges ? `Generate ${gen.preview.charges} charges` : 'Generate'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <StudentSearchDialog open={genPick} onClose={() => setGenPick(false)} onSelect={addGenStudent} />
 
       <StudentSearchDialog open={stuPick} onClose={() => setStuPick(false)} onSelect={(s) => { setStuPick(false); loadStudentOverrides(s); }} />
     </Box>

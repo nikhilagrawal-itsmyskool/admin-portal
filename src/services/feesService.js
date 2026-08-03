@@ -93,6 +93,8 @@ export const feesService = {
     (await api.get('/fees/reports/daily-collection', { params })).data,
   getOverview: async (academicYearId) =>
     (await api.get('/fees/reports/overview', { params: academicYearId ? { academicYearId } : {} })).data,
+  getUngeneratedStudents: async (academicYearId) =>
+    (await api.get('/fees/reports/ungenerated-students', { params: { academicYearId } })).data,
 };
 
 export default feesService;
