@@ -83,6 +83,7 @@ export const feesService = {
   receiptPrintUrl: (id) => `${api.defaults.baseURL}/fees/receipts/${id}/print`,
   getReceiptHtml: async (id) => (await api.get(`/fees/receipts/${id}/print`)).data,
   collectAdhoc: async (data) => (await api.post('/fees/receipts/adhoc', data)).data,
+  collectTransport: async (data) => (await api.post('/fees/receipts/transport', data)).data,
 
   // ---- Refunds ----
   getRefunds: async (params = {}) => (await api.get('/fees/refunds', { params })).data,

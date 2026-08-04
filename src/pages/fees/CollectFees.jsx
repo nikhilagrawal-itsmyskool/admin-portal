@@ -40,6 +40,21 @@ export default function CollectFees() {
 
   // adhoc
   const [adhoc, setAdhoc] = useState({ payerName: '', mode: 'cash', date: today(), remarks: '', lines: [{ headLabel: '', amount: '' }], saving: false });
+  // transport (interim: receipt-only, no dues)
+  const [transport, setTransport] = useState({ amount: '', month: '', remark: '', mode: 'cash', date: today(), saving: false });
+
+  const saveTransport = async () => {
+    if (!student) { setError('Pick a student first.'); return; }
+    const amount = Number(transport.amount);
+    if (!(amount > 0)) { setError('Enter a transport amount.'); return; }
+    setTransport((s) => ({ ...s, saving: true })); setError(''); setOk('');
+    try {
+      const receipt = await feesService.collectTransport({ studentId: student.uuid, academicYearId, amount, month: transport.month || null, remark: transport.remark || null, paymentMode: transport.mode, receiptDate: transport.date });
+      setOk(`Transport receipt ${receipt.receiptNo || ''} — ${inr(receipt.totalPaid)}.`);
+      openReceipt(receipt.uuid);
+      setTransport({ amount: '', month: '', remark: '', mode: 'cash', date: today(), saving: false });
+    } catch (err) { setError(errMsg(err)); setTransport((s) => ({ ...s, saving: false })); }
+  };
 
   const chooseStudent = async (s) => {
     setPick(false); setStudent(s); setLedger(null); setSummary(null); setSel({}); setError(''); setOk('');
@@ -172,6 +187,7 @@ export default function CollectFees() {
         </Box>
         <ToggleButtonGroup size="small" exclusive value={tab} onChange={(_, v) => v && setTab(v)}>
           <ToggleButton value="fee">Fee payment</ToggleButton>
+          <ToggleButton value="transport">Transport</ToggleButton>
           <ToggleButton value="adhoc">Adhoc / General</ToggleButton>
         </ToggleButtonGroup>
       </Box>
@@ -309,7 +325,7 @@ export default function CollectFees() {
             </Grid>
           )}
         </>
-      ) : (
+      ) : tab === 'adhoc' ? (
         <Card sx={{ maxWidth: 720 }}>
           <CardContent>
             <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2 }}>Adhoc / General receipt</Typography>
@@ -329,6 +345,30 @@ export default function CollectFees() {
             <Button size="small" startIcon={<AddIcon />} onClick={() => setAdhoc((s) => ({ ...s, lines: [...s.lines, { headLabel: '', amount: '' }] }))}>Add line</Button>
             <TextField fullWidth size="small" label="Remarks (optional)" sx={{ mt: 2 }} value={adhoc.remarks} onChange={(e) => setAdhoc((s) => ({ ...s, remarks: e.target.value }))} />
             <Button variant="contained" sx={{ mt: 2 }} disabled={adhoc.saving} onClick={saveAdhoc}>{adhoc.saving ? 'Saving…' : 'Create adhoc receipt & print'}</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card sx={{ maxWidth: 640 }}>
+          <CardContent>
+            <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>Transport collection</Typography>
+            <Alert severity="info" icon={false} sx={{ mb: 2, fontSize: 12.5 }}>
+              Transport is tracked separately — no dues yet (stops/distance not mapped). This records a per-student transport receipt, month-tagged so it reconciles once transport charges exist.
+            </Alert>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
+              {student
+                ? <Chip label={`${student.name}${student.admissionNumber ? ' · ' + student.admissionNumber : ''}`} onDelete={() => setStudent(null)} />
+                : <Button variant="outlined" startIcon={<PersonSearchIcon />} onClick={() => setPick(true)}>Find student</Button>}
+            </Box>
+            <Grid container spacing={2}>
+              <Grid item xs={6} sm={3}><TextField fullWidth size="small" type="number" label="Amount" value={transport.amount} onChange={(e) => setTransport((s) => ({ ...s, amount: e.target.value }))} /></Grid>
+              <Grid item xs={6} sm={3}><TextField fullWidth size="small" label="Month / period" placeholder="e.g. Aug" value={transport.month} onChange={(e) => setTransport((s) => ({ ...s, month: e.target.value }))} /></Grid>
+              <Grid item xs={6} sm={3}><TextField fullWidth size="small" select label="Mode" value={transport.mode} onChange={(e) => setTransport((s) => ({ ...s, mode: e.target.value }))}>{PAY_MODES.map((m) => <MenuItem key={m} value={m}>{PAYMENT_MODE_LABELS[m] || m}</MenuItem>)}</TextField></Grid>
+              <Grid item xs={6} sm={3}><TextField fullWidth size="small" type="date" label="Date" InputLabelProps={{ shrink: true }} value={transport.date} onChange={(e) => setTransport((s) => ({ ...s, date: e.target.value }))} /></Grid>
+              <Grid item xs={12}><TextField fullWidth size="small" label="Remark (optional)" value={transport.remark} onChange={(e) => setTransport((s) => ({ ...s, remark: e.target.value }))} /></Grid>
+            </Grid>
+            <Button variant="contained" sx={{ mt: 2 }} disabled={transport.saving || !student || !(Number(transport.amount) > 0)} onClick={saveTransport}>
+              {transport.saving ? 'Saving…' : 'Collect transport & print'}
+            </Button>
           </CardContent>
         </Card>
       )}

@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Grid, Chip, Button, CircularProgress, Alert,
   Table, TableHead, TableBody, TableRow, TableCell, TableFooter,
-  ToggleButtonGroup, ToggleButton, TextField, MenuItem,
+  ToggleButtonGroup, ToggleButton, TextField, MenuItem, Link,
 } from '@mui/material';
 import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
-import { inr, errMsg, FEE_COLORS } from '../fees/feesUi';
+import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from '../fees/feesUi';
 
 // Read-only fees summary for the student 360° view (admin/god gated by the caller).
 export default function StudentFeesPanel({ studentId, student }) {
@@ -18,7 +18,9 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
   const [lines, setLines] = useState([]);
-  const [view, setView] = useState('dues'); // 'dues' | 'all'
+  const [entries, setEntries] = useState([]);
+  const [view, setView] = useState('dues'); // 'dues' | 'all' | 'receipts'
+  const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
 
   // Year switcher: any year the student was enrolled. Prior years may live under a 'historical'
   // (prev-admission) record, so each option carries its own studentId. Defaults to the current
@@ -52,6 +54,8 @@ export default function StudentFeesPanel({ studentId, student }) {
         if (!alive) return;
         setSummary(sm);
         setLines(led?.lines || []);
+        setEntries(led?.entries || []);
+        setReceipts(null);
       } catch (err) { if (alive) setError(errMsg(err, 'Failed to load fees')); }
       finally { if (alive) setLoading(false); }
     })();
@@ -67,6 +71,17 @@ export default function StudentFeesPanel({ studentId, student }) {
   const quarterTotal = quarterLines.reduce((s, l) => s + Number(l.remaining || 0), 0);
   const fullYearTotal = due.reduce((s, l) => s + Number(l.remaining || 0), 0);
   const quarterLabel = summary?.quarterLabel || 'This quarter';
+
+  // Receipts view (lazy) + a charge->receipt map so a paid ledger row can open its receipt
+  useEffect(() => {
+    if (view !== 'receipts' || receipts !== null) return;
+    feesService.getReceipts({ studentId: effStudentId, academicYearId: selYear }).then((r) => setReceipts(r || [])).catch(() => setReceipts([]));
+  }, [view, receipts, effStudentId, selYear]);
+  const receiptByCharge = useMemo(() => {
+    const m = {};
+    (entries || []).forEach((e) => { if (e.kind === 'payment' && e.settlesEntryId && e.sourceRef) m[e.settlesEntryId] = e.sourceRef; });
+    return m;
+  }, [entries]);
 
   // full-ledger totals (every charge, paid or not)
   const tot = lines.reduce((a, l) => ({
@@ -106,6 +121,7 @@ export default function StudentFeesPanel({ studentId, student }) {
           <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
             <ToggleButton value="dues" sx={{ textTransform: 'none', py: 0.25 }}>Dues</ToggleButton>
             <ToggleButton value="all" sx={{ textTransform: 'none', py: 0.25 }}>Full ledger</ToggleButton>
+            <ToggleButton value="receipts" sx={{ textTransform: 'none', py: 0.25 }}>Receipts</ToggleButton>
           </ToggleButtonGroup>
           {isCurrent && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
         </Box>
@@ -162,7 +178,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                   )}
                 </Table>
               </Box>
-            ) : (
+            ) : view === 'all' ? (
               <Box sx={{ overflowX: 'auto' }}>
                 <Table size="small" sx={{ minWidth: 620 }}>
                   <TableHead><TableRow>
@@ -172,7 +188,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                   </TableRow></TableHead>
                   <TableBody>
                     {lines.length === 0 && <TableRow><TableCell colSpan={7} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No fee activity this year.</TableCell></TableRow>}
-                    {lines.map((l) => <FullRow key={l.chargeId} l={l} />)}
+                    {lines.map((l) => <FullRow key={l.chargeId} l={l} receiptId={receiptByCharge[l.chargeId]} />)}
                   </TableBody>
                   {lines.length > 0 && (
                     <TableFooter>
@@ -186,6 +202,39 @@ export default function StudentFeesPanel({ studentId, student }) {
                     </TableFooter>
                   )}
                 </Table>
+              </Box>
+            ) : (
+              <Box sx={{ overflowX: 'auto' }}>
+                {receipts === null ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>
+                ) : (
+                  <>
+                  {receipts.some((r) => r.type === 'transport' && r.status !== 'cancelled') && (
+                    <Typography sx={{ fontSize: 12.5, color: FEE_COLORS.warning, mb: 1 }}>
+                      Transport collected this year: <b>{inr(receipts.filter((r) => r.type === 'transport' && r.status !== 'cancelled').reduce((s, r) => s + Number(r.totalPaid || 0), 0))}</b>
+                    </Typography>
+                  )}
+                  <Table size="small">
+                    <TableHead><TableRow>
+                      <TableCell>Receipt</TableCell><TableCell>Date</TableCell><TableCell>Type</TableCell>
+                      <TableCell>Mode</TableCell><TableCell align="right">Amount</TableCell><TableCell />
+                    </TableRow></TableHead>
+                    <TableBody>
+                      {receipts.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No receipts this year.</TableCell></TableRow>}
+                      {receipts.map((r) => (
+                        <TableRow key={r.uuid} hover>
+                          <TableCell>{r.receiptNo || r.legacyReceiptNo || '—'}{r.status === 'cancelled' && <Chip size="small" color="error" label="cancelled" sx={{ ml: 1, height: 18 }} />}</TableCell>
+                          <TableCell>{r.receiptDate ? String(r.receiptDate).slice(0, 10) : '—'}</TableCell>
+                          <TableCell>{r.type || 'fee'}</TableCell>
+                          <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>{inr(r.totalPaid)}</TableCell>
+                          <TableCell align="right"><Button size="small" onClick={() => openReceipt(r.uuid)}>Print</Button></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  </>
+                )}
               </Box>
             )}
 
@@ -217,7 +266,7 @@ function DueRow({ l, upcoming }) {
   );
 }
 
-function FullRow({ l }) {
+function FullRow({ l, receiptId }) {
   const paidFull = l.remaining <= 0;
   return (
     <TableRow hover sx={paidFull ? { opacity: 0.65 } : undefined}>
@@ -226,7 +275,11 @@ function FullRow({ l }) {
       <TableCell>{l.headLabel}</TableCell>
       <TableCell align="right">{inr(l.charged)}</TableCell>
       <TableCell align="right">{l.concession ? '−' + inr(l.concession) : '0'}</TableCell>
-      <TableCell align="right" sx={{ color: FEE_COLORS.success }}>{inr(l.paid)}</TableCell>
+      <TableCell align="right" sx={{ color: FEE_COLORS.success }}>
+        {l.paid > 0 && receiptId
+          ? <Link component="button" underline="hover" onClick={() => openReceipt(receiptId)} sx={{ color: FEE_COLORS.success }}>{inr(l.paid)}</Link>
+          : inr(l.paid)}
+      </TableCell>
       <TableCell align="right" sx={{ fontWeight: 600, color: paidFull ? FEE_COLORS.muted : FEE_COLORS.danger }}>{inr(l.remaining)}</TableCell>
     </TableRow>
   );
