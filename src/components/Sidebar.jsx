@@ -92,6 +92,7 @@ import {
   RequestQuote as StructureIcon,
   MoneyOff as WaiverIcon,
   Undo as RefundIcon,
+  ReceiptLong as DuesIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -141,6 +142,7 @@ const menuItems = [
     perm: 'fee.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/fees' },
+      { title: 'Dues Report', icon: DuesIcon, path: '/fees/dues', perm: 'fee.view' },
       { title: 'Collect Fees', icon: CollectIcon, path: '/fees/collect', perm: 'fee.collect' },
       { title: 'Setup', icon: TypeIcon, path: '/fees/setup', perm: 'fee.manage' },
       { title: 'Fee Structure', icon: StructureIcon, path: '/fees/structure', perm: 'fee.manage' },

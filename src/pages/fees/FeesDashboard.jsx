@@ -16,9 +16,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const iso = (d) => d.toISOString().slice(0, 10);
 const dayLabel = (d) => d.toLocaleDateString('en-IN', { weekday: 'short' });
 
-function Kpi({ label, value, sub, accent, subColor }) {
+function Kpi({ label, value, sub, accent, subColor, onClick }) {
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: '100%', ...(onClick ? { cursor: 'pointer', '&:hover': { boxShadow: 3 } } : {}) }} onClick={onClick}>
       <CardContent>
         <Typography sx={{ color: FEE_COLORS.muted, fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>
           {label}
@@ -90,7 +90,7 @@ export default function FeesDashboard() {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={6} md={2.4}><Kpi label="Collected today" value={inr(collectedToday)} accent={FEE_COLORS.primary} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="This month" value={inrShort(overview?.collectedMonth)} accent={FEE_COLORS.success} /></Grid>
-        <Grid item xs={6} md={2.4}><Kpi label="Outstanding (due now)" value={inrShort(overview?.dueNow)} sub={overview ? `Full year ${inrShort(overview.outstanding)} · ${overview.duesStudents || 0} due` : '—'} subColor={FEE_COLORS.danger} accent={FEE_COLORS.danger} /></Grid>
+        <Grid item xs={6} md={2.4}><Kpi label="Outstanding (due now)" value={inrShort(overview?.dueNow)} sub={overview ? `Full year ${inrShort(overview.outstanding)} · ${overview.duesStudents || 0} due` : '—'} subColor={FEE_COLORS.danger} accent={FEE_COLORS.danger} onClick={() => navigate('/fees/dues')} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="Advance held" value={inrShort(overview?.advance)} sub={overview ? `${overview.advanceStudents || 0} students` : '—'} accent={FEE_COLORS.warning} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="Concessions (yr)" value={inrShort(overview?.concessionYtd)} accent={FEE_COLORS.primaryLight} /></Grid>
       </Grid>
