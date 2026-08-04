@@ -59,10 +59,14 @@ export default function StudentFeesPanel({ studentId, student }) {
   }, [effStudentId, selYear]);
 
   const due = lines.filter((l) => l.remaining > 0);
-  const dueNowLines = due.filter((l) => l.due);
-  const upcomingLines = due.filter((l) => !l.due);
+  const dueNowLines = due.filter((l) => (l.bucket ? l.bucket === 'due' : l.due));
+  const quarterLines = due.filter((l) => l.bucket === 'quarter');
+  const laterLines = due.filter((l) => (l.bucket ? l.bucket === 'later' : !l.due));
+  const upcomingLines = due.filter((l) => (l.bucket ? l.bucket !== 'due' : !l.due));
   const dueNowTotal = dueNowLines.reduce((s, l) => s + Number(l.remaining || 0), 0);
+  const quarterTotal = quarterLines.reduce((s, l) => s + Number(l.remaining || 0), 0);
   const fullYearTotal = due.reduce((s, l) => s + Number(l.remaining || 0), 0);
+  const quarterLabel = summary?.quarterLabel || 'This quarter';
 
   // full-ledger totals (every charge, paid or not)
   const tot = lines.reduce((a, l) => ({
@@ -122,10 +126,11 @@ export default function StudentFeesPanel({ studentId, student }) {
           <>
             <Grid container spacing={2} sx={{ mb: 1 }}>
               <Grid item xs={6} md={3}>{kpi('Due now', inr(summary?.dueNow ?? dueNowTotal), FEE_COLORS.danger)}</Grid>
+              <Grid item xs={6} md={3}>{kpi(quarterLabel, inr(summary?.thisQuarter ?? quarterTotal), FEE_COLORS.warning)}</Grid>
               <Grid item xs={6} md={3}>{kpi('Full year', inr(summary?.outstanding ?? fullYearTotal), FEE_COLORS.primary)}</Grid>
               <Grid item xs={6} md={3}>{kpi('Paid this year', inr(summary?.paid || 0), FEE_COLORS.success)}</Grid>
-              <Grid item xs={6} md={3}>{kpi('Advance held', inr(summary?.advance || 0), FEE_COLORS.warning)}</Grid>
             </Grid>
+            {Number(summary?.advance || 0) > 0 && <Typography sx={{ fontSize: 12, color: FEE_COLORS.warning, mb: 1 }}>Advance held: {inr(summary.advance)}</Typography>}
 
             {view === 'dues' ? (
               <Box sx={{ overflowX: 'auto' }}>
@@ -134,10 +139,14 @@ export default function StudentFeesPanel({ studentId, student }) {
                   <TableBody>
                     {due.length === 0 && <TableRow><TableCell colSpan={4} align="center" sx={{ color: FEE_COLORS.success, py: 2 }}>{lines.length ? 'All settled — nothing outstanding.' : 'No fee activity this year.'}</TableCell></TableRow>}
                     {dueNowLines.map((l) => <DueRow key={l.chargeId} l={l} />)}
-                    {upcomingLines.length > 0 && (
-                      <TableRow><TableCell colSpan={4} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>not yet due — later this year</TableCell></TableRow>
+                    {quarterLines.length > 0 && (
+                      <TableRow><TableCell colSpan={4} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>{quarterLabel.toLowerCase()} — not yet due</TableCell></TableRow>
                     )}
-                    {upcomingLines.map((l) => <DueRow key={l.chargeId} l={l} upcoming />)}
+                    {quarterLines.map((l) => <DueRow key={l.chargeId} l={l} upcoming />)}
+                    {laterLines.length > 0 && (
+                      <TableRow><TableCell colSpan={4} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>later this year</TableCell></TableRow>
+                    )}
+                    {laterLines.map((l) => <DueRow key={l.chargeId} l={l} upcoming />)}
                   </TableBody>
                   {due.length > 0 && (
                     <TableFooter>

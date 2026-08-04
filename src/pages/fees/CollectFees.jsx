@@ -36,6 +36,7 @@ export default function CollectFees() {
   const canWaive = useCan()(ACTIONS.FEE_MANAGE);
   const [received, setReceived] = useState(''); // for oldest-first auto-allocate
   const [waive, setWaive] = useState({ on: false, reason: '' });
+  const [showFullYear, setShowFullYear] = useState(false);
 
   // adhoc
   const [adhoc, setAdhoc] = useState({ payerName: '', mode: 'cash', date: today(), remarks: '', lines: [{ headLabel: '', amount: '' }], saving: false });
@@ -66,8 +67,11 @@ export default function CollectFees() {
   }, [location.state, academicYearId]);
 
   const dueLines = (ledger?.lines || []).filter((ln) => ln.remaining > 0);
-  const dueNowLines = dueLines.filter((ln) => ln.due);
-  const upcomingLines = dueLines.filter((ln) => !ln.due);
+  const dueNowLines = dueLines.filter((ln) => (ln.bucket ? ln.bucket === 'due' : ln.due));
+  const quarterLines = dueLines.filter((ln) => ln.bucket === 'quarter');
+  const laterLines = dueLines.filter((ln) => ln.bucket === 'later');
+  const upcomingLines = dueLines.filter((ln) => (ln.bucket ? ln.bucket !== 'due' : !ln.due)); // quarter + later (for oldest-first + advance)
+  const quarterLabel = ledger?.totals?.quarterLabel || 'This quarter';
   const selectedTotal = dueLines.reduce((s, ln) => {
     const e = sel[ln.chargeId];
     return e?.checked ? s + (Number(e.amount) || 0) : s;
@@ -223,10 +227,17 @@ export default function CollectFees() {
                       <TableBody>
                         {dueLines.length === 0 && <TableRow><TableCell colSpan={8} align="center" sx={{ color: FEE_COLORS.success, py: 3 }}>All settled — nothing outstanding. 🎉</TableCell></TableRow>}
                         {dueNowLines.map((ln) => renderDueRow(ln, false))}
-                        {upcomingLines.length > 0 && (
-                          <TableRow><TableCell colSpan={8} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>not yet due — later this year (tick to collect in advance)</TableCell></TableRow>
+                        {quarterLines.length > 0 && (
+                          <TableRow><TableCell colSpan={8} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>{quarterLabel.toLowerCase()} — not yet due (tick to collect ahead)</TableCell></TableRow>
                         )}
-                        {upcomingLines.map((ln) => renderDueRow(ln, true))}
+                        {quarterLines.map((ln) => renderDueRow(ln, true))}
+                        {laterLines.length > 0 && !showFullYear && (
+                          <TableRow><TableCell colSpan={8} align="center" sx={{ py: 0.75 }}><Button size="small" onClick={() => setShowFullYear(true)}>Show full year ({laterLines.length} more)</Button></TableCell></TableRow>
+                        )}
+                        {showFullYear && laterLines.length > 0 && (
+                          <TableRow><TableCell colSpan={8} sx={{ bgcolor: 'action.hover', color: FEE_COLORS.muted, fontSize: 12, fontStyle: 'italic', py: 0.5 }}>later this year</TableCell></TableRow>
+                        )}
+                        {showFullYear && laterLines.map((ln) => renderDueRow(ln, true))}
                       </TableBody>
                     </Table>
                   </Box>
