@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Grid, Chip, Button, CircularProgress, Alert,
   Table, TableHead, TableBody, TableRow, TableCell, TableFooter,
-  ToggleButtonGroup, ToggleButton,
+  ToggleButtonGroup, ToggleButton, TextField, MenuItem,
 } from '@mui/material';
 import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
@@ -20,14 +20,34 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [lines, setLines] = useState([]);
   const [view, setView] = useState('dues'); // 'dues' | 'all'
 
+  // Year switcher: any year the student was enrolled. Prior years may live under a 'historical'
+  // (prev-admission) record, so each option carries its own studentId. Defaults to the current
+  // year and resets whenever the student changes.
+  const years = useMemo(() => {
+    const seen = new Set(); const out = [];
+    (student?.enrollments || []).forEach((e) => {
+      if (e.kind === 'gap' || !e.academicYearId || seen.has(e.academicYearId)) return;
+      seen.add(e.academicYearId);
+      out.push({ id: e.academicYearId, name: e.academicYearName, studentId: e.studentId || studentId, historical: e.kind === 'historical' });
+    });
+    if (!seen.has(academicYearId)) out.unshift({ id: academicYearId, name: 'Current year', studentId, historical: false });
+    return out;
+  }, [student, studentId, academicYearId]);
+
+  const [selYear, setSelYear] = useState(academicYearId);
+  useEffect(() => { setSelYear(academicYearId); }, [studentId, academicYearId]);
+  const opt = years.find((y) => y.id === selYear) || { id: selYear, studentId, historical: false };
+  const effStudentId = opt.studentId;
+  const isCurrent = selYear === academicYearId;
+
   useEffect(() => {
     let alive = true;
     (async () => {
       setLoading(true); setError('');
       try {
         const [sm, led] = await Promise.all([
-          feesService.getStudentSummary(studentId, academicYearId).catch(() => null),
-          feesService.getStudentLedger(studentId, academicYearId),
+          feesService.getStudentSummary(effStudentId, selYear).catch(() => null),
+          feesService.getStudentLedger(effStudentId, selYear),
         ]);
         if (!alive) return;
         setSummary(sm);
@@ -36,7 +56,7 @@ export default function StudentFeesPanel({ studentId, student }) {
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [studentId, academicYearId]);
+  }, [effStudentId, selYear]);
 
   const due = lines.filter((l) => l.remaining > 0);
   const dueNowLines = due.filter((l) => l.due);
@@ -69,14 +89,31 @@ export default function StudentFeesPanel({ studentId, student }) {
         <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PaymentsIcon fontSize="small" sx={{ color: FEE_COLORS.primary }} /> Fees &amp; Dues
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          {years.length > 1 && (
+            <TextField size="small" select value={selYear} onChange={(e) => setSelYear(e.target.value)} sx={{ minWidth: 130 }}>
+              {years.map((y) => (
+                <MenuItem key={y.id} value={y.id} sx={{ fontSize: 13 }}>
+                  {y.name}{y.id === academicYearId ? ' (current)' : ''}{y.historical ? ' · prev. adm' : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
           <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
             <ToggleButton value="dues" sx={{ textTransform: 'none', py: 0.25 }}>Dues</ToggleButton>
             <ToggleButton value="all" sx={{ textTransform: 'none', py: 0.25 }}>Full ledger</ToggleButton>
           </ToggleButtonGroup>
-          <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>
+          {isCurrent && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
         </Box>
       </CardContent>
+
+      {!isCurrent && (
+        <Box sx={{ px: 2, pb: 1 }}>
+          <Alert severity="info" icon={false} sx={{ py: 0.25, fontSize: 12.5 }}>
+            Viewing <b>{opt.name || 'a previous year'}</b>{opt.historical ? ' (previous admission)' : ''} — read-only. Switch back to the current year to collect.
+          </Alert>
+        </Box>
+      )}
 
       <CardContent sx={{ pt: 0 }}>
         {loading && <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>}
