@@ -10,6 +10,8 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import CommandPalette from '../../components/common/CommandPalette';
 import { errMsg, inr, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
+import { useCan } from '../../permissions/can';
+import { ACTIONS } from '../../permissions/actions';
 
 const PAY_MODES = ['cash', 'online', 'card', 'cheque', 'draft', 'neft', 'ecs', 'bank-deposit', 'rte'];
 const RECEIVED = ['father', 'mother', 'guardian', 'other'];
@@ -31,6 +33,9 @@ export default function CollectFees() {
   const [pay, setPay] = useState({ mode: 'cash', receivedFrom: 'father', date: today(), remarks: '', notify: true });
   const [useAdvance, setUseAdvance] = useState(false);
   const [collecting, setCollecting] = useState(false);
+  const canWaive = useCan()(ACTIONS.FEE_MANAGE);
+  const [received, setReceived] = useState(''); // for oldest-first auto-allocate
+  const [waive, setWaive] = useState({ on: false, reason: '' });
 
   // adhoc
   const [adhoc, setAdhoc] = useState({ payerName: '', mode: 'cash', date: today(), remarks: '', lines: [{ headLabel: '', amount: '' }], saving: false });
@@ -71,9 +76,24 @@ export default function CollectFees() {
   const advanceAvail = Number(summary?.advance || 0);
   const advanceApplied = useAdvance ? Math.min(advanceAvail, selectedTotal) : 0;
   const payable = Math.max(0, selectedTotal - advanceApplied);
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const tickedDue = dueLines.filter((ln) => sel[ln.chargeId]?.checked).reduce((s, ln) => s + Number(ln.remaining || 0), 0);
+  const waiveTotal = waive.on ? Math.max(0, r2(tickedDue - selectedTotal)) : 0;
 
   const toggle = (id, checked) => setSel((p) => ({ ...p, [id]: { ...p[id], checked } }));
   const setAmt = (id, amount) => setSel((p) => ({ ...p, [id]: { ...p[id], amount } }));
+
+  // oldest-first: spread `received` across due rows in cycle order, ticking + filling each
+  const autoAllocate = () => {
+    let left = Number(received) || 0;
+    const next = {};
+    for (const ln of [...dueNowLines, ...upcomingLines]) {
+      const take = Math.min(Number(ln.remaining), Math.max(0, left));
+      next[ln.chargeId] = take > 0 ? { checked: true, amount: String(r2(take)) } : { checked: false, amount: String(ln.remaining) };
+      left = r2(left - take);
+    }
+    setSel(next);
+  };
 
   const renderDueRow = (ln, upcoming) => {
     const e = sel[ln.chargeId] || {};
@@ -103,16 +123,25 @@ export default function CollectFees() {
     const allocations = dueLines
       .filter((ln) => sel[ln.chargeId]?.checked && Number(sel[ln.chargeId]?.amount) > 0)
       .map((ln) => ({ ledgerId: ln.chargeId, amount: Number(sel[ln.chargeId].amount) }));
-    if (!allocations.length) { setError('Tick at least one component to collect.'); return; }
+    const waivers = waive.on
+      ? dueLines
+          .filter((ln) => sel[ln.chargeId]?.checked)
+          .map((ln) => ({ ledgerId: ln.chargeId, amount: r2(Number(ln.remaining) - (Number(sel[ln.chargeId]?.amount) || 0)) }))
+          .filter((w) => w.amount > 0)
+      : [];
+    if (!allocations.length && !waivers.length) { setError('Tick at least one component to collect or waive.'); return; }
+    if (waivers.length && !waive.reason.trim()) { setError('Enter a reason for the write-off.'); return; }
     setCollecting(true); setError(''); setOk('');
     try {
       const receipt = await feesService.collect({
         studentId: student.uuid, academicYearId, allocations,
         advanceApplied: useAdvance ? Math.min(advanceAvail, allocations.reduce((s, a) => s + a.amount, 0)) : 0,
+        waivers, waiveReason: waive.reason.trim() || null,
         paymentMode: pay.mode, receivedFrom: pay.receivedFrom, receiptDate: pay.date, remarks: pay.remarks || null,
       });
-      setOk(`Receipt ${receipt.receiptNo || ''} created for ${inr(receipt.totalPaid)}.`);
+      setOk(`Receipt ${receipt.receiptNo || ''} — collected ${inr(receipt.totalPaid)}${receipt.waiverTotal ? `, waived ${inr(receipt.waiverTotal)}` : ''}.`);
       openReceipt(receipt.uuid);
+      setWaive({ on: false, reason: '' }); setReceived('');
       chooseStudent(student); // refresh ledger
     } catch (err) { setError(errMsg(err)); }
     finally { setCollecting(false); }
@@ -213,6 +242,10 @@ export default function CollectFees() {
                 <Card sx={{ position: 'sticky', top: 80 }}>
                   <CardContent>
                     <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>Payment</Typography>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                      <TextField size="small" type="number" label="Amount received" value={received} onChange={(e) => setReceived(e.target.value)} sx={{ flex: 1 }} />
+                      <Button size="small" variant="outlined" onClick={autoAllocate} disabled={!(Number(received) > 0)} sx={{ whiteSpace: 'nowrap' }}>Split oldest-first</Button>
+                    </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, fontSize: 12.5, color: FEE_COLORS.muted }}>
                       <span>Due now {inr(summary?.dueNow || 0)}</span>
                       <span>Full year {inr(summary?.outstanding || 0)}</span>
@@ -230,6 +263,19 @@ export default function CollectFees() {
                         <span>− {inr(advanceApplied)}</span>
                       </Box>
                     )}
+                    {canWaive && (
+                      <Box sx={{ mt: 0.5 }}>
+                        <FormControlLabel sx={{ m: 0 }}
+                          control={<Checkbox size="small" checked={waive.on} onChange={(e) => setWaive((w) => ({ ...w, on: e.target.checked }))} />}
+                          label={<span style={{ fontSize: 13 }}>Waive remaining on ticked rows{waiveTotal > 0 ? ` — ${inr(waiveTotal)}` : ''}</span>} />
+                        {waive.on && <TextField fullWidth size="small" label="Write-off reason" value={waive.reason} onChange={(e) => setWaive((w) => ({ ...w, reason: e.target.value }))} sx={{ mt: 0.5 }} />}
+                      </Box>
+                    )}
+                    {waiveTotal > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, color: FEE_COLORS.danger, fontSize: 13 }}>
+                        <span>Write-off (waived)</span><span>− {inr(waiveTotal)}</span>
+                      </Box>
+                    )}
                     <Divider />
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1.5, fontSize: 18 }}>
                       <b>Payable</b><b style={{ color: FEE_COLORS.primary }}>{inr(payable)}</b>
@@ -242,8 +288,8 @@ export default function CollectFees() {
                       <Grid item xs={12}><TextField fullWidth size="small" label="Remarks (optional)" value={pay.remarks} onChange={(e) => setPay((p) => ({ ...p, remarks: e.target.value }))} /></Grid>
                     </Grid>
                     <FormControlLabel sx={{ mt: 1 }} control={<Checkbox size="small" checked={pay.notify} onChange={(e) => setPay((p) => ({ ...p, notify: e.target.checked }))} />} label={<span style={{ fontSize: 13 }}>Send payment SMS/WhatsApp</span>} />
-                    <Button fullWidth variant="contained" sx={{ mt: 2, py: 1.2 }} disabled={collecting || selectedTotal <= 0} onClick={collect}>
-                      {collecting ? 'Collecting…' : `Collect ${inr(payable)} & print`}
+                    <Button fullWidth variant="contained" sx={{ mt: 2, py: 1.2 }} disabled={collecting || (selectedTotal <= 0 && waiveTotal <= 0)} onClick={collect}>
+                      {collecting ? 'Collecting…' : payable > 0 ? `Collect ${inr(payable)} & print` : `Settle (waive ${inr(waiveTotal)}) & print`}
                     </Button>
                     <Typography sx={{ textAlign: 'center', mt: 1, fontSize: 11, color: FEE_COLORS.muted }}>Excess payment is stored as advance automatically.</Typography>
                   </CardContent>
