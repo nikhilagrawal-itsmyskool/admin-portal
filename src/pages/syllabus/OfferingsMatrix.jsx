@@ -32,9 +32,7 @@ export default function OfferingsMatrix() {
 
   const [filter, setFilter] = useState({ academicYearId: '', grade: '', streamCode: '' });
   const [plans, setPlans] = useState([]);
-  const [teachersByPlan, setTeachersByPlan] = useState({}); // syllabusId -> assignments[] (overrides)
-  const [suggestionsByPlan, setSuggestionsByPlan] = useState({}); // syllabusId -> timetable suggestions[]
-  const [dismissed, setDismissed] = useState(() => new Set()); // "planId|classId" cells whose suggestion was dismissed
+  const [teachersByPlan, setTeachersByPlan] = useState({}); // syllabusId -> persisted assignments[]
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -76,19 +74,17 @@ export default function OfferingsMatrix() {
   }, [grades, filter.grade]);
 
   const loadMatrix = async (f = filter) => {
-    if (!f.academicYearId || !f.grade) { setPlans([]); setTeachersByPlan({}); setSuggestionsByPlan({}); return; }
+    if (!f.academicYearId || !f.grade) { setPlans([]); setTeachersByPlan({}); return; }
     setLoading(true); setError('');
     try {
       const params = { academicYearId: f.academicYearId, grade: f.grade };
       if (f.streamCode) params.streamCode = f.streamCode;
       const pl = (await syllabusService.getSyllabi(params)) || [];
       setPlans(pl);
-      const [teacherPairs, suggPairs] = await Promise.all([
-        Promise.all(pl.map((p) => syllabusService.getPlanTeachers(p.uuid).then((t) => [p.uuid, t || []]).catch(() => [p.uuid, []]))),
-        Promise.all(pl.map((p) => syllabusService.getTeacherSuggestions(p.uuid).then((t) => [p.uuid, t || []]).catch(() => [p.uuid, []]))),
-      ]);
+      const teacherPairs = await Promise.all(
+        pl.map((p) => syllabusService.getPlanTeachers(p.uuid).then((t) => [p.uuid, t || []]).catch(() => [p.uuid, []])),
+      );
       setTeachersByPlan(Object.fromEntries(teacherPairs));
-      setSuggestionsByPlan(Object.fromEntries(suggPairs));
     } catch {
       setError('Failed to load offerings');
     } finally {
@@ -99,8 +95,6 @@ export default function OfferingsMatrix() {
 
   const cellAssignments = (planId, classId) =>
     (teachersByPlan[planId] || []).filter((a) => a.classId === classId);
-  const cellSuggestion = (planId, classId) =>
-    (suggestionsByPlan[planId] || []).find((s) => s.classId === classId) || null;
 
   const addTeacher = async (planId, classId, teacher) => {
     if (!teacher) return;
@@ -236,34 +230,16 @@ export default function OfferingsMatrix() {
                         const rows = cellAssignments(p.uuid, s.classId);
                         const takenIds = new Set(rows.map((a) => a.teacherId));
                         const options = employees.filter((e) => !takenIds.has(e.uuid));
-                        const suggestion = cellSuggestion(p.uuid, s.classId);
-                        const cellKey = `${p.uuid}|${s.classId}`;
-                        // Only suggest for an empty, non-dismissed cell — once a teacher is
-                        // assigned or the suggestion is dismissed, it disappears.
-                        const showSuggestion = suggestion && rows.length === 0 && !dismissed.has(cellKey);
                         return (
                           <TableCell key={s.classId} sx={{ verticalAlign: 'top' }}>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: (rows.length || showSuggestion) ? 1 : 0 }}>
-                              {rows.length === 0 && !showSuggestion && !canManage && (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: rows.length ? 1 : 0 }}>
+                              {rows.length === 0 && !canManage && (
                                 <Typography variant="caption" color="text.secondary">—</Typography>
                               )}
                               {rows.map((a) => (
                                 <Chip key={a.uuid} size="small" label={a.teacherName || a.teacherId}
                                   onDelete={canManage ? () => removeTeacher(p.uuid, a.uuid) : undefined} />
                               ))}
-                              {showSuggestion && (
-                                <Tooltip title={canManage
-                                  ? `From timetable (${suggestion.matchedSubject}) — click to pin, ✕ to dismiss`
-                                  : `From timetable (${suggestion.matchedSubject})`}>
-                                  <Chip size="small" variant="outlined" color="primary"
-                                    icon={canManage ? <AddIcon fontSize="small" /> : undefined}
-                                    label={suggestion.teacherName || suggestion.teacherId}
-                                    clickable={canManage}
-                                    onClick={canManage ? () => addTeacher(p.uuid, s.classId, { uuid: suggestion.teacherId, name: suggestion.teacherName }) : undefined}
-                                    onDelete={canManage ? () => setDismissed((prev) => new Set(prev).add(cellKey)) : undefined}
-                                    sx={{ borderStyle: 'dashed', color: 'text.secondary' }} />
-                                </Tooltip>
-                              )}
                             </Box>
                             {canManage && (
                               <Autocomplete
