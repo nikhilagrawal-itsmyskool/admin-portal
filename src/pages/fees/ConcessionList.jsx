@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, IconButton,
   CircularProgress, Table, TableHead, TableBody, TableRow, TableCell,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, InputAdornment,
-  FormControlLabel, Switch,
+  FormControlLabel, Switch, ToggleButtonGroup, ToggleButton, Tooltip, Link,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
@@ -18,8 +19,11 @@ const emptyC = { name: '', type: 'sibling_younger', valueType: 'amount', value: 
 
 export default function ConcessionList() {
   const { academicYearId } = useAcademicYear();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [view, setView] = useState('templates'); // templates | multi
+  const [multi, setMulti] = useState([]); // students on >1 concession
   const [list, setList] = useState([]);
   const [counts, setCounts] = useState({});
   const [heads, setHeads] = useState([]);
@@ -39,12 +43,13 @@ export default function ConcessionList() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const [c, h, lk] = await Promise.all([
+      const [c, h, lk, mc] = await Promise.all([
         feesService.getConcessions(academicYearId),
         feesService.getHeads(academicYearId),
         feesService.getLookups().catch(() => ({ concessionTypes: [] })),
+        feesService.getMultiConcession(academicYearId).catch(() => []),
       ]);
-      setList(c || []); setHeads(h || []); setTypes(lk.concessionTypes || []);
+      setList(c || []); setHeads(h || []); setTypes(lk.concessionTypes || []); setMulti(mc || []);
       // count comes from the list query now (one call), not one roster fetch per template
       setCounts(Object.fromEntries((c || []).map((t) => [t.uuid, Number(t.studentCount) || 0])));
       if (c && c.length && !selected) selectTemplate(c[0]);
@@ -92,6 +97,8 @@ export default function ConcessionList() {
 
   const valueLabel = (c) => (c.valueType === 'percent' ? `${c.value}%` : inr(c.value));
   const headName = (id) => heads.find((h) => h.uuid === id)?.name || (id ? '—' : 'All');
+  const multiByStudent = useMemo(() => Object.fromEntries((multi || []).map((m) => [m.studentId, m])), [multi]);
+  const sameHeadCount = useMemo(() => (multi || []).filter((m) => m.sameHead).length, [multi]);
   const shownRoster = (onlyCurrent ? roster.filter((r) => r.enrolledThisYear) : roster)
     .slice()
     .sort((a, b) => (classRank(a.className) - classRank(b.className)) * (sortDir === 'asc' ? 1 : -1)
@@ -106,11 +113,23 @@ export default function ConcessionList() {
           <Typography variant="h5" sx={{ fontWeight: 700 }}>Concessions</Typography>
           <Typography sx={{ color: FEE_COLORS.muted, fontSize: 13 }}>Reusable discount templates → attach students. Sibling, staff, EWS &amp; more.</Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDlg({ open: true, data: emptyC, id: null, saving: false })}>New concession</Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
+            <ToggleButton value="templates" sx={{ textTransform: 'none' }}>Templates</ToggleButton>
+            <ToggleButton value="multi" sx={{ textTransform: 'none' }}>In multiple ({multi.length})</ToggleButton>
+          </ToggleButtonGroup>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDlg({ open: true, data: emptyC, id: null, saving: false })}>New concession</Button>
+        </Box>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {sameHeadCount > 0 && view === 'templates' && (
+        <Alert severity="warning" sx={{ mb: 2 }} action={<Button size="small" onClick={() => setView('multi')}>Review</Button>}>
+          {sameHeadCount} student{sameHeadCount === 1 ? '' : 's'} {sameHeadCount === 1 ? 'has' : 'have'} two concessions on the <b>same fee head</b> (double discount).
+        </Alert>
+      )}
 
+      {view === 'templates' ? (
       <Grid container spacing={3}>
         <Grid item xs={12} md={7}>
           <Card>
@@ -174,6 +193,12 @@ export default function ConcessionList() {
                     {r.admissionNumber && <span style={{ color: FEE_COLORS.muted }}> · {r.admissionNumber}</span>}
                   </span>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    {multiByStudent[r.studentId] && (
+                      <Tooltip title={(multiByStudent[r.studentId].concessions || []).map((c) => c.name).join(', ')}>
+                        <Chip size="small" color={multiByStudent[r.studentId].sameHead ? 'warning' : 'default'} variant="outlined"
+                          label={`also in ${(multiByStudent[r.studentId].concessionCount || 2) - 1} other`} />
+                      </Tooltip>
+                    )}
                     {!r.enrolledThisYear && <Chip size="small" color="warning" variant="outlined" label="not this year" />}
                     <IconButton size="small" color="error" onClick={() => removeStudent(r.studentId)}><DeleteIcon fontSize="small" /></IconButton>
                   </Box>
@@ -183,6 +208,33 @@ export default function ConcessionList() {
           </Card>
         </Grid>
       </Grid>
+      ) : (
+        <Card>
+          <CardContent sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 15 }}>Students in more than one concession</Typography>
+            <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>{multi.length} student{multi.length === 1 ? '' : 's'} · {sameHeadCount} same-head</Typography>
+          </CardContent>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead><TableRow>
+                <TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell><TableCell>Concessions</TableCell><TableCell align="center">Heads</TableCell>
+              </TableRow></TableHead>
+              <TableBody>
+                {multi.length === 0 && <TableRow><TableCell colSpan={5} align="center" sx={{ color: FEE_COLORS.success, py: 3 }}>No student is in more than one concession. 🎉</TableCell></TableRow>}
+                {multi.map((m) => (
+                  <TableRow key={m.studentId} hover sx={m.sameHead ? { bgcolor: 'rgba(255,171,0,.10)' } : undefined}>
+                    <TableCell>{m.className || '—'}</TableCell>
+                    <TableCell>{m.admissionNumber || '—'}</TableCell>
+                    <TableCell><Link component="button" underline="hover" onClick={() => navigate(`/students/${m.studentId}`)} sx={{ textAlign: 'left' }}>{m.studentName || m.studentId}</Link></TableCell>
+                    <TableCell>{(m.concessions || []).map((c, i) => <Chip key={i} size="small" variant="outlined" label={`${c.name}${c.valueType === 'percent' ? ` ${c.value}%` : ` ${inr(c.value)}`}`} sx={{ mr: 0.5, mb: 0.5 }} />)}</TableCell>
+                    <TableCell align="center">{m.sameHead ? <Chip size="small" color="warning" label="same head" /> : m.headCount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        </Card>
+      )}
 
       {/* template dialog */}
       <Dialog open={dlg.open} onClose={() => setDlg((s) => ({ ...s, open: false }))} maxWidth="xs" fullWidth>

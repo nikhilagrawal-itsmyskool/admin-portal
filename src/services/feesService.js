@@ -53,6 +53,7 @@ export const feesService = {
   updateConcession: async (id, data) => (await api.put(`/fees/concessions/${id}`, data)).data,
   deleteConcession: async (id) => (await api.delete(`/fees/concessions/${id}`)).data,
   getConcessionStudents: async (id) => (await api.get(`/fees/concessions/${id}/students`)).data,
+  getMultiConcession: async (academicYearId) => (await api.get('/fees/concessions/multi', { params: { academicYearId } })).data,
   addConcessionStudents: async (id, data) =>
     (await api.post(`/fees/concessions/${id}/students`, data)).data,
   removeConcessionStudent: async (id, studentId) =>
