@@ -90,6 +90,12 @@ export const syllabusService = {
     const response = await api.get(`/syllabus/syllabi/${syllabusId}/teachers`);
     return response.data; // [{ uuid, classId, className, teacherId, teacherName }]
   },
+  // All persisted assignments for a whole grade in ONE call (Offerings matrix).
+  // Rows carry syllabusId so the caller groups by plan. Replaces the per-plan N+1.
+  getGradeTeachers: async ({ academicYearId, grade }) => {
+    const response = await api.get('/syllabus/plan-teachers', { params: { academicYearId, grade } });
+    return response.data; // [{ uuid, syllabusId, classId, className, teacherId, teacherName }]
+  },
   getTeacherSuggestions: async (syllabusId) => {
     // Live timetable resolve: per section, the teacher who teaches the matching
     // subject in the timetable. [{ classId, className, teacherId, teacherName, matchedSubject }]

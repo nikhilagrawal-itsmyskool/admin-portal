@@ -81,10 +81,12 @@ export default function OfferingsMatrix() {
       if (f.streamCode) params.streamCode = f.streamCode;
       const pl = (await syllabusService.getSyllabi(params)) || [];
       setPlans(pl);
-      const teacherPairs = await Promise.all(
-        pl.map((p) => syllabusService.getPlanTeachers(p.uuid).then((t) => [p.uuid, t || []]).catch(() => [p.uuid, []])),
-      );
-      setTeachersByPlan(Object.fromEntries(teacherPairs));
+      // One bulk fetch for the whole grade. (Previously one request per subject,
+      // whose intermittent failures were swallowed → saved teachers vanished.)
+      const rows = (await syllabusService.getGradeTeachers({ academicYearId: f.academicYearId, grade: f.grade })) || [];
+      const grouped = {};
+      for (const r of rows) (grouped[r.syllabusId] = grouped[r.syllabusId] || []).push(r);
+      setTeachersByPlan(grouped);
     } catch {
       setError('Failed to load offerings');
     } finally {
