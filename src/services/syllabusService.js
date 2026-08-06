@@ -40,7 +40,10 @@ export const syllabusService = {
     const params = { academicYearId };
     if (grade) params.grade = grade;
     const response = await api.get('/syllabus/overview', { params });
-    return response.data?.rows || []; // [{ syllabusId, grade, subjectName, hasContent, contentLeaves, hasSource, sectionsTotal, sectionsStaffed, papers, coveragePct, ... }]
+    // { currentMonthIndex, rows: [{ syllabusId, grade, subjectName, hasContent, contentLeaves,
+    //   hasSource, papers:[{exam,answerKeyReleased,hasPaper,hasBlueprint,hasKey}], monthlyScheduled:[12],
+    //   sections:[{ classId, className, coveredCount, teachers:[{teacherId,teacherName}] }] }] }
+    return response.data || { currentMonthIndex: 0, rows: [] };
   },
 
   // ---- Plans ----
