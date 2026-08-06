@@ -35,6 +35,14 @@ export const syllabusService = {
     return response.data;
   },
 
+  // ---- Overview (readiness board) ----
+  getOverview: async ({ academicYearId, grade } = {}) => {
+    const params = { academicYearId };
+    if (grade) params.grade = grade;
+    const response = await api.get('/syllabus/overview', { params });
+    return response.data?.rows || []; // [{ syllabusId, grade, subjectName, hasContent, contentLeaves, hasSource, sectionsTotal, sectionsStaffed, papers, coveragePct, ... }]
+  },
+
   // ---- Plans ----
   getSyllabi: async (params = {}) => {
     // params: { academicYearId, grade, subjectId }

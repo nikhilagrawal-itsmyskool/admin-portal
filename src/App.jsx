@@ -135,6 +135,7 @@ import TransportTakeAttendance from './pages/transport/attendance/TransportTakeA
 import TransportSessionList from './pages/transport/attendance/TransportSessionList';
 import SyllabusList from './pages/syllabus/SyllabusList';
 import OfferingsMatrix from './pages/syllabus/OfferingsMatrix';
+import SyllabusOverview from './pages/syllabus/Overview';
 import ModelPapers from './pages/syllabus/ModelPapers';
 import SyllabusBuilder from './pages/syllabus/SyllabusBuilder';
 import SyllabusSubjectList from './pages/syllabus/subjects/SubjectList';
@@ -345,6 +346,7 @@ export default function App() {
         <Route path="transport/attendance/mark" element={<TransportTakeAttendance />} />
         <Route path="transport/attendance/sessions" element={<TransportSessionList />} />
         <Route path="syllabus" element={<SyllabusList />} />
+        <Route path="syllabus/overview" element={<SyllabusOverview />} />
         <Route path="syllabus/offerings" element={<OfferingsMatrix />} />
         <Route path="syllabus/model-papers" element={<ModelPapers />} />
         <Route path="syllabus/subjects" element={<SyllabusSubjectList />} />
