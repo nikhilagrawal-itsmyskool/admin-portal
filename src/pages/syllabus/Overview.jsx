@@ -295,8 +295,8 @@ export default function Overview() {
                         <TableCell align="right" sx={{ verticalAlign: 'top' }}>
                           <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                             <Button size="small" onClick={() => navigate(`/syllabus/plans/${row.syllabusId}`)}>Plan</Button>
-                            <Button size="small" onClick={() => navigate('/syllabus/offerings')}>Teachers</Button>
-                            <Button size="small" onClick={() => navigate('/syllabus/model-papers')}>Papers</Button>
+                            <Button size="small" onClick={() => navigate(`/syllabus/offerings?academicYearId=${academicYearId}&grade=${encodeURIComponent(row.grade)}`)}>Teachers</Button>
+                            <Button size="small" onClick={() => navigate(`/syllabus/model-papers?academicYearId=${academicYearId}&grade=${encodeURIComponent(row.grade)}`)}>Papers</Button>
                           </Stack>
                         </TableCell>
                       </TableRow>,

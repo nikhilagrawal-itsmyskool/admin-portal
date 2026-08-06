@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip,
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Switch, IconButton,
@@ -51,6 +51,7 @@ function detectFromName(name, grades, exams) {
 export default function ModelPapers() {
   const can = useCan();
   const canManage = can('syllabus.manage');
+  const [searchParams] = useSearchParams();
 
   const [years, setYears] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -91,9 +92,16 @@ export default function ModelPapers() {
         const ex = lookups?.exams || [{ value: 'half_yearly', label: 'Half Yearly' }, { value: 'annual', label: 'Annual' }];
         setExams(ex);
         const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        // Default to the current year but ALL grades / exams, so the grid opens
-        // showing everything; grade & exam are optional filters.
-        setFilter((f) => ({ ...f, academicYearId: cur?.uuid || '' }));
+        // Default to the current year, ALL grades/exams — unless a grade/year is
+        // passed in the URL (e.g. from the Overview screen), then pre-filter.
+        const qpGrade = searchParams.get('grade');
+        const qpYear = searchParams.get('academicYearId');
+        const gradeMatch = (grds || []).find((g) => g.grade.toLowerCase() === (qpGrade || '').toLowerCase());
+        setFilter((f) => ({
+          ...f,
+          academicYearId: (qpYear && yearList.some((y) => y.uuid === qpYear) ? qpYear : cur?.uuid) || '',
+          grade: gradeMatch?.grade || '',
+        }));
       } catch {
         setError('Failed to load model-paper filters');
       }

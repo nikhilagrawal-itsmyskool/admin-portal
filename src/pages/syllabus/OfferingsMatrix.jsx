@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, Alert, Chip,
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Autocomplete, ToggleButton,
@@ -20,6 +20,7 @@ import { useCan } from '../../permissions/can';
 // section teachers on a single screen; the rightmost link opens the plan builder.
 export default function OfferingsMatrix() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const can = useCan();
   const canManage = can('syllabus.manage');
 
@@ -61,7 +62,15 @@ export default function OfferingsMatrix() {
         setLayouts(lookups?.layouts || []);
         setEmployees(emps || []);
         const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        setFilter((f) => ({ ...f, academicYearId: cur?.uuid || '', grade: (grds || [])[0]?.grade || '' }));
+        // Prefer grade/year passed in the URL (e.g. from the Overview screen).
+        const qpGrade = searchParams.get('grade');
+        const qpYear = searchParams.get('academicYearId');
+        const gradeMatch = (grds || []).find((g) => g.grade.toLowerCase() === (qpGrade || '').toLowerCase());
+        setFilter((f) => ({
+          ...f,
+          academicYearId: (qpYear && yearList.some((y) => y.uuid === qpYear) ? qpYear : cur?.uuid) || '',
+          grade: gradeMatch?.grade || (grds || [])[0]?.grade || '',
+        }));
       } catch {
         setError('Failed to load offerings data');
       }
