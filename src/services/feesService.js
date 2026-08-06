@@ -100,6 +100,7 @@ export const feesService = {
   getDues: async (params = {}) =>
     (await api.get('/fees/reports/dues', { params })).data,
   setFollowup: async (data) => (await api.post('/fees/reports/followup', data)).data,
+  getFollowup: async (params = {}) => (await api.get('/fees/reports/followup', { params })).data,
 };
 
 export default feesService;

@@ -10,6 +10,7 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { classService } from '../../services/classService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
+import FollowupDialog from './FollowupDialog';
 import { errMsg, inr, classRank, FEE_COLORS } from './feesUi';
 
 const FOLLOWUPS = [
@@ -38,6 +39,7 @@ export default function DuesReport() {
   const [sortBy, setSortBy] = useState('dueNow'); // dueNow | prevYears | fullYear | class
   const [fFilter, setFFilter] = useState(''); // follow-up filter
   const [band, setBand] = useState([0, 0]); // due-now slider range
+  const [followStudent, setFollowStudent] = useState(null); // open timeline dialog for this row
 
   useEffect(() => {
     classService.getClasses({ academicYearId }).then((c) => setClasses((c?.value || c || []).filter(Boolean))).catch(() => setClasses([]));
@@ -56,8 +58,10 @@ export default function DuesReport() {
     return () => { alive = false; };
   }, [academicYearId, mode, classId, student]);
 
-  // effective due-now = current due + (prior years if the toggle is on)
+  // effective amounts = current due + (prior years when the toggle is on). Tiers are cumulative.
   const eff = (r) => Number(r.dueNow || 0) + (includePrev ? Number(r.prevYears || 0) : 0);
+  const effQ = (r) => Number(r.dueQuarter || 0) + (includePrev ? Number(r.prevYears || 0) : 0);
+  const effFull = (r) => Number(r.fullYear || 0) + (includePrev ? Number(r.prevYears || 0) : 0);
   const maxDue = useMemo(() => Math.max(1, ...((data.rows || []).map(eff))), [data.rows, includePrev]);
   useEffect(() => { setBand([0, maxDue]); }, [maxDue]);
 
@@ -75,10 +79,13 @@ export default function DuesReport() {
   }, [data.rows, fFilter, band, sortBy, includePrev]);
 
   const t = data.totals || {};
+  const monthEndLabel = data.monthEndLabel || '';
+  const quarterEndLabel = data.quarterEndLabel || '';
+  const yearEndLabel = data.yearEndLabel || '';
   const shownTotals = rows.reduce((a, r) => ({
-    dueNow: a.dueNow + Number(r.dueNow || 0), thisQuarter: a.thisQuarter + Number(r.thisQuarter || 0),
+    dueNow: a.dueNow + Number(r.dueNow || 0), dueQuarter: a.dueQuarter + Number(r.dueQuarter || 0),
     prevYears: a.prevYears + Number(r.prevYears || 0), fullYear: a.fullYear + Number(r.fullYear || 0),
-  }), { dueNow: 0, thisQuarter: 0, prevYears: 0, fullYear: 0 });
+  }), { dueNow: 0, dueQuarter: 0, prevYears: 0, fullYear: 0 });
 
   // band summary: counts + totals in ₹ pools (on effective due-now)
   const bands = useMemo(() => {
@@ -89,14 +96,8 @@ export default function DuesReport() {
     });
   }, [data.rows, includePrev]);
 
-  const setFollow = async (r, status) => {
-    try {
-      await feesService.setFollowup({ studentId: r.studentId, academicYearId, status: status || null });
-      setData((d) => ({ ...d, rows: d.rows.map((x) => (x.studentId === r.studentId ? { ...x, followupStatus: status } : x)) }));
-    } catch (err) { setError(errMsg(err)); }
-  };
-
   const qLabel = data.quarterLabel || 'This quarter';
+  const reload = () => feesService.getDues({ academicYearId, mode, ...(classId ? { classId } : {}), ...(student ? { studentId: student.uuid } : {}) }).then((res) => setData(res || { rows: [], totals: {} })).catch(() => {});
   const exportCsv = () => {
     const head = ['Class', 'Admission', 'Student', 'Father mobile', 'Due now', qLabel, 'Prev years', 'Full year', 'Follow-up'];
     const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(r.thisQuarter || 0), Math.round(r.prevYears || 0), Math.round(r.fullYear || 0), fLabel(r.followupStatus)]);
@@ -176,9 +177,11 @@ export default function DuesReport() {
               <TableHead>
                 <TableRow>
                   <TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell><TableCell>Father mobile</TableCell>
-                  <TableCell align="right">Due now{includePrev ? ' +prev' : ''}</TableCell>
-                  <TableCell align="right">{qLabel}</TableCell><TableCell align="right">Prev yrs</TableCell>
-                  <TableCell align="right">Full year</TableCell><TableCell>Follow-up</TableCell>
+                  <TableCell align="right">Due now{includePrev ? ' +prev' : ''}<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{monthEndLabel}</Box></TableCell>
+                  <TableCell align="right">Due qtr<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{quarterEndLabel}</Box></TableCell>
+                  <TableCell align="right">Prev yrs</TableCell>
+                  <TableCell align="right">Full year<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{yearEndLabel}</Box></TableCell>
+                  <TableCell>Follow-up</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -190,15 +193,13 @@ export default function DuesReport() {
                     <TableCell><Link component="button" underline="hover" onClick={() => navigate(`/students/${r.studentId}`)} sx={{ textAlign: 'left' }}>{r.name}</Link></TableCell>
                     <TableCell sx={{ fontVariantNumeric: 'tabular-nums' }}>{r.fatherMobile || '—'}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(eff(r))}</TableCell>
-                    <TableCell align="right" sx={{ color: FEE_COLORS.muted }}>{inr(r.thisQuarter)}</TableCell>
+                    <TableCell align="right" sx={{ color: FEE_COLORS.muted }}>{inr(effQ(r))}</TableCell>
                     <TableCell align="right" sx={{ color: r.prevYears > 0 ? FEE_COLORS.warning : FEE_COLORS.muted }}>{r.prevYears > 0 ? inr(r.prevYears) : '—'}</TableCell>
-                    <TableCell align="right">{inr(r.fullYear)}</TableCell>
+                    <TableCell align="right">{inr(effFull(r))}</TableCell>
                     <TableCell>
-                      <TextField select size="small" variant="standard" value={r.followupStatus || ''} onChange={(e) => setFollow(r, e.target.value)}
-                        SelectProps={{ renderValue: (v) => v ? <Chip size="small" color={fColor(v)} label={fLabel(v)} sx={{ height: 18 }} /> : <span style={{ color: FEE_COLORS.muted, fontSize: 12 }}>set…</span> }}
-                        sx={{ minWidth: 96 }}>
-                        {FOLLOWUPS.map((f) => <MenuItem key={f.v} value={f.v} sx={{ fontSize: 13 }}>{f.label}</MenuItem>)}
-                      </TextField>
+                      <Chip size="small" variant={r.followupStatus ? 'filled' : 'outlined'} color={r.followupStatus ? fColor(r.followupStatus) : 'default'}
+                        label={r.followupStatus ? `${fLabel(r.followupStatus)}${r.followupCount > 1 ? ` ·${r.followupCount}` : ''}` : 'log…'}
+                        onClick={() => setFollowStudent(r)} sx={{ cursor: 'pointer' }} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -208,9 +209,9 @@ export default function DuesReport() {
                   <TableRow>
                     <TableCell colSpan={4} sx={{ fontWeight: 700, color: 'text.primary' }}>{rows.length} students {rows.length !== (data.rows || []).length ? `(of ${(data.rows || []).length})` : ''}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger, fontSize: 15 }}>{inr(shownTotals.dueNow + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.muted }}>{inr(shownTotals.thisQuarter)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.muted }}>{inr(shownTotals.dueQuarter + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.warning }}>{inr(shownTotals.prevYears)}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 15 }}>{inr(shownTotals.fullYear)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 15 }}>{inr(shownTotals.fullYear + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
                     <TableCell />
                   </TableRow>
                 </TableFooter>
@@ -221,6 +222,8 @@ export default function DuesReport() {
       </Card>
 
       <StudentSearchDialog open={pick} onClose={() => setPick(false)} onSelect={(s) => { setPick(false); setStudent(s); setClassId(''); }} />
+      <FollowupDialog open={!!followStudent} onClose={() => setFollowStudent(null)} onChanged={reload}
+        studentId={followStudent?.studentId} academicYearId={academicYearId} studentName={followStudent?.name} />
     </Box>
   );
 }

@@ -9,6 +9,7 @@ import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from '../fees/feesUi';
+import FollowupDialog, { fLabel, fColor } from '../fees/FollowupDialog';
 
 // Read-only fees summary for the student 360° view (admin/god gated by the caller).
 export default function StudentFeesPanel({ studentId, student }) {
@@ -21,6 +22,8 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [entries, setEntries] = useState([]);
   const [view, setView] = useState('dues'); // 'dues' | 'all' | 'receipts'
   const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
+  const [followup, setFollowup] = useState([]); // follow-up timeline entries
+  const [followOpen, setFollowOpen] = useState(false);
 
   // Year switcher: any year the student was enrolled. Prior years may live under a 'historical'
   // (prev-admission) record, so each option carries its own studentId. Defaults to the current
@@ -47,14 +50,16 @@ export default function StudentFeesPanel({ studentId, student }) {
     (async () => {
       setLoading(true); setError('');
       try {
-        const [sm, led] = await Promise.all([
+        const [sm, led, fu] = await Promise.all([
           feesService.getStudentSummary(effStudentId, selYear).catch(() => null),
           feesService.getStudentLedger(effStudentId, selYear),
+          feesService.getFollowup({ studentId: effStudentId, academicYearId: selYear }).catch(() => ({ entries: [] })),
         ]);
         if (!alive) return;
         setSummary(sm);
         setLines(led?.lines || []);
         setEntries(led?.entries || []);
+        setFollowup(fu?.entries || []);
         setReceipts(null);
       } catch (err) { if (alive) setError(errMsg(err, 'Failed to load fees')); }
       finally { if (alive) setLoading(false); }
@@ -93,10 +98,12 @@ export default function StudentFeesPanel({ studentId, student }) {
 
   const goCollect = () => navigate('/fees/collect', student ? { state: { student } } : undefined);
 
-  const kpi = (label, value, color) => (
+  const kpi = (label, value, color, sub) => (
     <Card variant="outlined" sx={{ borderLeft: `4px solid ${color}` }}>
       <CardContent sx={{ py: 1.5 }}>
-        <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</Typography>
+        <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          {label}{sub ? <Box component="span" sx={{ textTransform: 'none', fontWeight: 400, ml: 0.5, fontSize: 10 }}>{sub}</Box> : null}
+        </Typography>
         <Typography sx={{ fontSize: 22, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
       </CardContent>
     </Card>
@@ -141,12 +148,26 @@ export default function StudentFeesPanel({ studentId, student }) {
         {!loading && !error && (
           <>
             <Grid container spacing={2} sx={{ mb: 1 }}>
-              <Grid item xs={6} md={3}>{kpi('Due now', inr(summary?.dueNow ?? dueNowTotal), FEE_COLORS.danger)}</Grid>
-              <Grid item xs={6} md={3}>{kpi(quarterLabel, inr(summary?.thisQuarter ?? quarterTotal), FEE_COLORS.warning)}</Grid>
-              <Grid item xs={6} md={3}>{kpi('Full year', inr(summary?.outstanding ?? fullYearTotal), FEE_COLORS.primary)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Due now', inr(summary?.dueNow ?? dueNowTotal), FEE_COLORS.danger, summary?.monthEndLabel)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Due qtr', inr(summary?.dueQuarter ?? (dueNowTotal + quarterTotal)), FEE_COLORS.warning, summary?.quarterEndLabel)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Full year', inr(summary?.outstanding ?? fullYearTotal), FEE_COLORS.primary, summary?.yearEndLabel)}</Grid>
               <Grid item xs={6} md={3}>{kpi('Paid this year', inr(summary?.paid || 0), FEE_COLORS.success)}</Grid>
             </Grid>
             {Number(summary?.advance || 0) > 0 && <Typography sx={{ fontSize: 12, color: FEE_COLORS.warning, mb: 1 }}>Advance held: {inr(summary.advance)}</Typography>}
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+              <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>Follow-up:</Typography>
+              {followup.length > 0 ? (
+                <>
+                  {followup[0].status && <Chip size="small" color={fColor(followup[0].status)} label={fLabel(followup[0].status)} />}
+                  <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>
+                    {followup.length} {followup.length === 1 ? 'entry' : 'entries'} · last {followup[0].createdAt ? new Date(followup[0].createdAt).toLocaleDateString('en-IN') : ''}
+                    {followup[0].note ? ` · ${String(followup[0].note).slice(0, 40)}` : ''}
+                  </Typography>
+                </>
+              ) : <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>none</Typography>}
+              <Button size="small" onClick={() => setFollowOpen(true)}>{followup.length ? 'View log' : 'Add'}</Button>
+            </Box>
 
             {view === 'dues' ? (
               <Box sx={{ overflowX: 'auto' }}>
@@ -244,6 +265,8 @@ export default function StudentFeesPanel({ studentId, student }) {
           </>
         )}
       </CardContent>
+      <FollowupDialog open={followOpen} onClose={() => setFollowOpen(false)} studentId={effStudentId} academicYearId={selYear} studentName={student?.name || 'Student'}
+        onChanged={() => feesService.getFollowup({ studentId: effStudentId, academicYearId: selYear }).then((r) => setFollowup(r?.entries || [])).catch(() => {})} />
     </Card>
   );
 }

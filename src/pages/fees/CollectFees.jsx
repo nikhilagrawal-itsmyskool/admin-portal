@@ -273,9 +273,10 @@ export default function CollectFees() {
                       <TextField size="small" type="number" label="Amount received" value={received} onChange={(e) => setReceived(e.target.value)} sx={{ flex: 1 }} />
                       <Button size="small" variant="outlined" onClick={autoAllocate} disabled={!(Number(received) > 0)} sx={{ whiteSpace: 'nowrap' }}>Split oldest-first</Button>
                     </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, fontSize: 12.5, color: FEE_COLORS.muted }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, fontSize: 12, color: FEE_COLORS.muted }}>
                       <span>Due now {inr(summary?.dueNow || 0)}</span>
-                      <span>Full year {inr(summary?.outstanding || 0)}</span>
+                      <span>Qtr {inr(summary?.dueQuarter || 0)}</span>
+                      <span>Full yr {inr(summary?.outstanding || 0)}</span>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
                       <span>Selected</span><b>{inr(selectedTotal)}</b>
