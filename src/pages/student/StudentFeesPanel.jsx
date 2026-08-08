@@ -17,7 +17,7 @@ import { ACTIONS } from '../../permissions/actions';
 // Read-only fees summary for the student 360° view (admin/god gated by the caller).
 export default function StudentFeesPanel({ studentId, student }) {
   const navigate = useNavigate();
-  const { academicYearId } = useAcademicYear();
+  const { academicYearId, years: ayList } = useAcademicYear();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
@@ -35,28 +35,32 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [followup, setFollowup] = useState([]); // follow-up timeline entries
   const [followOpen, setFollowOpen] = useState(false);
 
+  // The actual current academic year (never changes with the top selector) + a name lookup.
+  const ctxYearName = useMemo(() => { const m = {}; (ayList || []).forEach((y) => { m[y.uuid] = y.name; }); return m; }, [ayList]);
+  const trueCurrentAyId = useMemo(() => (ayList || []).find((y) => y.isCurrent)?.uuid || academicYearId, [ayList, academicYearId]);
+  const yearLabel = (id) => (ctxYearName[id] || 'Selected year') + (id === trueCurrentAyId ? ' • current' : '');
+
   // Year switcher: any year the student was enrolled. Prior years may live under a 'historical'
-  // (prev-admission) record, so each option carries its own studentId. Defaults to the current
-  // year and resets whenever the student changes.
+  // (prev-admission) record, so each option carries its own studentId. Names are the real years
+  // (e.g. 2025-26); "current" only ever marks the actual current academic year, not the selection.
   const years = useMemo(() => {
     const seen = new Set(); const out = [];
     (student?.enrollments || []).forEach((e) => {
       if (e.kind === 'gap' || !e.academicYearId || seen.has(e.academicYearId)) return;
       seen.add(e.academicYearId);
-      out.push({ id: e.academicYearId, name: e.academicYearName, studentId: e.studentId || studentId, historical: e.kind === 'historical' });
+      out.push({ id: e.academicYearId, name: e.academicYearName || ctxYearName[e.academicYearId] || e.academicYearId, studentId: e.studentId || studentId, historical: e.kind === 'historical' });
     });
-    if (!seen.has(academicYearId)) out.unshift({ id: academicYearId, name: 'Current year', studentId, historical: false });
+    if (!seen.has(academicYearId)) out.unshift({ id: academicYearId, name: ctxYearName[academicYearId] || 'Selected year', studentId, historical: false });
     return out;
-  }, [student, studentId, academicYearId]);
+  }, [student, studentId, academicYearId, ctxYearName]);
 
   const [selYear, setSelYear] = useState(academicYearId);
   useEffect(() => { setSelYear(academicYearId); }, [studentId, academicYearId]);
   useEffect(() => { setRcptScope(selYear); }, [selYear]); // receipts scope follows the selected year
-  const ayName = useMemo(() => { const m = {}; years.forEach((y) => { m[y.id] = y.name; }); return m; }, [years]);
   const allYears = rcptScope === 'all';
-  const opt = years.find((y) => y.id === selYear) || { id: selYear, studentId, historical: false };
+  const opt = years.find((y) => y.id === selYear) || { id: selYear, name: ctxYearName[selYear], studentId, historical: false };
   const effStudentId = opt.studentId;
-  const isCurrent = selYear === academicYearId;
+  const isCurrent = selYear === trueCurrentAyId; // collect only in the ACTUAL current year
 
   useEffect(() => {
     let alive = true;
@@ -164,7 +168,7 @@ export default function StudentFeesPanel({ studentId, student }) {
             <TextField size="small" select value={selYear} onChange={(e) => setSelYear(e.target.value)} sx={{ minWidth: 130 }}>
               {years.map((y) => (
                 <MenuItem key={y.id} value={y.id} sx={{ fontSize: 13 }}>
-                  {y.name}{y.id === academicYearId ? ' (current)' : ''}{y.historical ? ' · prev. adm' : ''}
+                  {y.name}{y.id === trueCurrentAyId ? ' • current' : ''}{y.historical ? ' · prev. adm' : ''}
                 </MenuItem>
               ))}
             </TextField>
@@ -181,7 +185,7 @@ export default function StudentFeesPanel({ studentId, student }) {
       {!isCurrent && (
         <Box sx={{ px: 2, pb: 1 }}>
           <Alert severity="info" icon={false} sx={{ py: 0.25, fontSize: 12.5 }}>
-            Viewing <b>{opt.name || 'a previous year'}</b>{opt.historical ? ' (previous admission)' : ''} — read-only. Switch back to the current year to collect.
+            Viewing <b>{opt.name || ctxYearName[selYear] || 'another year'}</b>{opt.historical ? ' (previous admission)' : ''} — read-only. Switch to <b>{ctxYearName[trueCurrentAyId] || 'the current year'}</b> to collect.
           </Alert>
         </Box>
       )}
@@ -277,7 +281,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                   <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
                     <TextField select size="small" label="Year" value={rcptScope} onChange={(e) => setRcptScope(e.target.value)} sx={{ minWidth: 150 }}>
                       <MenuItem value="all">All years</MenuItem>
-                      {years.map((y) => <MenuItem key={y.id} value={y.id}>{y.name}</MenuItem>)}
+                      {years.map((y) => <MenuItem key={y.id} value={y.id}>{y.name}{y.id === trueCurrentAyId ? ' • current' : ''}</MenuItem>)}
                     </TextField>
                     <FormControlLabel
                       control={<Switch size="small" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />}
@@ -303,7 +307,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                         <TableRow key={r.uuid} hover sx={cancelled ? { opacity: 0.6 } : undefined}>
                           <TableCell sx={cancelled ? { textDecoration: 'line-through' } : undefined}>{r.receiptNo || r.legacyReceiptNo || '—'}{cancelled && <Chip size="small" color="error" label={r.cancelReason ? `cancelled · ${r.cancelReason}` : 'cancelled'} sx={{ ml: 1, height: 18, textDecoration: 'none' }} />}</TableCell>
                           <TableCell>{r.receiptDate ? String(r.receiptDate).slice(0, 10) : '—'}</TableCell>
-                          {allYears && <TableCell>{ayName[r.academicYearId] || '—'}</TableCell>}
+                          {allYears && <TableCell>{ctxYearName[r.academicYearId] || '—'}</TableCell>}
                           <TableCell>{r.type || 'fee'}</TableCell>
                           <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
