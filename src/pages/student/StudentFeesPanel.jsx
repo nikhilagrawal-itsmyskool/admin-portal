@@ -4,12 +4,15 @@ import {
   Box, Card, CardContent, Typography, Grid, Chip, Button, CircularProgress, Alert,
   Table, TableHead, TableBody, TableRow, TableCell, TableFooter,
   ToggleButtonGroup, ToggleButton, TextField, MenuItem, Link, Switch, FormControlLabel,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from '../fees/feesUi';
 import FollowupDialog, { fLabel, fColor } from '../fees/FollowupDialog';
+import { useCan } from '../../permissions/can';
+import { ACTIONS } from '../../permissions/actions';
 
 // Read-only fees summary for the student 360° view (admin/god gated by the caller).
 export default function StudentFeesPanel({ studentId, student }) {
@@ -24,6 +27,11 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
   const [rcptScope, setRcptScope] = useState(academicYearId); // 'all' | <ayId>; follows the selected year
   const [showCancelled, setShowCancelled] = useState(false); // cancelled receipts hidden by default
+  const [cancelTarget, setCancelTarget] = useState(null); // receipt being cancelled
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // bump to reload after a cancel
+  const canManage = useCan()(ACTIONS.FEE_MANAGE);
   const [followup, setFollowup] = useState([]); // follow-up timeline entries
   const [followOpen, setFollowOpen] = useState(false);
 
@@ -70,7 +78,7 @@ export default function StudentFeesPanel({ studentId, student }) {
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [effStudentId, selYear]);
+  }, [effStudentId, selYear, refreshKey]);
 
   const due = lines.filter((l) => l.remaining > 0);
   const dueNowLines = due.filter((l) => (l.bucket ? l.bucket === 'due' : l.due));
@@ -106,7 +114,18 @@ export default function StudentFeesPanel({ studentId, student }) {
         .catch(() => { if (alive) setReceipts([]); });
     }
     return () => { alive = false; };
-  }, [view, rcptScope, showCancelled, years, effStudentId]);
+  }, [view, rcptScope, showCancelled, years, effStudentId, refreshKey]);
+
+  const doCancel = async () => {
+    if (!cancelTarget) return;
+    setCancelBusy(true);
+    try {
+      await feesService.cancelReceipt(cancelTarget.uuid, { reason: cancelReason.trim() || undefined });
+      setCancelTarget(null); setCancelReason('');
+      setRefreshKey((k) => k + 1); // reloads ledger (charges re-open) + receipts (shows cancelled)
+    } catch (err) { setError(errMsg(err, 'Failed to cancel receipt')); }
+    finally { setCancelBusy(false); }
+  };
   const receiptByCharge = useMemo(() => {
     const m = {};
     (entries || []).forEach((e) => { if (e.kind === 'payment' && e.settlesEntryId && e.sourceRef) m[e.settlesEntryId] = e.sourceRef; });
@@ -288,7 +307,10 @@ export default function StudentFeesPanel({ studentId, student }) {
                           <TableCell>{r.type || 'fee'}</TableCell>
                           <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
-                          <TableCell align="right"><Button size="small" onClick={() => openReceipt(r.uuid)}>Print</Button></TableCell>
+                          <TableCell align="right">
+                            <Button size="small" onClick={() => openReceipt(r.uuid)}>Print</Button>
+                            {!cancelled && canManage && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}>Cancel</Button>}
+                          </TableCell>
                         </TableRow>
                         );
                       })}
@@ -307,6 +329,20 @@ export default function StudentFeesPanel({ studentId, student }) {
       </CardContent>
       <FollowupDialog open={followOpen} onClose={() => setFollowOpen(false)} studentId={effStudentId} academicYearId={selYear} studentName={student?.name || 'Student'}
         onChanged={() => feesService.getFollowup({ studentId: effStudentId, academicYearId: selYear }).then((r) => setFollowup(r?.entries || [])).catch(() => {})} />
+
+      <Dialog open={!!cancelTarget} onClose={() => !cancelBusy && setCancelTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Cancel receipt {cancelTarget?.receiptNo || cancelTarget?.legacyReceiptNo}</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
+            This voids the receipt&apos;s payment ({inr(cancelTarget?.totalPaid)}). The charges it covered will re-open as <b>due</b> and the student&apos;s outstanding will rise by that amount. The receipt stays visible, marked cancelled. This cannot be undone from here.
+          </Typography>
+          <TextField autoFocus fullWidth size="small" label="Reason" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="e.g. wrong student / duplicate / mode change" multiline minRows={2} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelTarget(null)} disabled={cancelBusy}>Keep</Button>
+          <Button color="error" variant="contained" onClick={doCancel} disabled={cancelBusy}>{cancelBusy ? 'Cancelling…' : 'Cancel receipt'}</Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }
