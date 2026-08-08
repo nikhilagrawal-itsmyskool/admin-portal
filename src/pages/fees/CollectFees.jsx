@@ -143,13 +143,19 @@ export default function CollectFees() {
 
   const renderDueRow = (ln, upcoming) => {
     const e = sel[ln.chargeId] || {};
+    const payNow = Number(e.amount) || 0;
+    const rem = Number(ln.remaining) || 0;
+    const cover = e.checked && payNow > 0 ? (payNow >= rem - 0.01 ? 'full' : 'partial') : null; // this payment's coverage of the row
     return (
-      <TableRow key={ln.chargeId} hover selected={!!e.checked} sx={upcoming ? { opacity: 0.75 } : undefined}>
+      <TableRow key={ln.chargeId} hover selected={!!e.checked}
+        sx={{ ...(upcoming ? { opacity: 0.75 } : {}), borderLeft: `3px solid ${cover === 'full' ? FEE_COLORS.success : cover === 'partial' ? FEE_COLORS.warning : 'transparent'}` }}>
         <TableCell padding="checkbox"><Checkbox size="small" checked={!!e.checked} onChange={(ev) => toggle(ln.chargeId, ev.target.checked)} /></TableCell>
         <TableCell>{ln.cycleLabel || '—'}</TableCell>
         <TableCell>
           {ln.headLabel}
-          {ln.status === 'partial' && <Chip size="small" color="warning" label="Part-paid" sx={{ ml: 1, height: 18 }} />}
+          {cover === 'full' && <Chip size="small" color="success" variant="outlined" label="Full" sx={{ ml: 1, height: 18 }} />}
+          {cover === 'partial' && <Chip size="small" color="warning" label={`Partial ${inr(payNow)}/${inr(rem)}`} sx={{ ml: 1, height: 18 }} />}
+          {ln.status === 'partial' && <Chip size="small" color="warning" variant="outlined" label="Part-paid" sx={{ ml: 1, height: 18 }} />}
           {ln.category && ln.category !== 'fee' && <Chip size="small" variant="outlined" label={ln.category} sx={{ ml: 1, height: 18 }} />}
         </TableCell>
         <TableCell align="right">{inr(ln.charged)}</TableCell>
