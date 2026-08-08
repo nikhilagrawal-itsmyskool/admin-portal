@@ -180,7 +180,7 @@ export default function DuesReport() {
                   <TableCell align="right">Due now{includePrev ? ' +prev' : ''}<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{monthEndLabel}</Box></TableCell>
                   <TableCell align="right">Due qtr<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{quarterEndLabel}</Box></TableCell>
                   <TableCell align="right">Prev yrs</TableCell>
-                  <TableCell align="right">Full year<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{yearEndLabel}</Box></TableCell>
+                  <TableCell align="right">Due full year<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{yearEndLabel}</Box></TableCell>
                   <TableCell>Follow-up</TableCell>
                 </TableRow>
               </TableHead>

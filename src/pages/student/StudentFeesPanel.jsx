@@ -150,7 +150,7 @@ export default function StudentFeesPanel({ studentId, student }) {
             <Grid container spacing={2} sx={{ mb: 1 }}>
               <Grid item xs={6} md={3}>{kpi('Due now', inr(summary?.dueNow ?? dueNowTotal), FEE_COLORS.danger, summary?.monthEndLabel)}</Grid>
               <Grid item xs={6} md={3}>{kpi('Due qtr', inr(summary?.dueQuarter ?? (dueNowTotal + quarterTotal)), FEE_COLORS.warning, summary?.quarterEndLabel)}</Grid>
-              <Grid item xs={6} md={3}>{kpi('Full year', inr(summary?.outstanding ?? fullYearTotal), FEE_COLORS.primary, summary?.yearEndLabel)}</Grid>
+              <Grid item xs={6} md={3}>{kpi('Due full year', inr(summary?.outstanding ?? fullYearTotal), FEE_COLORS.primary, summary?.yearEndLabel)}</Grid>
               <Grid item xs={6} md={3}>{kpi('Paid this year', inr(summary?.paid || 0), FEE_COLORS.success)}</Grid>
             </Grid>
             {Number(summary?.advance || 0) > 0 && <Typography sx={{ fontSize: 12, color: FEE_COLORS.warning, mb: 1 }}>Advance held: {inr(summary.advance)}</Typography>}
@@ -192,7 +192,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                         <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(dueNowTotal)}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={3} sx={{ color: FEE_COLORS.muted }}>Full year</TableCell>
+                        <TableCell colSpan={3} sx={{ color: FEE_COLORS.muted }}>Due full year</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.muted }}>{inr(fullYearTotal)}</TableCell>
                       </TableRow>
                     </TableFooter>
