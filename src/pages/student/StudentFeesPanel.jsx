@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Grid, Chip, Button, CircularProgress, Alert,
   Table, TableHead, TableBody, TableRow, TableCell, TableFooter,
-  ToggleButtonGroup, ToggleButton, TextField, MenuItem, Link,
+  ToggleButtonGroup, ToggleButton, TextField, MenuItem, Link, Switch, FormControlLabel,
 } from '@mui/material';
 import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
@@ -22,6 +22,8 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [entries, setEntries] = useState([]);
   const [view, setView] = useState('dues'); // 'dues' | 'all' | 'receipts'
   const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
+  const [rcptScope, setRcptScope] = useState(academicYearId); // 'all' | <ayId>; follows the selected year
+  const [showCancelled, setShowCancelled] = useState(false); // cancelled receipts hidden by default
   const [followup, setFollowup] = useState([]); // follow-up timeline entries
   const [followOpen, setFollowOpen] = useState(false);
 
@@ -41,6 +43,9 @@ export default function StudentFeesPanel({ studentId, student }) {
 
   const [selYear, setSelYear] = useState(academicYearId);
   useEffect(() => { setSelYear(academicYearId); }, [studentId, academicYearId]);
+  useEffect(() => { setRcptScope(selYear); }, [selYear]); // receipts scope follows the selected year
+  const ayName = useMemo(() => { const m = {}; years.forEach((y) => { m[y.id] = y.name; }); return m; }, [years]);
+  const allYears = rcptScope === 'all';
   const opt = years.find((y) => y.id === selYear) || { id: selYear, studentId, historical: false };
   const effStudentId = opt.studentId;
   const isCurrent = selYear === academicYearId;
@@ -77,11 +82,31 @@ export default function StudentFeesPanel({ studentId, student }) {
   const fullYearTotal = due.reduce((s, l) => s + Number(l.remaining || 0), 0);
   const quarterLabel = summary?.quarterLabel || 'This quarter';
 
-  // Receipts view (lazy) + a charge->receipt map so a paid ledger row can open its receipt
+  // Receipts view (lazy, re-fetches on scope/cancelled toggle) + a charge->receipt map
   useEffect(() => {
-    if (view !== 'receipts' || receipts !== null) return;
-    feesService.getReceipts({ studentId: effStudentId, academicYearId: selYear }).then((r) => setReceipts(r || [])).catch(() => setReceipts([]));
-  }, [view, receipts, effStudentId, selYear]);
+    if (view !== 'receipts') return;
+    let alive = true;
+    setReceipts(null);
+    const inc = showCancelled ? 'true' : undefined;
+    const sortByDate = (a, b) => String(b.receiptDate || '').localeCompare(String(a.receiptDate || ''));
+    if (rcptScope === 'all') {
+      // historical years live under prior-admission studentIds — fetch each, merge, dedupe
+      const sids = [...new Set(years.map((y) => y.studentId).filter(Boolean))];
+      Promise.all(sids.map((sid) => feesService.getReceipts({ studentId: sid, includeCancelled: inc }).catch(() => [])))
+        .then((arrs) => {
+          if (!alive) return;
+          const seen = new Set(); const merged = [];
+          arrs.flat().forEach((r) => { if (r && !seen.has(r.uuid)) { seen.add(r.uuid); merged.push(r); } });
+          setReceipts(merged.sort(sortByDate));
+        }).catch(() => { if (alive) setReceipts([]); });
+    } else {
+      const sid = (years.find((y) => y.id === rcptScope) || {}).studentId || effStudentId;
+      feesService.getReceipts({ studentId: sid, academicYearId: rcptScope, includeCancelled: inc })
+        .then((r) => { if (alive) setReceipts((r || []).sort(sortByDate)); })
+        .catch(() => { if (alive) setReceipts([]); });
+    }
+    return () => { alive = false; };
+  }, [view, rcptScope, showCancelled, years, effStudentId]);
   const receiptByCharge = useMemo(() => {
     const m = {};
     (entries || []).forEach((e) => { if (e.kind === 'payment' && e.settlesEntryId && e.sourceRef) m[e.settlesEntryId] = e.sourceRef; });
@@ -230,28 +255,43 @@ export default function StudentFeesPanel({ studentId, student }) {
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>
                 ) : (
                   <>
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
+                    <TextField select size="small" label="Year" value={rcptScope} onChange={(e) => setRcptScope(e.target.value)} sx={{ minWidth: 150 }}>
+                      <MenuItem value="all">All years</MenuItem>
+                      {years.map((y) => <MenuItem key={y.id} value={y.id}>{y.name}</MenuItem>)}
+                    </TextField>
+                    <FormControlLabel
+                      control={<Switch size="small" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />}
+                      label="Show cancelled"
+                      sx={{ '& .MuiFormControlLabel-label': { fontSize: 13 } }}
+                    />
+                  </Box>
                   {receipts.some((r) => r.type === 'transport' && r.status !== 'cancelled') && (
                     <Typography sx={{ fontSize: 12.5, color: FEE_COLORS.warning, mb: 1 }}>
-                      Transport collected this year: <b>{inr(receipts.filter((r) => r.type === 'transport' && r.status !== 'cancelled').reduce((s, r) => s + Number(r.totalPaid || 0), 0))}</b>
+                      Transport collected{allYears ? '' : ' this year'}: <b>{inr(receipts.filter((r) => r.type === 'transport' && r.status !== 'cancelled').reduce((s, r) => s + Number(r.totalPaid || 0), 0))}</b>
                     </Typography>
                   )}
                   <Table size="small">
                     <TableHead><TableRow>
-                      <TableCell>Receipt</TableCell><TableCell>Date</TableCell><TableCell>Type</TableCell>
+                      <TableCell>Receipt</TableCell><TableCell>Date</TableCell>{allYears && <TableCell>Year</TableCell>}<TableCell>Type</TableCell>
                       <TableCell>Mode</TableCell><TableCell align="right">Amount</TableCell><TableCell />
                     </TableRow></TableHead>
                     <TableBody>
-                      {receipts.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No receipts this year.</TableCell></TableRow>}
-                      {receipts.map((r) => (
-                        <TableRow key={r.uuid} hover>
-                          <TableCell>{r.receiptNo || r.legacyReceiptNo || '—'}{r.status === 'cancelled' && <Chip size="small" color="error" label="cancelled" sx={{ ml: 1, height: 18 }} />}</TableCell>
+                      {receipts.length === 0 && <TableRow><TableCell colSpan={allYears ? 7 : 6} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No {showCancelled ? '' : 'active '}receipts{allYears ? '' : ' this year'}.</TableCell></TableRow>}
+                      {receipts.map((r) => {
+                        const cancelled = r.status === 'cancelled';
+                        return (
+                        <TableRow key={r.uuid} hover sx={cancelled ? { opacity: 0.6 } : undefined}>
+                          <TableCell sx={cancelled ? { textDecoration: 'line-through' } : undefined}>{r.receiptNo || r.legacyReceiptNo || '—'}{cancelled && <Chip size="small" color="error" label={r.cancelReason ? `cancelled · ${r.cancelReason}` : 'cancelled'} sx={{ ml: 1, height: 18, textDecoration: 'none' }} />}</TableCell>
                           <TableCell>{r.receiptDate ? String(r.receiptDate).slice(0, 10) : '—'}</TableCell>
+                          {allYears && <TableCell>{ayName[r.academicYearId] || '—'}</TableCell>}
                           <TableCell>{r.type || 'fee'}</TableCell>
                           <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>{inr(r.totalPaid)}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                           <TableCell align="right"><Button size="small" onClick={() => openReceipt(r.uuid)}>Print</Button></TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   </>
