@@ -4,7 +4,10 @@ import {
   Box, Typography, Button, Card, IconButton, Alert, Chip, Tooltip,
 } from '@mui/material';
 import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
+  ToggleOn as ToggleOnIcon, ToggleOff as ToggleOffIcon,
+} from '@mui/icons-material';
 import { communicationService } from '../../../services/communicationService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useCan } from '../../../permissions/can';
@@ -36,6 +39,17 @@ export default function TemplateList() {
 
   useEffect(() => { load(); }, []);
 
+  const handleToggleStatus = async (template) => {
+    const next = template.status === 'active' ? 'inactive' : 'active';
+    setError('');
+    try {
+      await communicationService.updateTemplate(template.uuid, { status: next });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to update status');
+    }
+  };
+
   const handleDelete = async () => {
     setDeleting(true);
     try {
@@ -63,9 +77,16 @@ export default function TemplateList() {
       renderCell: (p) => <Chip size="small" label={p.value} color={p.value === 'active' ? 'success' : 'default'} variant="outlined" />,
     },
     {
-      field: 'actions', headerName: 'Actions', width: 110, sortable: false,
+      field: 'actions', headerName: 'Actions', width: 150, sortable: false,
       renderCell: (params) => (
         <Box>
+          {canManage && (
+            <Tooltip title={params.row.status === 'active' ? 'Deactivate' : 'Activate'}>
+              <IconButton size="small" color={params.row.status === 'active' ? 'success' : 'default'} onClick={() => handleToggleStatus(params.row)}>
+                {params.row.status === 'active' ? <ToggleOnIcon fontSize="small" /> : <ToggleOffIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          )}
           {canManage && (
             <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/communication/templates/${params.row.uuid}/edit`)}><EditIcon fontSize="small" /></IconButton></Tooltip>
           )}
