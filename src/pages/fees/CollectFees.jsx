@@ -4,11 +4,13 @@ import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, Divider,
   Table, TableHead, TableBody, TableRow, TableCell, TextField, MenuItem,
   Checkbox, FormControlLabel, CircularProgress, ToggleButtonGroup, ToggleButton, IconButton,
+  Accordion, AccordionSummary, AccordionDetails,
 } from '@mui/material';
-import { PersonSearch as PersonSearchIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { PersonSearch as PersonSearchIcon, Add as AddIcon, Delete as DeleteIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import CommandPalette from '../../components/common/CommandPalette';
+import StudentFeesPanel from '../student/StudentFeesPanel';
 import { errMsg, inr, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -34,9 +36,11 @@ export default function CollectFees() {
   const [useAdvance, setUseAdvance] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const canWaive = useCan()(ACTIONS.FEE_MANAGE);
-  const [received, setReceived] = useState(''); // for oldest-first auto-allocate
+  const [received, setReceived] = useState(''); // cash in hand — the anchor
   const [waive, setWaive] = useState({ on: false, reason: '' });
+  const [storeAdvance, setStoreAdvance] = useState(false); // deliberately keep overpayment as advance
   const [showFullYear, setShowFullYear] = useState(false);
+  const [show360, setShow360] = useState(false); // lazy expandable 360 on the student card
 
   // adhoc
   const [adhoc, setAdhoc] = useState({ payerName: '', mode: 'cash', date: today(), remarks: '', lines: [{ headLabel: '', amount: '' }], saving: false });
@@ -58,6 +62,7 @@ export default function CollectFees() {
 
   const chooseStudent = async (s) => {
     setPick(false); setStudent(s); setLedger(null); setSummary(null); setSel({}); setError(''); setOk('');
+    setWaive({ on: false, reason: '' }); setStoreAdvance(false); setShow360(false); setReceived(''); // never carry across students
     setLoadingLedger(true);
     try {
       const [l, sm] = await Promise.all([
@@ -70,6 +75,8 @@ export default function CollectFees() {
       const init = {};
       due.forEach((ln) => { init[ln.chargeId] = { checked: !!ln.due, amount: String(ln.remaining) }; }); // pre-tick due-now
       setSel(init);
+      const dueNowTotal = due.filter((ln) => ln.due).reduce((sum, ln) => sum + Number(ln.remaining || 0), 0);
+      setReceived(dueNowTotal > 0 ? String(Math.round(dueNowTotal * 100) / 100) : ''); // anchor cash to due-now
     } catch (err) { setError(errMsg(err, 'Failed to load the ledger')); }
     finally { setLoadingLedger(false); }
   };
@@ -99,6 +106,16 @@ export default function CollectFees() {
   const tickedDue = dueLines.filter((ln) => sel[ln.chargeId]?.checked).reduce((s, ln) => s + Number(ln.remaining || 0), 0);
   const waiveTotal = waive.on ? Math.max(0, r2(tickedDue - selectedTotal)) : 0;
 
+  // balance gate: Amount received is the anchor. Collect enables only when the cash is fully
+  // accounted for — received == allocated cash (payable) + any deliberately-stored advance.
+  const receivedNum = Number(received) || 0;
+  const overBy = r2(receivedNum - payable);          // >0 cash beyond allocations, <0 short of them
+  const storeAdvanceAmt = storeAdvance && overBy > 0 ? overBy : 0;
+  const balanced = Math.abs(receivedNum - payable - storeAdvanceAmt) < 0.5;
+  const somethingToDo = payable > 0 || waiveTotal > 0 || storeAdvanceAmt > 0;
+  const waiveNeedsReason = waiveTotal > 0 && !waive.reason.trim();
+  const canCollect = balanced && somethingToDo && !waiveNeedsReason;
+
   const toggle = (id, checked) => setSel((p) => ({ ...p, [id]: { ...p[id], checked } }));
   const setAmt = (id, amount) => setSel((p) => ({ ...p, [id]: { ...p[id], amount } }));
 
@@ -112,6 +129,16 @@ export default function CollectFees() {
       left = r2(left - take);
     }
     setSel(next);
+  };
+
+  // restore defaults: due-now ticked at full, others cleared, received back to the due-now total
+  const resetSelection = () => {
+    const next = {};
+    dueLines.forEach((ln) => { next[ln.chargeId] = { checked: !!ln.due, amount: String(ln.remaining) }; });
+    setSel(next);
+    const dueNowTotal = dueNowLines.reduce((s, ln) => s + Number(ln.remaining || 0), 0);
+    setReceived(dueNowTotal > 0 ? String(r2(dueNowTotal)) : '');
+    setWaive({ on: false, reason: '' }); setStoreAdvance(false);
   };
 
   const renderDueRow = (ln, upcoming) => {
@@ -155,12 +182,12 @@ export default function CollectFees() {
       const receipt = await feesService.collect({
         studentId: student.uuid, academicYearId, allocations,
         advanceApplied: useAdvance ? Math.min(advanceAvail, allocations.reduce((s, a) => s + a.amount, 0)) : 0,
-        waivers, waiveReason: waive.reason.trim() || null,
+        waivers, waiveReason: waive.reason.trim() || null, storeAsAdvance: storeAdvanceAmt || 0,
         paymentMode: pay.mode, receivedFrom: pay.receivedFrom, receiptDate: pay.date, remarks: pay.remarks || null,
       });
-      setOk(`Receipt ${receipt.receiptNo || ''} — collected ${inr(receipt.totalPaid)}${receipt.waiverTotal ? `, waived ${inr(receipt.waiverTotal)}` : ''}.`);
+      setOk(`Receipt ${receipt.receiptNo || ''} — collected ${inr(receipt.totalPaid)}${receipt.waiverTotal ? `, waived ${inr(receipt.waiverTotal)}` : ''}${storeAdvanceAmt ? `, ${inr(storeAdvanceAmt)} to advance` : ''}.`);
       openReceipt(receipt.uuid);
-      setWaive({ on: false, reason: '' }); setReceived('');
+      setWaive({ on: false, reason: '' }); setStoreAdvance(false); setReceived('');
       chooseStudent(student); // refresh ledger
     } catch (err) { setError(errMsg(err)); }
     finally { setCollecting(false); }
@@ -214,6 +241,17 @@ export default function CollectFees() {
                 </>
               )}
             </CardContent>
+            {student && (
+              <Accordion expanded={show360} onChange={(_, v) => setShow360(v)} disableGutters elevation={0}
+                sx={{ borderTop: `1px solid ${FEE_COLORS.border}`, '&:before': { display: 'none' } }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 44, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: FEE_COLORS.primary }}>View full ledger &amp; receipts</Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ pt: 0, bgcolor: 'action.hover' }}>
+                  {show360 && <StudentFeesPanel studentId={student.uuid} student={student} />}
+                </AccordionDetails>
+              </Accordion>
+            )}
           </Card>
 
           {loadingLedger && <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>}
@@ -270,8 +308,9 @@ export default function CollectFees() {
                   <CardContent>
                     <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>Payment</Typography>
                     <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <TextField size="small" type="number" label="Amount received" value={received} onChange={(e) => setReceived(e.target.value)} sx={{ flex: 1 }} />
+                      <TextField size="small" type="number" label="Amount received (cash in hand)" value={received} onChange={(e) => setReceived(e.target.value)} sx={{ flex: 1 }} />
                       <Button size="small" variant="outlined" onClick={autoAllocate} disabled={!(Number(received) > 0)} sx={{ whiteSpace: 'nowrap' }}>Split oldest-first</Button>
+                      <Button size="small" onClick={resetSelection} sx={{ whiteSpace: 'nowrap' }}>Reset</Button>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, fontSize: 12, color: FEE_COLORS.muted }}>
                       <span>Due now {inr(summary?.dueNow || 0)}</span>
@@ -296,6 +335,9 @@ export default function CollectFees() {
                         <FormControlLabel sx={{ m: 0 }}
                           control={<Checkbox size="small" checked={waive.on} onChange={(e) => setWaive((w) => ({ ...w, on: e.target.checked }))} />}
                           label={<span style={{ fontSize: 13 }}>Waive remaining on ticked rows{waiveTotal > 0 ? ` — ${inr(waiveTotal)}` : ''}</span>} />
+                        {waive.on && waiveTotal === 0 && (
+                          <Typography sx={{ fontSize: 11.5, color: FEE_COLORS.muted, ml: 3.5, mt: -0.25 }}>Lower a “Pay now” below its due — the unpaid remainder on ticked rows gets written off.</Typography>
+                        )}
                         {waive.on && <TextField fullWidth size="small" label="Write-off reason" value={waive.reason} onChange={(e) => setWaive((w) => ({ ...w, reason: e.target.value }))} sx={{ mt: 0.5 }} />}
                       </Box>
                     )}
@@ -304,11 +346,27 @@ export default function CollectFees() {
                         <span>Write-off (waived)</span><span>− {inr(waiveTotal)}</span>
                       </Box>
                     )}
+                    {overBy > 0 && (
+                      <Box sx={{ mt: 0.5 }}>
+                        <FormControlLabel sx={{ m: 0 }}
+                          control={<Checkbox size="small" color="warning" checked={storeAdvance} onChange={(e) => setStoreAdvance(e.target.checked)} />}
+                          label={<span style={{ fontSize: 13, color: FEE_COLORS.warning }}>Store extra {inr(overBy)} as advance</span>} />
+                      </Box>
+                    )}
                     <Divider />
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1.5, fontSize: 18 }}>
                       <b>Payable</b><b style={{ color: FEE_COLORS.primary }}>{inr(payable)}</b>
                     </Box>
-                    <Divider sx={{ mb: 2 }} />
+                    <Box sx={{
+                      display: 'flex', alignItems: 'center', gap: 1, mb: 2, px: 1.25, py: 0.75, borderRadius: 1, fontSize: 12.5, fontWeight: 600,
+                      bgcolor: !somethingToDo ? 'action.hover' : balanced ? 'rgba(21,128,61,.10)' : overBy > 0 ? 'rgba(198,40,40,.10)' : 'rgba(180,83,9,.10)',
+                      color: !somethingToDo ? FEE_COLORS.muted : balanced ? FEE_COLORS.success : overBy > 0 ? FEE_COLORS.danger : FEE_COLORS.warning,
+                    }}>
+                      {!somethingToDo ? 'Tick a row and enter the amount received'
+                        : balanced ? '✓ Balanced — received matches what’s allocated'
+                        : overBy > 0 ? `Over by ${inr(overBy)} — allocate more, waive, or tick “store as advance”`
+                        : `Short by ${inr(Math.abs(overBy))} — reduce a “Pay now”, or waive the rest`}
+                    </Box>
                     <Grid container spacing={2}>
                       <Grid item xs={6}><TextField fullWidth size="small" select label="Mode" value={pay.mode} onChange={(e) => setPay((p) => ({ ...p, mode: e.target.value }))}>{PAY_MODES.map((m) => <MenuItem key={m} value={m}>{PAYMENT_MODE_LABELS[m] || m}</MenuItem>)}</TextField></Grid>
                       <Grid item xs={6}><TextField fullWidth size="small" select label="Received from" value={pay.receivedFrom} onChange={(e) => setPay((p) => ({ ...p, receivedFrom: e.target.value }))}>{RECEIVED.map((m) => <MenuItem key={m} value={m}>{m[0].toUpperCase() + m.slice(1)}</MenuItem>)}</TextField></Grid>
@@ -316,10 +374,13 @@ export default function CollectFees() {
                       <Grid item xs={12}><TextField fullWidth size="small" label="Remarks (optional)" value={pay.remarks} onChange={(e) => setPay((p) => ({ ...p, remarks: e.target.value }))} /></Grid>
                     </Grid>
                     <FormControlLabel sx={{ mt: 1 }} control={<Checkbox size="small" checked={pay.notify} onChange={(e) => setPay((p) => ({ ...p, notify: e.target.checked }))} />} label={<span style={{ fontSize: 13 }}>Send payment SMS/WhatsApp</span>} />
-                    <Button fullWidth variant="contained" sx={{ mt: 2, py: 1.2 }} disabled={collecting || (selectedTotal <= 0 && waiveTotal <= 0)} onClick={collect}>
-                      {collecting ? 'Collecting…' : payable > 0 ? `Collect ${inr(payable)} & print` : `Settle (waive ${inr(waiveTotal)}) & print`}
+                    <Button fullWidth variant="contained" sx={{ mt: 2, py: 1.2 }} disabled={collecting || !canCollect} onClick={collect}>
+                      {collecting ? 'Collecting…'
+                        : !balanced ? 'Amount must match to collect'
+                        : payable > 0 ? `Collect ${inr(receivedNum)} & print`
+                        : `Settle (waive ${inr(waiveTotal)}) & print`}
                     </Button>
-                    <Typography sx={{ textAlign: 'center', mt: 1, fontSize: 11, color: FEE_COLORS.muted }}>Excess payment is stored as advance automatically.</Typography>
+                    <Typography sx={{ textAlign: 'center', mt: 1, fontSize: 11, color: FEE_COLORS.muted }}>Collect enables only when the amount received is fully accounted for.</Typography>
                   </CardContent>
                 </Card>
               </Grid>
