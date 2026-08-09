@@ -23,6 +23,7 @@ import {
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import usePersistedPaginationModel from '../../hooks/usePersistedPaginationModel';
 import usePersistedState from '../../hooks/usePersistedState';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import {
   PersonAdd as PersonAddIcon,
   Edit as EditIcon,
@@ -36,7 +37,6 @@ import {
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { classService } from '../../services/classService';
-import { academicCalendarService } from '../../services/academicCalendarService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import PromoteDialog from './PromoteDialog';
 import AssignHouseDialog from './AssignHouseDialog';
@@ -49,10 +49,10 @@ export default function StudentList() {
   const navigate = useNavigate();
   const can = useCan();
   const canManage = can(ACTIONS.STUDENT_MANAGE);
+  const { academicYearId, years } = useAcademicYear(); // portal-wide year — student search scopes to this
   const [students, setStudents] = useState([]);
   const [houses, setHouses] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [years, setYears] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selection, setSelection] = useState([]);
@@ -61,16 +61,12 @@ export default function StudentList() {
   // the same search + results (paired with usePersistedPaginationModel + scroll).
   const [name, setName] = usePersistedState('studentList.name', '');
   const [selectedClass, setSelectedClass] = usePersistedState('studentList.class', null);
-  const [selectedYear, setSelectedYear] = usePersistedState('studentList.year', null);
   const [admissionNumber, setAdmissionNumber] = usePersistedState('studentList.adm', '');
   const [phone, setPhone] = usePersistedState('studentList.phone', '');
   // Comms data-quality: show only students no notification can reach.
   const [unreachable, setUnreachable] = usePersistedState('studentList.unreachable', false);
   // Effective-contact breakdown for the current cohort ({ total, unreachable, breakdown }).
   const [commsSummary, setCommsSummary] = useState(null);
-  // On the first-ever visit we pin the year filter to the current session; the
-  // flag stops us re-pinning after the user deliberately clears it (whole school).
-  const [yearPinned, setYearPinned] = usePersistedState('studentList.yearPinned', false);
 
   // Dialog state
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
@@ -91,44 +87,30 @@ export default function StudentList() {
   }, [houses]);
 
   useEffect(() => {
-    init();
+    loadLookups();
   }, []);
 
-  const init = async () => {
-    const loadedYears = await loadLookups();
-    if (!yearPinned) {
-      // First visit: pin the filter to the current session and search within it.
-      const cur = loadedYears.find((r) => r.isCurrent) || null;
-      if (cur) setSelectedYear(cur);
-      setYearPinned(true);
-      const filters = buildFilters();
-      if (cur) filters.academicYearId = cur.uuid;
-      loadStudents(filters);
-    } else {
-      // Return visit: honour the restored filters (selectedYear included).
-      loadStudents();
-    }
-  };
+  // Student search scopes to the portal-wide academic year — re-run when it (or the persisted
+  // filters on a return visit) is ready. Fires on mount once the global year resolves.
+  useEffect(() => {
+    loadStudents();
+  }, [academicYearId]);
 
   const loadLookups = async () => {
     // Each lookup loads independently — one failing API must not blank the others.
-    const [h, c, y] = await Promise.allSettled([
+    const [h, c] = await Promise.allSettled([
       studentService.getHouses(),
       classService.getClasses(),
-      academicCalendarService.getAcademicYears(),
     ]);
     if (h.status === 'fulfilled') setHouses(h.value.houses || []);
     if (c.status === 'fulfilled') setClasses(c.value || []);
-    const loadedYears = y.status === 'fulfilled' ? y.value || [] : [];
-    setYears(loadedYears);
-    return loadedYears;
   };
 
   const buildFilters = () => {
     const f = {};
     if (name) f.name = name;
     if (selectedClass) f.classId = selectedClass.uuid;
-    if (selectedYear) f.academicYearId = selectedYear.uuid;
+    if (academicYearId) f.academicYearId = academicYearId;
     if (admissionNumber) f.admissionNumber = admissionNumber;
     if (phone) f.phone = phone;
     if (unreachable) f.unreachable = true;
@@ -185,7 +167,6 @@ export default function StudentList() {
   const handleClear = () => {
     setName('');
     setSelectedClass(null);
-    setSelectedYear(null);
     setAdmissionNumber('');
     setPhone('');
     setUnreachable(false);
@@ -210,7 +191,7 @@ export default function StudentList() {
     setGraduating(true);
     try {
       await studentService.graduate({
-        academicYearFromId: selectedYear?.uuid,
+        academicYearFromId: academicYearId,
         studentIds: selection,
       });
       setGraduateDialog(false);
@@ -341,15 +322,6 @@ export default function StudentList() {
                 value={selectedClass}
                 onChange={(e, v) => setSelectedClass(v)}
                 renderInput={(p) => <TextField {...p} label="Class" size="small" />}
-              />
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <Autocomplete
-                options={years}
-                getOptionLabel={(o) => o.name || ''}
-                value={selectedYear}
-                onChange={(e, v) => setSelectedYear(v)}
-                renderInput={(p) => <TextField {...p} label="Academic Year" size="small" />}
               />
             </Grid>
             <Grid item xs={6} md={1.5}>
@@ -509,7 +481,7 @@ export default function StudentList() {
         classes={classes}
         years={years}
         selectedStudentIds={selection}
-        defaultFromYear={selectedYear}
+        defaultFromYear={(years || []).find((y) => y.uuid === academicYearId) || null}
         defaultFromClass={selectedClass}
         onDone={() => {
           setPromoteOpen(false);
