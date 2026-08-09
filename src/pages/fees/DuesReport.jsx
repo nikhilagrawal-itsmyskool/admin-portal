@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Alert, CircularProgress, Button, Chip, Slider,
   Table, TableHead, TableBody, TableRow, TableCell, TableFooter, TextField, MenuItem,
-  ToggleButtonGroup, ToggleButton, FormControlLabel, Switch, Link, Tooltip,
+  ToggleButtonGroup, ToggleButton, FormControlLabel, Switch, Link, Tooltip, Drawer, IconButton,
 } from '@mui/material';
-import { PersonSearch as PersonSearchIcon, Download as DownloadIcon, Clear as ClearIcon, Print as PrintIcon } from '@mui/icons-material';
+import { PersonSearch as PersonSearchIcon, Download as DownloadIcon, Clear as ClearIcon, Print as PrintIcon, Close as CloseIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { classService } from '../../services/classService';
+import { studentService } from '../../services/studentService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
+import StudentFeesPanel from '../student/StudentFeesPanel';
 import FollowupDialog from './FollowupDialog';
 import { errMsg, inr, classRank, FEE_COLORS } from './feesUi';
 
@@ -41,6 +43,9 @@ export default function DuesReport() {
   const [statusFilter, setStatusFilter] = useState('all'); // all | active | left (inactive)
   const [band, setBand] = useState([0, 0]); // due-now slider range
   const [followStudent, setFollowStudent] = useState(null); // open timeline dialog for this row
+  const [ledgerStu, setLedgerStu] = useState(null); // { studentId, name } — row whose ledger drawer is open
+  const [ledgerFull, setLedgerFull] = useState(null); // fetched full student (with enrollments) for the panel
+  const [ledgerLoading, setLedgerLoading] = useState(false);
 
   useEffect(() => {
     classService.getClasses({ academicYearId }).then((c) => setClasses((c?.value || c || []).filter(Boolean))).catch(() => setClasses([]));
@@ -59,27 +64,40 @@ export default function DuesReport() {
     return () => { alive = false; };
   }, [academicYearId, mode, classId, student]);
 
-  // effective amounts = current due + (prior years when the toggle is on). Tiers are cumulative.
-  const eff = (r) => Number(r.dueNow || 0) + (includePrev ? Number(r.prevYears || 0) : 0);
-  const effQ = (r) => Number(r.dueQuarter || 0) + (includePrev ? Number(r.prevYears || 0) : 0);
-  const effFull = (r) => Number(r.fullYear || 0) + (includePrev ? Number(r.prevYears || 0) : 0);
-  const maxDue = useMemo(() => Math.max(1, ...((data.rows || []).map(eff))), [data.rows, includePrev]);
+  // Due now is always this-year (the stable anchor for sort + band); the +prev toggle only reveals
+  // the combined "Due now + prev" column, it never mutates Due now, Due qtr, Full year, or the order.
+  const dueNow = (r) => Number(r.dueNow || 0);
+  const dueNowPrev = (r) => Number(r.dueNow || 0) + Number(r.prevYears || 0);
+  const maxDue = useMemo(() => Math.max(1, ...((data.rows || []).map(dueNow))), [data.rows]);
   useEffect(() => { setBand([0, maxDue]); }, [maxDue]);
+  useEffect(() => { if (!includePrev && sortBy === 'dueNowPrev') setSortBy('dueNow'); }, [includePrev, sortBy]);
+
+  // Fetch the full student (with enrollments) when the ledger drawer opens.
+  useEffect(() => {
+    if (!ledgerStu) { setLedgerFull(null); return; }
+    let alive = true; setLedgerLoading(true); setLedgerFull(null);
+    studentService.getStudentById(ledgerStu.studentId)
+      .then((s) => { if (alive) setLedgerFull(s || { uuid: ledgerStu.studentId, name: ledgerStu.name }); })
+      .catch(() => { if (alive) setLedgerFull({ uuid: ledgerStu.studentId, name: ledgerStu.name }); })
+      .finally(() => { if (alive) setLedgerLoading(false); });
+    return () => { alive = false; };
+  }, [ledgerStu]);
 
   const rows = useMemo(() => {
     let r = (data.rows || []).slice();
     if (fFilter) r = r.filter((x) => (x.followupStatus || '') === (fFilter === 'none' ? '' : fFilter));
     if (statusFilter === 'active') r = r.filter((x) => (x.studentStatus || 'active') === 'active');
     else if (statusFilter === 'left') r = r.filter((x) => (x.studentStatus || 'active') !== 'active');
-    r = r.filter((x) => eff(x) >= band[0] && eff(x) <= band[1]);
+    r = r.filter((x) => dueNow(x) >= band[0] && dueNow(x) <= band[1]);
     const cmp = {
-      dueNow: (a, b) => eff(b) - eff(a),
+      dueNow: (a, b) => dueNow(b) - dueNow(a),
+      dueNowPrev: (a, b) => dueNowPrev(b) - dueNowPrev(a),
       prevYears: (a, b) => Number(b.prevYears || 0) - Number(a.prevYears || 0),
       fullYear: (a, b) => Number(b.fullYear || 0) - Number(a.fullYear || 0),
       class: (a, b) => (classRank(a.className) - classRank(b.className)) || (a.name || '').localeCompare(b.name || ''),
     }[sortBy];
     return r.sort(cmp);
-  }, [data.rows, fFilter, statusFilter, band, sortBy, includePrev]);
+  }, [data.rows, fFilter, statusFilter, band, sortBy]);
 
   const leftCount = useMemo(() => (data.rows || []).filter((x) => (x.studentStatus || 'active') !== 'active').length, [data.rows]);
 
@@ -92,26 +110,27 @@ export default function DuesReport() {
     prevYears: a.prevYears + Number(r.prevYears || 0), fullYear: a.fullYear + Number(r.fullYear || 0),
   }), { dueNow: 0, dueQuarter: 0, prevYears: 0, fullYear: 0 });
 
-  // band summary: counts + totals in ₹ pools (on effective due-now)
+  // band summary: counts + totals in ₹ pools (on Due now — stable regardless of the +prev toggle)
   const bands = useMemo(() => {
     const defs = [[0, 5000], [5000, 15000], [15000, Infinity]];
     return defs.map(([lo, hi]) => {
-      const inRange = (data.rows || []).filter((r) => eff(r) > lo && eff(r) <= (hi === Infinity ? 1e12 : hi));
-      return { lo, hi, n: inRange.length, sum: inRange.reduce((s, r) => s + eff(r), 0) };
+      const inRange = (data.rows || []).filter((r) => dueNow(r) > lo && dueNow(r) <= (hi === Infinity ? 1e12 : hi));
+      return { lo, hi, n: inRange.length, sum: inRange.reduce((s, r) => s + dueNow(r), 0) };
     });
-  }, [data.rows, includePrev]);
+  }, [data.rows]);
 
   const qLabel = data.quarterLabel || 'This quarter';
   const reload = () => feesService.getDues({ academicYearId, mode, ...(classId ? { classId } : {}), ...(student ? { studentId: student.uuid } : {}) }).then((res) => setData(res || { rows: [], totals: {} })).catch(() => {});
   const exportCsv = () => {
-    const head = ['Class', 'Admission', 'Student', 'Status', 'Withdrawn', 'Father mobile', 'Due now', qLabel, 'Prev years', 'Full year', 'Follow-up'];
-    const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', (r.studentStatus || 'active') === 'active' ? 'Active' : 'Left', r.withdrawalDate ? String(r.withdrawalDate).slice(0, 10) : '', r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(r.thisQuarter || 0), Math.round(r.prevYears || 0), Math.round(r.fullYear || 0), fLabel(r.followupStatus)]);
+    const head = ['Class', 'Admission', 'Student', 'Status', 'Withdrawn', 'Father mobile', 'Due now', 'Due now + prev', qLabel, 'Full year', 'Prev years', 'Follow-up'];
+    const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', (r.studentStatus || 'active') === 'active' ? 'Active' : 'Left', r.withdrawalDate ? String(r.withdrawalDate).slice(0, 10) : '', r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(dueNowPrev(r)), Math.round(r.dueQuarter || 0), Math.round(r.fullYear || 0), Math.round(r.prevYears || 0), fLabel(r.followupStatus)]);
     const csv = [head, ...lines].map((a) => a.map((v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a'); a.href = url; a.download = `dues-${mode}-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
   };
   const printList = () => {
-    const rowsHtml = rows.map((r) => `<tr><td>${r.className || ''}</td><td>${r.admissionNumber || ''}</td><td>${r.name || ''}</td><td>${r.fatherMobile || ''}</td><td style="text-align:right">${inr(eff(r))}</td><td style="text-align:right">${inr(r.fullYear)}</td><td></td></tr>`).join('');
+    const amt = (r) => includePrev ? dueNowPrev(r) : dueNow(r);
+    const rowsHtml = rows.map((r) => `<tr><td>${r.className || ''}</td><td>${r.admissionNumber || ''}</td><td>${r.name || ''}</td><td>${r.fatherMobile || ''}</td><td style="text-align:right">${inr(amt(r))}</td><td style="text-align:right">${inr(r.fullYear)}</td><td></td></tr>`).join('');
     const w = window.open('', '_blank');
     w.document.write(`<html><head><title>Call list</title><style>body{font:13px system-ui;padding:16px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:5px 7px}th{background:#f3f4f6;text-align:left}h3{margin:0 0 8px}</style></head><body><h3>Dues call list · ${new Date().toLocaleDateString('en-IN')} · ${rows.length} students</h3><table><thead><tr><th>Class</th><th>Adm#</th><th>Student</th><th>Father mobile</th><th>Due now</th><th>Full year</th><th>Note</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`);
     w.document.close(); w.focus(); w.print();
@@ -154,7 +173,9 @@ export default function DuesReport() {
             ? <Chip label={`${student.name}${student.admissionNumber ? ' · ' + student.admissionNumber : ''}`} onDelete={() => setStudent(null)} deleteIcon={<ClearIcon />} />
             : <Button size="small" variant="outlined" startIcon={<PersonSearchIcon />} onClick={() => setPick(true)}>By student</Button>}
           <TextField size="small" select label="Sort by" value={sortBy} onChange={(e) => setSortBy(e.target.value)} sx={{ minWidth: 130 }}>
-            <MenuItem value="dueNow">Due now</MenuItem><MenuItem value="prevYears">Prev years</MenuItem>
+            <MenuItem value="dueNow">Due now</MenuItem>
+            {includePrev && <MenuItem value="dueNowPrev">Due now + prev</MenuItem>}
+            <MenuItem value="prevYears">Prev years</MenuItem>
             <MenuItem value="fullYear">Full year</MenuItem><MenuItem value="class">Class</MenuItem>
           </TextField>
           <TextField size="small" select label="Follow-up" value={fFilter} onChange={(e) => setFFilter(e.target.value)} sx={{ minWidth: 130 }}>
@@ -187,30 +208,32 @@ export default function DuesReport() {
               <TableHead>
                 <TableRow>
                   <TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell><TableCell>Status</TableCell><TableCell>Father mobile</TableCell>
-                  <TableCell align="right">Due now{includePrev ? ' +prev' : ''}<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{monthEndLabel}</Box></TableCell>
+                  <TableCell align="right">Due now<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{monthEndLabel}</Box></TableCell>
+                  {includePrev && <TableCell align="right">Due now + prev<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>incl. prior years</Box></TableCell>}
                   <TableCell align="right">Due qtr<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{quarterEndLabel}</Box></TableCell>
-                  <TableCell align="right">Prev yrs</TableCell>
                   <TableCell align="right">Due full year<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{yearEndLabel}</Box></TableCell>
+                  <TableCell align="right">Prev yrs</TableCell>
                   <TableCell>Follow-up</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.length === 0 && <TableRow><TableCell colSpan={10} align="center" sx={{ color: FEE_COLORS.success, py: 4 }}>No students match this filter. 🎉</TableCell></TableRow>}
+                {rows.length === 0 && <TableRow><TableCell colSpan={includePrev ? 11 : 10} align="center" sx={{ color: FEE_COLORS.success, py: 4 }}>No students match this filter. 🎉</TableCell></TableRow>}
                 {rows.map((r) => (
                   <TableRow key={r.studentId} hover>
                     <TableCell>{r.className || '—'}</TableCell>
                     <TableCell>{r.admissionNumber || '—'}</TableCell>
-                    <TableCell><Link component="button" underline="hover" onClick={() => navigate(`/students/${r.studentId}`)} sx={{ textAlign: 'left' }}>{r.name}</Link></TableCell>
+                    <TableCell><Link component="button" underline="hover" onClick={() => setLedgerStu({ studentId: r.studentId, name: r.name })} sx={{ textAlign: 'left' }}>{r.name}</Link></TableCell>
                     <TableCell>
                       {(r.studentStatus || 'active') === 'active'
                         ? <Chip size="small" variant="outlined" color="success" label="Active" />
                         : <Tooltip title={r.withdrawalDate ? `Withdrawn ${new Date(r.withdrawalDate).toLocaleDateString('en-IN')}` : 'Inactive'}><Chip size="small" color="warning" label="Left" /></Tooltip>}
                     </TableCell>
                     <TableCell sx={{ fontVariantNumeric: 'tabular-nums' }}>{r.fatherMobile || '—'}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(eff(r))}</TableCell>
-                    <TableCell align="right" sx={{ color: FEE_COLORS.muted }}>{inr(effQ(r))}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(r.dueNow)}</TableCell>
+                    {includePrev && <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(dueNowPrev(r))}</TableCell>}
+                    <TableCell align="right" sx={{ color: FEE_COLORS.muted }}>{inr(r.dueQuarter)}</TableCell>
+                    <TableCell align="right">{inr(r.fullYear)}</TableCell>
                     <TableCell align="right" sx={{ color: r.prevYears > 0 ? FEE_COLORS.warning : FEE_COLORS.muted }}>{r.prevYears > 0 ? inr(r.prevYears) : '—'}</TableCell>
-                    <TableCell align="right">{inr(effFull(r))}</TableCell>
                     <TableCell>
                       <Chip size="small" variant={r.followupStatus ? 'filled' : 'outlined'} color={r.followupStatus ? fColor(r.followupStatus) : 'default'}
                         label={r.followupStatus ? `${fLabel(r.followupStatus)}${r.followupCount > 1 ? ` ·${r.followupCount}` : ''}` : 'log…'}
@@ -223,10 +246,11 @@ export default function DuesReport() {
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={5} sx={{ fontWeight: 700, color: 'text.primary' }}>{rows.length} students {rows.length !== (data.rows || []).length ? `(of ${(data.rows || []).length})` : ''}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger, fontSize: 15 }}>{inr(shownTotals.dueNow + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.muted }}>{inr(shownTotals.dueQuarter + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger, fontSize: 15 }}>{inr(shownTotals.dueNow)}</TableCell>
+                    {includePrev && <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger, fontSize: 15 }}>{inr(shownTotals.dueNow + shownTotals.prevYears)}</TableCell>}
+                    <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.muted }}>{inr(shownTotals.dueQuarter)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 15 }}>{inr(shownTotals.fullYear)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.warning }}>{inr(shownTotals.prevYears)}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 15 }}>{inr(shownTotals.fullYear + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
                     <TableCell />
                   </TableRow>
                 </TableFooter>
@@ -239,6 +263,28 @@ export default function DuesReport() {
       <StudentSearchDialog open={pick} onClose={() => setPick(false)} onSelect={(s) => { setPick(false); setStudent(s); setClassId(''); }} />
       <FollowupDialog open={!!followStudent} onClose={() => setFollowStudent(null)} onChanged={reload}
         studentId={followStudent?.studentId} academicYearId={academicYearId} studentName={followStudent?.name} />
+
+      {/* Ledger drawer — peek a student's fees 360 (incl. collect) without leaving the report. Reloads dues on close. */}
+      <Drawer anchor="right" open={!!ledgerStu} onClose={() => { setLedgerStu(null); reload(); }}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 640, md: 780 }, maxWidth: '100%' } }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${FEE_COLORS.border}`, position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 700 }} noWrap>{ledgerStu?.name || 'Student'}</Typography>
+            <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>Fees ledger & receipts</Typography>
+          </Box>
+          <Tooltip title="Open full profile">
+            <IconButton size="small" onClick={() => ledgerStu && navigate(`/students/${ledgerStu.studentId}`)}><OpenInNewIcon fontSize="small" /></IconButton>
+          </Tooltip>
+          <Tooltip title="Close">
+            <IconButton size="small" onClick={() => { setLedgerStu(null); reload(); }}><CloseIcon fontSize="small" /></IconButton>
+          </Tooltip>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          {ledgerLoading || !ledgerFull
+            ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
+            : <StudentFeesPanel studentId={ledgerFull.uuid} student={ledgerFull} />}
+        </Box>
+      </Drawer>
     </Box>
   );
 }
