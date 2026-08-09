@@ -11,6 +11,7 @@
 // local instant since those are real timestamps.
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const parse = (v) => {
   if (v == null || v === '') return null;
@@ -28,6 +29,13 @@ export function fmtDateLong(v) {
   const d = parse(v);
   if (!d) return v ? String(v) : '';
   return `${String(d.getUTCDate()).padStart(2, '0')}-${MON[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+}
+
+// "Mon 13-04-2026" — for day-of-week-significant labels (rosters, daily checklists).
+export function fmtDateDow(v) {
+  const d = parse(v);
+  if (!d) return v ? String(v) : '';
+  return `${DOW[d.getUTCDay()]} ${fmtDate(v)}`;
 }
 
 export function isoDate(v) {

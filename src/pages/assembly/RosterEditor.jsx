@@ -11,7 +11,7 @@ import { assemblyService } from '../../services/assemblyService';
 import { classService } from '../../services/classService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
-import { fmtDate, fmtDateTime } from '../../utils/date';
+import { fmtDateDow, fmtDateTime } from '../../utils/date';
 import { toRows, toPayload } from './rosterParticipants';
 import RosterDays from './RosterDays';
 
@@ -166,7 +166,7 @@ export default function RosterEditor() {
 
       {planId && !week && !loading && (
         <Card><CardContent>
-          <Typography sx={{ mb: 2 }}>No roster for the week of {fmtDate(weekStart)} yet.</Typography>
+          <Typography sx={{ mb: 2 }}>No roster for the week of {fmtDateDow(weekStart)} yet.</Typography>
           <Button variant="contained" onClick={start} disabled={busy === 'start'}>{busy === 'start' ? 'Starting…' : 'Start roster for this week'}</Button>
         </CardContent></Card>
       )}

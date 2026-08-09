@@ -7,7 +7,7 @@ import { assemblyService } from '../../services/assemblyService';
 import { useCan } from '../../permissions/can';
 import ChecklistPage from './ChecklistPage';
 import { resolveMyRosterWeek } from './myAssembly';
-import { fmtDate } from '../../utils/date';
+import { fmtDateDow } from '../../utils/date';
 
 const key = (itemId, date) => `${itemId}|${date || ''}`;
 const todayIso = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
@@ -94,7 +94,7 @@ function TeacherChecklist() {
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Assembly Checklist</Typography>
-      {chk && <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Week of {dates[0] ? fmtDate(dates[0]) : ''}</Typography>}
+      {chk && <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Week of {dates[0] ? fmtDateDow(dates[0]) : ''}</Typography>}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
       {!loading && reason && <Alert severity="info">{reason}</Alert>}
@@ -135,7 +135,7 @@ function TeacherChecklist() {
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Box>
-                  <Typography variant="subtitle1" fontWeight={700}>{fmtDate(d)}</Typography>
+                  <Typography variant="subtitle1" fontWeight={700}>{fmtDateDow(d)}</Typography>
                   {isToday && <Typography variant="caption" color="primary">Today</Typography>}
                 </Box>
                 {signed

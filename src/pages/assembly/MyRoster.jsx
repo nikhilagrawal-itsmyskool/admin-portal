@@ -8,7 +8,7 @@ import { toRows, toPayload } from './rosterParticipants';
 import RosterDays from './RosterDays';
 import RosterEditor from './RosterEditor';
 import { resolveMyRosterWeeks } from './myAssembly';
-import { fmtDate } from '../../utils/date';
+import { fmtDateDow } from '../../utils/date';
 
 const STATUS_COLOR = { draft: 'default', submitted: 'warning', approved: 'success' };
 
@@ -131,7 +131,7 @@ function TeacherRoster() {
           {duties.map((d) => (
             <Chip
               key={d.weekStart}
-              label={`Week of ${fmtDate(d.weekStart)}`}
+              label={`Week of ${fmtDateDow(d.weekStart)}`}
               onClick={() => pickWeek(d)}
               color={d.weekStart === selected ? 'primary' : 'default'}
               variant={d.weekStart === selected ? 'filled' : 'outlined'}

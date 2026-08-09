@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { ParticipantList } from './rosterParticipants';
-import { fmtDate } from '../../utils/date';
+import { fmtDateDow } from '../../utils/date';
 
 // One fillable slot. Memoized so typing in another slot's content (or on another
 // day) doesn't re-render this slot and its participant Autocompletes.
@@ -55,7 +55,7 @@ const DayAccordion = memo(function DayAccordion({
   return (
     <Accordion defaultExpanded={defaultExpanded}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography sx={{ fontWeight: 600 }}>{fmtDate(d.date)}</Typography>
+        <Typography sx={{ fontWeight: 600 }}>{fmtDateDow(d.date)}</Typography>
         <Box sx={{ flex: 1 }} />
         <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>{d.slots.length} slot(s)</Typography>
       </AccordionSummary>

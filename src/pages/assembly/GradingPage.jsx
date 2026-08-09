@@ -12,7 +12,7 @@ import { employeeService } from '../../services/employeeService';
 import { MetricScorePicker, DictionPicker, StarPresenterPicker } from './gradeFields';
 import { useCan } from '../../permissions/can';
 import { useAcademicYear } from '../../context/AcademicYearContext';
-import { fmtDate } from '../../utils/date';
+import { fmtDate, fmtDateDow } from '../../utils/date';
 import ReferenceDocCard from './ReferenceDocCard';
 
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -308,7 +308,7 @@ export default function GradingPage() {
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField size="small" select fullWidth label="Date" value={gradeForm?.gradeDate || ''} onChange={(e) => setGradeForm({ ...gradeForm, gradeDate: e.target.value })}>
-                {(week?.days || []).map((d) => <MenuItem key={d.date} value={d.date}>{fmtDate(d.date)}</MenuItem>)}
+                {(week?.days || []).map((d) => <MenuItem key={d.date} value={d.date}>{fmtDateDow(d.date)}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={6}>

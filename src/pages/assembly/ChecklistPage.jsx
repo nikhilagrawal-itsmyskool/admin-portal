@@ -10,7 +10,7 @@ import {
 import { assemblyService } from '../../services/assemblyService';
 import { useCan } from '../../permissions/can';
 import { useAcademicYear } from '../../context/AcademicYearContext';
-import { fmtDate } from '../../utils/date';
+import { fmtDateDow } from '../../utils/date';
 import ReferenceDocCard from './ReferenceDocCard';
 
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -223,7 +223,7 @@ export default function ChecklistPage() {
               : (
                 <>
                   {weekItems.length > 0 && renderPanel('Weekly checks', 'Submit before the roster week', weekItems, null, weeklySigned)}
-                  {dayItems.length > 0 && dates.map((d) => renderPanel(fmtDate(d), null, dayItems, d, daySignedSet.has(d)))}
+                  {dayItems.length > 0 && dates.map((d) => renderPanel(fmtDateDow(d), null, dayItems, d, daySignedSet.has(d)))}
                 </>
               )
           )}
