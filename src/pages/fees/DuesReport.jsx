@@ -38,6 +38,7 @@ export default function DuesReport() {
   const [includePrev, setIncludePrev] = useState(false);
   const [sortBy, setSortBy] = useState('dueNow'); // dueNow | prevYears | fullYear | class
   const [fFilter, setFFilter] = useState(''); // follow-up filter
+  const [statusFilter, setStatusFilter] = useState('all'); // all | active | left (inactive)
   const [band, setBand] = useState([0, 0]); // due-now slider range
   const [followStudent, setFollowStudent] = useState(null); // open timeline dialog for this row
 
@@ -68,6 +69,8 @@ export default function DuesReport() {
   const rows = useMemo(() => {
     let r = (data.rows || []).slice();
     if (fFilter) r = r.filter((x) => (x.followupStatus || '') === (fFilter === 'none' ? '' : fFilter));
+    if (statusFilter === 'active') r = r.filter((x) => (x.studentStatus || 'active') === 'active');
+    else if (statusFilter === 'left') r = r.filter((x) => (x.studentStatus || 'active') !== 'active');
     r = r.filter((x) => eff(x) >= band[0] && eff(x) <= band[1]);
     const cmp = {
       dueNow: (a, b) => eff(b) - eff(a),
@@ -76,7 +79,9 @@ export default function DuesReport() {
       class: (a, b) => (classRank(a.className) - classRank(b.className)) || (a.name || '').localeCompare(b.name || ''),
     }[sortBy];
     return r.sort(cmp);
-  }, [data.rows, fFilter, band, sortBy, includePrev]);
+  }, [data.rows, fFilter, statusFilter, band, sortBy, includePrev]);
+
+  const leftCount = useMemo(() => (data.rows || []).filter((x) => (x.studentStatus || 'active') !== 'active').length, [data.rows]);
 
   const t = data.totals || {};
   const monthEndLabel = data.monthEndLabel || '';
@@ -99,8 +104,8 @@ export default function DuesReport() {
   const qLabel = data.quarterLabel || 'This quarter';
   const reload = () => feesService.getDues({ academicYearId, mode, ...(classId ? { classId } : {}), ...(student ? { studentId: student.uuid } : {}) }).then((res) => setData(res || { rows: [], totals: {} })).catch(() => {});
   const exportCsv = () => {
-    const head = ['Class', 'Admission', 'Student', 'Father mobile', 'Due now', qLabel, 'Prev years', 'Full year', 'Follow-up'];
-    const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(r.thisQuarter || 0), Math.round(r.prevYears || 0), Math.round(r.fullYear || 0), fLabel(r.followupStatus)]);
+    const head = ['Class', 'Admission', 'Student', 'Status', 'Withdrawn', 'Father mobile', 'Due now', qLabel, 'Prev years', 'Full year', 'Follow-up'];
+    const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', (r.studentStatus || 'active') === 'active' ? 'Active' : 'Left', r.withdrawalDate ? String(r.withdrawalDate).slice(0, 10) : '', r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(r.thisQuarter || 0), Math.round(r.prevYears || 0), Math.round(r.fullYear || 0), fLabel(r.followupStatus)]);
     const csv = [head, ...lines].map((a) => a.map((v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a'); a.href = url; a.download = `dues-${mode}-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
@@ -156,6 +161,11 @@ export default function DuesReport() {
             <MenuItem value="">All</MenuItem><MenuItem value="none">Not contacted</MenuItem>
             {FOLLOWUPS.filter((f) => f.v).map((f) => <MenuItem key={f.v} value={f.v}>{f.label}</MenuItem>)}
           </TextField>
+          <TextField size="small" select label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 130 }}>
+            <MenuItem value="all">All students</MenuItem>
+            <MenuItem value="active">Active only</MenuItem>
+            <MenuItem value="left">Left / inactive{leftCount ? ` (${leftCount})` : ''}</MenuItem>
+          </TextField>
           <FormControlLabel control={<Switch size="small" checked={includePrev} onChange={(e) => setIncludePrev(e.target.checked)} />} label={<span style={{ fontSize: 13 }}>+ prev-year dues</span>} />
           <Box sx={{ flex: 1 }} />
           <Button size="small" startIcon={<PrintIcon />} onClick={printList} disabled={!rows.length}>Call list</Button>
@@ -176,7 +186,7 @@ export default function DuesReport() {
             <Table size="small" stickyHeader sx={{ minWidth: 900 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell><TableCell>Father mobile</TableCell>
+                  <TableCell>Class</TableCell><TableCell>Adm#</TableCell><TableCell>Student</TableCell><TableCell>Status</TableCell><TableCell>Father mobile</TableCell>
                   <TableCell align="right">Due now{includePrev ? ' +prev' : ''}<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{monthEndLabel}</Box></TableCell>
                   <TableCell align="right">Due qtr<Box component="span" sx={{ display: 'block', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted }}>{quarterEndLabel}</Box></TableCell>
                   <TableCell align="right">Prev yrs</TableCell>
@@ -185,12 +195,17 @@ export default function DuesReport() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.length === 0 && <TableRow><TableCell colSpan={9} align="center" sx={{ color: FEE_COLORS.success, py: 4 }}>No students match this filter. 🎉</TableCell></TableRow>}
+                {rows.length === 0 && <TableRow><TableCell colSpan={10} align="center" sx={{ color: FEE_COLORS.success, py: 4 }}>No students match this filter. 🎉</TableCell></TableRow>}
                 {rows.map((r) => (
                   <TableRow key={r.studentId} hover>
                     <TableCell>{r.className || '—'}</TableCell>
                     <TableCell>{r.admissionNumber || '—'}</TableCell>
                     <TableCell><Link component="button" underline="hover" onClick={() => navigate(`/students/${r.studentId}`)} sx={{ textAlign: 'left' }}>{r.name}</Link></TableCell>
+                    <TableCell>
+                      {(r.studentStatus || 'active') === 'active'
+                        ? <Chip size="small" variant="outlined" color="success" label="Active" />
+                        : <Tooltip title={r.withdrawalDate ? `Withdrawn ${new Date(r.withdrawalDate).toLocaleDateString('en-IN')}` : 'Inactive'}><Chip size="small" color="warning" label="Left" /></Tooltip>}
+                    </TableCell>
                     <TableCell sx={{ fontVariantNumeric: 'tabular-nums' }}>{r.fatherMobile || '—'}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(eff(r))}</TableCell>
                     <TableCell align="right" sx={{ color: FEE_COLORS.muted }}>{inr(effQ(r))}</TableCell>
@@ -207,7 +222,7 @@ export default function DuesReport() {
               {rows.length > 0 && (
                 <TableFooter>
                   <TableRow>
-                    <TableCell colSpan={4} sx={{ fontWeight: 700, color: 'text.primary' }}>{rows.length} students {rows.length !== (data.rows || []).length ? `(of ${(data.rows || []).length})` : ''}</TableCell>
+                    <TableCell colSpan={5} sx={{ fontWeight: 700, color: 'text.primary' }}>{rows.length} students {rows.length !== (data.rows || []).length ? `(of ${(data.rows || []).length})` : ''}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger, fontSize: 15 }}>{inr(shownTotals.dueNow + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.muted }}>{inr(shownTotals.dueQuarter + (includePrev ? shownTotals.prevYears : 0))}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, color: FEE_COLORS.warning }}>{inr(shownTotals.prevYears)}</TableCell>
