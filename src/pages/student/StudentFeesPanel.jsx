@@ -25,7 +25,7 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [entries, setEntries] = useState([]);
   const [view, setView] = useState('dues'); // 'dues' | 'all' | 'receipts'
   const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
-  const [rcptScope, setRcptScope] = useState(academicYearId); // 'all' | <ayId>; follows the selected year
+  const [allYears, setAllYears] = useState(false); // receipts: show only the selected year (off) or every year (on)
   const [showCancelled, setShowCancelled] = useState(false); // cancelled receipts hidden by default
   const [cancelTarget, setCancelTarget] = useState(null); // receipt being cancelled
   const [cancelReason, setCancelReason] = useState('');
@@ -56,8 +56,6 @@ export default function StudentFeesPanel({ studentId, student }) {
 
   const [selYear, setSelYear] = useState(academicYearId);
   useEffect(() => { setSelYear(academicYearId); }, [studentId, academicYearId]);
-  useEffect(() => { setRcptScope(selYear); }, [selYear]); // receipts scope follows the selected year
-  const allYears = rcptScope === 'all';
   const opt = years.find((y) => y.id === selYear) || { id: selYear, name: ctxYearName[selYear], studentId, historical: false };
   const effStudentId = opt.studentId;
   const isCurrent = selYear === trueCurrentAyId; // collect only in the ACTUAL current year
@@ -101,7 +99,7 @@ export default function StudentFeesPanel({ studentId, student }) {
     setReceipts(null);
     const inc = showCancelled ? 'true' : undefined;
     const sortByDate = (a, b) => String(b.receiptDate || '').localeCompare(String(a.receiptDate || ''));
-    if (rcptScope === 'all') {
+    if (allYears) {
       // historical years live under prior-admission studentIds — fetch each, merge, dedupe
       const sids = [...new Set(years.map((y) => y.studentId).filter(Boolean))];
       Promise.all(sids.map((sid) => feesService.getReceipts({ studentId: sid, includeCancelled: inc }).catch(() => [])))
@@ -112,13 +110,13 @@ export default function StudentFeesPanel({ studentId, student }) {
           setReceipts(merged.sort(sortByDate));
         }).catch(() => { if (alive) setReceipts([]); });
     } else {
-      const sid = (years.find((y) => y.id === rcptScope) || {}).studentId || effStudentId;
-      feesService.getReceipts({ studentId: sid, academicYearId: rcptScope, includeCancelled: inc })
+      const sid = opt.studentId || effStudentId;
+      feesService.getReceipts({ studentId: sid, academicYearId: selYear, includeCancelled: inc })
         .then((r) => { if (alive) setReceipts((r || []).sort(sortByDate)); })
         .catch(() => { if (alive) setReceipts([]); });
     }
     return () => { alive = false; };
-  }, [view, rcptScope, showCancelled, years, effStudentId, refreshKey]);
+  }, [view, allYears, selYear, showCancelled, years, effStudentId, refreshKey]);
 
   const doCancel = async () => {
     if (!cancelTarget) return;
@@ -279,10 +277,11 @@ export default function StudentFeesPanel({ studentId, student }) {
                 ) : (
                   <>
                   <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
-                    <TextField select size="small" label="Year" value={rcptScope} onChange={(e) => setRcptScope(e.target.value)} sx={{ minWidth: 150 }}>
-                      <MenuItem value="all">All years</MenuItem>
-                      {years.map((y) => <MenuItem key={y.id} value={y.id}>{y.name}{y.id === trueCurrentAyId ? ' • current' : ''}</MenuItem>)}
-                    </TextField>
+                    <FormControlLabel
+                      control={<Switch size="small" checked={allYears} onChange={(e) => setAllYears(e.target.checked)} />}
+                      label={allYears ? 'All years' : `${opt.name || ctxYearName[selYear] || 'Selected year'} only`}
+                      sx={{ '& .MuiFormControlLabel-label': { fontSize: 13 } }}
+                    />
                     <FormControlLabel
                       control={<Switch size="small" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />}
                       label="Show cancelled"

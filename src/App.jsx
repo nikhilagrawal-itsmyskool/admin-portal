@@ -44,6 +44,7 @@ import FeesSetup from './pages/fees/FeesSetup';
 import FeeStructure from './pages/fees/FeeStructure';
 import ConcessionList from './pages/fees/ConcessionList';
 import CollectFees from './pages/fees/CollectFees';
+import ReceiptsSearch from './pages/fees/ReceiptsSearch';
 import TransportSlabList from './pages/fees/TransportSlabList';
 import LateFeeRuleList from './pages/fees/LateFeeRuleList';
 import WaiverList from './pages/fees/WaiverList';
@@ -239,6 +240,7 @@ export default function App() {
         <Route path="fees" element={<FeesDashboard />} />
         <Route path="fees/dues" element={<DuesReport />} />
         <Route path="fees/collect" element={<CollectFees />} />
+        <Route path="fees/receipts" element={<ReceiptsSearch />} />
         <Route path="fees/setup" element={<FeesSetup />} />
         <Route path="fees/structure" element={<FeeStructure />} />
         <Route path="fees/concessions" element={<ConcessionList />} />
