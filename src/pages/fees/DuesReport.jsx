@@ -46,6 +46,8 @@ export default function DuesReport() {
   const [ledgerStu, setLedgerStu] = useState(null); // { studentId, name } — row whose ledger drawer is open
   const [ledgerFull, setLedgerFull] = useState(null); // fetched full student (with enrollments) for the panel
   const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [family, setFamily] = useState(null); // { members: [...] } linked-sibling dues for the drawer
+  const [famPrev, setFamPrev] = useState(false); // include prev-year dues in the family figures
 
   useEffect(() => {
     classService.getClasses({ academicYearId }).then((c) => setClasses((c?.value || c || []).filter(Boolean))).catch(() => setClasses([]));
@@ -72,16 +74,19 @@ export default function DuesReport() {
   useEffect(() => { setBand([0, maxDue]); }, [maxDue]);
   useEffect(() => { if (!includePrev && sortBy === 'dueNowPrev') setSortBy('dueNow'); }, [includePrev, sortBy]);
 
-  // Fetch the full student (with enrollments) when the ledger drawer opens.
+  // Fetch the full student (with enrollments) + family dues when the ledger drawer opens.
   useEffect(() => {
-    if (!ledgerStu) { setLedgerFull(null); return; }
-    let alive = true; setLedgerLoading(true); setLedgerFull(null);
+    if (!ledgerStu) { setLedgerFull(null); setFamily(null); return; }
+    let alive = true; setLedgerLoading(true); setLedgerFull(null); setFamily(null);
     studentService.getStudentById(ledgerStu.studentId)
       .then((s) => { if (alive) setLedgerFull(s || { uuid: ledgerStu.studentId, name: ledgerStu.name }); })
       .catch(() => { if (alive) setLedgerFull({ uuid: ledgerStu.studentId, name: ledgerStu.name }); })
       .finally(() => { if (alive) setLedgerLoading(false); });
+    feesService.getFamilyDues(ledgerStu.studentId, { academicYearId })
+      .then((f) => { if (alive) setFamily(f || null); })
+      .catch(() => { if (alive) setFamily(null); });
     return () => { alive = false; };
-  }, [ledgerStu]);
+  }, [ledgerStu, academicYearId]);
 
   const rows = useMemo(() => {
     let r = (data.rows || []).slice();
@@ -280,6 +285,39 @@ export default function DuesReport() {
           </Tooltip>
         </Box>
         <Box sx={{ p: 2 }}>
+          {family && (family.members || []).length > 1 && (() => {
+            const fam = (r) => Number(r.dueNow || 0) + (famPrev ? Number(r.prevYears || 0) : 0);
+            const total = (family.members || []).reduce((s, m) => s + fam(m), 0);
+            const hasPrev = (family.members || []).some((m) => Number(m.prevYears || 0) > 0);
+            return (
+              <Card variant="outlined" sx={{ mb: 2, borderColor: FEE_COLORS.border }}>
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 13, flex: 1 }}>Family — {family.members.length} students</Typography>
+                    {hasPrev && <Chip size="small" variant={famPrev ? 'filled' : 'outlined'} color={famPrev ? 'warning' : 'default'} label="+ prev-year dues" onClick={() => setFamPrev((v) => !v)} sx={{ cursor: 'pointer' }} />}
+                  </Box>
+                  <Table size="small">
+                    <TableBody>
+                      {family.members.map((m) => (
+                        <TableRow key={m.studentId} hover sx={m.studentId === ledgerStu?.studentId ? { bgcolor: 'action.hover' } : undefined}>
+                          <TableCell sx={{ py: 0.5, border: 0 }}>
+                            <Link component="button" underline="hover" onClick={() => setLedgerStu({ studentId: m.studentId, name: m.name })} sx={{ textAlign: 'left', fontWeight: m.studentId === ledgerStu?.studentId ? 700 : 400 }}>{m.name}</Link>
+                            {(m.status || 'active') !== 'active' && <Chip size="small" color="warning" label="Left" sx={{ ml: 0.5, height: 16, fontSize: 10 }} />}
+                          </TableCell>
+                          <TableCell sx={{ py: 0.5, border: 0, color: FEE_COLORS.muted }}>{m.className || '—'}</TableCell>
+                          <TableCell align="right" sx={{ py: 0.5, border: 0, fontWeight: 600, color: fam(m) > 0 ? FEE_COLORS.danger : FEE_COLORS.muted }}>{inr(fam(m))}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: `1px solid ${FEE_COLORS.border}`, mt: 0.5, pt: 0.75 }}>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 700 }}>Family due{famPrev ? ' + prev' : ' now'}</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 800, color: FEE_COLORS.danger }}>{inr(total)}</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            );
+          })()}
           {ledgerLoading || !ledgerFull
             ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
             : <StudentFeesPanel studentId={ledgerFull.uuid} student={ledgerFull} />}

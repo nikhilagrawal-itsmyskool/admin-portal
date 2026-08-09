@@ -17,6 +17,7 @@ import { ACTIONS } from '../../permissions/actions';
 
 const PAY_MODES = ['cash', 'online', 'card', 'cheque', 'draft', 'neft', 'ecs', 'bank-deposit', 'rte'];
 const RECEIVED = ['father', 'mother', 'guardian', 'other'];
+const TRANSPORT_MONTHS = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function CollectFees() {
@@ -45,7 +46,8 @@ export default function CollectFees() {
   // adhoc
   const [adhoc, setAdhoc] = useState({ payerName: '', mode: 'cash', date: today(), remarks: '', lines: [{ headLabel: '', amount: '' }], saving: false });
   // transport (interim: receipt-only, no dues)
-  const [transport, setTransport] = useState({ amount: '', month: '', remark: '', mode: 'cash', date: today(), saving: false });
+  const [transport, setTransport] = useState({ amount: '', months: [], remark: '', mode: 'cash', date: today(), saving: false });
+  const toggleMonth = (m) => setTransport((s) => ({ ...s, months: s.months.includes(m) ? s.months.filter((x) => x !== m) : [...s.months, m] }));
 
   const saveTransport = async () => {
     if (!student) { setError('Pick a student first.'); return; }
@@ -53,10 +55,12 @@ export default function CollectFees() {
     if (!(amount > 0)) { setError('Enter a transport amount.'); return; }
     setTransport((s) => ({ ...s, saving: true })); setError(''); setOk('');
     try {
-      const receipt = await feesService.collectTransport({ studentId: student.uuid, academicYearId, amount, month: transport.month || null, remark: transport.remark || null, paymentMode: transport.mode, receiptDate: transport.date });
+      // months in financial-year order, joined — stored structured in cycle_set for later reconciliation
+      const month = TRANSPORT_MONTHS.filter((m) => transport.months.includes(m)).join(',') || null;
+      const receipt = await feesService.collectTransport({ studentId: student.uuid, academicYearId, amount, month, remark: transport.remark || null, paymentMode: transport.mode, receiptDate: transport.date });
       setOk(`Transport receipt ${receipt.receiptNo || ''} — ${inr(receipt.totalPaid)}.`);
       openReceipt(receipt.uuid);
-      setTransport({ amount: '', month: '', remark: '', mode: 'cash', date: today(), saving: false });
+      setTransport({ amount: '', months: [], remark: '', mode: 'cash', date: today(), saving: false });
     } catch (err) { setError(errMsg(err)); setTransport((s) => ({ ...s, saving: false })); }
   };
 
@@ -428,10 +432,20 @@ export default function CollectFees() {
                 : <Button variant="outlined" startIcon={<PersonSearchIcon />} onClick={() => setPick(true)}>Find student</Button>}
             </Box>
             <Grid container spacing={2}>
-              <Grid item xs={6} sm={3}><TextField fullWidth size="small" type="number" label="Amount" value={transport.amount} onChange={(e) => setTransport((s) => ({ ...s, amount: e.target.value }))} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth size="small" label="Month / period" placeholder="e.g. Aug" value={transport.month} onChange={(e) => setTransport((s) => ({ ...s, month: e.target.value }))} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth size="small" select label="Mode" value={transport.mode} onChange={(e) => setTransport((s) => ({ ...s, mode: e.target.value }))}>{PAY_MODES.map((m) => <MenuItem key={m} value={m}>{PAYMENT_MODE_LABELS[m] || m}</MenuItem>)}</TextField></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth size="small" type="date" label="Date" InputLabelProps={{ shrink: true }} value={transport.date} onChange={(e) => setTransport((s) => ({ ...s, date: e.target.value }))} /></Grid>
+              <Grid item xs={6} sm={4}><TextField fullWidth size="small" type="number" label="Amount" value={transport.amount} onChange={(e) => setTransport((s) => ({ ...s, amount: e.target.value }))} /></Grid>
+              <Grid item xs={6} sm={4}><TextField fullWidth size="small" select label="Mode" value={transport.mode} onChange={(e) => setTransport((s) => ({ ...s, mode: e.target.value }))}>{PAY_MODES.map((m) => <MenuItem key={m} value={m}>{PAYMENT_MODE_LABELS[m] || m}</MenuItem>)}</TextField></Grid>
+              <Grid item xs={12} sm={4}><TextField fullWidth size="small" type="date" label="Date" InputLabelProps={{ shrink: true }} value={transport.date} onChange={(e) => setTransport((s) => ({ ...s, date: e.target.value }))} /></Grid>
+              <Grid item xs={12}>
+                <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted, mb: 0.5 }}>Months (select the period this covers)</Typography>
+                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                  {TRANSPORT_MONTHS.map((m) => (
+                    <Chip key={m} label={m} size="small" clickable
+                      color={transport.months.includes(m) ? 'primary' : 'default'}
+                      variant={transport.months.includes(m) ? 'filled' : 'outlined'}
+                      onClick={() => toggleMonth(m)} />
+                  ))}
+                </Box>
+              </Grid>
               <Grid item xs={12}><TextField fullWidth size="small" label="Remark (optional)" value={transport.remark} onChange={(e) => setTransport((s) => ({ ...s, remark: e.target.value }))} /></Grid>
             </Grid>
             <Button variant="contained" sx={{ mt: 2 }} disabled={transport.saving || !student || !(Number(transport.amount) > 0)} onClick={saveTransport}>

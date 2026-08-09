@@ -23,8 +23,10 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [summary, setSummary] = useState(null);
   const [lines, setLines] = useState([]);
   const [entries, setEntries] = useState([]);
-  const [view, setView] = useState('dues'); // 'dues' | 'all' | 'receipts'
+  const [view, setView] = useState('dues'); // 'dues' | 'all' | 'receipts' | 'transport'
   const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
+  const [transport, setTransport] = useState(null); // lazy-loaded for the Transport view
+  const [wd, setWd] = useState(null); // withdraw dialog: null | { date, reason, busy, done }
   const [allYears, setAllYears] = useState(false); // receipts: show only the selected year (off) or every year (on)
   const [showCancelled, setShowCancelled] = useState(false); // cancelled receipts hidden by default
   const [cancelTarget, setCancelTarget] = useState(null); // receipt being cancelled
@@ -118,6 +120,38 @@ export default function StudentFeesPanel({ studentId, student }) {
     return () => { alive = false; };
   }, [view, allYears, selYear, showCancelled, years, effStudentId, refreshKey]);
 
+  // Transport view (lazy) — this-year receipts + this-year & all-years collected totals. Transport-only.
+  useEffect(() => {
+    if (view !== 'transport') return;
+    let alive = true; setTransport(null);
+    const sids = [...new Set(years.map((y) => y.studentId).filter(Boolean))];
+    const active = (arr) => (arr || []).filter((r) => r && r.status !== 'cancelled');
+    Promise.all([
+      feesService.getReceipts({ studentId: effStudentId, academicYearId: selYear, type: 'transport' }).catch(() => []),
+      Promise.all(sids.map((sid) => feesService.getReceipts({ studentId: sid, type: 'transport' }).catch(() => []))).then((a) => a.flat()),
+    ]).then(([yr, all]) => {
+      if (!alive) return;
+      const seen = new Set(); const allA = active(all).filter((r) => !seen.has(r.uuid) && seen.add(r.uuid));
+      const yrA = active(yr).sort((a, b) => String(b.receiptDate || '').localeCompare(String(a.receiptDate || '')));
+      setTransport({
+        rows: yrA,
+        yearTotal: yrA.reduce((s, r) => s + Number(r.totalPaid || 0), 0),
+        allTotal: allA.reduce((s, r) => s + Number(r.totalPaid || 0), 0),
+      });
+    }).catch(() => { if (alive) setTransport({ rows: [], yearTotal: 0, allTotal: 0 }); });
+    return () => { alive = false; };
+  }, [view, selYear, effStudentId, years, refreshKey]);
+
+  const doWithdraw = async () => {
+    if (!wd?.date) return;
+    setWd((s) => ({ ...s, busy: true }));
+    try {
+      const res = await feesService.withdrawStudent(effStudentId, { date: wd.date, reason: wd.reason || undefined });
+      setWd((s) => ({ ...s, busy: false, done: res }));
+      setRefreshKey((k) => k + 1);
+    } catch (err) { setError(errMsg(err, 'Withdraw failed')); setWd((s) => ({ ...s, busy: false })); }
+  };
+
   const doCancel = async () => {
     if (!cancelTarget) return;
     setCancelBusy(true);
@@ -175,8 +209,12 @@ export default function StudentFeesPanel({ studentId, student }) {
             <ToggleButton value="dues" sx={{ textTransform: 'none', py: 0.25 }}>Dues</ToggleButton>
             <ToggleButton value="all" sx={{ textTransform: 'none', py: 0.25 }}>Full ledger</ToggleButton>
             <ToggleButton value="receipts" sx={{ textTransform: 'none', py: 0.25 }}>Receipts</ToggleButton>
+            <ToggleButton value="transport" sx={{ textTransform: 'none', py: 0.25 }}>Transport</ToggleButton>
           </ToggleButtonGroup>
           {isCurrent && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
+          {canManage && (student?.status || 'active') === 'active' && (
+            <Button size="small" color="warning" onClick={() => setWd({ date: new Date().toISOString().slice(0, 10), reason: '', busy: false })}>Mark withdrawn</Button>
+          )}
         </Box>
       </CardContent>
 
@@ -270,6 +308,36 @@ export default function StudentFeesPanel({ studentId, student }) {
                   )}
                 </Table>
               </Box>
+            ) : view === 'transport' ? (
+              <Box sx={{ overflowX: 'auto' }}>
+                {transport === null ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>
+                ) : (
+                  <>
+                    <Grid container spacing={2} sx={{ mb: 1 }}>
+                      <Grid item xs={6}>{kpi(`Transport · ${opt.name || ctxYearName[selYear] || 'this year'}`, inr(transport.yearTotal), FEE_COLORS.primary)}</Grid>
+                      <Grid item xs={6}>{kpi('Transport · all years', inr(transport.allTotal), FEE_COLORS.muted)}</Grid>
+                    </Grid>
+                    <Alert severity="info" icon={false} sx={{ mb: 1, fontSize: 12 }}>Transport is tracked separately from fees — collection only; no dues yet (charges not mapped).</Alert>
+                    <Table size="small">
+                      <TableHead><TableRow><TableCell>Receipt</TableCell><TableCell>Date</TableCell><TableCell>Months</TableCell><TableCell>Mode</TableCell><TableCell align="right">Amount</TableCell><TableCell /></TableRow></TableHead>
+                      <TableBody>
+                        {transport.rows.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No transport receipts this year.</TableCell></TableRow>}
+                        {transport.rows.map((r) => (
+                          <TableRow key={r.uuid} hover>
+                            <TableCell>{r.receiptNo || r.legacyReceiptNo || '—'}</TableCell>
+                            <TableCell>{r.receiptDate ? String(r.receiptDate).slice(0, 10) : '—'}</TableCell>
+                            <TableCell sx={{ color: FEE_COLORS.muted }}>{r.cycleSet || r.transportRemark || '—'}</TableCell>
+                            <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>{inr(r.totalPaid)}</TableCell>
+                            <TableCell align="right"><Button size="small" onClick={() => openReceipt(r.uuid)}>Print</Button></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </>
+                )}
+              </Box>
             ) : (
               <Box sx={{ overflowX: 'auto' }}>
                 {receipts === null ? (
@@ -344,6 +412,33 @@ export default function StudentFeesPanel({ studentId, student }) {
         <DialogActions>
           <Button onClick={() => setCancelTarget(null)} disabled={cancelBusy}>Keep</Button>
           <Button color="error" variant="contained" onClick={doCancel} disabled={cancelBusy}>{cancelBusy ? 'Cancelling…' : 'Cancel receipt'}</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!wd} onClose={() => !wd?.busy && setWd(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Mark withdrawn — {student?.name || 'student'}</DialogTitle>
+        <DialogContent>
+          {wd?.done ? (
+            <Alert severity="success" sx={{ mt: 1 }}>
+              Marked withdrawn. {wd.done.cyclesVoided > 0 ? <>Capped <b>{wd.done.cyclesVoided}</b> unpaid cycle{wd.done.cyclesVoided === 1 ? '' : 's'} due after the leaving month ({inr(wd.done.amountVoided)} removed).</> : 'No unpaid post-departure cycles to cap.'}
+            </Alert>
+          ) : (
+            <>
+              <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
+                Sets the student <b>inactive</b> and voids <b>unpaid</b> fee cycles due <b>after</b> the leaving month (paid cycles are never touched). This corrects phantom dues — it is not a full TC/withdrawal.
+              </Typography>
+              <TextField type="date" fullWidth size="small" label="Last attendance / leaving date" InputLabelProps={{ shrink: true }} value={wd?.date || ''} onChange={(e) => setWd((s) => ({ ...s, date: e.target.value }))} sx={{ mb: 1.5 }} />
+              <TextField fullWidth size="small" label="Reason (optional)" value={wd?.reason || ''} onChange={(e) => setWd((s) => ({ ...s, reason: e.target.value }))} placeholder="e.g. relocated / TC issued" multiline minRows={2} />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {wd?.done
+            ? <Button variant="contained" onClick={() => setWd(null)}>Done</Button>
+            : <>
+                <Button onClick={() => setWd(null)} disabled={wd?.busy}>Cancel</Button>
+                <Button color="warning" variant="contained" onClick={doWithdraw} disabled={wd?.busy || !wd?.date}>{wd?.busy ? 'Working…' : 'Mark withdrawn'}</Button>
+              </>}
         </DialogActions>
       </Dialog>
     </Card>
