@@ -11,10 +11,10 @@ import {
   Visibility as VisibilityIcon, AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
+import { fmtDate, fmtDateLong } from '../../../utils/date';
 
 const PAYMENT_COLORS = { paid: 'success', partial: 'warning', due: 'error' };
 const PAYMENT_LABELS = { paid: 'Fully Paid', partial: 'Partially Paid', due: 'Due' };
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN') : '—';
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
 
 function PaymentDialog({ open, onClose, onSave, sale }) {
@@ -219,7 +219,7 @@ function handlePrintReceipt(sale, schoolCode) {
   <thead><tr><th>Return Date</th><th>Item</th><th>Size</th><th>Qty</th><th align="right">Credit</th><th>Reason</th></tr></thead>
   <tbody>
     ${sale.returns.map(r => `<tr>
-      <td>${formatDate(r.returnDate)}</td>
+      <td>${fmtDateLong(r.returnDate)}</td>
       <td>${r.itemName}</td>
       <td>${r.sizeLabel}</td>
       <td>${r.quantity}</td>
@@ -235,7 +235,7 @@ function handlePrintReceipt(sale, schoolCode) {
   <thead><tr><th>Date</th><th align="right">Amount</th><th>Notes</th></tr></thead>
   <tbody>
     ${sale.payments.map(p => `<tr>
-      <td>${formatDate(p.paymentDate)}</td>
+      <td>${fmtDateLong(p.paymentDate)}</td>
       <td align="right">₹${(p.amount || 0).toFixed(2)}</td>
       <td>${p.notes || '—'}</td>
     </tr>`).join('')}
@@ -271,7 +271,7 @@ function handlePrintReceipt(sale, schoolCode) {
 
 <div class="section">
   <table class="totals">
-    <tr><td width="50%"><strong>Receipt No:</strong> ${sale.uuid}</td><td><strong>Date:</strong> ${formatDate(sale.saleDate)}</td></tr>
+    <tr><td width="50%"><strong>Receipt No:</strong> ${sale.uuid}</td><td><strong>Date:</strong> ${fmtDateLong(sale.saleDate)}</td></tr>
     <tr><td><strong>Student:</strong> ${sale.studentName || '—'}</td><td><strong>Admission No:</strong> ${sale.studentAdmissionNo || '—'}</td></tr>
     <tr><td><strong>Sale Type:</strong> ${sale.saleType === 'bulk' ? 'Bulk / Institutional' : 'Student'}</td><td><strong>Payment:</strong> <span class="badge ${sale.paymentStatus}">${PAYMENT_LABELS[sale.paymentStatus] || sale.paymentStatus}</span></td></tr>
   </table>
@@ -372,7 +372,7 @@ export default function UniformSaleDetail() {
           <Grid container spacing={2}>
             <Grid item xs={6} md={3}><Typography variant="caption" color="text.secondary">Student</Typography><Typography fontWeight={500}>{sale.studentName || '—'}</Typography></Grid>
             <Grid item xs={6} md={3}><Typography variant="caption" color="text.secondary">Admission No</Typography><Typography>{sale.studentAdmissionNo || '—'}</Typography></Grid>
-            <Grid item xs={6} md={2}><Typography variant="caption" color="text.secondary">Date</Typography><Typography>{formatDate(sale.saleDate)}</Typography></Grid>
+            <Grid item xs={6} md={2}><Typography variant="caption" color="text.secondary">Date</Typography><Typography>{fmtDate(sale.saleDate)}</Typography></Grid>
             <Grid item xs={6} md={2}><Typography variant="caption" color="text.secondary">Type</Typography><Typography>{sale.saleType === 'bulk' ? 'Bulk' : 'Student'}</Typography></Grid>
             <Grid item xs={6} md={2}>
               <Typography variant="caption" color="text.secondary">Payment</Typography>
@@ -447,7 +447,7 @@ export default function UniformSaleDetail() {
               <TableBody>
                 {sale.payments.map(p => (
                   <TableRow key={p.uuid}>
-                    <TableCell>{formatDate(p.paymentDate)}</TableCell>
+                    <TableCell>{fmtDate(p.paymentDate)}</TableCell>
                     <TableCell align="right" sx={{ color: 'success.main', fontWeight: 500 }}>{formatCurrency(p.amount)}</TableCell>
                     <TableCell sx={{ color: 'text.secondary' }}>{p.notes || '—'}</TableCell>
                   </TableRow>
@@ -507,7 +507,7 @@ export default function UniformSaleDetail() {
               <TableBody>
                 {sale.returns.map(r => (
                   <TableRow key={r.uuid}>
-                    <TableCell>{formatDate(r.returnDate)}</TableCell>
+                    <TableCell>{fmtDate(r.returnDate)}</TableCell>
                     <TableCell>{r.itemName}</TableCell>
                     <TableCell>{r.sizeLabel}</TableCell>
                     <TableCell align="right">{r.quantity}</TableCell>

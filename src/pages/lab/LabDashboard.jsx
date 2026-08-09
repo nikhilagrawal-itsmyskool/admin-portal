@@ -30,12 +30,6 @@ import { labService } from '../../services/labService';
 
 const DAY_OPTIONS = [30, 60, 90];
 
-const formatDate = (v) => {
-  if (!v) return '—';
-  const d = new Date(v);
-  return d.toLocaleDateString('en-GB');
-};
-
 export default function LabDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({

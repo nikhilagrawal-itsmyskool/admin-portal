@@ -12,6 +12,7 @@ import {
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
+import { fmtDate, isoDate } from '../../utils/date';
 
 const pad = (n) => String(n).padStart(2, '0');
 const monthLabel = (ym) => { if (!ym) return ''; const [y, m] = ym.split('-'); return new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }); };
@@ -77,7 +78,7 @@ export default function ReceiptsSearch() {
 
   const exportCsv = () => {
     const head = ['Receipt', 'Date', 'Year', 'Student', 'Admission', 'Class', 'Type', 'Mode', 'Amount', 'Status'];
-    const lines = shown.map((r) => [r.receiptNo || r.legacyReceiptNo || '', String(r.receiptDate || '').slice(0, 10), ayName[r.academicYearId] || '', r.payerName || '', r.admissionNoSnapshot || '', r.payerClassSnapshot || '', r.type || 'fee', PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '', Math.round(r.totalPaid || 0), r.status || '']);
+    const lines = shown.map((r) => [r.receiptNo || r.legacyReceiptNo || '', isoDate(r.receiptDate), ayName[r.academicYearId] || '', r.payerName || '', r.admissionNoSnapshot || '', r.payerClassSnapshot || '', r.type || 'fee', PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '', Math.round(r.totalPaid || 0), r.status || '']);
     const csv = [head, ...lines].map((a) => a.map((v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a'); a.href = url; a.download = `receipts-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
@@ -146,7 +147,7 @@ export default function ReceiptsSearch() {
                         {r.receiptNo || r.legacyReceiptNo || '—'}
                         {cancelled && <Chip size="small" color="error" label={r.cancelReason ? `cancelled · ${r.cancelReason}` : 'cancelled'} sx={{ ml: 1, height: 18, textDecoration: 'none' }} />}
                       </TableCell>
-                      <TableCell>{r.receiptDate ? String(r.receiptDate).slice(0, 10) : '—'}</TableCell>
+                      <TableCell>{r.receiptDate ? fmtDate(r.receiptDate) : '—'}</TableCell>
                       {crossYear && <TableCell>{ayName[r.academicYearId] || '—'}</TableCell>}
                       <TableCell>
                         {r.studentId

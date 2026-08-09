@@ -4,9 +4,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
-  Autocomplete,
-  TextField,
   Alert,
   Chip,
   Stack,
@@ -14,57 +11,42 @@ import {
 import { Groups as StrengthIcon } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import { studentService } from '../../services/studentService';
-import { academicCalendarService } from '../../services/academicCalendarService';
-
-const fmtDate = (d) => {
-  if (!d) return '—';
-  const dt = new Date(d);
-  return Number.isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString();
-};
+import { useAcademicYear } from '../../context/AcademicYearContext';
+import { fmtDate } from '../../utils/date';
 
 // Per-class active head-count + the last admission that landed in each class for
-// a chosen session (defaults to the current one). "Last admission" = the enrolled
-// student with the most recent admission date.
+// the portal-wide session. "Last admission" = the enrolled student with the most
+// recent admission date.
 export default function ClassStrength() {
-  const [years, setYears] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(null);
+  const { academicYearId, years } = useAcademicYear();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const selectedYear = useMemo(
+    () => years.find((y) => y.uuid === academicYearId) || null,
+    [years, academicYearId]
+  );
+
   useEffect(() => {
+    if (!academicYearId) {
+      setLoading(false);
+      return;
+    }
     (async () => {
+      setLoading(true);
+      setError('');
       try {
-        const yrs = await academicCalendarService.getAcademicYears();
-        setYears(yrs || []);
-        const cur = (yrs || []).find((r) => r.isCurrent) || (yrs || [])[0] || null;
-        setSelectedYear(cur);
-        await load(cur?.uuid);
+        const data = await studentService.getClassStrength(academicYearId);
+        setClasses(data.classes || []);
       } catch {
-        setError('Failed to load academic years');
+        setError('Failed to load class strength');
+        setClasses([]);
+      } finally {
         setLoading(false);
       }
     })();
-  }, []);
-
-  const load = async (academicYearId) => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await studentService.getClassStrength(academicYearId);
-      setClasses(data.classes || []);
-    } catch {
-      setError('Failed to load class strength');
-      setClasses([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onYearChange = (_e, v) => {
-    setSelectedYear(v);
-    load(v?.uuid);
-  };
+  }, [academicYearId]);
 
   const totalStrength = useMemo(
     () => classes.reduce((sum, c) => sum + Number(c.activeStrength || 0), 0),
@@ -112,7 +94,7 @@ export default function ClassStrength() {
       field: 'lastAdmissionDate',
       headerName: 'Admitted On',
       width: 140,
-      valueGetter: (value, row) => fmtDate(row.lastAdmissionDate),
+      valueGetter: (value, row) => fmtDate(row.lastAdmissionDate) || '—',
     },
   ];
 
@@ -131,25 +113,10 @@ export default function ClassStrength() {
 
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
-              <Autocomplete
-                options={years}
-                getOptionLabel={(o) => o.name || ''}
-                value={selectedYear}
-                onChange={onYearChange}
-                isOptionEqualToValue={(o, v) => o.uuid === v?.uuid}
-                disableClearable
-                renderInput={(p) => <TextField {...p} label="Academic Year" size="small" />}
-              />
-            </Grid>
-            <Grid item xs={12} md={9}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Chip color="primary" label={`Total active: ${totalStrength}`} />
-                <Chip variant="outlined" label={`${classes.length} classes`} />
-              </Stack>
-            </Grid>
-          </Grid>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Chip color="primary" label={`Total active: ${totalStrength}`} />
+            <Chip variant="outlined" label={`${classes.length} classes`} />
+          </Stack>
         </CardContent>
       </Card>
 

@@ -36,6 +36,7 @@ import {
 import { fineService } from '../../../services/fineService';
 import { useAuth } from '../../../context/AuthContext';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { fmtDate, fmtDateTime, fmtDateLong } from '../../../utils/date';
 
 const CATEGORY_LABELS = {
   library: 'Library',
@@ -63,22 +64,6 @@ const STATUS_LABELS = {
 const formatCurrency = (amount) => {
   if (amount == null) return '-';
   return `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-};
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('en-IN');
-};
-
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 };
 
 export default function FineIncidentDetail() {
@@ -312,16 +297,16 @@ export default function FineIncidentDetail() {
   <p class="sub">ItsMySkool Staff Portal</p>
   <div class="center"><span class="receipt-no">${col.receiptNumber}</span></div>
   <table>
-    <tr><td>Incident Date</td><td>${formatDate(incident.incidentDate)}</td></tr>
+    <tr><td>Incident Date</td><td>${fmtDateLong(incident.incidentDate)}</td></tr>
     <tr><td>Category</td><td>${CATEGORY_LABELS[incident.category] || incident.category}</td></tr>
     <tr><td>Person</td><td>${incident.personName || '—'}</td></tr>
     <tr><td>Description</td><td>${incident.description || '—'}</td></tr>
-    <tr><td>Collection Date</td><td>${formatDate(col.collectionDate)}</td></tr>
+    <tr><td>Collection Date</td><td>${fmtDateLong(col.collectionDate)}</td></tr>
     <tr><td>Payment Method</td><td>${(col.paymentMethod || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</td></tr>
     ${col.notes ? `<tr><td>Notes</td><td>${col.notes}</td></tr>` : ''}
     <tr class="total"><td>Total Collected</td><td>${formatCurrency(totalAmt)}</td></tr>
   </table>
-  <div class="footer">Printed on ${new Date().toLocaleDateString('en-IN')}</div>
+  <div class="footer">Printed on ${fmtDateLong(new Date())}</div>
   <script>window.onload = function(){ window.print(); }</script>
 </body>
 </html>`;
@@ -384,7 +369,7 @@ export default function FineIncidentDetail() {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
                 <Box>
                   <Typography variant="caption" sx={{ color: '#8f9bb3' }}>Date</Typography>
-                  <Typography>{formatDate(incident.incidentDate)}</Typography>
+                  <Typography>{fmtDate(incident.incidentDate)}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" sx={{ color: '#8f9bb3' }}>Category</Typography>
@@ -473,7 +458,7 @@ export default function FineIncidentDetail() {
                     return (
                       <Box key={note.uuid} sx={{ textAlign: 'center' }}>
                         <Typography variant="caption" sx={{ color: '#8f9bb3', fontStyle: 'italic' }}>
-                          {note.noteText} · {formatDateTime(note.createdAt)}
+                          {note.noteText} · {fmtDateTime(note.createdAt)}
                         </Typography>
                       </Box>
                     );
@@ -489,7 +474,7 @@ export default function FineIncidentDetail() {
                             {note.authorName || 'Unknown'}
                           </Typography>
                           <Typography variant="caption" sx={{ color: '#8f9bb3' }}>
-                            {formatDateTime(note.createdAt)}
+                            {fmtDateTime(note.createdAt)}
                           </Typography>
                         </Box>
                         <Box
@@ -696,7 +681,7 @@ export default function FineIncidentDetail() {
                         <Box>
                           <Typography variant="body2" fontWeight={600}>{formatCurrency(col.amountCollected)}</Typography>
                           <Typography variant="caption" sx={{ color: '#8f9bb3' }}>
-                            {formatDate(col.collectionDate)} · {(col.paymentMethod || 'cash').replace(/_/g, ' ')}
+                            {fmtDate(col.collectionDate)} · {(col.paymentMethod || 'cash').replace(/_/g, ' ')}
                           </Typography>
                         </Box>
                         <Typography variant="caption" sx={{ color: '#8f9bb3' }}>{col.receiptNumber}</Typography>

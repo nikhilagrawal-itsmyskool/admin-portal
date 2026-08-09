@@ -12,8 +12,8 @@ import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { fmtDate } from '../../../utils/date';
 
-const fmtDate = (v) => (v ? new Date(v).toLocaleDateString('en-GB') : '—');
 const STATUS_COLORS = { available: 'success', issued: 'warning', lost: 'error', withdrawn: 'default', damaged: 'error' };
 
 // A search box that finds a copy by title/author/keyword/accession and returns it.

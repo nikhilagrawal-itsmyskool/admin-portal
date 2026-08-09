@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, AttachFile as AttachIcon, OpenInNew as OpenIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
+import { fmtDate } from '../../../utils/date';
 
 const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -165,7 +166,7 @@ export default function UniformPurchaseForm() {
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Grid container spacing={2}>
-              <Grid item xs={6} md={3}><Typography variant="caption" color="text.secondary">Date</Typography><Typography>{new Date(viewData.purchaseDate).toLocaleDateString('en-IN')}</Typography></Grid>
+              <Grid item xs={6} md={3}><Typography variant="caption" color="text.secondary">Date</Typography><Typography>{fmtDate(viewData.purchaseDate)}</Typography></Grid>
               <Grid item xs={6} md={3}><Typography variant="caption" color="text.secondary">Supplier</Typography><Typography>{viewData.supplier || '—'}</Typography></Grid>
               <Grid item xs={6} md={3}><Typography variant="caption" color="text.secondary">Invoice #</Typography><Typography>{viewData.invoiceNumber || '—'}</Typography></Grid>
               <Grid item xs={6} md={3}><Typography variant="caption" color="text.secondary">Total</Typography><Typography fontWeight={600}>{viewData.totalAmount != null ? `₹${viewData.totalAmount}` : '—'}</Typography></Grid>

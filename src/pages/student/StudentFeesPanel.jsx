@@ -10,6 +10,7 @@ import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from '../fees/feesUi';
+import { fmtDate } from '../../utils/date';
 import FollowupDialog, { fLabel, fColor } from '../fees/FollowupDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -245,7 +246,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                 <>
                   {followup[0].status && <Chip size="small" color={fColor(followup[0].status)} label={fLabel(followup[0].status)} />}
                   <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>
-                    {followup.length} {followup.length === 1 ? 'entry' : 'entries'} · last {followup[0].createdAt ? new Date(followup[0].createdAt).toLocaleDateString('en-IN') : ''}
+                    {followup.length} {followup.length === 1 ? 'entry' : 'entries'} · last {fmtDate(followup[0].createdAt)}
                     {followup[0].note ? ` · ${String(followup[0].note).slice(0, 40)}` : ''}
                   </Typography>
                 </>
@@ -326,7 +327,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                         {transport.rows.map((r) => (
                           <TableRow key={r.uuid} hover>
                             <TableCell>{r.receiptNo || r.legacyReceiptNo || '—'}</TableCell>
-                            <TableCell>{r.receiptDate ? String(r.receiptDate).slice(0, 10) : '—'}</TableCell>
+                            <TableCell>{r.receiptDate ? fmtDate(r.receiptDate) : '—'}</TableCell>
                             <TableCell sx={{ color: FEE_COLORS.muted }}>{r.cycleSet || r.transportRemark || '—'}</TableCell>
                             <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
                             <TableCell align="right" sx={{ fontWeight: 600 }}>{inr(r.totalPaid)}</TableCell>

@@ -14,6 +14,7 @@ import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import StudentFeesPanel from '../student/StudentFeesPanel';
 import FollowupDialog from './FollowupDialog';
 import { errMsg, inr, classRank, FEE_COLORS } from './feesUi';
+import { fmtDate, fmtDateLong, isoDate } from '../../utils/date';
 
 const FOLLOWUPS = [
   { v: '', label: '—' },
@@ -128,7 +129,7 @@ export default function DuesReport() {
   const reload = () => feesService.getDues({ academicYearId, mode, ...(classId ? { classId } : {}), ...(student ? { studentId: student.uuid } : {}) }).then((res) => setData(res || { rows: [], totals: {} })).catch(() => {});
   const exportCsv = () => {
     const head = ['Class', 'Admission', 'Student', 'Status', 'Withdrawn', 'Father mobile', 'Due now', 'Due now + prev', qLabel, 'Full year', 'Prev years', 'Follow-up'];
-    const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', (r.studentStatus || 'active') === 'active' ? 'Active' : 'Left', r.withdrawalDate ? String(r.withdrawalDate).slice(0, 10) : '', r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(dueNowPrev(r)), Math.round(r.dueQuarter || 0), Math.round(r.fullYear || 0), Math.round(r.prevYears || 0), fLabel(r.followupStatus)]);
+    const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', (r.studentStatus || 'active') === 'active' ? 'Active' : 'Left', isoDate(r.withdrawalDate), r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(dueNowPrev(r)), Math.round(r.dueQuarter || 0), Math.round(r.fullYear || 0), Math.round(r.prevYears || 0), fLabel(r.followupStatus)]);
     const csv = [head, ...lines].map((a) => a.map((v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a'); a.href = url; a.download = `dues-${mode}-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
@@ -137,7 +138,7 @@ export default function DuesReport() {
     const amt = (r) => includePrev ? dueNowPrev(r) : dueNow(r);
     const rowsHtml = rows.map((r) => `<tr><td>${r.className || ''}</td><td>${r.admissionNumber || ''}</td><td>${r.name || ''}</td><td>${r.fatherMobile || ''}</td><td style="text-align:right">${inr(amt(r))}</td><td style="text-align:right">${inr(r.fullYear)}</td><td></td></tr>`).join('');
     const w = window.open('', '_blank');
-    w.document.write(`<html><head><title>Call list</title><style>body{font:13px system-ui;padding:16px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:5px 7px}th{background:#f3f4f6;text-align:left}h3{margin:0 0 8px}</style></head><body><h3>Dues call list · ${new Date().toLocaleDateString('en-IN')} · ${rows.length} students</h3><table><thead><tr><th>Class</th><th>Adm#</th><th>Student</th><th>Father mobile</th><th>Due now</th><th>Full year</th><th>Note</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`);
+    w.document.write(`<html><head><title>Call list</title><style>body{font:13px system-ui;padding:16px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:5px 7px}th{background:#f3f4f6;text-align:left}h3{margin:0 0 8px}</style></head><body><h3>Dues call list · ${fmtDateLong(new Date())} · ${rows.length} students</h3><table><thead><tr><th>Class</th><th>Adm#</th><th>Student</th><th>Father mobile</th><th>Due now</th><th>Full year</th><th>Note</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`);
     w.document.close(); w.focus(); w.print();
   };
 
@@ -231,7 +232,7 @@ export default function DuesReport() {
                     <TableCell>
                       {(r.studentStatus || 'active') === 'active'
                         ? <Chip size="small" variant="outlined" color="success" label="Active" />
-                        : <Tooltip title={r.withdrawalDate ? `Withdrawn ${new Date(r.withdrawalDate).toLocaleDateString('en-IN')}` : 'Inactive'}><Chip size="small" color="warning" label="Left" /></Tooltip>}
+                        : <Tooltip title={r.withdrawalDate ? `Withdrawn ${fmtDate(r.withdrawalDate)}` : 'Inactive'}><Chip size="small" color="warning" label="Left" /></Tooltip>}
                     </TableCell>
                     <TableCell sx={{ fontVariantNumeric: 'tabular-nums' }}>{r.fatherMobile || '—'}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(r.dueNow)}</TableCell>

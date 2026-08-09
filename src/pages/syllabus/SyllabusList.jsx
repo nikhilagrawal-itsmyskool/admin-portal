@@ -8,21 +8,22 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { syllabusService } from '../../services/syllabusService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
+import { fmtDateTime } from '../../utils/date';
 import { useCan } from '../../permissions/can';
 
 export default function SyllabusList() {
   const navigate = useNavigate();
   const can = useCan();
   const canManage = can('syllabus.manage');
+  const { academicYearId } = useAcademicYear();
 
-  const [years, setYears] = useState([]);
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [layouts, setLayouts] = useState([]);
   const [streams, setStreams] = useState([]);
 
-  const [filter, setFilter] = useState({ academicYearId: '', grade: '', streamCode: '', subjectId: '' });
+  const [filter, setFilter] = useState({ grade: '', streamCode: '', subjectId: '' });
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,35 +36,30 @@ export default function SyllabusList() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, grds, subs, lookups, strms] = await Promise.all([
-          academicCalendarService.getAcademicYears(),
+        const [grds, subs, lookups, strms] = await Promise.all([
           syllabusService.getGrades(),
           syllabusService.getSubjects(),
           syllabusService.getLookups(),
           syllabusService.getStreams(),
         ]);
-        const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(yearList);
         setGrades(grds || []);
         setSubjects(subs || []);
         setLayouts(lookups?.layouts || []);
         setStreams(strms || []);
-        const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        if (cur?.uuid) setFilter((f) => ({ ...f, academicYearId: cur.uuid }));
       } catch {
         setError('Failed to load syllabus filters');
       }
     })();
   }, []);
 
-  const load = async (f = filter) => {
-    if (!f.academicYearId) return;
+  const load = async () => {
+    if (!academicYearId) return;
     setLoading(true); setError('');
     try {
-      const params = { academicYearId: f.academicYearId };
-      if (f.grade) params.grade = f.grade;
-      if (f.streamCode) params.streamCode = f.streamCode;
-      if (f.subjectId) params.subjectId = f.subjectId;
+      const params = { academicYearId };
+      if (filter.grade) params.grade = filter.grade;
+      if (filter.streamCode) params.streamCode = filter.streamCode;
+      if (filter.subjectId) params.subjectId = filter.subjectId;
       setPlans((await syllabusService.getSyllabi(params)) || []);
     } catch {
       setError('Failed to load syllabus plans');
@@ -71,7 +67,7 @@ export default function SyllabusList() {
       setLoading(false);
     }
   };
-  useEffect(() => { if (filter.academicYearId) load(); /* eslint-disable-next-line */ }, [filter.academicYearId, filter.grade, filter.streamCode, filter.subjectId]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId, filter.grade, filter.streamCode, filter.subjectId]);
 
   const hasStreams = streams.length > 0;
   const streamName = (code) => streams.find((s) => (s.code || '').toLowerCase() === (code || '').toLowerCase())?.name || code;
@@ -83,7 +79,7 @@ export default function SyllabusList() {
     setSaving(true); setError('');
     try {
       const created = await syllabusService.createSyllabus({
-        academicYearId: filter.academicYearId,
+        academicYearId,
         grade: dialog.grade,
         streamCode: dialog.streamCode || undefined,
         subjectId: dialog.subjectId,
@@ -131,7 +127,7 @@ export default function SyllabusList() {
     {
       field: 'uploadedAt', headerName: 'Uploaded', width: 170,
       valueGetter: (value, row) => row.updatedAt || row.createdAt || null,
-      valueFormatter: (v) => (v ? new Date(v).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'),
+      valueFormatter: (v) => (v ? fmtDateTime(v) : '-'),
     },
     {
       field: 'actions', headerName: 'Actions', width: 110, sortable: false,
@@ -156,12 +152,6 @@ export default function SyllabusList() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={hasStreams ? 3 : 4}>
-              <TextField fullWidth select size="small" label="Academic Year" value={filter.academicYearId}
-                onChange={(e) => setFilter({ ...filter, academicYearId: e.target.value })}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
             <Grid item xs={12} md={hasStreams ? 3 : 4}>
               <TextField fullWidth select size="small" label="Grade" value={filter.grade}
                 onChange={(e) => setFilter({ ...filter, grade: e.target.value, subjectId: '' })}>

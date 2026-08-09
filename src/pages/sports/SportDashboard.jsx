@@ -32,12 +32,6 @@ import { ACTIONS } from '../../permissions/actions';
 
 const DAY_OPTIONS = [30, 60, 90];
 
-const formatDate = (v) => {
-  if (!v) return '—';
-  const d = new Date(v);
-  return d.toLocaleDateString('en-GB');
-};
-
 export default function SportDashboard() {
   const navigate = useNavigate();
   const can = useCan();

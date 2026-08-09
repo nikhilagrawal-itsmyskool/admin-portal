@@ -35,8 +35,8 @@ import {
 import { timetableService } from "../../../services/timetableService";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { useTimetablePerms } from "../components/usePerms";
+import { fmtDate } from "../../../utils/date";
 
-const fmtDate = (d) => (d ? String(d).slice(0, 10) : "—");
 const errMsg = (err, fallback) =>
   err?.response?.data?.error?.description || fallback;
 

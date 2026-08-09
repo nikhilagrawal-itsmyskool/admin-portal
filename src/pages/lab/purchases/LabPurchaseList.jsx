@@ -42,14 +42,7 @@ import { labService } from "../../../services/labService";
 import { useCan } from "../../../permissions/can";
 import { ACTIONS } from "../../../permissions/actions";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
-
-const formatDate = (v) => {
-  if (!v) return "—";
-  const d = new Date(v);
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-  return `${day}/${month}/${d.getUTCFullYear()}`;
-};
+import { fmtDate } from "../../../utils/date";
 
 const formatCurrency = (v) =>
   v != null && v !== "" ? parseFloat(v).toFixed(2) : "—";
@@ -510,7 +503,7 @@ export default function LabPurchaseList() {
                         )}
                       </TableCell>
                       <TableCell sx={{ whiteSpace: "nowrap" }}>
-                        {formatDate(row.purchaseDate)}
+                        {fmtDate(row.purchaseDate)}
                       </TableCell>
                       <TableCell>{row.labName || "—"}</TableCell>
                       <TableCell>
@@ -564,12 +557,12 @@ export default function LabPurchaseList() {
                       )}
                       {showDetails && (
                         <TableCell sx={{ whiteSpace: "nowrap" }}>
-                          {formatDate(row.expiryDate)}
+                          {fmtDate(row.expiryDate)}
                         </TableCell>
                       )}
                       {showDetails && (
                         <TableCell sx={{ whiteSpace: "nowrap" }}>
-                          {formatDate(row.warrantyEndDate)}
+                          {fmtDate(row.warrantyEndDate)}
                         </TableCell>
                       )}
                       <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
@@ -670,12 +663,12 @@ export default function LabPurchaseList() {
                           )}
                           {showDetails && (
                             <TableCell sx={{ whiteSpace: "nowrap" }}>
-                              {formatDate(item.expiryDate)}
+                              {fmtDate(item.expiryDate)}
                             </TableCell>
                           )}
                           {showDetails && (
                             <TableCell sx={{ whiteSpace: "nowrap" }}>
-                              {formatDate(item.warrantyEndDate)}
+                              {fmtDate(item.warrantyEndDate)}
                             </TableCell>
                           )}
                           <TableCell />

@@ -8,19 +8,20 @@ import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Save as SaveIcon, HowToReg as SignoffIcon,
 } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
-import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
+import { useAcademicYear } from '../../context/AcademicYearContext';
+import { fmtDate } from '../../utils/date';
 import ReferenceDocCard from './ReferenceDocCard';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return iso(x); };
-const fmtDay = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
 const key = (itemId, date) => `${itemId}|${date || ''}`;
 
 export default function ChecklistPage() {
   const can = useCan();
   const canManage = can('assembly.manage');
+  const { academicYearId } = useAcademicYear();
 
   const [items, setItems] = useState([]);
   const [error, setError] = useState('');
@@ -28,9 +29,7 @@ export default function ChecklistPage() {
   const [dialog, setDialog] = useState(null); // create/edit item
 
   // Week ticking.
-  const [years, setYears] = useState([]);
   const [plans, setPlans] = useState([]);
-  const [academicYearId, setAcademicYearId] = useState('');
   const [planId, setPlanId] = useState('');
   const [weekStart, setWeekStart] = useState(mondayOf(new Date()));
   const [chk, setChk] = useState(null); // week checklist read model
@@ -43,18 +42,7 @@ export default function ChecklistPage() {
     catch { setError('Failed to load checklist items'); }
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      await loadItems();
-      try {
-        const yrs = await academicCalendarService.getAcademicYears();
-        const list = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(list);
-        const cur = list.find((y) => y.isCurrent) || list[0];
-        if (cur?.uuid) setAcademicYearId(cur.uuid);
-      } catch { /* years optional */ }
-    })();
-  }, [loadItems]);
+  useEffect(() => { loadItems(); }, [loadItems]);
 
   useEffect(() => {
     if (!academicYearId) return;
@@ -213,11 +201,6 @@ export default function ChecklistPage() {
           <Typography variant="subtitle1" sx={{ mb: 1 }}>Tick a week</Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={3}>
               <TextField fullWidth select size="small" label="Wing (plan)" value={planId} onChange={(e) => setPlanId(e.target.value)}>
                 {plans.map((p) => <MenuItem key={p.uuid} value={p.uuid}>{p.name}</MenuItem>)}
                 {plans.length === 0 && <MenuItem value="" disabled>No plans</MenuItem>}
@@ -240,7 +223,7 @@ export default function ChecklistPage() {
               : (
                 <>
                   {weekItems.length > 0 && renderPanel('Weekly checks', 'Submit before the roster week', weekItems, null, weeklySigned)}
-                  {dayItems.length > 0 && dates.map((d) => renderPanel(fmtDay(d), null, dayItems, d, daySignedSet.has(d)))}
+                  {dayItems.length > 0 && dates.map((d) => renderPanel(fmtDate(d), null, dayItems, d, daySignedSet.has(d)))}
                 </>
               )
           )}

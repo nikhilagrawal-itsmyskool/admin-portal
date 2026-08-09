@@ -47,6 +47,7 @@ import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { maskContact } from '../../utils/mask';
+import { fmtDate } from '../../utils/date';
 
 const RELATIONS = [
   { value: 'father', label: 'Father' },
@@ -632,7 +633,7 @@ export default function StudentDetail() {
                   </>
                 )}
                 <Fact label="Gender" value={student.gender} />
-                <Fact label="DOB" value={student.dob ? String(student.dob).slice(0, 10) : null} />
+                <Fact label="DOB" value={student.dob ? fmtDate(student.dob) : null} />
                 <Fact label="Category" value={codeLabel('category', student.categoryCode)} />
                 <Fact label="Blood group" value={codeLabel('blood_group', student.bloodGroupCode)} />
                 <Fact label="Nationality" value={codeLabel('nationality', student.nationalityCode)} />
@@ -642,12 +643,12 @@ export default function StudentDetail() {
                 <Fact label="Student mobile" value={maskContact(student.studentMobile, 'phone', canViewContacts)} />
                 <Fact label="Student WhatsApp" value={maskContact(student.studentWhatsapp, 'phone', canViewContacts)} />
                 <Fact label="Previous school" value={student.previousSchool} />
-                <Fact label="Admission date" value={student.admissionDate ? String(student.admissionDate).slice(0, 10) : null} />
+                <Fact label="Admission date" value={student.admissionDate ? fmtDate(student.admissionDate) : null} />
                 <Fact label="Family #" value={student.familyUniqueNumber} />
                 <Fact label="Comm. pref" value={prettyPref(student.communicationPreference)} />
                 {student.status === 'inactive' && (
                   <>
-                    <Fact label="Withdrawn" value={student.withdrawalDate ? String(student.withdrawalDate).slice(0, 10) : null} />
+                    <Fact label="Withdrawn" value={student.withdrawalDate ? fmtDate(student.withdrawalDate) : null} />
                     <Fact label="Remarks" value={student.withdrawalRemarks} />
                   </>
                 )}
@@ -864,7 +865,7 @@ export default function StudentDetail() {
                             )}
                           </TableCell>
                           <TableCell>{isGap ? '—' : (e.rollNumber ?? '—')}</TableCell>
-                          <TableCell>{isGap ? '—' : (e.joinDate ? String(e.joinDate).slice(0, 10) : '—')}</TableCell>
+                          <TableCell>{isGap ? '—' : (e.joinDate ? fmtDate(e.joinDate) : '—')}</TableCell>
                         </TableRow>
                       );
                     })
@@ -945,8 +946,8 @@ export default function StudentDetail() {
                       <TableRow key={tc.uuid}>
                         <TableCell><Chip size="small" label={tc.status} color={TC_STATUS_COLOR[tc.status] || 'default'} /></TableCell>
                         <TableCell>{tc.srnNumber || '—'}</TableCell>
-                        <TableCell>{tc.applicationDate ? String(tc.applicationDate).slice(0, 10) : '—'}</TableCell>
-                        <TableCell>{tc.issueDate ? String(tc.issueDate).slice(0, 10) : '—'}</TableCell>
+                        <TableCell>{tc.applicationDate ? fmtDate(tc.applicationDate) : '—'}</TableCell>
+                        <TableCell>{tc.issueDate ? fmtDate(tc.issueDate) : '—'}</TableCell>
                         <TableCell>{tc.totalAttendanceDays != null || tc.totalWorkingDays != null ? `${tc.totalAttendanceDays ?? '—'} / ${tc.totalWorkingDays ?? '—'}` : '—'}</TableCell>
                         {canTransferManage && (
                           <TableCell align="right">

@@ -4,8 +4,9 @@ import {
 } from '@mui/material';
 import { Print as PrintIcon, MenuBook as RegisterIcon, Search as SearchIcon } from '@mui/icons-material';
 import { classService } from '../../services/classService';
-import { academicCalendarService } from '../../services/academicCalendarService';
 import { attendanceService } from '../../services/attendanceService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
+import { fmtDateLong } from '../../utils/date';
 
 // status -> { letter, bg } — consistent with the student attendance panel.
 const CODE = {
@@ -21,10 +22,10 @@ const dayNum = (iso) => iso.slice(8, 10);
 const monthOf = (iso) => MONTHS[+iso.slice(5, 7) - 1];
 
 export default function AttendanceRegister() {
+  const { years, academicYearId } = useAcademicYear();
   const [classes, setClasses] = useState([]);
-  const [years, setYears] = useState([]);
   const [cls, setCls] = useState(null);
-  const [year, setYear] = useState(null);
+  const year = years.find((y) => y.uuid === academicYearId) || null;
   const [from, setFrom] = useState(monthStartISO());
   const [to, setTo] = useState(todayISO());
   const [data, setData] = useState(null); // { dates, students }
@@ -33,17 +34,18 @@ export default function AttendanceRegister() {
 
   useEffect(() => {
     (async () => {
-      const [c, y] = await Promise.allSettled([classService.getClasses(), academicCalendarService.getAcademicYears()]);
-      if (c.status === 'fulfilled') setClasses(Array.isArray(c.value) ? c.value : c.value?.classes || []);
-      if (y.status === 'fulfilled') { const yy = y.value || []; setYears(yy); setYear(yy.find((r) => r.isCurrent) || yy[0] || null); }
+      try {
+        const c = await classService.getClasses();
+        setClasses(Array.isArray(c) ? c : c?.classes || []);
+      } catch { /* non-fatal */ }
     })();
   }, []);
 
   const load = async () => {
-    if (!cls || !year) { setError('Pick a class and academic year'); return; }
+    if (!cls || !academicYearId) { setError('Pick a class and academic year'); return; }
     setLoading(true); setError(''); setData(null);
     try {
-      const res = await attendanceService.getClassRegister({ classId: cls.uuid, academicYearId: year.uuid, from, to });
+      const res = await attendanceService.getClassRegister({ classId: cls.uuid, academicYearId, from, to });
       setData(res);
       if (!res.dates?.length) setError('No finalized attendance in this range for this class.');
     } catch {
@@ -69,7 +71,7 @@ export default function AttendanceRegister() {
   const printRegister = () => {
     if (!data?.dates?.length) return;
     const title = `${cls?.name || ''} — Attendance Register`;
-    const sub = `${year?.name || ''} · ${from} to ${to}`;
+    const sub = `${year?.name || ''} · ${fmtDateLong(from)} to ${fmtDateLong(to)}`;
     const th = data.dates.map((d) => `<th class="d">${dayNum(d)}</th>`).join('');
     const monthRow = monthGroups.map((g) => `<th colspan="${g.count}" class="mh">${g.month}</th>`).join('');
     const rows = data.students.map((s, i) => {
@@ -132,11 +134,6 @@ export default function AttendanceRegister() {
               <Autocomplete options={classes} getOptionLabel={(o) => o.name || ''} value={cls}
                 onChange={(e, v) => setCls(v)} isOptionEqualToValue={(o, v) => o.uuid === v?.uuid}
                 renderInput={(p) => <TextField {...p} label="Class" size="small" />} />
-            </Grid>
-            <Grid item xs={12} md={2.5}>
-              <Autocomplete options={years} getOptionLabel={(o) => o.name || ''} value={year}
-                onChange={(e, v) => setYear(v)} isOptionEqualToValue={(o, v) => o.uuid === v?.uuid} disableClearable
-                renderInput={(p) => <TextField {...p} label="Academic Year" size="small" />} />
             </Grid>
             <Grid item xs={6} md={2}>
               <TextField fullWidth type="date" label="From" size="small" InputLabelProps={{ shrink: true }}

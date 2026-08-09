@@ -12,7 +12,7 @@ import {
 } from '@mui/icons-material';
 import DocPreviewDialog from './DocPreviewDialog';
 import { syllabusService } from '../../services/syllabusService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 
 const DOC_TYPES = [
@@ -52,14 +52,14 @@ export default function ModelPapers() {
   const can = useCan();
   const canManage = can('syllabus.manage');
   const [searchParams] = useSearchParams();
+  const { academicYearId } = useAcademicYear();
 
-  const [years, setYears] = useState([]);
   const [grades, setGrades] = useState([]);
   const [streams, setStreams] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [exams, setExams] = useState([]);
 
-  const [filter, setFilter] = useState({ academicYearId: '', grade: '', exam: '', streamCode: '' });
+  const [filter, setFilter] = useState({ grade: '', exam: '', streamCode: '' });
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -77,29 +77,23 @@ export default function ModelPapers() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, grds, strms, subs, lookups] = await Promise.all([
-          academicCalendarService.getAcademicYears(),
+        const [grds, strms, subs, lookups] = await Promise.all([
           syllabusService.getGrades(),
           syllabusService.getStreams(),
           syllabusService.getSubjects(),
           syllabusService.getLookups(),
         ]);
-        const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(yearList);
         setGrades(grds || []);
         setStreams(strms || []);
         setSubjects(subs || []);
         const ex = lookups?.exams || [{ value: 'half_yearly', label: 'Half Yearly' }, { value: 'annual', label: 'Annual' }];
         setExams(ex);
-        const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        // Default to the current year, ALL grades/exams — unless a grade/year is
-        // passed in the URL (e.g. from the Overview screen), then pre-filter.
+        // Default to ALL grades/exams — unless a grade is passed in the URL
+        // (e.g. from the Overview screen), then pre-filter.
         const qpGrade = searchParams.get('grade');
-        const qpYear = searchParams.get('academicYearId');
         const gradeMatch = (grds || []).find((g) => g.grade.toLowerCase() === (qpGrade || '').toLowerCase());
         setFilter((f) => ({
           ...f,
-          academicYearId: (qpYear && yearList.some((y) => y.uuid === qpYear) ? qpYear : cur?.uuid) || '',
           grade: gradeMatch?.grade || '',
         }));
       } catch {
@@ -108,14 +102,14 @@ export default function ModelPapers() {
     })();
   }, []);
 
-  const loadPapers = async (f = filter) => {
-    if (!f.academicYearId) { setPapers([]); return; }
+  const loadPapers = async () => {
+    if (!academicYearId) { setPapers([]); return; }
     setLoading(true); setError('');
     try {
-      const params = { academicYearId: f.academicYearId };
-      if (f.grade) params.grade = f.grade;
-      if (f.exam) params.exam = f.exam;
-      if (f.streamCode) params.streamCode = f.streamCode;
+      const params = { academicYearId };
+      if (filter.grade) params.grade = filter.grade;
+      if (filter.exam) params.exam = filter.exam;
+      if (filter.streamCode) params.streamCode = filter.streamCode;
       setPapers((await syllabusService.getModelPapers(params)) || []);
     } catch {
       setError('Failed to load model papers');
@@ -123,7 +117,7 @@ export default function ModelPapers() {
       setLoading(false);
     }
   };
-  useEffect(() => { loadPapers(); /* eslint-disable-next-line */ }, [filter.academicYearId, filter.grade, filter.exam, filter.streamCode]);
+  useEffect(() => { loadPapers(); /* eslint-disable-next-line */ }, [academicYearId, filter.grade, filter.exam, filter.streamCode]);
 
   const showStreamCol = hasStreams && !filter.streamCode;
 
@@ -201,7 +195,7 @@ export default function ModelPapers() {
       const base64Data = await readFileB64(dialog.file);
       const pdfBase64Data = dialog.pdfFile ? await readFileB64(dialog.pdfFile) : undefined;
       await syllabusService.uploadModelPaper({
-        academicYearId: filter.academicYearId,
+        academicYearId,
         grade: dialog.grade,
         streamCode: dialog.streamCode || undefined,
         subjectId: dialog.subjectId,
@@ -277,12 +271,6 @@ export default function ModelPapers() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={filter.academicYearId}
-                onChange={(e) => setFilter({ ...filter, academicYearId: e.target.value })}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
             <Grid item xs={6} md={2}>
               <TextField fullWidth select size="small" label="Grade" value={filter.grade}
                 onChange={(e) => setFilter({ ...filter, grade: e.target.value })}>
@@ -315,7 +303,7 @@ export default function ModelPapers() {
         <CardContent>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
-          ) : !filter.academicYearId ? (
+          ) : !academicYearId ? (
             <Alert severity="info">Pick an academic year.</Alert>
           ) : (
             <Box sx={{ overflowX: 'auto' }}>

@@ -9,15 +9,15 @@ import {
 } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { employeeService } from '../../services/employeeService';
-import { academicCalendarService } from '../../services/academicCalendarService';
 import { MetricScorePicker, DictionPicker, StarPresenterPicker } from './gradeFields';
 import { useCan } from '../../permissions/can';
+import { useAcademicYear } from '../../context/AcademicYearContext';
+import { fmtDate } from '../../utils/date';
 import ReferenceDocCard from './ReferenceDocCard';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return iso(x); };
-const fmt = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 const arrayFrom = (r, ...keys) => (Array.isArray(r) ? r : keys.map((k) => r?.[k]).find(Array.isArray) || []);
 
 function EmployeePicker({ label, value, onChange }) {
@@ -38,6 +38,7 @@ function EmployeePicker({ label, value, onChange }) {
 export default function GradingPage() {
   const can = useCan();
   const canManage = can('assembly.manage');
+  const { academicYearId } = useAcademicYear();
 
   const [rubric, setRubric] = useState({ metrics: [], penalties: [], config: {} });
   const [scaling, setScaling] = useState('');
@@ -49,9 +50,7 @@ export default function GradingPage() {
   const [evalDlg, setEvalDlg] = useState(null);
 
   // Grade entry.
-  const [years, setYears] = useState([]);
   const [plans, setPlans] = useState([]);
-  const [academicYearId, setAcademicYearId] = useState('');
   const [planId, setPlanId] = useState('');
   const [weekStart, setWeekStart] = useState(mondayOf(new Date()));
   const [week, setWeek] = useState(null);
@@ -68,16 +67,7 @@ export default function GradingPage() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      await Promise.all([loadRubric(), loadEvaluators()]);
-      try {
-        const yrs = await academicCalendarService.getAcademicYears();
-        const list = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(list);
-        const cur = list.find((y) => y.isCurrent) || list[0];
-        if (cur?.uuid) setAcademicYearId(cur.uuid);
-      } catch { /* years optional */ }
-    })();
+    Promise.all([loadRubric(), loadEvaluators()]);
   }, [loadRubric, loadEvaluators]);
 
   useEffect(() => {
@@ -247,7 +237,6 @@ export default function GradingPage() {
           <Card><CardContent>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>Grade a week</Typography>
             <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={3}><TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>{years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}</MenuItem>)}</TextField></Grid>
               <Grid item xs={12} sm={3}><TextField fullWidth select size="small" label="Wing (plan)" value={planId} onChange={(e) => setPlanId(e.target.value)}>{plans.map((p) => <MenuItem key={p.uuid} value={p.uuid}>{p.name}</MenuItem>)}{plans.length === 0 && <MenuItem value="" disabled>No plans</MenuItem>}</TextField></Grid>
               <Grid item xs={12} sm={6}><Stack direction="row" spacing={1} alignItems="center"><Button size="small" onClick={() => setWeekStart(addDays(weekStart, -7))}>◀</Button><TextField size="small" type="date" label="Week of (Mon)" value={weekStart} onChange={(e) => setWeekStart(mondayOf(e.target.value))} InputLabelProps={{ shrink: true }} /><Button size="small" onClick={() => setWeekStart(addDays(weekStart, 7))}>▶</Button></Stack></Grid>
             </Grid>
@@ -266,7 +255,7 @@ export default function GradingPage() {
                   <TableBody>
                     {grades.map((g) => (
                       <TableRow key={g.uuid} hover sx={{ cursor: canManage ? 'pointer' : 'default' }} onClick={() => canManage && openGrade(g)}>
-                        <TableCell>{fmt(g.gradeDate)}</TableCell>
+                        <TableCell>{fmtDate(g.gradeDate)}</TableCell>
                         <TableCell>{evalName(g.evaluatorEmployeeId)}</TableCell>
                         <TableCell align="center"><Chip size="small" color="primary" label={g.total} /></TableCell>
                         <TableCell align="right">{canManage && <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); deleteGrade(g.uuid); }}><DeleteIcon fontSize="small" /></IconButton>}</TableCell>
@@ -319,7 +308,7 @@ export default function GradingPage() {
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField size="small" select fullWidth label="Date" value={gradeForm?.gradeDate || ''} onChange={(e) => setGradeForm({ ...gradeForm, gradeDate: e.target.value })}>
-                {(week?.days || []).map((d) => <MenuItem key={d.date} value={d.date}>{fmt(d.date)}</MenuItem>)}
+                {(week?.days || []).map((d) => <MenuItem key={d.date} value={d.date}>{fmtDate(d.date)}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={6}>

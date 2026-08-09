@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { fmtDate } from '../../../utils/date';
 
 function ReturnDialog({ open, issue, onClose, onSuccess }) {
   const [returnData, setReturnData] = useState({
@@ -261,11 +262,6 @@ export default function LabIssueList() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
   const issueTypeLabels = {
     class_use: 'Class Use',
     individual: 'Individual',
@@ -286,7 +282,7 @@ export default function LabIssueList() {
       field: 'issueDate',
       headerName: 'Issue Date',
       width: 120,
-      valueFormatter: (value) => formatDate(value),
+      valueFormatter: (value) => fmtDate(value),
     },
     { field: 'quantity', headerName: 'Qty', width: 70 },
     {

@@ -26,12 +26,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { medicalService } from '../../services/medicalService';
-
-const formatDate = (v) => {
-  if (!v) return '—';
-  const d = new Date(v);
-  return d.toLocaleDateString('en-GB');
-};
+import { fmtDate } from '../../utils/date';
 
 const DAY_OPTIONS = [30, 60, 90];
 
@@ -222,7 +217,7 @@ export default function MedicalDashboard() {
                       <TableRow key={item.uuid} hover>
                         <TableCell>{item.itemName}</TableCell>
                         <TableCell>{item.batchNo || '—'}</TableCell>
-                        <TableCell>{formatDate(item.expiryDate)}</TableCell>
+                        <TableCell>{fmtDate(item.expiryDate)}</TableCell>
                         <TableCell sx={{ color: urgency, fontWeight: item.daysUntilExpiry <= 30 ? 600 : 400 }}>
                           {item.daysUntilExpiry}
                         </TableCell>

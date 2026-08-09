@@ -9,25 +9,24 @@ import {
 } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { classService } from '../../services/classService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
+import { fmtDate, fmtDateTime } from '../../utils/date';
 import { toRows, toPayload } from './rosterParticipants';
 import RosterDays from './RosterDays';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return iso(x); };
-const fmt = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 
 const STATUS_COLOR = { draft: 'default', submitted: 'warning', approved: 'success' };
 
 export default function RosterEditor() {
   const can = useCan();
   const canManage = can('assembly.manage'); // approve/unlock (god/assembly-incharge)
+  const { academicYearId } = useAcademicYear();
 
-  const [years, setYears] = useState([]);
   const [plans, setPlans] = useState([]);
-  const [academicYearId, setAcademicYearId] = useState('');
   const [planId, setPlanId] = useState('');
   const [weekStart, setWeekStart] = useState(mondayOf(new Date()));
   const [targetTypes, setTargetTypes] = useState([]);
@@ -43,12 +42,8 @@ export default function RosterEditor() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, lookups] = await Promise.all([academicCalendarService.getAcademicYears(), assemblyService.getLookups()]);
-        const list = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(list);
+        const lookups = await assemblyService.getLookups();
         setTargetTypes(lookups?.responsibleTargetTypes || []);
-        const cur = list.find((y) => y.isCurrent) || list[0];
-        if (cur?.uuid) setAcademicYearId(cur.uuid);
       } catch { setError('Failed to load filters'); }
     })();
   }, []);
@@ -150,11 +145,6 @@ export default function RosterEditor() {
         <CardContent>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={3}>
               <TextField fullWidth select size="small" label="Wing (plan)" value={planId} onChange={(e) => setPlanId(e.target.value)}>
                 {plans.map((p) => <MenuItem key={p.uuid} value={p.uuid}>{p.name}</MenuItem>)}
                 {plans.length === 0 && <MenuItem value="" disabled>No plans</MenuItem>}
@@ -176,7 +166,7 @@ export default function RosterEditor() {
 
       {planId && !week && !loading && (
         <Card><CardContent>
-          <Typography sx={{ mb: 2 }}>No roster for the week of {fmt(weekStart)} yet.</Typography>
+          <Typography sx={{ mb: 2 }}>No roster for the week of {fmtDate(weekStart)} yet.</Typography>
           <Button variant="contained" onClick={start} disabled={busy === 'start'}>{busy === 'start' ? 'Starting…' : 'Start roster for this week'}</Button>
         </CardContent></Card>
       )}
@@ -189,7 +179,7 @@ export default function RosterEditor() {
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap>
                 <Chip label={week.status} color={STATUS_COLOR[week.status] || 'default'} />
                 {week.houseName ? <Chip variant="outlined" label={`House on duty: ${week.houseName}`} /> : <Chip variant="outlined" label="No house on duty" />}
-                {week.deadlineAt && <Typography variant="caption" color={week.pastDeadline ? 'error' : 'text.secondary'}>Deadline: {new Date(week.deadlineAt).toLocaleString()}</Typography>}
+                {week.deadlineAt && <Typography variant="caption" color={week.pastDeadline ? 'error' : 'text.secondary'}>Deadline: {fmtDateTime(week.deadlineAt)}</Typography>}
                 {ro && <Chip size="small" color={week.locked ? 'error' : 'warning'} label={week.locked ? 'Locked' : 'Read-only'} />}
                 <Box sx={{ flex: 1 }} />
                 {!ro && <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save'}>Save</Button>}

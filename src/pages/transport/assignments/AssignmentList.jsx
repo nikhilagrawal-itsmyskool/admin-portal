@@ -8,17 +8,17 @@ import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { transportService } from '../../../services/transportService';
 import { studentService } from '../../../services/studentService';
 import { classService } from '../../../services/classService';
-import { academicCalendarService } from '../../../services/academicCalendarService';
+import { useAcademicYear } from '../../../context/AcademicYearContext';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useCan } from '../../../permissions/can';
 
 export default function AssignmentList() {
   const can = useCan();
   const canManage = can('transport.manage');
+  const { academicYearId } = useAcademicYear();
 
   const [assignments, setAssignments] = useState([]);
   const [routes, setRoutes] = useState([]);
-  const [years, setYears] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +44,7 @@ export default function AssignmentList() {
   // add dialog
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [addForm, setAddForm] = useState({ academicYearId: '', student: null, routeId: '', stopId: '' });
+  const [addForm, setAddForm] = useState({ student: null, routeId: '', stopId: '' });
   const [routeStops, setRouteStops] = useState([]);
 
   const loadAssignments = async () => {
@@ -99,18 +99,12 @@ export default function AssignmentList() {
   useEffect(() => {
     (async () => {
       try {
-        const [rts, yrs, cls] = await Promise.all([
+        const [rts, cls] = await Promise.all([
           transportService.getRoutes(),
-          academicCalendarService.getAcademicYears(),
           classService.getClasses(),
         ]);
         setRoutes(rts || []);
-        setYears(Array.isArray(yrs) ? yrs : yrs?.academicYears || []);
         setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
-        try {
-          const cur = await academicCalendarService.getCurrentAcademicYear();
-          if (cur?.uuid) setAddForm((f) => ({ ...f, academicYearId: cur.uuid }));
-        } catch { /* no current year */ }
       } catch {
         setError('Failed to load routes / classes');
       }
@@ -149,13 +143,13 @@ export default function AssignmentList() {
   };
 
   const saveAssignment = async () => {
-    if (!addForm.academicYearId || !addForm.student || !addForm.routeId || !addForm.stopId) {
+    if (!academicYearId || !addForm.student || !addForm.routeId || !addForm.stopId) {
       setError('Select academic year, student, route and stop'); return;
     }
     setSaving(true); setError('');
     try {
       await transportService.createAssignment({
-        academicYearId: addForm.academicYearId,
+        academicYearId,
         studentId: addForm.student.uuid,
         routeId: addForm.routeId,
         stopId: addForm.stopId,
@@ -254,12 +248,6 @@ export default function AssignmentList() {
         <DialogTitle>Assign Student to Route</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth select label="Academic Year" value={addForm.academicYearId}
-                onChange={(e) => setAddForm({ ...addForm, academicYearId: e.target.value })} size="small">
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}</MenuItem>)}
-              </TextField>
-            </Grid>
             <Grid item xs={12} sm={6}>
               <Autocomplete
                 options={classes}

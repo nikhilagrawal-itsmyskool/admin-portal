@@ -32,6 +32,7 @@ import { sportsService } from '../../../services/sportsService';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { fmtDate } from '../../../utils/date';
 
 function ReturnDialog({ open, issue, onClose, onSuccess }) {
   const [returnData, setReturnData] = useState({
@@ -265,11 +266,6 @@ export default function SportIssueList() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
   const issueTypeLabels = {
     class_use: 'Class Use',
     individual: 'Individual',
@@ -290,7 +286,7 @@ export default function SportIssueList() {
       field: 'issueDate',
       headerName: 'Issue Date',
       width: 120,
-      valueFormatter: (value) => formatDate(value),
+      valueFormatter: (value) => fmtDate(value),
     },
     { field: 'quantity', headerName: 'Qty', width: 70 },
     {

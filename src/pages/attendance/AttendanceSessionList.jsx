@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Card, CardContent, Grid, TextField, Autocomplete, MenuItem,
+  Box, Typography, Card, CardContent, Grid, TextField, Autocomplete,
   Button, Alert, Chip,
 } from '@mui/material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { attendanceService } from '../../services/attendanceService';
 import { classService } from '../../services/classService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 
 export default function AttendanceSessionList() {
   const navigate = useNavigate();
+  const { academicYearId } = useAcademicYear();
   const [classes, setClasses] = useState([]);
-  const [years, setYears] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [academicYearId, setAcademicYearId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [sessions, setSessions] = useState([]);
@@ -31,12 +30,8 @@ export default function AttendanceSessionList() {
   useEffect(() => {
     (async () => {
       try {
-        const [cls, yrs] = await Promise.all([
-          classService.getClasses(),
-          academicCalendarService.getAcademicYears(),
-        ]);
+        const cls = await classService.getClasses();
         setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
-        setYears(Array.isArray(yrs) ? yrs : yrs?.academicYears || []);
       } catch { /* non-fatal */ }
     })();
   }, []);
@@ -58,7 +53,7 @@ export default function AttendanceSessionList() {
     }
   };
 
-  useEffect(() => { load(); /* initial */ }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); /* reload on year change */ }, [academicYearId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const columns = [
     { field: 'attendanceDate', headerName: 'Date', width: 130 },
@@ -89,12 +84,6 @@ export default function AttendanceSessionList() {
                 onChange={(_, v) => setSelectedClass(v)}
                 renderInput={(params) => <TextField {...params} label="Class" size="small" placeholder="All" />}
               />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>
-                <MenuItem value="">All</MenuItem>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}</MenuItem>)}
-              </TextField>
             </Grid>
             <Grid item xs={6} md={2}>
               <TextField fullWidth type="date" size="small" label="From" value={from} onChange={(e) => setFrom(e.target.value)} InputLabelProps={{ shrink: true }} />

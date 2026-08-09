@@ -20,6 +20,7 @@ import { Refresh as RefreshIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { timetableService } from "../../../services/timetableService";
 import { AcademicYearSelect } from "../components/Selectors";
+import { fmtDateTime as fmt } from "../../../utils/date";
 
 const STATUS_COLOR = {
   queued: "default",
@@ -40,7 +41,6 @@ function effectiveStatus(run) {
   return run.status;
 }
 
-const fmt = (t) => (t ? new Date(t).toLocaleString() : "—");
 
 export default function RunList() {
   const navigate = useNavigate();

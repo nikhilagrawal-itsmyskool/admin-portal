@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, IconButton,
+  Box, Typography, Button, Grid, TextField, IconButton,
   Alert, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Stack, Tooltip,
 } from '@mui/material';
 import {
@@ -10,7 +10,7 @@ import {
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { assemblyService } from '../../services/assemblyService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 import ReferenceDocCard from './ReferenceDocCard';
 
@@ -21,9 +21,8 @@ export default function AssemblyList() {
   const can = useCan();
   const canManage = can('assembly.manage');
 
-  const [years, setYears] = useState([]);
+  const { academicYearId } = useAcademicYear();
   const [weekdays, setWeekdays] = useState([]);
-  const [academicYearId, setAcademicYearId] = useState('');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,15 +35,8 @@ export default function AssemblyList() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, lookups] = await Promise.all([
-          academicCalendarService.getAcademicYears(),
-          assemblyService.getLookups(),
-        ]);
-        const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(yearList);
+        const lookups = await assemblyService.getLookups();
         setWeekdays(lookups?.weekdays || []);
-        const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        if (cur?.uuid) setAcademicYearId(cur.uuid);
       } catch {
         setError('Failed to load assembly filters');
       }
@@ -146,19 +138,6 @@ export default function AssemblyList() {
         hint="The source document this assembly plan was built from (e.g. the Word file). Kept for reference — download, edit and re-upload anytime."
         canManage={canManage}
       />
-
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ pb: '16px !important' }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId}
-                onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
 
       <ResponsiveDataGrid
         rows={plans}

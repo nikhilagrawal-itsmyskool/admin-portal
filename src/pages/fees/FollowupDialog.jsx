@@ -6,6 +6,7 @@ import {
 import { AttachFile as AttachIcon, Close as CloseIcon, Add as AddIcon } from '@mui/icons-material';
 import { feesService } from '../../services/feesService';
 import { errMsg, FEE_COLORS } from './feesUi';
+import { fmtDate, fmtDateTime } from '../../utils/date';
 
 export const FOLLOWUPS = [
   { v: '', label: '—' },
@@ -83,8 +84,8 @@ export default function FollowupDialog({ open, onClose, studentId, academicYearI
           <Box key={e.uuid} sx={{ borderLeft: `2px solid ${FEE_COLORS.border}`, pl: 1.5, pb: 1.5, ml: 0.5 }}>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
               {e.status && <Chip size="small" color={fColor(e.status)} label={fLabel(e.status)} />}
-              <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>{e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN') : ''}</Typography>
-              {e.promisedDate && <Typography sx={{ fontSize: 12, color: FEE_COLORS.warning }}>promised {String(e.promisedDate).slice(0, 10)}</Typography>}
+              <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>{fmtDateTime(e.createdAt)}</Typography>
+              {e.promisedDate && <Typography sx={{ fontSize: 12, color: FEE_COLORS.warning }}>promised {fmtDate(e.promisedDate)}</Typography>}
             </Box>
             {e.note && <Typography sx={{ fontSize: 13, mt: 0.25 }}>{e.note}</Typography>}
             {(e.attachments || []).length > 0 && (

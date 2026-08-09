@@ -9,10 +9,10 @@ import { useCan } from '../../permissions/can';
 import GradingPage from './GradingPage';
 import { MetricScorePicker, DictionPicker, StarPresenterPicker } from './gradeFields';
 import { useAcademicYear } from '../../context/AcademicYearContext';
+import { fmtDate } from '../../utils/date';
 import { resolveMyGradingWeek, todayIso } from './myAssembly';
 
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
-const fmt = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 
 // Admin/god → the full grading page (rubric + evaluators + evaluator dropdown +
 // any wing/week/date); evaluator → today's self-grade (no dropdown, no future).
@@ -84,7 +84,7 @@ function EvaluatorGrade() {
           <CardContent>
             <Stack spacing={2}>
               <TextField size="small" select label="Day" value={date} onChange={(e) => setDate(e.target.value)} sx={{ maxWidth: 220 }}>
-                {gradeableDays.map((d) => <MenuItem key={d} value={d}>{fmt(d)}{d === todayIso() ? ' (today)' : ''}</MenuItem>)}
+                {gradeableDays.map((d) => <MenuItem key={d} value={d}>{fmtDate(d)}{d === todayIso() ? ' (today)' : ''}</MenuItem>)}
               </TextField>
               {rubric.metrics.length === 0 && <Alert severity="info">No rubric configured yet.</Alert>}
 

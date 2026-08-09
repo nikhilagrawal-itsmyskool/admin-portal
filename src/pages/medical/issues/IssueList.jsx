@@ -29,6 +29,7 @@ import { medicalService } from '../../../services/medicalService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { fmtDate } from '../../../utils/date';
 
 export default function IssueList() {
   const navigate = useNavigate();
@@ -151,18 +152,13 @@ export default function IssueList() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
   const columns = [
     { field: 'itemName', headerName: 'Item', flex: 1, minWidth: 200 },
     {
       field: 'issueDate',
       headerName: 'Issue Date',
       width: 130,
-      valueFormatter: (value) => formatDate(value),
+      valueFormatter: (value) => fmtDate(value),
     },
     { field: 'quantity', headerName: 'Quantity', width: 100 },
     {

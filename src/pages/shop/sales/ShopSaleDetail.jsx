@@ -6,10 +6,10 @@ import {
 } from '@mui/material';
 import { ArrowBack as BackIcon, Print as PrintIcon } from '@mui/icons-material';
 import shopService from '../../../services/shopService';
+import { fmtDate, fmtDateLong } from '../../../utils/date';
 
 const PAYMENT_COLORS = { paid: 'success', partial: 'warning', due: 'error' };
 const PAYMENT_LABELS = { paid: 'Fully Paid', partial: 'Partially Paid', due: 'Due' };
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN') : '—';
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
 
 function handlePrintReceipt(sale, schoolCode) {
@@ -42,7 +42,7 @@ function handlePrintReceipt(sale, schoolCode) {
 
 <div class="section">
   <table class="totals">
-    <tr><td width="50%"><strong>Receipt No:</strong> ${sale.uuid}</td><td><strong>Date:</strong> ${formatDate(sale.saleDate)}</td></tr>
+    <tr><td width="50%"><strong>Receipt No:</strong> ${sale.uuid}</td><td><strong>Date:</strong> ${fmtDateLong(sale.saleDate)}</td></tr>
     <tr><td><strong>Student:</strong> ${sale.studentName || '—'}</td><td><strong>Admission No:</strong> ${sale.studentAdmissionNo || '—'}</td></tr>
     ${sale.academicSession ? `<tr><td><strong>Session:</strong> ${sale.academicSession}</td><td><strong>Payment:</strong> <span class="badge ${sale.paymentStatus}">${PAYMENT_LABELS[sale.paymentStatus] || sale.paymentStatus}</span></td></tr>` : `<tr><td></td><td><strong>Payment:</strong> <span class="badge ${sale.paymentStatus}">${PAYMENT_LABELS[sale.paymentStatus] || sale.paymentStatus}</span></td></tr>`}
   </table>
@@ -141,7 +141,7 @@ export default function ShopSaleDetail() {
             </Grid>
             <Grid item xs={6} md={2}>
               <Typography variant="caption" color="text.secondary">Date</Typography>
-              <Typography>{formatDate(sale.saleDate)}</Typography>
+              <Typography>{fmtDate(sale.saleDate)}</Typography>
             </Grid>
             <Grid item xs={6} md={2}>
               <Typography variant="caption" color="text.secondary">Session</Typography>

@@ -8,8 +8,8 @@ import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Add as AddIcon, Visibility as ViewIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { fmtDate } from '../../../utils/date';
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN') : '—';
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
 
 export default function UniformPurchaseList() {
@@ -58,7 +58,7 @@ export default function UniformPurchaseList() {
   };
 
   const columns = [
-    { field: 'purchaseDate', headerName: 'Date', width: 110, valueFormatter: (v) => formatDate(v) },
+    { field: 'purchaseDate', headerName: 'Date', width: 110, valueFormatter: (v) => fmtDate(v) },
     { field: 'supplier', headerName: 'Supplier', flex: 1, minWidth: 140, valueFormatter: (v) => v || '—' },
     { field: 'invoiceNumber', headerName: 'Invoice #', width: 130, valueFormatter: (v) => v || '—' },
     { field: 'totalAmount', headerName: 'Total', width: 120, valueFormatter: (v) => formatCurrency(v) },

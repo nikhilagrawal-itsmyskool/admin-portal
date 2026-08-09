@@ -14,10 +14,10 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { employeeService } from '../../../services/employeeService';
+import { fmtDate } from '../../../utils/date';
 
 const GENDER_LABELS = { M: 'Male', F: 'Female', O: 'Other' };
 
-const fmtDate = (v) => (v ? String(v).slice(0, 10) : '—');
 
 function Field({ label, value }) {
   return (

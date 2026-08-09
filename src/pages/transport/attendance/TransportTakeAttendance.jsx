@@ -6,10 +6,10 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon, Save as SaveIcon, CheckCircle as FinalizeIcon } from '@mui/icons-material';
 import { transportService } from '../../../services/transportService';
-import { academicCalendarService } from '../../../services/academicCalendarService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useCan } from '../../../permissions/can';
 import { useAuth } from '../../../context/AuthContext';
+import { useAcademicYear } from '../../../context/AcademicYearContext';
 import { visibleTransportRoutes } from '../../../permissions/transportAccess';
 
 const STATUSES = [
@@ -23,14 +23,13 @@ const today = () => new Date().toISOString().slice(0, 10);
 export default function TransportTakeAttendance() {
   const can = useCan();
   const { user } = useAuth();
+  const { academicYearId } = useAcademicYear();
   const canFinalize = can('transport.attendance.finalize');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [routes, setRoutes] = useState([]);
-  const [years, setYears] = useState([]);
   const [routeId, setRouteId] = useState('');
-  const [academicYearId, setAcademicYearId] = useState('');
   const [date, setDate] = useState(today());
 
   const [session, setSession] = useState(null);
@@ -44,16 +43,8 @@ export default function TransportTakeAttendance() {
   useEffect(() => {
     (async () => {
       try {
-        const [rts, yrs] = await Promise.all([
-          transportService.getRoutes(),
-          academicCalendarService.getAcademicYears(),
-        ]);
+        const rts = await transportService.getRoutes();
         setRoutes(rts || []);
-        setYears(Array.isArray(yrs) ? yrs : yrs?.academicYears || []);
-        try {
-          const cur = await academicCalendarService.getCurrentAcademicYear();
-          if (cur?.uuid) setAcademicYearId(cur.uuid);
-        } catch { /* no current year */ }
       } catch {
         setError('Failed to load routes / academic years');
       }
@@ -138,17 +129,12 @@ export default function TransportTakeAttendance() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               <TextField fullWidth select size="small" label="Route" value={routeId} onChange={(e) => setRouteId(e.target.value)}>
                 {routeOptions.map((r) => <MenuItem key={r.uuid} value={r.uuid}>{r.name} ({r.direction})</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <TextField fullWidth type="date" size="small" label="Date" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />
             </Grid>
             <Grid item xs={12} md={2}>

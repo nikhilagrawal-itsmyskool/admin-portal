@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, IconButton,
+  Box, Typography, Button, Grid, TextField, MenuItem, IconButton,
   Alert, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Stack,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { assemblyService } from '../../services/assemblyService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 
 const blank = { title: '', description: '', planId: '', startDate: '', endDate: '' };
@@ -16,8 +16,7 @@ export default function ThemesPage() {
   const can = useCan();
   const canManage = can('assembly.manage');
 
-  const [years, setYears] = useState([]);
-  const [academicYearId, setAcademicYearId] = useState('');
+  const { academicYearId } = useAcademicYear();
   const [plans, setPlans] = useState([]);
   const [themes, setThemes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,18 +24,6 @@ export default function ThemesPage() {
   const [dialog, setDialog] = useState(null); // create/edit form (with optional uuid)
   const [saving, setSaving] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const yrs = await academicCalendarService.getAcademicYears();
-        const list = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(list);
-        const cur = list.find((y) => y.isCurrent) || list[0];
-        if (cur?.uuid) setAcademicYearId(cur.uuid);
-      } catch { setError('Failed to load academic years'); }
-    })();
-  }, []);
 
   const load = async (yearId = academicYearId) => {
     if (!yearId) return;
@@ -112,19 +99,6 @@ export default function ThemesPage() {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ pb: '16px !important' }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId}
-                onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
 
       <ResponsiveDataGrid
         rows={themes}

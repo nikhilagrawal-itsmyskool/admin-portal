@@ -21,11 +21,11 @@ import { timetableService } from "../../../services/timetableService";
 import GridViewer from "../components/GridViewer";
 import { downloadRunExport } from "../components/exportDownload";
 import { useTimetablePerms } from "../components/usePerms";
+import { fmtDateTime as fmt } from "../../../utils/date";
 
 const SCORE_HELP =
   "Higher is better. The score is a weighted sum of soft goals: teacher gaps (−), honored preferences (+), even daily load (−), spread across the week (−), cohort lockstep (−). Scores are only comparable within this run (same weights).";
 
-const fmt = (t) => (t ? new Date(t).toLocaleString() : "—");
 
 export default function RunDetail() {
   const { id } = useParams();

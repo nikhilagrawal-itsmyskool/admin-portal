@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { fmtDate as coreFmtDate } from '../../utils/date';
 import {
   Box,
   Typography,
@@ -47,7 +48,7 @@ const toMap = (arr) =>
     return acc;
   }, {});
 
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN') : '-');
+const fmtDate = (d) => (d ? coreFmtDate(d) : '-');
 const fmtMoney = (n) =>
   n == null ? '-' : `₹${parseFloat(n).toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
 

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, Autocomplete,
-  MenuItem, Alert, Chip, Table, TableBody, TableCell, TableContainer, TableHead,
+  Alert, Chip, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, ToggleButton, ToggleButtonGroup, CircularProgress, Stack,
   useMediaQuery, useTheme,
 } from '@mui/material';
 import { Search as SearchIcon, Save as SaveIcon, CheckCircle as FinalizeIcon } from '@mui/icons-material';
 import { attendanceService } from '../../services/attendanceService';
 import { classService } from '../../services/classService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -28,10 +28,9 @@ export default function TakeAttendance() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const { academicYearId } = useAcademicYear();
   const [classes, setClasses] = useState([]);
-  const [years, setYears] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [academicYearId, setAcademicYearId] = useState('');
   const [date, setDate] = useState(today());
 
   const [session, setSession] = useState(null);
@@ -45,18 +44,10 @@ export default function TakeAttendance() {
   useEffect(() => {
     (async () => {
       try {
-        const [cls, yrs] = await Promise.all([
-          classService.getClasses(),
-          academicCalendarService.getAcademicYears(),
-        ]);
+        const cls = await classService.getClasses();
         setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
-        setYears(Array.isArray(yrs) ? yrs : yrs?.academicYears || []);
-        try {
-          const cur = await academicCalendarService.getCurrentAcademicYear();
-          if (cur?.uuid) setAcademicYearId(cur.uuid);
-        } catch { /* no current year configured */ }
       } catch {
-        setError('Failed to load classes / academic years');
+        setError('Failed to load classes');
       }
     })();
   }, []);
@@ -150,11 +141,6 @@ export default function TakeAttendance() {
                 onChange={(_, v) => setSelectedClass(v)}
                 renderInput={(params) => <TextField {...params} label="Class" size="small" />}
               />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}</MenuItem>)}
-              </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
               <TextField fullWidth type="date" size="small" label="Date" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />

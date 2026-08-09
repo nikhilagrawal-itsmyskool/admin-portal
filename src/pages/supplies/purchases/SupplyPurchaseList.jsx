@@ -42,14 +42,7 @@ import { suppliesService } from "../../../services/suppliesService";
 import { useCan } from "../../../permissions/can";
 import { ACTIONS } from "../../../permissions/actions";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
-
-const formatDate = (v) => {
-  if (!v) return "—";
-  const d = new Date(v);
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-  return `${day}/${month}/${d.getUTCFullYear()}`;
-};
+import { fmtDate } from "../../../utils/date";
 
 const formatCurrency = (v) =>
   v != null && v !== "" ? parseFloat(v).toFixed(2) : "—";
@@ -437,7 +430,7 @@ export default function SupplyPurchaseList() {
                         </Tooltip>
                       </TableCell>
                       <TableCell sx={{ whiteSpace: "nowrap" }}>
-                        {formatDate(row.purchaseDate)}
+                        {fmtDate(row.purchaseDate)}
                       </TableCell>
                       <TableCell>
                         <Chip

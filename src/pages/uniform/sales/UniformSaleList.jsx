@@ -7,12 +7,12 @@ import {
 import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Add as AddIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
+import { fmtDate } from '../../../utils/date';
 
 const PAYMENT_COLORS = { paid: 'success', partial: 'warning', due: 'error' };
 const PAYMENT_LABELS = { paid: 'Paid', partial: 'Partial', due: 'Due' };
 const SALE_TYPE_LABELS = { student: 'Student', bulk: 'Bulk' };
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN') : '—';
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
 
 export default function UniformSaleList() {
@@ -60,7 +60,7 @@ export default function UniformSaleList() {
   };
 
   const columns = [
-    { field: 'saleDate', headerName: 'Date', width: 110, valueFormatter: (v) => formatDate(v) },
+    { field: 'saleDate', headerName: 'Date', width: 110, valueFormatter: (v) => fmtDate(v) },
     { field: 'studentName', headerName: 'Student', flex: 1, minWidth: 140 },
     { field: 'saleType', headerName: 'Type', width: 90, valueFormatter: (v) => SALE_TYPE_LABELS[v] || v },
     { field: 'totalAmount', headerName: 'Total', width: 110, valueFormatter: (v) => formatCurrency(v) },

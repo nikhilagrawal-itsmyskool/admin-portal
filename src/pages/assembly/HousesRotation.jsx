@@ -10,7 +10,7 @@ import {
 import { assemblyService } from '../../services/assemblyService';
 import { studentService } from '../../services/studentService';
 import { employeeService } from '../../services/employeeService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 
 const arrayFrom = (r, ...keys) => (Array.isArray(r) ? r : keys.map((k) => r?.[k]).find(Array.isArray) || []);
@@ -44,6 +44,7 @@ function EmployeePicker({ label, value, onChange }) {
 export default function HousesRotation() {
   const can = useCan();
   const canManage = can('assembly.manage');
+  const { academicYearId } = useAcademicYear();
 
   const [houses, setHouses] = useState([]);
   const [error, setError] = useState('');
@@ -51,9 +52,7 @@ export default function HousesRotation() {
   const [savingStaff, setSavingStaff] = useState(false);
 
   // Rotation calendar state.
-  const [years, setYears] = useState([]);
   const [plans, setPlans] = useState([]);
-  const [academicYearId, setAcademicYearId] = useState('');
   const [planId, setPlanId] = useState('');
   const [weeks, setWeeks] = useState([]);
   const [rangeStart, setRangeStart] = useState(mondayOf(new Date()));
@@ -63,18 +62,7 @@ export default function HousesRotation() {
     catch { setError('Failed to load houses'); }
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      await loadHouses();
-      try {
-        const yrs = await academicCalendarService.getAcademicYears();
-        const list = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(list);
-        const cur = list.find((y) => y.isCurrent) || list[0];
-        if (cur?.uuid) setAcademicYearId(cur.uuid);
-      } catch { /* years optional */ }
-    })();
-  }, [loadHouses]);
+  useEffect(() => { loadHouses(); }, [loadHouses]);
 
   useEffect(() => {
     if (!academicYearId) return;
@@ -242,11 +230,6 @@ export default function HousesRotation() {
             Pin a house to a week to set / re-anchor the cycle; skip a week (holiday) without shifting it. The earliest pin starts the cycle.
           </Typography>
           <Grid container spacing={2} sx={{ mt: 0.5, mb: 2 }}>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
             <Grid item xs={12} sm={4}>
               <TextField fullWidth select size="small" label="Wing (plan)" value={planId} onChange={(e) => setPlanId(e.target.value)}>
                 {plans.map((p) => <MenuItem key={p.uuid} value={p.uuid}>{p.name}</MenuItem>)}

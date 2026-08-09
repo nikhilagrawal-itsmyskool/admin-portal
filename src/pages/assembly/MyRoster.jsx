@@ -8,9 +8,9 @@ import { toRows, toPayload } from './rosterParticipants';
 import RosterDays from './RosterDays';
 import RosterEditor from './RosterEditor';
 import { resolveMyRosterWeeks } from './myAssembly';
+import { fmtDate } from '../../utils/date';
 
 const STATUS_COLOR = { draft: 'default', submitted: 'warning', approved: 'success' };
-const fmtWeek = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
 // Admin/god → the full wing+week picker; teacher → their house's duty weeks (this
 // week + next 4), tap a week to open it.
@@ -131,7 +131,7 @@ function TeacherRoster() {
           {duties.map((d) => (
             <Chip
               key={d.weekStart}
-              label={`Week of ${fmtWeek(d.weekStart)}`}
+              label={`Week of ${fmtDate(d.weekStart)}`}
               onClick={() => pickWeek(d)}
               color={d.weekStart === selected ? 'primary' : 'default'}
               variant={d.weekStart === selected ? 'filled' : 'outlined'}

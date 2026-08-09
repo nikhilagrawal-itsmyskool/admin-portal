@@ -6,6 +6,7 @@ import {
   UploadFile as UploadIcon, Download as DownloadIcon, Delete as DeleteIcon, Description as DocIcon,
 } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
+import { fmtDate } from '../../utils/date';
 
 const ACCEPT = '.doc,.docx,.pdf,.xlsx,.xls,.odt,.txt';
 
@@ -29,12 +30,6 @@ function fmtSize(n) {
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
-function fmtDate(s) {
-  if (!s) return '';
-  try { return new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
-  catch { return s; }
-}
-
 // The source reference document (Word/PDF the assembly was built from) for one kind
 // ('plan' | 'checklist' | 'grading'). Upload/replace, download, delete. Self-contained:
 // fetches the school's docs and shows the one for `kind`.

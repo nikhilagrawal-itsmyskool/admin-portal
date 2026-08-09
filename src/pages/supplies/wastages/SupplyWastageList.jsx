@@ -28,6 +28,7 @@ import { suppliesService } from '../../../services/suppliesService';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { fmtDate } from '../../../utils/date';
 
 const reasonLabels = { spoiled: 'Spoiled', expired: 'Expired', damaged: 'Damaged', lost: 'Lost', used_up: 'Used Up', other: 'Other' };
 const reasonColors = { spoiled: 'warning', expired: 'warning', damaged: 'error', lost: 'error', used_up: 'default', other: 'default' };
@@ -118,11 +119,10 @@ export default function SupplyWastageList() {
     }
   };
 
-  const formatDate = (v) => (v ? new Date(v).toLocaleDateString() : '-');
 
   const columns = [
     { field: 'itemName', headerName: 'Item', flex: 1, minWidth: 160 },
-    { field: 'wastageDate', headerName: 'Date', width: 120, valueFormatter: (value) => formatDate(value) },
+    { field: 'wastageDate', headerName: 'Date', width: 120, valueFormatter: (value) => fmtDate(value) },
     { field: 'quantity', headerName: 'Qty', width: 70 },
     {
       field: 'reason', headerName: 'Reason', width: 120,

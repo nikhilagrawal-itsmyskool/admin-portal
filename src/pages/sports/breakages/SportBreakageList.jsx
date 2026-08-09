@@ -32,6 +32,7 @@ import { sportsService } from '../../../services/sportsService';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { fmtDate } from '../../../utils/date';
 
 export default function SportBreakageList() {
   const navigate = useNavigate();
@@ -175,11 +176,6 @@ export default function SportBreakageList() {
     setImageDialog({ open: false, url: null, mimeType: null, fileName: null });
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
   const formatCurrency = (value) => {
     if (!value) return '-';
     return parseFloat(value).toFixed(2);
@@ -198,7 +194,7 @@ export default function SportBreakageList() {
       field: 'breakageDate',
       headerName: 'Date',
       width: 110,
-      valueFormatter: (value) => formatDate(value),
+      valueFormatter: (value) => fmtDate(value),
     },
     { field: 'quantity', headerName: 'Qty', width: 70 },
     {

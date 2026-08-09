@@ -8,6 +8,7 @@ import { ArrowBack as BackIcon } from '@mui/icons-material';
 import { attendanceService } from '../../services/attendanceService';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import { fmtDateTime } from '../../utils/date';
 
 const STATUS_OPTIONS = ['present', 'absent', 'late', 'leave'];
 const statusColor = (s) => ({ present: 'success', absent: 'error', late: 'warning', leave: 'info' }[s] || 'default');
@@ -69,7 +70,7 @@ export default function AttendanceSessionDetail() {
             <Chip label={session.status} color={session.status === 'finalized' ? 'success' : 'default'} />
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Class: {session.classId}{session.finalizedAt ? ` · Finalized: ${String(session.finalizedAt).slice(0, 19).replace('T', ' ')}` : ''}
+            Class: {session.classId}{session.finalizedAt ? ` · Finalized: ${fmtDateTime(session.finalizedAt)}` : ''}
           </Typography>
         </CardContent>
       </Card>
@@ -129,7 +130,7 @@ export default function AttendanceSessionDetail() {
                     <strong>{a.studentName || a.studentId}</strong>: {a.oldStatus || '—'} → {a.newStatus}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {a.source} · {String(a.changedAt).slice(0, 19).replace('T', ' ')}{a.changedbyUserid ? ` · by ${a.changedbyUserid}` : ''}
+                    {a.source} · {fmtDateTime(a.changedAt)}{a.changedbyUserid ? ` · by ${a.changedbyUserid}` : ''}
                   </Typography>
                 </Box>
               ))}

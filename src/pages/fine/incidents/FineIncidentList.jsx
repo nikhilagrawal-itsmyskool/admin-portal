@@ -34,6 +34,7 @@ import {
 import { fineService } from '../../../services/fineService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { fmtDate } from '../../../utils/date';
 
 const CATEGORY_LABELS = {
   library: 'Library',
@@ -61,11 +62,6 @@ const STATUS_LABELS = {
 const formatCurrency = (amount) => {
   if (!amount && amount !== 0) return '-';
   return `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-};
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('en-IN');
 };
 
 export default function FineIncidentList() {
@@ -183,7 +179,7 @@ export default function FineIncidentList() {
       field: 'incidentDate',
       headerName: 'Date',
       width: 100,
-      valueFormatter: (value) => formatDate(value),
+      valueFormatter: (value) => fmtDate(value),
     },
     {
       field: 'category',

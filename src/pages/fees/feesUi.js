@@ -1,4 +1,5 @@
 import { feesService } from '../../services/feesService';
+import { fmtDate as coreFmtDate } from '../../utils/date';
 
 // Open a receipt for print. The /print endpoint is auth-gated, so a plain window.open(url)
 // (no Authorization header) 401s — instead fetch the HTML via the authenticated client and
@@ -46,12 +47,9 @@ export function errMsg(err, fallback = 'Something went wrong') {
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-// Server sends date columns as ISO datetime ("2026-03-01T00:00:00.000Z"); show a plain date.
-// String-sliced (no Date()) so no timezone day-shift.
+// On-screen dates use the portal-wide canonical format (dd-mm-yyyy); keep the '—' empty fallback.
 export function fmtDate(v) {
-  if (!v) return '—';
-  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}` : String(v);
+  return v ? coreFmtDate(v) : '—';
 }
 // For <input type="date"> which needs YYYY-MM-DD.
 export function toDateInput(v) {

@@ -5,7 +5,7 @@ import {
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Button, Stack,
 } from '@mui/material';
 import { syllabusService } from '../../services/syllabusService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 
 // Syllabus readiness board: one row per plan (year+grade+subject). The subject
 // cell carries content + the model-paper matrix (exam × Paper/Blueprint/Answer key);
@@ -35,26 +35,11 @@ function frontierFrac(monthly, covered, total) {
 
 export default function Overview() {
   const navigate = useNavigate();
-  const [years, setYears] = useState([]);
-  const [academicYearId, setAcademicYearId] = useState('');
+  const { academicYearId } = useAcademicYear();
   const [data, setData] = useState({ currentMonthIndex: 0, rows: [] });
   const [f, setF] = useState({ grade: '', subject: '', teacherId: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const yrs = await academicCalendarService.getAcademicYears();
-        const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(yearList);
-        const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        setAcademicYearId(cur?.uuid || '');
-      } catch {
-        setError('Failed to load academic years');
-      }
-    })();
-  }, []);
 
   useEffect(() => {
     if (!academicYearId) { setData({ currentMonthIndex: 0, rows: [] }); return; }
@@ -191,12 +176,6 @@ export default function Overview() {
       <Card sx={{ mb: 2 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Grid container spacing={2}>
-            <Grid item xs={6} md={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={academicYearId}
-                onChange={(e) => setAcademicYearId(e.target.value)}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
             <Grid item xs={6} md={2}>
               <TextField fullWidth select size="small" label="Grade" value={f.grade}
                 onChange={(e) => setF({ ...f, grade: e.target.value })}>

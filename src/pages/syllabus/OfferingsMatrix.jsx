@@ -11,8 +11,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { syllabusService } from '../../services/syllabusService';
-import { academicCalendarService } from '../../services/academicCalendarService';
 import { employeeService } from '../../services/employeeService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 
 // Offerings matrix: for a grade + stream, one row per subject (plan), one column
@@ -23,15 +23,15 @@ export default function OfferingsMatrix() {
   const [searchParams] = useSearchParams();
   const can = useCan();
   const canManage = can('syllabus.manage');
+  const { academicYearId } = useAcademicYear();
 
-  const [years, setYears] = useState([]);
   const [grades, setGrades] = useState([]);
   const [streams, setStreams] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [layouts, setLayouts] = useState([]);
   const [employees, setEmployees] = useState([]);
 
-  const [filter, setFilter] = useState({ academicYearId: '', grade: '', streamCode: '' });
+  const [filter, setFilter] = useState({ grade: '', streamCode: '' });
   const [plans, setPlans] = useState([]);
   const [teachersByPlan, setTeachersByPlan] = useState({}); // syllabusId -> persisted assignments[]
   const [loading, setLoading] = useState(false);
@@ -46,29 +46,23 @@ export default function OfferingsMatrix() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, grds, strms, subs, lookups, emps] = await Promise.all([
-          academicCalendarService.getAcademicYears(),
+        const [grds, strms, subs, lookups, emps] = await Promise.all([
           syllabusService.getGrades(),
           syllabusService.getStreams(),
           syllabusService.getSubjects(),
           syllabusService.getLookups(),
           employeeService.searchEmployees(),
         ]);
-        const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(yearList);
         setGrades(grds || []);
         setStreams(strms || []);
         setSubjects(subs || []);
         setLayouts(lookups?.layouts || []);
         setEmployees(emps || []);
-        const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        // Prefer grade/year passed in the URL (e.g. from the Overview screen).
+        // Prefer the grade passed in the URL (e.g. from the Overview screen).
         const qpGrade = searchParams.get('grade');
-        const qpYear = searchParams.get('academicYearId');
         const gradeMatch = (grds || []).find((g) => g.grade.toLowerCase() === (qpGrade || '').toLowerCase());
         setFilter((f) => ({
           ...f,
-          academicYearId: (qpYear && yearList.some((y) => y.uuid === qpYear) ? qpYear : cur?.uuid) || '',
           grade: gradeMatch?.grade || (grds || [])[0]?.grade || '',
         }));
       } catch {
@@ -82,17 +76,17 @@ export default function OfferingsMatrix() {
     return g?.sections || [];
   }, [grades, filter.grade]);
 
-  const loadMatrix = async (f = filter) => {
-    if (!f.academicYearId || !f.grade) { setPlans([]); setTeachersByPlan({}); return; }
+  const loadMatrix = async () => {
+    if (!academicYearId || !filter.grade) { setPlans([]); setTeachersByPlan({}); return; }
     setLoading(true); setError('');
     try {
-      const params = { academicYearId: f.academicYearId, grade: f.grade };
-      if (f.streamCode) params.streamCode = f.streamCode;
+      const params = { academicYearId, grade: filter.grade };
+      if (filter.streamCode) params.streamCode = filter.streamCode;
       const pl = (await syllabusService.getSyllabi(params)) || [];
       setPlans(pl);
       // One bulk fetch for the whole grade. (Previously one request per subject,
       // whose intermittent failures were swallowed → saved teachers vanished.)
-      const rows = (await syllabusService.getGradeTeachers({ academicYearId: f.academicYearId, grade: f.grade })) || [];
+      const rows = (await syllabusService.getGradeTeachers({ academicYearId, grade: filter.grade })) || [];
       const grouped = {};
       for (const r of rows) (grouped[r.syllabusId] = grouped[r.syllabusId] || []).push(r);
       setTeachersByPlan(grouped);
@@ -102,7 +96,7 @@ export default function OfferingsMatrix() {
       setLoading(false);
     }
   };
-  useEffect(() => { loadMatrix(); /* eslint-disable-next-line */ }, [filter.academicYearId, filter.grade, filter.streamCode]);
+  useEffect(() => { loadMatrix(); /* eslint-disable-next-line */ }, [academicYearId, filter.grade, filter.streamCode]);
 
   const cellAssignments = (planId, classId) =>
     (teachersByPlan[planId] || []).filter((a) => a.classId === classId);
@@ -143,7 +137,7 @@ export default function OfferingsMatrix() {
     setSaving(true); setError('');
     try {
       await syllabusService.createSyllabus({
-        academicYearId: filter.academicYearId,
+        academicYearId,
         grade: filter.grade,
         streamCode: dialog.streamCode || undefined,
         subjectId: dialog.subjectId,
@@ -175,12 +169,6 @@ export default function OfferingsMatrix() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField fullWidth select size="small" label="Academic Year" value={filter.academicYearId}
-                onChange={(e) => setFilter({ ...filter, academicYearId: e.target.value })}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
             <Grid item xs={12} md={3}>
               <TextField fullWidth select size="small" label="Grade" value={filter.grade}
                 onChange={(e) => setFilter({ ...filter, grade: e.target.value })}>

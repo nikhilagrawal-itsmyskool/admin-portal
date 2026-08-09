@@ -15,8 +15,8 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { assetService } from '../../../services/assetService';
+import { fmtDate } from '../../../utils/date';
 
-const formatDate = (v) => (v ? new Date(v).toLocaleDateString('en-GB') : '—');
 
 // Read-only history of an asset's location (parent) changes.
 export default function MovementsDialog({ open, onClose, asset, nameById }) {
@@ -69,7 +69,7 @@ export default function MovementsDialog({ open, onClose, asset, nameById }) {
             <TableBody>
               {movements.map((m) => (
                 <TableRow key={m.uuid}>
-                  <TableCell>{formatDate(m.movementDate)}</TableCell>
+                  <TableCell>{fmtDate(m.movementDate)}</TableCell>
                   <TableCell>{label(m.fromParentId)}</TableCell>
                   <TableCell>{label(m.toParentId)}</TableCell>
                   <TableCell align="right">{m.quantityMoved}</TableCell>

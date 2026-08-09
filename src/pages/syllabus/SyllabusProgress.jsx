@@ -4,7 +4,7 @@ import {
   CircularProgress, LinearProgress,
 } from '@mui/material';
 import { syllabusService } from '../../services/syllabusService';
-import { academicCalendarService } from '../../services/academicCalendarService';
+import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 import CoverageTree from './CoverageTree';
 
@@ -13,13 +13,13 @@ const CAL_TO_MONTH = { 0: 'january', 1: 'february', 2: 'march', 3: 'april', 4: '
 export default function SyllabusProgress() {
   const can = useCan();
   const canMark = can('syllabus.progress.mark');
+  const { academicYearId } = useAcademicYear();
 
-  const [years, setYears] = useState([]);
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [monthLabel, setMonthLabel] = useState({});
 
-  const [sel, setSel] = useState({ academicYearId: '', grade: '', subjectId: '', classId: '' });
+  const [sel, setSel] = useState({ grade: '', subjectId: '', classId: '' });
   const [plan, setPlan] = useState(null);
   const [roster, setRoster] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState(false);
@@ -30,18 +30,13 @@ export default function SyllabusProgress() {
   useEffect(() => {
     (async () => {
       try {
-        const [yrs, grds, lookups] = await Promise.all([
-          academicCalendarService.getAcademicYears(),
+        const [grds, lookups] = await Promise.all([
           syllabusService.getGrades(),
           syllabusService.getLookups(),
         ]);
-        const yearList = Array.isArray(yrs) ? yrs : yrs?.academicYears || [];
-        setYears(yearList);
         setGrades(grds || []);
         const ml = {}; (lookups?.months || []).forEach((m) => { ml[m.value] = m.label; });
         setMonthLabel(ml);
-        const cur = yearList.find((y) => y.isCurrent) || yearList[0];
-        if (cur?.uuid) setSel((s) => ({ ...s, academicYearId: cur.uuid }));
       } catch {
         setError('Failed to load filters');
       }
@@ -63,12 +58,12 @@ export default function SyllabusProgress() {
 
   // Resolve the plan whenever year + grade + subject are all chosen.
   useEffect(() => {
-    if (!sel.academicYearId || !sel.grade || !sel.subjectId) { setPlan(null); setRoster(null); return; }
+    if (!academicYearId || !sel.grade || !sel.subjectId) { setPlan(null); setRoster(null); return; }
     (async () => {
       setLoadingPlan(true); setError(''); setRoster(null);
       try {
         const matches = await syllabusService.getSyllabi({
-          academicYearId: sel.academicYearId, grade: sel.grade, subjectId: sel.subjectId,
+          academicYearId, grade: sel.grade, subjectId: sel.subjectId,
         });
         setPlan((matches && matches[0]) || null);
       } catch {
@@ -77,7 +72,7 @@ export default function SyllabusProgress() {
         setLoadingPlan(false);
       }
     })();
-  }, [sel.academicYearId, sel.grade, sel.subjectId]);
+  }, [academicYearId, sel.grade, sel.subjectId]);
 
   // Load the roster whenever the plan and a section are both selected.
   useEffect(() => {
@@ -127,12 +122,6 @@ export default function SyllabusProgress() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField fullWidth select size="small" label="Academic Year" value={sel.academicYearId}
-                onChange={(e) => setSel({ ...sel, academicYearId: e.target.value })}>
-                {years.map((y) => <MenuItem key={y.uuid} value={y.uuid}>{y.name}{y.isCurrent ? ' (current)' : ''}</MenuItem>)}
-              </TextField>
-            </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField fullWidth select size="small" label="Grade" value={sel.grade}
                 onChange={(e) => setSel({ ...sel, grade: e.target.value, classId: '', subjectId: '' })}>

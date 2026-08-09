@@ -32,6 +32,7 @@ import { suppliesService } from '../../../services/suppliesService';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { fmtDate } from '../../../utils/date';
 
 function ReturnDialog({ open, issue, onClose, onSuccess }) {
   const [returnData, setReturnData] = useState({ returnDate: new Date().toISOString().split('T')[0], returnCondition: 'good', returnRemarks: '' });
@@ -174,12 +175,11 @@ export default function SupplyIssueList() {
     }
   };
 
-  const formatDate = (v) => (v ? new Date(v).toLocaleDateString() : '-');
   const issueTypeLabels = { class_use: 'Class Use', department: 'Department', individual: 'Individual', event: 'Event', disposed: 'Disposed', transferred: 'Transferred' };
 
   const columns = [
     { field: 'itemName', headerName: 'Item', flex: 1, minWidth: 160 },
-    { field: 'issueDate', headerName: 'Issue Date', width: 120, valueFormatter: (value) => formatDate(value) },
+    { field: 'issueDate', headerName: 'Issue Date', width: 120, valueFormatter: (value) => fmtDate(value) },
     { field: 'quantity', headerName: 'Qty', width: 70 },
     {
       field: 'issueType', headerName: 'Type', width: 120,
