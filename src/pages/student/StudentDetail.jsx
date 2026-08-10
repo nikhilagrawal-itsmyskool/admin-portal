@@ -28,6 +28,9 @@ import {
   Autocomplete,
   Checkbox,
   FormControlLabel,
+  Switch,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -42,6 +45,7 @@ import { transferService } from '../../services/transferService';
 import StudentAttendancePanel from './StudentAttendancePanel';
 import StudentTimetableToday from './StudentTimetableToday';
 import StudentFeesPanel from './StudentFeesPanel';
+import StudentDetailModern, { ModernErrorBoundary } from './StudentDetailModern';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
@@ -339,6 +343,13 @@ export default function StudentDetail() {
   const canTransferView = can(ACTIONS.TRANSFER_VIEW);
   const canTransferManage = can(ACTIONS.TRANSFER_MANAGE);
 
+  // Opt-in "New look" (desktop only) — remembered per user; classic stays default.
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const [newLook, setNewLook] = useState(() => { try { return localStorage.getItem('student360.view') === 'new'; } catch { return false; } });
+  const setLook = (v) => { setNewLook(v); try { localStorage.setItem('student360.view', v ? 'new' : 'classic'); } catch { /* ignore */ } };
+  const showModern = newLook && isDesktop;
+
   const [student, setStudent] = useState(null);
   const [photoUrl, setPhotoUrl] = useState('');
   const [guardianPhotos, setGuardianPhotos] = useState({}); // guardianId -> dataUrl
@@ -569,6 +580,13 @@ export default function StudentDetail() {
         <Typography variant="h4" sx={{ flexGrow: 1 }}>
           {student.name}
         </Typography>
+        {isDesktop && (
+          <FormControlLabel
+            sx={{ mr: 1 }}
+            control={<Switch size="small" checked={newLook} onChange={(e) => setLook(e.target.checked)} />}
+            label={<Typography variant="body2" color="text.secondary">New look</Typography>}
+          />
+        )}
         {canManage && (
           <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/students/${id}/edit`)}>
             Edit
@@ -593,6 +611,16 @@ export default function StudentDetail() {
         </Alert>
       )}
 
+      {showModern ? (
+        <ModernErrorBoundary onError={() => setLook(false)}>
+          <StudentDetailModern ctx={{
+            student, tcs, can, canManage, canViewContacts, canTransferView, canTransferManage,
+            photoUrl, guardianPhotos, openLightbox, pickGuardianPhoto, fileRef, handlePhotoPick,
+            setGuardianDialog, setAddressDialog, setSiblingSearch, setDelGuardian, setDelAddress, setDelSibling, setTcDialog,
+            codeLabel, navigate, id,
+          }} />
+        </ModernErrorBoundary>
+      ) : (
       <Grid container spacing={3}>
         {/* Identity card */}
         <Grid item xs={12} md={4}>
@@ -970,6 +998,7 @@ export default function StudentDetail() {
           </Alert>
         </Grid>
       </Grid>
+      )}
 
       <GuardianDialog
         open={guardianDialog.open}
