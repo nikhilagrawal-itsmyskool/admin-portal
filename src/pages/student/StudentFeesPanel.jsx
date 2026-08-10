@@ -180,10 +180,14 @@ export default function StudentFeesPanel({ studentId, student }) {
   const goCollect = () => navigate('/fees/collect', student ? { state: { student } } : undefined);
 
   const kpi = (label, value, color, sub) => (
-    <Card variant="outlined" sx={{ borderLeft: `4px solid ${color}` }}>
+    <Card variant="outlined" sx={{ borderLeft: `4px solid ${color}`, height: '100%' }}>
       <CardContent sx={{ py: 1.5 }}>
-        <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-          {label}{sub ? <Box component="span" sx={{ textTransform: 'none', fontWeight: 400, ml: 0.5, fontSize: 10 }}>{sub}</Box> : null}
+        <Typography noWrap sx={{ fontSize: 12, color: FEE_COLORS.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          {label}
+        </Typography>
+        {/* Sub-label always on its own line (nbsp keeps the height when absent) so all four cards align. */}
+        <Typography noWrap sx={{ textTransform: 'none', fontWeight: 400, fontSize: 10, color: FEE_COLORS.muted, minHeight: 14 }}>
+          {sub || ' '}
         </Typography>
         <Typography sx={{ fontSize: 22, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
       </CardContent>
