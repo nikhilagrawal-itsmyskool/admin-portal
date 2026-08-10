@@ -10,6 +10,7 @@ import { Payments as PaymentsIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from '../fees/feesUi';
+import ReceiptPrintButton from '../fees/ReceiptPrintButton';
 import { fmtDate } from '../../utils/date';
 import FollowupDialog, { fLabel, fColor } from '../fees/FollowupDialog';
 import { useCan } from '../../permissions/can';
@@ -335,7 +336,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                             <TableCell sx={{ color: FEE_COLORS.muted }}>{r.cycleSet || r.transportRemark || '—'}</TableCell>
                             <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
                             <TableCell align="right" sx={{ fontWeight: 600 }}>{inr(r.totalPaid)}</TableCell>
-                            <TableCell align="right"><Button size="small" onClick={() => openReceipt(r.uuid)}>Print</Button></TableCell>
+                            <TableCell align="right"><ReceiptPrintButton receiptId={r.uuid} /></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -384,7 +385,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                           <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                           <TableCell align="right">
-                            <Button size="small" onClick={() => openReceipt(r.uuid)}>Print</Button>
+                            <ReceiptPrintButton receiptId={r.uuid} />
                             {!cancelled && canManage && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}>Cancel</Button>}
                           </TableCell>
                         </TableRow>

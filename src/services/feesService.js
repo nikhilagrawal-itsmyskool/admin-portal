@@ -82,7 +82,7 @@ export const feesService = {
   cancelReceipt: async (id, data = {}) => (await api.post(`/fees/receipts/${id}/cancel`, data)).data,
   // print returns HTML — expose the URL so callers can open/print it.
   receiptPrintUrl: (id) => `${api.defaults.baseURL}/fees/receipts/${id}/print`,
-  getReceiptHtml: async (id) => (await api.get(`/fees/receipts/${id}/print`)).data,
+  getReceiptHtml: async (id, format) => (await api.get(`/fees/receipts/${id}/print`, { params: format ? { format } : {} })).data,
   collectAdhoc: async (data) => (await api.post('/fees/receipts/adhoc', data)).data,
   collectTransport: async (data) => (await api.post('/fees/receipts/transport', data)).data,
 

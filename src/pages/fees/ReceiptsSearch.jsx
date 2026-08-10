@@ -12,6 +12,7 @@ import {
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
+import ReceiptPrintButton from './ReceiptPrintButton';
 import { fmtDate, isoDate } from '../../utils/date';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -160,7 +161,7 @@ export default function ReceiptsSearch() {
                       <TableCell>{PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                        <Tooltip title="Print"><IconButton size="small" onClick={() => openReceipt(r.uuid)}><PrintIcon fontSize="small" /></IconButton></Tooltip>
+                        <ReceiptPrintButton receiptId={r.uuid} variant="icon" />
                         {!cancelled && <Tooltip title="Cancel receipt"><IconButton size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}><CancelIcon fontSize="small" /></IconButton></Tooltip>}
                       </TableCell>
                     </TableRow>

@@ -4,10 +4,10 @@ import { fmtDate as coreFmtDate } from '../../utils/date';
 // Open a receipt for print. The /print endpoint is auth-gated, so a plain window.open(url)
 // (no Authorization header) 401s — instead fetch the HTML via the authenticated client and
 // write it into a new window. The window is opened synchronously on the click to dodge popup blockers.
-export async function openReceipt(id) {
+export async function openReceipt(id, format) {
   const w = window.open('', '_blank');
   try {
-    const html = await feesService.getReceiptHtml(id);
+    const html = await feesService.getReceiptHtml(id, format);
     if (w) { w.document.open(); w.document.write(html); w.document.close(); }
     return true;
   } catch (e) {
