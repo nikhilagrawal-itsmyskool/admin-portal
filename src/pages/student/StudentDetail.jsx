@@ -50,6 +50,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { maskContact } from '../../utils/mask';
 import { fmtDate } from '../../utils/date';
 
@@ -343,6 +344,12 @@ export default function StudentDetail() {
   const canTransferView = can(ACTIONS.TRANSFER_VIEW);
   const canTransferManage = can(ACTIONS.TRANSFER_MANAGE);
 
+  // On the PWA (phone) the 360 is read-mostly: create/edit/delete are hidden;
+  // only change-photo stays. isMobile = < sm (the app's mobile surface).
+  const isMobile = useIsMobile();
+  // Create/edit/delete actions on the 360 — hidden on the PWA (phone), where the
+  // page is read-only except change-photo. Desktop keeps everything (canManage).
+  const canEdit = canManage && !isMobile;
   // Opt-in "New look" (desktop only) — remembered per user; classic stays default.
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -587,7 +594,7 @@ export default function StudentDetail() {
             label={<Typography variant="body2" color="text.secondary">New look</Typography>}
           />
         )}
-        {canManage && (
+        {canEdit && (
           <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/students/${id}/edit`)}>
             Edit
           </Button>
@@ -701,7 +708,7 @@ export default function StudentDetail() {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Guardians</Typography>
-                {canManage && (
+                {canEdit && (
                   <Button size="small" startIcon={<AddIcon />} onClick={() => setGuardianDialog({ open: true, initial: null })}>
                     Add
                   </Button>
@@ -759,12 +766,16 @@ export default function StudentDetail() {
                                     <PhotoIcon fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
-                                <IconButton size="small" onClick={() => setGuardianDialog({ open: true, initial: g })}>
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small" color="error" onClick={() => setDelGuardian({ open: true, item: g })}>
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
+                                {!isMobile && (
+                                  <IconButton size="small" onClick={() => setGuardianDialog({ open: true, initial: g })}>
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                )}
+                                {!isMobile && (
+                                  <IconButton size="small" color="error" onClick={() => setDelGuardian({ open: true, item: g })}>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                )}
                               </Box>
                             )}
                           </Box>
@@ -802,7 +813,7 @@ export default function StudentDetail() {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Addresses</Typography>
-                {canManage && (
+                {canEdit && (
                   <Button size="small" startIcon={<AddIcon />} onClick={() => setAddressDialog({ open: true, initial: null })}>
                     Add
                   </Button>
@@ -821,7 +832,7 @@ export default function StudentDetail() {
                               {a.isPermanent && <Chip size="small" label="Permanent" color="primary" variant="outlined" />}
                               {a.isCommunication && <Chip size="small" label="Communication" color="success" variant="outlined" />}
                             </Box>
-                            {canManage && (
+                            {canEdit && (
                               <Box>
                                 <IconButton size="small" onClick={() => setAddressDialog({ open: true, initial: a })}>
                                   <EditIcon fontSize="small" />
@@ -851,6 +862,36 @@ export default function StudentDetail() {
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Enrollment history
               </Typography>
+              {isMobile ? (
+                (student.enrollments || []).length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">No enrollment records.</Typography>
+                ) : (
+                  <Stack divider={<Divider flexItem />} spacing={0}>
+                    {student.enrollments.map((e) => {
+                      const isGap = e.kind === 'gap';
+                      const isHistorical = e.kind === 'historical';
+                      return (
+                        <Box key={e.uuid} sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, py: 0.9, ...(isGap ? { color: 'text.disabled', fontStyle: 'italic' } : {}) }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: 13, minWidth: 74, flex: 'none' }}>{e.academicYearName || '—'}</Typography>
+                          {isGap ? (
+                            <Chip size="small" label="Gap year — not enrolled" color="warning" variant="outlined" />
+                          ) : (
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
+                                {e.className || '—'}{e.streamCode ? ` · ${e.streamName || e.streamCode}` : ''}
+                                {isHistorical && <Chip size="small" label="prev. adm" variant="outlined" sx={{ ml: 1 }} />}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Roll {e.rollNumber ?? '—'} · Joined {e.joinDate ? fmtDate(e.joinDate) : '—'}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                )
+              ) : (
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -900,6 +941,7 @@ export default function StudentDetail() {
                   )}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
 
@@ -949,7 +991,7 @@ export default function StudentDetail() {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Transfer Certificate</Typography>
-                {canTransferManage && (
+                {canTransferManage && !isMobile && (
                   <Button size="small" startIcon={<AddIcon />} onClick={() => setTcDialog({ open: true, initial: null })}>
                     Apply
                   </Button>

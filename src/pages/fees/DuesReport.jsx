@@ -15,6 +15,17 @@ import StudentFeesPanel from '../student/StudentFeesPanel';
 import FollowupDialog from './FollowupDialog';
 import { errMsg, inr, classRank, FEE_COLORS } from './feesUi';
 import { fmtDate, fmtDateLong, isoDate } from '../../utils/date';
+import { useIsMobile } from '../../hooks/useIsMobile';
+
+// Compact per-student figure for the mobile dues card.
+function mobFig(label, value, color) {
+  return (
+    <Box>
+      <Typography sx={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.03em', color: FEE_COLORS.muted, lineHeight: 1.2 }}>{label}</Typography>
+      <Typography sx={{ fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: color || 'text.primary' }}>{value}</Typography>
+    </Box>
+  );
+}
 
 const FOLLOWUPS = [
   { v: '', label: '—' },
@@ -28,6 +39,7 @@ const fColor = (v) => FOLLOWUPS.find((f) => f.v === (v || ''))?.color || 'defaul
 
 export default function DuesReport() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile(); // PWA: card list, tap → 360 (no drawer)
   const { academicYearId } = useAcademicYear();
   const [mode, setMode] = useState('due'); // due | all
   const [classId, setClassId] = useState('');
@@ -208,6 +220,28 @@ export default function DuesReport() {
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+        ) : isMobile ? (
+          <Box sx={{ p: 1.5 }}>
+            {rows.length === 0 && <Typography sx={{ color: FEE_COLORS.success, py: 4, textAlign: 'center' }}>No students match this filter. 🎉</Typography>}
+            {rows.map((r) => (
+              <Box key={r.studentId} onClick={() => navigate(`/students/${r.studentId}`)}
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.25, borderBottom: '1px solid', borderColor: 'divider', cursor: 'pointer' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{r.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {r.className || '—'}{r.admissionNumber ? ` · ${r.admissionNumber}` : ''}{(r.studentStatus || 'active') !== 'active' ? ' · Left' : ''}
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '2px 8px', mt: 0.5 }}>
+                    {mobFig('Now', inr(r.dueNow), FEE_COLORS.danger)}
+                    {mobFig('Qtr', inr(r.dueQuarter))}
+                    {mobFig('Year', inr(r.fullYear))}
+                    {mobFig('Prev', r.prevYears > 0 ? inr(r.prevYears) : '—', r.prevYears > 0 ? FEE_COLORS.warning : undefined)}
+                  </Box>
+                </Box>
+                <Typography sx={{ color: FEE_COLORS.muted, fontSize: 20, flex: 'none' }}>›</Typography>
+              </Box>
+            ))}
+          </Box>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
             <Table size="small" stickyHeader sx={{ minWidth: 900 }}>

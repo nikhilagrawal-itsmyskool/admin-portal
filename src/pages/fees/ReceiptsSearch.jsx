@@ -14,6 +14,7 @@ import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
 import ReceiptPrintButton from './ReceiptPrintButton';
 import { fmtDate, isoDate } from '../../utils/date';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const pad = (n) => String(n).padStart(2, '0');
 const monthLabel = (ym) => { if (!ym) return ''; const [y, m] = ym.split('-'); return new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }); };
@@ -23,6 +24,7 @@ const monthRange = (ym) => { const [y, m] = ym.split('-').map(Number); return { 
 
 export default function ReceiptsSearch() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile(); // PWA: Print stays, Cancel hidden
   const { academicYearId, years: ayList } = useAcademicYear();
   const ayName = useMemo(() => { const o = {}; (ayList || []).forEach((y) => { o[y.uuid] = y.name; }); return o; }, [ayList]);
 
@@ -162,7 +164,7 @@ export default function ReceiptsSearch() {
                       <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                         <ReceiptPrintButton receiptId={r.uuid} variant="icon" />
-                        {!cancelled && <Tooltip title="Cancel receipt"><IconButton size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}><CancelIcon fontSize="small" /></IconButton></Tooltip>}
+                        {!cancelled && !isMobile && <Tooltip title="Cancel receipt"><IconButton size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}><CancelIcon fontSize="small" /></IconButton></Tooltip>}
                       </TableCell>
                     </TableRow>
                   );

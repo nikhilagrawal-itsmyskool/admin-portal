@@ -15,10 +15,12 @@ import { fmtDate } from '../../utils/date';
 import FollowupDialog, { fLabel, fColor } from '../fees/FollowupDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Read-only fees summary for the student 360° view (admin/god gated by the caller).
 export default function StudentFeesPanel({ studentId, student }) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile(); // PWA: hide Collect/Cancel; compact the ledger
   const { academicYearId, years: ayList } = useAcademicYear();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -195,6 +197,62 @@ export default function StudentFeesPanel({ studentId, student }) {
     </Card>
   );
 
+  // Mobile (PWA) ledger — merge Head·Cycle into one description so the amounts fit
+  // without side-scroll (replaces the wide desktop tables on phones).
+  const mobDue = (l, upcoming) => (
+    <Box key={l.chargeId} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1, borderBottom: '1px solid', borderColor: 'divider', opacity: upcoming ? 0.75 : 1 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.2 }}>{l.headLabel}</Typography>
+        <Typography variant="caption" color="text.secondary">{l.cycleLabel || '—'}</Typography>
+      </Box>
+      <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', color: upcoming ? FEE_COLORS.muted : FEE_COLORS.danger }}>{inr(l.remaining)}</Typography>
+    </Box>
+  );
+  const mobFull = (l) => {
+    const paidFull = l.remaining <= 0;
+    return (
+      <Box key={l.chargeId} sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider', opacity: paidFull ? 0.7 : 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: 13.5, fontWeight: 600 }}>
+            {l.headLabel} <Typography component="span" variant="caption" color="text.secondary">· {l.cycleLabel || '—'}</Typography>
+          </Typography>
+          {statusChip(l)}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
+          <Typography variant="caption" color="text.secondary">Chg <b>{inr(l.charged)}</b></Typography>
+          <Typography variant="caption" color="text.secondary">Disc <b>{l.concession ? '−' + inr(l.concession) : '0'}</b></Typography>
+          <Typography variant="caption" sx={{ color: FEE_COLORS.success }}>Paid <b>{inr(l.paid)}</b></Typography>
+          <Typography variant="caption" sx={{ color: paidFull ? FEE_COLORS.muted : FEE_COLORS.danger }}>Bal <b>{inr(l.remaining)}</b></Typography>
+        </Box>
+      </Box>
+    );
+  };
+  const mobGroup = (t) => <Typography key={t} sx={{ fontSize: 11, fontStyle: 'italic', color: FEE_COLORS.muted, bgcolor: 'action.hover', px: 1, py: 0.5, mt: 0.5 }}>{t}</Typography>;
+  const mobFooter = (label, value, danger) => (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, mt: 0.5, borderTop: '2px solid', borderColor: 'divider' }}>
+      <Typography sx={{ fontWeight: danger ? 700 : 600, color: danger ? 'text.primary' : FEE_COLORS.muted }}>{label}</Typography>
+      <Typography sx={{ fontWeight: danger ? 800 : 600, color: danger ? FEE_COLORS.danger : FEE_COLORS.muted }}>{value}</Typography>
+    </Box>
+  );
+  const mobileDues = (
+    <Box>
+      {due.length === 0 && <Typography sx={{ color: FEE_COLORS.success, py: 2, textAlign: 'center' }}>{lines.length ? 'All settled — nothing outstanding.' : 'No fee activity this year.'}</Typography>}
+      {dueNowLines.map((l) => mobDue(l, false))}
+      {quarterLines.length > 0 && mobGroup(`${quarterLabel.toLowerCase()} — not yet due`)}
+      {quarterLines.map((l) => mobDue(l, true))}
+      {laterLines.length > 0 && mobGroup('later this year')}
+      {laterLines.map((l) => mobDue(l, true))}
+      {due.length > 0 && <>{mobFooter('Due now', inr(dueNowTotal), true)}{mobFooter('Due full year', inr(fullYearTotal), false)}</>}
+    </Box>
+  );
+  const mobileFull = (
+    <Box>
+      {lines.length === 0 && <Typography sx={{ color: FEE_COLORS.muted, py: 2, textAlign: 'center' }}>No fee activity this year.</Typography>}
+      {lines.map((l) => mobFull(l))}
+      {lines.length > 0 && mobFooter('Balance', inr(tot.remaining), true)}
+    </Box>
+  );
+
   return (
     <Card sx={{ mt: 3 }}>
       <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1, gap: 1, flexWrap: 'wrap' }}>
@@ -217,7 +275,7 @@ export default function StudentFeesPanel({ studentId, student }) {
             <ToggleButton value="receipts" sx={{ textTransform: 'none', py: 0.25 }}>Receipts</ToggleButton>
             <ToggleButton value="transport" sx={{ textTransform: 'none', py: 0.25 }}>Transport</ToggleButton>
           </ToggleButtonGroup>
-          {isCurrent && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
+          {isCurrent && !isMobile && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
           {canManage && (student?.status || 'active') === 'active' && (
             <Button size="small" color="warning" onClick={() => setWd({ date: new Date().toISOString().slice(0, 10), reason: '', busy: false })}>Mark withdrawn</Button>
           )}
@@ -259,7 +317,7 @@ export default function StudentFeesPanel({ studentId, student }) {
               <Button size="small" onClick={() => setFollowOpen(true)}>{followup.length ? 'View log' : 'Add'}</Button>
             </Box>
 
-            {view === 'dues' ? (
+            {view === 'dues' ? (isMobile ? mobileDues : (
               <Box sx={{ overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead><TableRow><TableCell>Status</TableCell><TableCell>Cycle</TableCell><TableCell>Head</TableCell><TableCell align="right">Due</TableCell></TableRow></TableHead>
@@ -289,7 +347,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                   )}
                 </Table>
               </Box>
-            ) : view === 'all' ? (
+            )) : view === 'all' ? (isMobile ? mobileFull : (
               <Box sx={{ overflowX: 'auto' }}>
                 <Table size="small" sx={{ minWidth: 620 }}>
                   <TableHead><TableRow>
@@ -314,7 +372,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                   )}
                 </Table>
               </Box>
-            ) : view === 'transport' ? (
+            )) : view === 'transport' ? (
               <Box sx={{ overflowX: 'auto' }}>
                 {transport === null ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>
@@ -386,7 +444,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                           <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                           <TableCell align="right">
                             <ReceiptPrintButton receiptId={r.uuid} />
-                            {!cancelled && canManage && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}>Cancel</Button>}
+                            {!cancelled && canManage && !isMobile && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}>Cancel</Button>}
                           </TableCell>
                         </TableRow>
                         );

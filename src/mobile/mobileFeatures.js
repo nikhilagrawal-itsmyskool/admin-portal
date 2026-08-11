@@ -22,6 +22,9 @@ import {
   MenuBook as SyllabusIcon,
   PhotoCamera as HomeworkIcon,
   RecordVoiceOver as AssistantIcon,
+  Payments as FeesIcon,
+  ReceiptLong as DuesIcon,
+  Receipt as ReceiptIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -38,8 +41,7 @@ import {
 export const MOBILE_FEATURES = [
   // ── Today ──────────────────────────────────────────────────────────────────
   // Voice/LLM student assistant — god-only (assistant.use is granted to no role).
-  { title: "Assistant", icon: AssistantIcon, path: "/assistant", perm: "assistant.use", section: "today", color: "#3366ff" },
-  { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view", section: "today", color: "#f4b400" },
+  { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view", section: "mine", color: "#f4b400" },
   {
     title: "Take Attendance",
     icon: AttendanceIcon,
@@ -54,7 +56,7 @@ export const MOBILE_FEATURES = [
     icon: SyllabusIcon,
     path: "/syllabus/my",
     perm: "syllabus.view",
-    section: "today",
+    section: "mine",
     color: "#8e24aa",
     routes: ["/syllabus/my", "/syllabus/my/:syllabusId/:classId"],
   },
@@ -85,7 +87,7 @@ export const MOBILE_FEATURES = [
   { title: "Hiring", hubLabel: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "people", hub: "people", routes: ["/hiring", "/hiring/:id"] },
   // Read-only TC search/list on mobile; tapping a row opens the student detail
   // (permitted via the Students feature). Apply/issue stays desktop-only.
-  { title: "Transfer", hubLabel: "Transfer", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", hub: "people", routes: ["/transfer"] },
+  { title: "Transfer Certificate", hubLabel: "TC", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", hub: "people", routes: ["/transfer"] },
 
   // ── Stores & Inventory ───────────────────────────────────────────────────────
   { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.view", section: "stores", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
@@ -107,6 +109,16 @@ export const MOBILE_FEATURES = [
 
   // Physical stock-count is the assets-incharge's job (asset.manage), not every teacher's.
   { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.manage", section: "stores", color: "#8d6e63" },
+
+  // ── Office — god only. The godpwa.* perms are granted to NO role, so only god ('*')
+  // sees these; admins on a phone won't. Read-only checking on the go.
+  { title: "Syllabus Overview", icon: SyllabusIcon, path: "/syllabus/overview", perm: "godpwa.syllabus.overview", section: "office", color: "#8e24aa", routes: ["/syllabus/overview"] },
+  { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
+  { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
+  { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },
+
+  // ── Tools — pinned last. Assistant is god-only (assistant.use granted to no role).
+  { title: "Assistant", icon: AssistantIcon, path: "/assistant", perm: "assistant.use", section: "tools", color: "#3366ff" },
 ];
 
 // Hub display metadata (title, icon, module accent color), keyed by the `hub` field above.
@@ -118,13 +130,17 @@ export const MOBILE_HUBS = {
   medical: { title: "Medical", icon: MedicalIcon, color: "#3366ff" },
   sports: { title: "Sports", icon: SportsIcon, color: "#0095ff" },
   supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
+  fees: { title: "Fees", icon: FeesIcon, color: "#00897b" },
 };
 
 // The home bands, in display order (mirrors the desktop groups; "Today" is mobile-first).
 export const MOBILE_SECTIONS = [
-  { key: "today", label: "Today" },
+  { key: "office", label: "Office" }, // god-only tiles (godpwa.*) — pinned to the top
+  { key: "today", label: "Now" },
+  { key: "mine", label: "Mine" },
   { key: "people", label: "People & Staff" },
   { key: "stores", label: "Stores & Inventory" },
+  { key: "tools", label: "Tools" }, // Assistant (god) — pinned last
 ];
 
 const DEFAULT_COLOR = "#3366ff";
