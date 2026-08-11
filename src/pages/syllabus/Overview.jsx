@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { syllabusService } from '../../services/syllabusService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Syllabus readiness board: one row per plan (year+grade+subject). The subject
 // cell carries content + the model-paper matrix (exam × Paper/Blueprint/Answer key);
@@ -35,6 +36,7 @@ function frontierFrac(monthly, covered, total) {
 
 export default function Overview() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile(); // PWA (god): card list instead of the wide table
   const { academicYearId } = useAcademicYear();
   const [data, setData] = useState({ currentMonthIndex: 0, rows: [] });
   const [f, setF] = useState({ grade: '', subject: '', teacherId: '' });
@@ -131,6 +133,7 @@ export default function Overview() {
   };
 
   let lastGrade = null;
+  let lastGradeM = null;
 
   return (
     <Box>
@@ -205,6 +208,55 @@ export default function Overview() {
         <CardContent>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+          ) : isMobile ? (
+            <Box>
+              {visible.length === 0 ? (
+                <Typography sx={{ py: 3, textAlign: 'center', color: 'text.secondary' }}>
+                  {rows.length === 0 ? 'No plans for this year.' : 'Nothing matches these filters.'}
+                </Typography>
+              ) : visible.map((row, i) => {
+                const band = row.grade !== lastGradeM;
+                lastGradeM = row.grade;
+                return (
+                  <React.Fragment key={row.syllabusId}>
+                    {band && <Typography sx={{ fontWeight: 700, fontSize: 13, mt: i ? 2 : 0, mb: 1, color: 'text.secondary' }}>Grade {row.grade}</Typography>}
+                    <Card variant="outlined" sx={{ mb: 1.25 }}>
+                      <CardContent sx={{ pb: '12px !important' }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: 15 }}>{row.subjectName}</Typography>
+                        {row.hasContent
+                          ? <Typography variant="caption" sx={{ color: 'success.main' }}>● {row.contentLeaves} topics{row.hasSource ? ' · .docx' : ''}</Typography>
+                          : <Typography variant="caption" sx={{ color: 'error.main' }}>● No plan uploaded</Typography>}
+                        <div className="papers">
+                          <span className="ph" />{DOCS.map((d) => <span key={d.key} className="ph">{d.label}</span>)}
+                          {EXAMS.map((ex) => (
+                            <React.Fragment key={ex.key}>
+                              <span className="rl">{ex.label}</span>
+                              {DOCS.map((d) => <React.Fragment key={d.key}>{paperCell(row, ex.key, d.key)}</React.Fragment>)}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                        <Box sx={{ mt: 1.5 }}>
+                          {row.sections.length > 0 && (
+                            <div className="ruler">
+                              <div className="ml">{MONTH_ABBR.map((m, k) => <span key={k}>{m}</span>)}</div>
+                              <span className="nowlab" style={{ left: `${nowPct}%` }}>now</span>
+                            </div>
+                          )}
+                          <div className="cov" style={{ minWidth: 0 }}>
+                            {row.sections.length === 0 ? <span className="cov-empty">No sections</span> : row.sections.map((sec) => sectionTimeline(row, sec))}
+                          </div>
+                        </Box>
+                        <Stack direction="row" spacing={0.5} sx={{ mt: 1 }}>
+                          <Button size="small" onClick={() => navigate(`/syllabus/plans/${row.syllabusId}`)}>Plan</Button>
+                          <Button size="small" onClick={() => navigate(`/syllabus/offerings?academicYearId=${academicYearId}&grade=${encodeURIComponent(row.grade)}`)}>Teachers</Button>
+                          <Button size="small" onClick={() => navigate(`/syllabus/model-papers?academicYearId=${academicYearId}&grade=${encodeURIComponent(row.grade)}`)}>Papers</Button>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </React.Fragment>
+                );
+              })}
+            </Box>
           ) : (
             <Box sx={{ overflowX: 'auto' }}>
               <Table size="small">

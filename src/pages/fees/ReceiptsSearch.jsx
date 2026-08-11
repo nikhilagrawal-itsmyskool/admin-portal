@@ -125,11 +125,41 @@ export default function ReceiptsSearch() {
           <FormControlLabel control={<Switch size="small" checked={allYears} disabled={searching} onChange={(e) => setAllYears(e.target.checked)} />} label={<span style={{ fontSize: 13 }}>All years</span>} />
           <FormControlLabel control={<Switch size="small" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />} label={<span style={{ fontSize: 13 }}>Show cancelled</span>} />
           <Box sx={{ flex: 1 }} />
-          <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv} disabled={!shown.length}>CSV</Button>
+          {!isMobile && <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv} disabled={!shown.length}>CSV</Button>}
         </CardContent>
 
         {rows === null ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+        ) : isMobile ? (
+          <Box sx={{ p: 1.5 }}>
+            {shown.length === 0 && <Typography sx={{ color: FEE_COLORS.muted, py: 4, textAlign: 'center' }}>No receipts match.</Typography>}
+            {shown.map((r) => {
+              const cancelled = r.status === 'cancelled';
+              return (
+                <Box key={r.uuid} sx={{ py: 1.25, borderBottom: '1px solid', borderColor: 'divider', opacity: cancelled ? 0.6 : 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: 14, ...(cancelled ? { textDecoration: 'line-through' } : {}) }} noWrap>{r.receiptNo || r.legacyReceiptNo || '—'}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {r.receiptDate ? fmtDate(r.receiptDate) : '—'}{crossYear ? ` · ${ayName[r.academicYearId] || ''}` : ''} · {r.type || 'fee'} · {PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.25 }}>
+                        {r.studentId
+                          ? <Link component="button" underline="hover" onClick={() => navigate(`/students/${r.studentId}`)} sx={{ textAlign: 'left' }}>{r.payerName || '—'}</Link>
+                          : (r.payerName || '—')}
+                        {r.payerClassSnapshot ? ` · ${r.payerClassSnapshot}` : ''}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right', flex: 'none' }}>
+                      <Typography sx={{ fontWeight: 700, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</Typography>
+                      <ReceiptPrintButton receiptId={r.uuid} variant="icon" />
+                    </Box>
+                  </Box>
+                  {cancelled && <Chip size="small" color="error" label={r.cancelReason ? `cancelled · ${r.cancelReason}` : 'cancelled'} sx={{ mt: 0.5, height: 18 }} />}
+                </Box>
+              );
+            })}
+          </Box>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
             <Table size="small" stickyHeader sx={{ minWidth: 900 }}>

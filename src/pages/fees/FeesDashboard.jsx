@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip, Cell } from 'rechar
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, inrShort, errMsg, fmtDate, openReceipt, PAYMENT_MODE_LABELS, FEE_COLORS } from './feesUi';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -35,6 +36,7 @@ function Kpi({ label, value, sub, accent, subColor, onClick }) {
 
 export default function FeesDashboard() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile(); // PWA (god): no Collect; compact recent receipts
   const { academicYearId } = useAcademicYear();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -80,9 +82,11 @@ export default function FeesDashboard() {
           <Typography variant="h5" sx={{ fontWeight: 700 }}>Fees Overview</Typography>
           <Typography sx={{ color: FEE_COLORS.muted, fontSize: 13 }}>Collections, dues & advances at a glance</Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/fees/collect')}>
-          Collect Fees
-        </Button>
+        {!isMobile && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/fees/collect')}>
+            Collect Fees
+          </Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
@@ -134,6 +138,23 @@ export default function FeesDashboard() {
         <CardContent sx={{ pb: 0 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 15 }}>Recent receipts</Typography>
         </CardContent>
+        {isMobile ? (
+          <Box sx={{ px: 2, pb: 1 }}>
+            {receipts.length === 0 && <Typography sx={{ color: FEE_COLORS.muted, py: 3, textAlign: 'center' }}>No receipts yet.</Typography>}
+            {receipts.map((r) => (
+              <Box key={r.uuid} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: 13.5 }} noWrap>
+                    {r.payerName || '—'}<Typography component="span" variant="caption" color="text.secondary"> · {r.payerClassSnapshot || '—'}</Typography>
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">#{r.receiptNo || r.legacyReceiptNo} · {fmtDate(r.receiptDate)} · {PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</Typography>
+                </Box>
+                <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{inr(r.totalPaid)}</Typography>
+                <IconButton size="small" title="Print" onClick={() => openReceipt(r.uuid)}><PrintIcon fontSize="small" /></IconButton>
+              </Box>
+            ))}
+          </Box>
+        ) : (
         <Box sx={{ overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
@@ -169,6 +190,7 @@ export default function FeesDashboard() {
             </TableBody>
           </Table>
         </Box>
+        )}
       </Card>
     </Box>
   );

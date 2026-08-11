@@ -207,8 +207,8 @@ export default function DuesReport() {
           </TextField>
           <FormControlLabel control={<Switch size="small" checked={includePrev} onChange={(e) => setIncludePrev(e.target.checked)} />} label={<span style={{ fontSize: 13 }}>+ prev-year dues</span>} />
           <Box sx={{ flex: 1 }} />
-          <Button size="small" startIcon={<PrintIcon />} onClick={printList} disabled={!rows.length}>Call list</Button>
-          <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv} disabled={!rows.length}>CSV</Button>
+          {!isMobile && <Button size="small" startIcon={<PrintIcon />} onClick={printList} disabled={!rows.length}>Call list</Button>}
+          {!isMobile && <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv} disabled={!rows.length}>CSV</Button>}
         </CardContent>
 
         {/* due-now range slider */}
