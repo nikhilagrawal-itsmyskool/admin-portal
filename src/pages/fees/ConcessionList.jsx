@@ -11,7 +11,7 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { errMsg, inr, classRank, FEE_COLORS, CONCESSION_TYPE_LABELS } from './feesUi';
+import { errMsg, inr, classRank, FEE_COLORS, CONCESSION_TYPE_LABELS, fmtDate } from './feesUi';
 import { SwapVert as SortIcon } from '@mui/icons-material';
 
 const TYPE_COLOR = { sibling: 'primary', sibling_elder: 'primary', sibling_younger: 'primary', staff: 'warning', ews: 'success', other: 'default' };
@@ -36,6 +36,7 @@ export default function ConcessionList() {
 
   const [dlg, setDlg] = useState({ open: false, data: emptyC, id: null, saving: false });
   const [pickStu, setPickStu] = useState(false);
+  const [applyFrom, setApplyFrom] = useState(''); // effective_from for newly added students (blank = whole year)
   const [del, setDel] = useState({ open: false, row: null, loading: false });
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId]);
@@ -81,7 +82,11 @@ export default function ConcessionList() {
 
   const addStudent = async (student) => {
     setPickStu(false);
-    try { await feesService.addConcessionStudents(selected.uuid, { studentIds: [student.uuid] }); selectTemplate(selected); load(); }
+    try {
+      // effectiveFrom (blank = whole year); applies the discount only to cycles due on/after this date
+      await feesService.addConcessionStudents(selected.uuid, { studentIds: [student.uuid], effectiveFrom: applyFrom || null });
+      selectTemplate(selected); load();
+    }
     catch (err) { setError(errMsg(err)); }
   };
   const removeStudent = async (studentId) => {
@@ -165,7 +170,18 @@ export default function ConcessionList() {
                 <Typography sx={{ fontWeight: 700, fontSize: 15 }}>{selected ? selected.name : 'Roster'}</Typography>
                 {selected && <Typography sx={{ color: FEE_COLORS.muted, fontSize: 12 }}>{valueLabel(selected)} · {headName(selected.feeHeadId)}</Typography>}
               </Box>
-              {selected && <Button size="small" variant="contained" startIcon={<PersonAddIcon />} onClick={() => setPickStu(true)}>Add student</Button>}
+              {selected && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                  <Tooltip title="Discount applies only to cycles due on/after this date. Leave blank for the whole year; set an earlier date to backdate.">
+                    <TextField
+                      type="date" size="small" label="Apply from" value={applyFrom}
+                      onChange={(e) => setApplyFrom(e.target.value)}
+                      InputLabelProps={{ shrink: true }} sx={{ width: 160 }}
+                    />
+                  </Tooltip>
+                  <Button size="small" variant="contained" startIcon={<PersonAddIcon />} onClick={() => setPickStu(true)}>Add student</Button>
+                </Box>
+              )}
             </CardContent>
             {selected && (
               <CardContent sx={{ py: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -199,6 +215,8 @@ export default function ConcessionList() {
                           label={`also in ${(multiByStudent[r.studentId].concessionCount || 2) - 1} other`} />
                       </Tooltip>
                     )}
+                    {r.effectiveFrom && <Tooltip title={`Applies to cycles due on/after ${fmtDate(r.effectiveFrom)}`}><Chip size="small" color="info" variant="outlined" label={`from ${fmtDate(r.effectiveFrom)}`} /></Tooltip>}
+                    {r.cycleScope && <Tooltip title={`Only these cycles: ${r.cycleScope}`}><Chip size="small" color="info" variant="outlined" label={`${String(r.cycleScope).split(',').filter(Boolean).length} cycles`} /></Tooltip>}
                     {!r.enrolledThisYear && <Chip size="small" color="warning" variant="outlined" label="not this year" />}
                     <IconButton size="small" color="error" onClick={() => removeStudent(r.studentId)}><DeleteIcon fontSize="small" /></IconButton>
                   </Box>
