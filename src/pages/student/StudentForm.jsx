@@ -237,7 +237,7 @@ export default function StudentForm() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/students')}>
+        <Button startIcon={<BackIcon />} onClick={() => navigate(isEdit ? `/students/${id}` : '/students')}>
           Back
         </Button>
         <Typography variant="h4">{isEdit ? 'Edit Student' : 'Admit Student'}</Typography>
@@ -499,7 +499,7 @@ export default function StudentForm() {
             <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={saving}>
               {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Admit Student'}
             </Button>
-            <Button variant="outlined" onClick={() => navigate('/students')}>
+            <Button variant="outlined" onClick={() => navigate(isEdit ? `/students/${id}` : '/students')}>
               Cancel
             </Button>
           </Box>
