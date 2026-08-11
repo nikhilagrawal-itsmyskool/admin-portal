@@ -45,6 +45,9 @@ export const feesService = {
   createLateFeeRule: async (data) => (await api.post('/fees/late-fee-rules', data)).data,
   updateLateFeeRule: async (id, data) => (await api.put(`/fees/late-fee-rules/${id}`, data)).data,
   deleteLateFeeRule: async (id) => (await api.delete(`/fees/late-fee-rules/${id}`)).data,
+  // Apply-Fine (auto-levy): preview (dry-run) + run (persist). Nightly cron runs it automatically.
+  previewApplyFine: async (data) => (await api.post('/fees/late-fee-rules/apply-preview', data)).data,
+  runApplyFine: async (data) => (await api.post('/fees/late-fee-rules/apply', data)).data,
 
   // ---- Concessions (+ roster) ----
   getConcessions: async (academicYearId) =>

@@ -46,7 +46,7 @@ import ConcessionList from './pages/fees/ConcessionList';
 import CollectFees from './pages/fees/CollectFees';
 import ReceiptsSearch from './pages/fees/ReceiptsSearch';
 import TransportSlabList from './pages/fees/TransportSlabList';
-import LateFeeRuleList from './pages/fees/LateFeeRuleList';
+import LateFeeSettings from './pages/fees/LateFeeSettings';
 import WaiverList from './pages/fees/WaiverList';
 import RefundList from './pages/fees/RefundList';
 import HiringCandidateList from './pages/hiring/HiringCandidateList';
@@ -245,7 +245,7 @@ export default function App() {
         <Route path="fees/structure" element={<FeeStructure />} />
         <Route path="fees/concessions" element={<ConcessionList />} />
         <Route path="fees/transport-slabs" element={<TransportSlabList />} />
-        <Route path="fees/late-fees" element={<LateFeeRuleList />} />
+        <Route path="fees/late-fees" element={<LateFeeSettings />} />
         <Route path="fees/waivers" element={<WaiverList />} />
         <Route path="fees/refunds" element={<RefundList />} />
         <Route path="hiring" element={<HiringCandidateList />} />
