@@ -2,8 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Grid, TextField, MenuItem, Button, Alert, CircularProgress,
+  Autocomplete, Chip, Divider,
 } from '@mui/material';
 import { Save as SaveIcon, ArrowBack as BackIcon } from '@mui/icons-material';
+
+// Split the comma-separated variables field into clean, ordered names.
+const parseVars = (s) => (s || '')
+  .split(',')
+  .map((v) => v.trim().replace(/^["'[\]]+/, '').replace(/["'[\]]+$/, '').trim())
+  .filter(Boolean);
 import { communicationService } from '../../../services/communicationService';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
@@ -23,6 +30,8 @@ export default function TemplateForm() {
     key: '', name: '', channel: 'whatsapp', language: 'en', providerTemplateId: '',
     category: '', headerType: 'none', variables: '', bodyPreview: '', status: 'active',
   });
+  // Per-variable metadata: { [name]: { hint, suggestions: [] } }
+  const [variableMeta, setVariableMeta] = useState({});
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -39,6 +48,7 @@ export default function TemplateForm() {
           variables: (t.variables || []).join(', '), bodyPreview: t.bodyPreview || '',
           status: t.status === 'inactive' ? 'inactive' : 'active',
         });
+        setVariableMeta(t.variableMeta && typeof t.variableMeta === 'object' ? t.variableMeta : {});
       } catch (err) {
         setError(err.response?.data?.error?.description || 'Failed to load template');
       } finally {
@@ -48,11 +58,25 @@ export default function TemplateForm() {
   }, [id, isEdit]);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setVarField = (name, field, value) =>
+    setVariableMeta((m) => ({ ...m, [name]: { ...(m[name] || {}), [field]: value } }));
+
+  const parsedVars = parseVars(form.variables);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.key.trim()) { setError('Key is required'); return; }
     setSaving(true); setError('');
+    // Keep only meta for variables that still exist, with non-empty content.
+    const cleanMeta = {};
+    parsedVars.forEach((name) => {
+      const m = variableMeta[name] || {};
+      const suggestions = (m.suggestions || []).map((s) => String(s).trim()).filter(Boolean);
+      const hint = (m.hint || '').trim();
+      if (hint || suggestions.length) {
+        cleanMeta[name] = { ...(hint ? { hint } : {}), ...(suggestions.length ? { suggestions } : {}) };
+      }
+    });
     const payload = {
       key: form.key.trim(),
       name: form.name || undefined,
@@ -65,10 +89,8 @@ export default function TemplateForm() {
       status: form.status,
       // Tolerate JSON-ish input (e.g. pasted `["a", "b"]`): strip stray quotes
       // and brackets so stored names stay clean and resolve at send time.
-      variables: form.variables
-        .split(',')
-        .map((v) => v.trim().replace(/^["'[\]]+/, '').replace(/["'[\]]+$/, '').trim())
-        .filter(Boolean),
+      variables: parsedVars,
+      variableMeta: cleanMeta,
     };
     try {
       if (isEdit) await communicationService.updateTemplate(id, payload);
@@ -126,6 +148,42 @@ export default function TemplateForm() {
             <Grid item xs={12}>
               <TextField fullWidth label="Variables (comma-separated)" value={form.variables} onChange={set('variables')} helperText="Ordered, e.g. studentName, className, date" />
             </Grid>
+
+            {parsedVars.length > 0 && (
+              <Grid item xs={12}>
+                <Divider sx={{ mb: 2 }} />
+                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Suggestions for senders (optional)</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Add preset values a sender can pick in Compose (type a value and press Enter — add as many as you like). Best for free-ish fields like <code>detail</code>. Auto-filled variables (recipientName, studentName…) can be left blank.
+                </Typography>
+                {parsedVars.map((name) => (
+                  <Grid container spacing={2} key={name} alignItems="flex-start" sx={{ mt: 0 }}>
+                    <Grid item xs={12} md={7}>
+                      <Autocomplete
+                        multiple freeSolo options={[]}
+                        value={variableMeta[name]?.suggestions || []}
+                        onChange={(_, v) => setVarField(name, 'suggestions', v)}
+                        renderTags={(value, getTagProps) =>
+                          value.map((opt, i) => <Chip size="small" label={opt} {...getTagProps({ index: i })} key={opt} />)
+                        }
+                        renderInput={(params) => (
+                          <TextField {...params} size="small" label={`${name} — suggestions`} placeholder="Type & Enter" />
+                        )}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={5}>
+                      <TextField
+                        fullWidth size="small" label={`${name} — hint`}
+                        value={variableMeta[name]?.hint || ''}
+                        onChange={(e) => setVarField(name, 'hint', e.target.value)}
+                        placeholder="Short guidance for the sender"
+                      />
+                    </Grid>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+
             <Grid item xs={12}>
               <TextField fullWidth multiline minRows={3} label="Body preview" value={form.bodyPreview} onChange={set('bodyPreview')} helperText="For display only; the approved template text lives at the provider" />
             </Grid>

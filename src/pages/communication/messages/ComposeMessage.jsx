@@ -27,6 +27,7 @@ export default function ComposeMessage() {
   const [templates, setTemplates] = useState([]);
   const [templateKeys, setTemplateKeys] = useState([]);
   const [autoVarsAll, setAutoVarsAll] = useState([]);
+  const [autoVarsByType, setAutoVarsByType] = useState({ common: [], student: [], employee: [] });
   const [classes, setClasses] = useState([]);
   const [roles, setRoles] = useState([]);
   const [routes, setRoutes] = useState([]);
@@ -66,6 +67,7 @@ export default function ComposeMessage() {
         setTemplates(list);
         setTemplateKeys([...new Set(list.map((t) => t.key))]);
         setAutoVarsAll(vars.autoVariablesAll || []);
+        setAutoVarsByType(vars.autoVariables || { common: [], student: [], employee: [] });
         setClasses(Array.isArray(cls) ? cls : cls?.classes || []);
         setRoles(Array.isArray(rl) ? rl : rl?.roles || []);
         setRoutes(Array.isArray(rts) ? rts : rts?.routes || []);
@@ -86,6 +88,71 @@ export default function ComposeMessage() {
   const templateVars = Array.isArray(selectedTemplate?.variables) ? selectedTemplate.variables : [];
   const requiredVars = templateVars.filter((v) => !autoVarsAll.includes(v));
   const autoFilledVars = templateVars.filter((v) => autoVarsAll.includes(v));
+
+  // Variables that are auto-filled for ONE recipient type only (recipientName is
+  // shared, so it doesn't constrain the audience).
+  const studentOnlyVars = useMemo(
+    () => (autoVarsByType.student || []).filter((v) => !(autoVarsByType.common || []).includes(v) && !(autoVarsByType.employee || []).includes(v)),
+    [autoVarsByType],
+  );
+  const employeeOnlyVars = useMemo(
+    () => (autoVarsByType.employee || []).filter((v) => !(autoVarsByType.common || []).includes(v) && !(autoVarsByType.student || []).includes(v)),
+    [autoVarsByType],
+  );
+
+  // Which recipient type(s) this template can actually fill. A template using
+  // studentName/admissionNumber only resolves for students; employeeName only for
+  // employees; otherwise it works for anyone.
+  const templateAudience = useMemo(() => {
+    if (!selectedTemplate) return null;
+    const needsStudent = templateVars.some((v) => studentOnlyVars.includes(v));
+    const needsEmployee = templateVars.some((v) => employeeOnlyVars.includes(v));
+    if (needsStudent && needsEmployee) return 'conflict';
+    if (needsStudent) return 'student';
+    if (needsEmployee) return 'employee';
+    return 'any';
+  }, [selectedTemplate, templateVars, studentOnlyVars, employeeOnlyVars]);
+
+  // What the chosen audience targets. Transport routes reach BOTH students
+  // (families) and employees (route staff).
+  const targetsStudents = studentAll || selectedClasses.length > 0 || selectedStudents.length > 0 || selectedRoutes.length > 0;
+  const targetsEmployees = employeeAll || selectedRoles.length > 0 || selectedEmployees.length > 0 || selectedRoutes.length > 0;
+
+  // Warn when the audience includes a recipient type the template can't fill —
+  // those recipients would be silently skipped (missing variables) at send.
+  const audienceWarning = useMemo(() => {
+    if (!selectedTemplate) return '';
+    if (templateAudience === 'student' && targetsEmployees) {
+      return 'This template uses student-only fields (e.g. studentName) — employee / route-staff recipients will be skipped.';
+    }
+    if (templateAudience === 'employee' && targetsStudents) {
+      return 'This template uses employee-only fields (e.g. employeeName) — student / family recipients will be skipped.';
+    }
+    return '';
+  }, [selectedTemplate, templateAudience, targetsStudents, targetsEmployees]);
+
+  // DLT caps each SMS variable at 40 chars; enforce only when an SMS template
+  // exists for this key (WhatsApp-only free-text templates are exempt).
+  const hasSmsChannel = useMemo(() => {
+    const key = templateKey.trim();
+    return templates.some((t) => t.key === key && t.channel === 'sms' && (t.status ? t.status === 'active' : true));
+  }, [templateKey, templates]);
+  const valueMaxLen = hasSmsChannel ? 40 : undefined;
+
+  // Live body preview: substitute typed values into the template's bodyPreview,
+  // leaving auto-injected vars as {name} placeholders (they vary per recipient).
+  const manualValues = useMemo(() => {
+    const m = {};
+    context.forEach((r) => { if (r.key.trim()) m[r.key.trim()] = r.value; });
+    return m;
+  }, [context]);
+  const livePreview = useMemo(() => {
+    const tpl = selectedTemplate?.bodyPreview;
+    if (!tpl) return '';
+    return tpl.replace(/\{(\w+)\}/g, (match, name) => (autoVarsAll.includes(name) ? match : (manualValues[name] || match)));
+  }, [selectedTemplate, manualValues, autoVarsAll]);
+
+  const audienceChip = { student: 'Students only', employee: 'Employees only', any: 'Any recipient', conflict: 'Mixed fields — check variables' };
 
   // On selecting a known template, prefill the variable rows with its required
   // (sender-supplied) names — locked — preserving any values already typed.
@@ -307,12 +374,32 @@ export default function ComposeMessage() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="h6">Variables &amp; scheduling</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography variant="h6">Variables &amp; scheduling</Typography>
+              {selectedTemplate && templateAudience && (
+                <Chip
+                  size="small" variant="outlined"
+                  color={templateAudience === 'any' ? 'default' : (templateAudience === 'conflict' ? 'warning' : 'info')}
+                  label={audienceChip[templateAudience]}
+                />
+              )}
+            </Box>
             {!selectedTemplate && <Button size="small" startIcon={<AddIcon />} onClick={addContextRow}>Add variable</Button>}
           </Box>
 
-          {selectedTemplate?.bodyPreview && (
-            <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>{selectedTemplate.bodyPreview}</Alert>
+          {audienceWarning && (
+            <Alert severity="warning" variant="outlined" sx={{ mb: 2 }}>{audienceWarning}</Alert>
+          )}
+
+          {livePreview && (
+            <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>
+              <Box sx={{ whiteSpace: 'pre-wrap' }}>{livePreview}</Box>
+              {hasSmsChannel && (
+                <Typography variant="caption" color={livePreview.length > 160 ? 'error' : 'text.secondary'} sx={{ display: 'block', mt: 0.5 }}>
+                  {livePreview.length} chars{livePreview.length > 160 ? ' — over 160, sends as multiple SMS' : ''} · auto-filled values vary per recipient
+                </Typography>
+              )}
+            </Alert>
           )}
 
           {selectedTemplate && autoFilledVars.length > 0 && (
@@ -330,23 +417,42 @@ export default function ComposeMessage() {
             </Typography>
           )}
 
-          {context.map((row, i) => (
-            <Grid container spacing={1} key={i} sx={{ mb: 1 }} alignItems="center">
-              <Grid item xs={row.locked ? 5 : 5} md={4}>
-                <TextField
-                  fullWidth size="small" label="Name" value={row.key}
-                  onChange={(e) => setContextField(i, 'key', e.target.value)}
-                  InputProps={{ readOnly: !!row.locked }}
-                />
+          {context.map((row, i) => {
+            const meta = selectedTemplate?.variableMeta?.[row.key] || {};
+            const suggestions = Array.isArray(meta.suggestions) ? meta.suggestions : [];
+            const helper = [meta.hint || '', valueMaxLen ? `${(row.value || '').length}/${valueMaxLen}` : '']
+              .filter(Boolean).join(' · ');
+            return (
+              <Grid container spacing={1} key={i} sx={{ mb: 1 }} alignItems="flex-start">
+                <Grid item xs={row.locked ? 5 : 5} md={4}>
+                  <TextField
+                    fullWidth size="small" label="Name" value={row.key}
+                    onChange={(e) => setContextField(i, 'key', e.target.value)}
+                    InputProps={{ readOnly: !!row.locked }}
+                  />
+                </Grid>
+                <Grid item xs={row.locked ? 7 : 6} md={row.locked ? 8 : 7}>
+                  <Autocomplete
+                    freeSolo
+                    options={suggestions}
+                    value={row.value || ''}
+                    onChange={(_, v) => setContextField(i, 'value', v || '')}
+                    onInputChange={(_, v) => setContextField(i, 'value', v)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params} fullWidth size="small" label="Value"
+                        helperText={helper || undefined}
+                        inputProps={{ ...params.inputProps, maxLength: valueMaxLen }}
+                      />
+                    )}
+                  />
+                </Grid>
+                {!row.locked && (
+                  <Grid item xs={1}><IconButton size="small" color="error" onClick={() => removeContextRow(i)}><DeleteIcon fontSize="small" /></IconButton></Grid>
+                )}
               </Grid>
-              <Grid item xs={row.locked ? 7 : 6} md={row.locked ? 8 : 7}>
-                <TextField fullWidth size="small" label="Value" value={row.value} onChange={(e) => setContextField(i, 'value', e.target.value)} />
-              </Grid>
-              {!row.locked && (
-                <Grid item xs={1}><IconButton size="small" color="error" onClick={() => removeContextRow(i)}><DeleteIcon fontSize="small" /></IconButton></Grid>
-              )}
-            </Grid>
-          ))}
+            );
+          })}
           <TextField
             type="datetime-local"
             size="small"
