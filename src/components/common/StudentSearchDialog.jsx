@@ -150,7 +150,7 @@ export default function StudentSearchDialog({ open, onClose, onSelect }) {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>ID</TableCell>
+                  <TableCell>Adm #</TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell>Class</TableCell>
                   <TableCell align="right">Action</TableCell>
@@ -166,9 +166,9 @@ export default function StudentSearchDialog({ open, onClose, onSelect }) {
                 ) : (
                   students.map((student) => (
                     <TableRow key={student.uuid}>
-                      <TableCell>{student.admission_no || student.uuid}</TableCell>
+                      <TableCell>{student.admissionNumber || '—'}</TableCell>
                       <TableCell>{student.name}</TableCell>
-                      <TableCell>{student.class_name}</TableCell>
+                      <TableCell>{student.className || '—'}</TableCell>
                       <TableCell align="right">
                         <Button
                           size="small"
