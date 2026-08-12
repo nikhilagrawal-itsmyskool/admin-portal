@@ -106,6 +106,8 @@ export const feesService = {
   getFollowup: async (params = {}) => (await api.get('/fees/reports/followup', { params })).data,
   getFamilyDues: async (studentId, params = {}) => (await api.get(`/fees/students/${studentId}/family-dues`, { params })).data,
   withdrawStudent: async (studentId, data) => (await api.post(`/fees/students/${studentId}/withdraw`, data)).data,
+  getDuesByYear: async (studentId) => (await api.get(`/fees/students/${studentId}/dues-by-year`)).data,
+  getFineExemptions: async (params = {}) => (await api.get('/fees/reports/fine-exemptions', { params })).data,
 };
 
 export default feesService;

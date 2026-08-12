@@ -39,6 +39,8 @@ export default function CollectFees() {
   const canWaive = useCan()(ACTIONS.FEE_MANAGE);
   const [received, setReceived] = useState(''); // cash in hand — the anchor
   const [waive, setWaive] = useState({ on: false, reason: '' });
+  const [exempt, setExempt] = useState({}); // chargeId -> { on, amount, reason } — per-fine late-fee exemption
+  const [duesByYear, setDuesByYear] = useState([]); // outstanding in OTHER academic years
   const [storeAdvance, setStoreAdvance] = useState(false); // deliberately keep overpayment as advance
   const [showFullYear, setShowFullYear] = useState(false);
   const [show360, setShow360] = useState(false); // lazy expandable 360 on the student card
@@ -66,7 +68,8 @@ export default function CollectFees() {
 
   const chooseStudent = async (s) => {
     setPick(false); setStudent(s); setLedger(null); setSummary(null); setSel({}); setError(''); setOk('');
-    setWaive({ on: false, reason: '' }); setStoreAdvance(false); setShow360(false); setReceived(''); // never carry across students
+    setWaive({ on: false, reason: '' }); setExempt({}); setStoreAdvance(false); setShow360(false); setReceived(''); // never carry across students
+    feesService.getDuesByYear(s.uuid).then(setDuesByYear).catch(() => setDuesByYear([])); // cross-year "also owes" banner
     setLoadingLedger(true);
     try {
       const [l, sm] = await Promise.all([
@@ -88,9 +91,16 @@ export default function CollectFees() {
   // pre-load a student passed via navigation (e.g. the Collect button on the student 360 panel)
   useEffect(() => {
     const pre = location.state?.student;
-    if (pre?.uuid && academicYearId && student?.uuid !== pre.uuid) chooseStudent(pre);
+    if (pre?.uuid && student?.uuid !== pre.uuid) chooseStudent(pre);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, academicYearId]);
+  }, [location.state]);
+
+  // reload the selected student's ledger when the academic year changes — otherwise it keeps showing
+  // the previous year's (often empty) ledger and a clerk wrongly reads the student as "all clear".
+  useEffect(() => {
+    if (student?.uuid) chooseStudent(student);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [academicYearId]);
 
   const dueLines = (ledger?.lines || []).filter((ln) => ln.remaining > 0);
   const dueNowLines = dueLines.filter((ln) => (ln.bucket ? ln.bucket === 'due' : ln.due));
@@ -116,12 +126,26 @@ export default function CollectFees() {
   const overBy = r2(receivedNum - payable);          // >0 cash beyond allocations, <0 short of them
   const storeAdvanceAmt = storeAdvance && overBy > 0 ? overBy : 0;
   const balanced = Math.abs(receivedNum - payable - storeAdvanceAmt) < 0.5;
-  const somethingToDo = payable > 0 || waiveTotal > 0 || storeAdvanceAmt > 0;
+  const somethingToDo = payable > 0 || waiveTotal > 0 || storeAdvanceAmt > 0 || exemptTotal > 0;
   const waiveNeedsReason = waiveTotal > 0 && !waive.reason.trim();
   const canCollect = balanced && somethingToDo && !waiveNeedsReason;
 
   const toggle = (id, checked) => setSel((p) => ({ ...p, [id]: { ...p[id], checked } }));
   const setAmt = (id, amount) => setSel((p) => ({ ...p, [id]: { ...p[id], amount } }));
+
+  // ---- late-fee exemption (a waiver on a Late Fee Fine charge; distinct from a general write-off) ----
+  const isFine = (ln) => /late\s*fee/i.test(ln.headLabel || '');
+  const toggleExempt = (id, rem) => {
+    setExempt((p) => {
+      if (p[id]?.on) { const { [id]: _drop, ...rest } = p; return rest; }
+      return { ...p, [id]: { on: true, amount: String(rem), reason: '' } };
+    });
+    setSel((p) => ({ ...p, [id]: { ...p[id], checked: false } })); // an exempted fine isn't being paid
+  };
+  const setExemptField = (id, k, v) => setExempt((p) => ({ ...p, [id]: { ...p[id], [k]: v } }));
+  const exemptList = Object.entries(exempt).filter(([, e]) => e?.on && Number(e.amount) > 0).map(([id, e]) => ({ id, amount: Number(e.amount), reason: e.reason || '' }));
+  const exemptTotal = exemptList.reduce((s, e) => s + e.amount, 0);
+  const otherYearDues = (duesByYear || []).filter((d) => d.academicYearId !== academicYearId && Number(d.balance) > 0);
 
   // oldest-first: spread `received` across due rows in cycle order, ticking + filling each
   const autoAllocate = () => {
@@ -147,13 +171,16 @@ export default function CollectFees() {
 
   const renderDueRow = (ln, upcoming) => {
     const e = sel[ln.chargeId] || {};
+    const ex = exempt[ln.chargeId];
     const payNow = Number(e.amount) || 0;
     const rem = Number(ln.remaining) || 0;
     const cover = e.checked && payNow > 0 ? (payNow >= rem - 0.01 ? 'full' : 'partial') : null; // this payment's coverage of the row
+    const fine = isFine(ln);
+    const border = ex?.on ? FEE_COLORS.primary : cover === 'full' ? FEE_COLORS.success : cover === 'partial' ? FEE_COLORS.warning : 'transparent';
     return (
       <TableRow key={ln.chargeId} hover selected={!!e.checked}
-        sx={{ ...(upcoming ? { opacity: 0.75 } : {}), borderLeft: `3px solid ${cover === 'full' ? FEE_COLORS.success : cover === 'partial' ? FEE_COLORS.warning : 'transparent'}` }}>
-        <TableCell padding="checkbox"><Checkbox size="small" checked={!!e.checked} onChange={(ev) => toggle(ln.chargeId, ev.target.checked)} /></TableCell>
+        sx={{ ...(upcoming ? { opacity: 0.75 } : {}), borderLeft: `3px solid ${border}` }}>
+        <TableCell padding="checkbox"><Checkbox size="small" checked={!!e.checked} disabled={ex?.on} onChange={(ev) => toggle(ln.chargeId, ev.target.checked)} /></TableCell>
         <TableCell>{ln.cycleLabel || '—'}</TableCell>
         <TableCell>
           {ln.headLabel}
@@ -161,15 +188,26 @@ export default function CollectFees() {
           {cover === 'partial' && <Chip size="small" color="warning" label={`Partial ${inr(payNow)}/${inr(rem)}`} sx={{ ml: 1, height: 18 }} />}
           {ln.status === 'partial' && <Chip size="small" color="warning" variant="outlined" label="Part-paid" sx={{ ml: 1, height: 18 }} />}
           {ln.category && ln.category !== 'fee' && <Chip size="small" variant="outlined" label={ln.category} sx={{ ml: 1, height: 18 }} />}
+          {fine && <Chip size="small" clickable color={ex?.on ? 'info' : 'default'} variant={ex?.on ? 'filled' : 'outlined'}
+            label={ex?.on ? 'Exempted' : 'Exempt'} onClick={() => toggleExempt(ln.chargeId, ln.remaining)} sx={{ ml: 1, height: 18 }} />}
         </TableCell>
         <TableCell align="right">{inr(ln.charged)}</TableCell>
         <TableCell align="right">{ln.concession ? '−' + inr(ln.concession) : '0'}</TableCell>
         <TableCell align="right">{inr(ln.paid)}</TableCell>
         <TableCell align="right" sx={{ fontWeight: 700 }}>{inr(ln.remaining)}</TableCell>
         <TableCell align="right" sx={{ p: 0.5 }}>
-          <TextField size="small" variant="standard" type="number" disabled={!e.checked}
-            value={e.amount ?? ''} onChange={(ev) => setAmt(ln.chargeId, ev.target.value)}
-            inputProps={{ style: { textAlign: 'right', width: 78 }, max: ln.remaining }} />
+          {ex?.on ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>
+              <TextField size="small" variant="standard" type="number" value={ex.amount ?? ''} onChange={(evt) => setExemptField(ln.chargeId, 'amount', evt.target.value)}
+                inputProps={{ style: { textAlign: 'right', width: 78 }, max: ln.remaining }} helperText="exempt ₹" FormHelperTextProps={{ sx: { m: 0, fontSize: 9, textAlign: 'right' } }} />
+              <TextField size="small" variant="standard" placeholder="reason (optional)" value={ex.reason ?? ''} onChange={(evt) => setExemptField(ln.chargeId, 'reason', evt.target.value)}
+                inputProps={{ style: { fontSize: 11, width: 110 } }} />
+            </Box>
+          ) : (
+            <TextField size="small" variant="standard" type="number" disabled={!e.checked}
+              value={e.amount ?? ''} onChange={(ev) => setAmt(ln.chargeId, ev.target.value)}
+              inputProps={{ style: { textAlign: 'right', width: 78 }, max: ln.remaining }} />
+          )}
         </TableCell>
       </TableRow>
     );
@@ -179,14 +217,16 @@ export default function CollectFees() {
     const allocations = dueLines
       .filter((ln) => sel[ln.chargeId]?.checked && Number(sel[ln.chargeId]?.amount) > 0)
       .map((ln) => ({ ledgerId: ln.chargeId, amount: Number(sel[ln.chargeId].amount) }));
-    const waivers = waive.on
+    const genericWaivers = waive.on
       ? dueLines
           .filter((ln) => sel[ln.chargeId]?.checked)
           .map((ln) => ({ ledgerId: ln.chargeId, amount: r2(Number(ln.remaining) - (Number(sel[ln.chargeId]?.amount) || 0)) }))
           .filter((w) => w.amount > 0)
       : [];
-    if (!allocations.length && !waivers.length) { setError('Tick at least one component to collect or waive.'); return; }
-    if (waivers.length && !waive.reason.trim()) { setError('Enter a reason for the write-off.'); return; }
+    const fineWaivers = exemptList.map((e) => ({ ledgerId: e.id, amount: r2(e.amount), reason: e.reason.trim() || 'Fine exemption' }));
+    const waivers = [...genericWaivers, ...fineWaivers];
+    if (!allocations.length && !waivers.length) { setError('Tick at least one component to collect, exempt, or waive.'); return; }
+    if (genericWaivers.length && !waive.reason.trim()) { setError('Enter a reason for the write-off.'); return; }
     setCollecting(true); setError(''); setOk('');
     try {
       const receipt = await feesService.collect({
@@ -197,7 +237,7 @@ export default function CollectFees() {
       });
       setOk(`Receipt ${receipt.receiptNo || ''} — collected ${inr(receipt.totalPaid)}${receipt.waiverTotal ? `, waived ${inr(receipt.waiverTotal)}` : ''}${storeAdvanceAmt ? `, ${inr(storeAdvanceAmt)} to advance` : ''}.`);
       openReceipt(receipt.uuid);
-      setWaive({ on: false, reason: '' }); setStoreAdvance(false); setReceived('');
+      setWaive({ on: false, reason: '' }); setExempt({}); setStoreAdvance(false); setReceived('');
       chooseStudent(student); // refresh ledger
     } catch (err) { setError(errMsg(err)); }
     finally { setCollecting(false); }
@@ -263,6 +303,14 @@ export default function CollectFees() {
               </Accordion>
             )}
           </Card>
+
+          {student && otherYearDues.length > 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              <b>Also owes in other years:</b>{' '}
+              {otherYearDues.map((d) => `${d.yearName || d.academicYearId} — ${inr(d.balance)}`).join('  ·  ')}
+              {'  '}· switch the academic-year selector to collect there.
+            </Alert>
+          )}
 
           {loadingLedger && <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>}
 
@@ -330,6 +378,11 @@ export default function CollectFees() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
                       <span>Selected</span><b>{inr(selectedTotal)}</b>
                     </Box>
+                    {exemptTotal > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, color: FEE_COLORS.primary }}>
+                        <span>Fine exemptions ({exemptList.length})</span><b>− {inr(exemptTotal)}</b>
+                      </Box>
+                    )}
                     {advanceAvail > 0 && (
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5, color: FEE_COLORS.warning }}>
                         <FormControlLabel

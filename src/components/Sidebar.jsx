@@ -151,6 +151,7 @@ const menuItems = [
       { title: 'Concessions', icon: GavelIcon, path: '/fees/concessions', perm: 'fee.manage' },
       { title: 'Transport Slabs', icon: TransportIcon, path: '/fees/transport-slabs', perm: 'fee.manage' },
       { title: 'Late Fees', icon: ScheduleIcon, path: '/fees/late-fees', perm: 'fee.manage' },
+      { title: 'Fine Exemptions', icon: WaiverIcon, path: '/fees/fine-exemptions', perm: 'fee.manage' },
       { title: 'Waivers', icon: WaiverIcon, path: '/fees/waivers', perm: 'fee.manage' },
       { title: 'Refunds', icon: RefundIcon, path: '/fees/refunds', perm: 'fee.collect' },
     ],
