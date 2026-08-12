@@ -126,6 +126,9 @@ export default function CollectFees() {
   const overBy = r2(receivedNum - payable);          // >0 cash beyond allocations, <0 short of them
   const storeAdvanceAmt = storeAdvance && overBy > 0 ? overBy : 0;
   const balanced = Math.abs(receivedNum - payable - storeAdvanceAmt) < 0.5;
+  const exemptList = Object.entries(exempt).filter(([, e]) => e?.on && Number(e.amount) > 0).map(([id, e]) => ({ id, amount: Number(e.amount), reason: e.reason || '' }));
+  const exemptTotal = exemptList.reduce((s, e) => s + e.amount, 0);
+  const otherYearDues = (duesByYear || []).filter((d) => d.academicYearId !== academicYearId && Number(d.balance) > 0);
   const somethingToDo = payable > 0 || waiveTotal > 0 || storeAdvanceAmt > 0 || exemptTotal > 0;
   const waiveNeedsReason = waiveTotal > 0 && !waive.reason.trim();
   const canCollect = balanced && somethingToDo && !waiveNeedsReason;
@@ -143,9 +146,6 @@ export default function CollectFees() {
     setSel((p) => ({ ...p, [id]: { ...p[id], checked: false } })); // an exempted fine isn't being paid
   };
   const setExemptField = (id, k, v) => setExempt((p) => ({ ...p, [id]: { ...p[id], [k]: v } }));
-  const exemptList = Object.entries(exempt).filter(([, e]) => e?.on && Number(e.amount) > 0).map(([id, e]) => ({ id, amount: Number(e.amount), reason: e.reason || '' }));
-  const exemptTotal = exemptList.reduce((s, e) => s + e.amount, 0);
-  const otherYearDues = (duesByYear || []).filter((d) => d.academicYearId !== academicYearId && Number(d.balance) > 0);
 
   // oldest-first: spread `received` across due rows in cycle order, ticking + filling each
   const autoAllocate = () => {
