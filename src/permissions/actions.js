@@ -12,6 +12,9 @@ export const ACTIONS = {
   FEE_VIEW: "fee.view",
   FEE_MANAGE: "fee.manage",
   FEE_COLLECT: "fee.collect",
+  // Outside the fee.* namespace on purpose → fee incharges/clerks DON'T inherit it; only
+  // the admin role (explicit grant) + god ('*'). Powers the Scan & Verify tile.
+  RECEIPT_VERIFY: "receipt.verify",
   UNIFORM_VIEW: "uniform.view",
   UNIFORM_MANAGE: "uniform.manage",
   SHOP_VIEW: "shop.view",

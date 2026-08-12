@@ -25,6 +25,7 @@ import {
   Payments as FeesIcon,
   ReceiptLong as DuesIcon,
   Receipt as ReceiptIcon,
+  QrCodeScanner as ScanIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -116,6 +117,9 @@ export const MOBILE_FEATURES = [
   { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
   { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },
+  // Scan a receipt QR to confirm it's genuine (works for any type incl transport). admin + god
+  // (receipt.verify) — camera-based, so meaningful on a phone only.
+  { title: "Scan & Verify", icon: ScanIcon, path: "/verify/scan", perm: "receipt.verify", section: "office", color: "#00897b", routes: ["/verify/scan"] },
 
   // ── Tools — pinned last. Assistant is god-only (assistant.use granted to no role).
   { title: "Assistant", icon: AssistantIcon, path: "/assistant", perm: "assistant.use", section: "tools", color: "#3366ff" },

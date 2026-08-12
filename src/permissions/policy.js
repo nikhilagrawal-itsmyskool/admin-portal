@@ -46,6 +46,7 @@ export const ROLE_PERMISSIONS = {
     "assembly.manage",
     "homework.post",
     "homework.manage",
+    "receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   // No transport access by default — bus attendance needs the `transport-attendance`
