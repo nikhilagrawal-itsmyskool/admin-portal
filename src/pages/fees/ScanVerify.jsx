@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Box, Card, CardContent, Typography, Button, Alert, Divider, CircularProgress } from '@mui/material';
 import { CheckCircle as OkIcon, Cancel as CancelledIcon, HelpOutline as UnknownIcon, QrCodeScanner as ScanIcon, Replay as AgainIcon } from '@mui/icons-material';
+import jsQR from 'jsqr';
 import { feesService } from '../../services/feesService';
 import { errMsg, inr, FEE_COLORS } from './feesUi';
 
@@ -13,20 +14,20 @@ const extractUuid = (text) => {
   return m ? m[1] : null;
 };
 
-// Staff Scan & Verify (admin/god) — camera-scan a receipt QR (any type incl transport) to confirm it
-// came from our system. Uses the native BarcodeDetector (Android Chrome); phone-only by nature.
+// Staff Scan & Verify (admin/god) — camera-scan a receipt QR (any type incl transport). Decodes with
+// jsQR (pure-JS; reliable across Android/iOS, unlike the flaky native BarcodeDetector).
 export default function ScanVerify() {
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const streamRef = useRef(null);
-  const rafRef = useRef(null);
-  const supported = typeof window !== 'undefined' && 'BarcodeDetector' in window;
+  const timerRef = useRef(null);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
 
   const stop = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
     if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
     streamRef.current = null; setScanning(false);
   }, []);
@@ -41,23 +42,33 @@ export default function ScanVerify() {
     finally { setBusy(false); }
   }, [stop]);
 
+  const scan = useCallback(() => {
+    const v = videoRef.current;
+    if (!streamRef.current || !v) return;
+    if (v.readyState >= 2 && v.videoWidth) {
+      const c = canvasRef.current || (canvasRef.current = document.createElement('canvas'));
+      const W = 640, s = W / v.videoWidth, H = Math.round(v.videoHeight * s); // downscale for speed
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(v, 0, 0, W, H);
+      const img = ctx.getImageData(0, 0, W, H);
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+      if (code && code.data) { onCode(code.data); return; }
+    }
+    timerRef.current = setTimeout(scan, 120); // ~8 fps
+  }, [onCode]);
+
   const start = useCallback(async () => {
     setError(''); setResult(null);
-    if (!supported) { setError('This browser can’t scan in-app. Open in Chrome on Android.'); return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       streamRef.current = stream;
-      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
+      const v = videoRef.current;
+      if (v) { v.srcObject = stream; v.setAttribute('playsinline', 'true'); await v.play(); }
       setScanning(true);
-      const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-      const loop = async () => {
-        if (!streamRef.current || !videoRef.current) return;
-        try { const codes = await detector.detect(videoRef.current); if (codes && codes.length) return onCode(codes[0].rawValue); } catch { /* frame skip */ }
-        rafRef.current = requestAnimationFrame(loop);
-      };
-      rafRef.current = requestAnimationFrame(loop);
-    } catch { setError('Camera access denied or unavailable.'); }
-  }, [supported, onCode]);
+      timerRef.current = setTimeout(scan, 300);
+    } catch { setError('Camera access denied or unavailable.'); setScanning(false); }
+  }, [scan]);
 
   useEffect(() => { start(); return stop; /* eslint-disable-next-line */ }, []);
 
@@ -65,7 +76,6 @@ export default function ScanVerify() {
   const cancelled = result?.found && result?.cancelled;
   const notFound = result && !result.found;
   const accent = genuine ? '#15803d' : cancelled ? '#b91c1c' : '#64748b';
-
   const Row = ({ k, v }) => <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.6, fontSize: 14 }}><span style={{ color: '#64748b' }}>{k}</span><b>{v}</b></Box>;
 
   return (
@@ -78,13 +88,13 @@ export default function ScanVerify() {
       {!result && (
         <Card sx={{ overflow: 'hidden' }}>
           <Box sx={{ position: 'relative', bgcolor: '#0f172a', aspectRatio: '3 / 4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <video ref={videoRef} playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: scanning ? 'block' : 'none' }} />
+            <video ref={videoRef} playsInline muted autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover', display: scanning ? 'block' : 'none' }} />
             {!scanning && !busy && <Box sx={{ textAlign: 'center', color: '#94a3b8' }}><ScanIcon sx={{ fontSize: 56 }} /><Typography sx={{ mt: 1 }}>Camera off</Typography></Box>}
             {busy && <CircularProgress sx={{ color: '#fff' }} />}
             {scanning && <Box sx={{ position: 'absolute', inset: '18% 16%', border: '3px solid rgba(255,255,255,.85)', borderRadius: 3, boxShadow: '0 0 0 100vmax rgba(0,0,0,.25)' }} />}
           </Box>
           <CardContent sx={{ textAlign: 'center' }}>
-            {scanning ? <Typography sx={{ color: FEE_COLORS.muted, fontSize: 13 }}>Scanning… hold the QR steady</Typography>
+            {scanning ? <Typography sx={{ color: FEE_COLORS.muted, fontSize: 13 }}>Scanning… hold the QR steady inside the box</Typography>
               : <Button variant="contained" startIcon={<ScanIcon />} onClick={start} disabled={busy}>Start camera</Button>}
           </CardContent>
         </Card>
