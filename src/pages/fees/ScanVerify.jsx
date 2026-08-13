@@ -15,7 +15,7 @@ const extractUuid = (text) => {
 };
 
 // Staff Scan & Verify (admin/god) — camera-scan a receipt QR (any type incl transport). Decodes with
-// jsQR (pure-JS; reliable across Android/iOS, unlike the flaky native BarcodeDetector).
+// jsQR (pure-JS). Video is always mounted (a hidden video can pause and starve the decoder).
 export default function ScanVerify() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -25,6 +25,7 @@ export default function ScanVerify() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [dbg, setDbg] = useState(''); // small diagnostic line: camera size + frames tried
 
   const stop = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -35,39 +36,46 @@ export default function ScanVerify() {
   const onCode = useCallback(async (raw) => {
     stop();
     const uuid = extractUuid(raw);
-    if (!uuid) { setError('That QR isn’t a receipt code.'); return; }
+    if (!uuid) { setError(`Scanned "${String(raw).slice(0, 40)}" — not a receipt code.`); return; }
     setBusy(true); setError('');
     try { setResult(await feesService.verifyReceiptStaff(uuid)); }
     catch (e) { setError(errMsg(e, 'Could not verify — try again.')); }
     finally { setBusy(false); }
   }, [stop]);
 
+  const framesRef = useRef(0);
   const scan = useCallback(() => {
     const v = videoRef.current;
     if (!streamRef.current || !v) return;
     if (v.readyState >= 2 && v.videoWidth) {
       const c = canvasRef.current || (canvasRef.current = document.createElement('canvas'));
-      const W = 640, s = W / v.videoWidth, H = Math.round(v.videoHeight * s); // downscale for speed
+      const W = Math.min(v.videoWidth, 1024), s = W / v.videoWidth, H = Math.round(v.videoHeight * s);
       c.width = W; c.height = H;
       const ctx = c.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(v, 0, 0, W, H);
       const img = ctx.getImageData(0, 0, W, H);
       const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+      framesRef.current += 1;
+      if (framesRef.current % 5 === 0) setDbg(`cam ${v.videoWidth}×${v.videoHeight} · frames ${framesRef.current}`);
       if (code && code.data) { onCode(code.data); return; }
+    } else {
+      setDbg(`waiting for camera… (readyState ${v.readyState}, ${v.videoWidth}×${v.videoHeight})`);
     }
-    timerRef.current = setTimeout(scan, 120); // ~8 fps
+    timerRef.current = setTimeout(scan, 90);
   }, [onCode]);
 
   const start = useCallback(async () => {
-    setError(''); setResult(null);
+    setError(''); setResult(null); setDbg('starting camera…'); framesRef.current = 0;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
       streamRef.current = stream;
-      const v = videoRef.current;
-      if (v) { v.srcObject = stream; v.setAttribute('playsinline', 'true'); await v.play(); }
       setScanning(true);
-      timerRef.current = setTimeout(scan, 300);
-    } catch { setError('Camera access denied or unavailable.'); setScanning(false); }
+      const v = videoRef.current;
+      if (v) { v.srcObject = stream; v.setAttribute('playsinline', 'true'); try { await v.play(); } catch { /* muted autoplay */ } }
+      timerRef.current = setTimeout(scan, 250);
+    } catch (e) { setError('Camera access denied or unavailable — allow camera for this site.'); setScanning(false); setDbg(String(e?.name || e)); }
   }, [scan]);
 
   useEffect(() => { start(); return stop; /* eslint-disable-next-line */ }, []);
@@ -87,15 +95,16 @@ export default function ScanVerify() {
 
       {!result && (
         <Card sx={{ overflow: 'hidden' }}>
-          <Box sx={{ position: 'relative', bgcolor: '#0f172a', aspectRatio: '3 / 4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <video ref={videoRef} playsInline muted autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover', display: scanning ? 'block' : 'none' }} />
-            {!scanning && !busy && <Box sx={{ textAlign: 'center', color: '#94a3b8' }}><ScanIcon sx={{ fontSize: 56 }} /><Typography sx={{ mt: 1 }}>Camera off</Typography></Box>}
-            {busy && <CircularProgress sx={{ color: '#fff' }} />}
-            {scanning && <Box sx={{ position: 'absolute', inset: '18% 16%', border: '3px solid rgba(255,255,255,.85)', borderRadius: 3, boxShadow: '0 0 0 100vmax rgba(0,0,0,.25)' }} />}
+          <Box sx={{ position: 'relative', bgcolor: '#0f172a', aspectRatio: '3 / 4' }}>
+            <video ref={videoRef} playsInline muted autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            {!scanning && !busy && <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}><ScanIcon sx={{ fontSize: 56 }} /><Typography sx={{ mt: 1 }}>Camera off</Typography></Box>}
+            {busy && <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(0,0,0,.3)' }}><CircularProgress sx={{ color: '#fff' }} /></Box>}
+            {scanning && <Box sx={{ position: 'absolute', inset: '18% 14%', border: '3px solid rgba(255,255,255,.9)', borderRadius: 3 }} />}
           </Box>
           <CardContent sx={{ textAlign: 'center' }}>
-            {scanning ? <Typography sx={{ color: FEE_COLORS.muted, fontSize: 13 }}>Scanning… hold the QR steady inside the box</Typography>
+            {scanning ? <Typography sx={{ color: FEE_COLORS.muted, fontSize: 13 }}>Hold the QR steady, fairly close, inside the box</Typography>
               : <Button variant="contained" startIcon={<ScanIcon />} onClick={start} disabled={busy}>Start camera</Button>}
+            {dbg && <Typography sx={{ color: '#cbd5e1', fontSize: 10, mt: 0.5 }}>{dbg}</Typography>}
           </CardContent>
         </Card>
       )}
