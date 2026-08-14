@@ -13,7 +13,7 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
 import ReceiptPrintButton from './ReceiptPrintButton';
-import { fmtDate, isoDate } from '../../utils/date';
+import { fmtDate, isoDate, todayIso } from '../../utils/date';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -84,7 +84,7 @@ export default function ReceiptsSearch() {
     const lines = shown.map((r) => [r.receiptNo || r.legacyReceiptNo || '', isoDate(r.receiptDate), ayName[r.academicYearId] || '', r.payerName || '', r.admissionNoSnapshot || '', r.payerClassSnapshot || '', r.type || 'fee', PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '', Math.round(r.totalPaid || 0), r.status || '']);
     const csv = [head, ...lines].map((a) => a.map((v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    const a = document.createElement('a'); a.href = url; a.download = `receipts-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = `receipts-${todayIso()}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
   const scopeLabel = searching ? 'all years (search)' : allYears ? 'all years' : (ayName[academicYearId] || 'selected year');

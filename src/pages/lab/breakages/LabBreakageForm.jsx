@@ -24,6 +24,7 @@ import {
 import { labService } from '../../../services/labService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 export default function LabBreakageForm() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function LabBreakageForm() {
   const [formData, setFormData] = useState({
     labId: '',
     itemId: '',
-    breakageDate: new Date().toISOString().split('T')[0],
+    breakageDate: todayIso(),
     quantity: '1',
     responsibleType: '',
     responsibleName: '',

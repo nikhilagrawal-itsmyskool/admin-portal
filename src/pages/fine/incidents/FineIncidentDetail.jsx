@@ -36,7 +36,7 @@ import {
 import { fineService } from '../../../services/fineService';
 import { useAuth } from '../../../context/AuthContext';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
-import { fmtDate, fmtDateTime, fmtDateLong } from '../../../utils/date';
+import { fmtDate, fmtDateTime, fmtDateLong, todayIso } from '../../../utils/date';
 
 const CATEGORY_LABELS = {
   library: 'Library',
@@ -100,7 +100,7 @@ export default function FineIncidentDetail() {
   // Collection form (inline in right card)
   const [collectionForm, setCollectionForm] = useState({
     amountCollected: '',
-    collectionDate: new Date().toISOString().split('T')[0],
+    collectionDate: todayIso(),
     paymentMethod: 'cash',
     notes: '',
   });

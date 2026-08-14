@@ -24,6 +24,7 @@ import {
 import { sportsService } from '../../../services/sportsService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 export default function SportBreakageForm() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function SportBreakageForm() {
   const [formData, setFormData] = useState({
     sportType: '',
     itemId: '',
-    breakageDate: new Date().toISOString().split('T')[0],
+    breakageDate: todayIso(),
     quantity: '1',
     responsibleType: '',
     responsibleName: '',

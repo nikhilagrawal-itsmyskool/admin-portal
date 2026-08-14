@@ -4,6 +4,7 @@ import { Box, Typography, Card, Alert, Chip, Button } from '@mui/material';
 import ResponsiveDataGrid from '../../../components/common/ResponsiveDataGrid';
 import { Send as ComposeIcon } from '@mui/icons-material';
 import { communicationService } from '../../../services/communicationService';
+import { fmtDateTime } from '../../../utils/date';
 
 const statusColor = (s) => ({ completed: 'success', failed: 'error', running: 'info', queued: 'default', canceled: 'warning' }[s] || 'default');
 
@@ -27,7 +28,7 @@ export default function MessageJobList() {
   }, []);
 
   const columns = [
-    { field: 'createdAt', headerName: 'Created', width: 170, valueGetter: (value) => (value ? String(value).slice(0, 19).replace('T', ' ') : '') },
+    { field: 'createdAt', headerName: 'Created', width: 170, valueGetter: (value) => fmtDateTime(value) },
     { field: 'templateKey', headerName: 'Template', flex: 1, minWidth: 150 },
     { field: 'audienceSummary', headerName: 'Audience', flex: 1, minWidth: 150 },
     { field: 'source', headerName: 'Source', width: 120 },

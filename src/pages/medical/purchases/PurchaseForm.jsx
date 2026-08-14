@@ -28,6 +28,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { medicalService } from '../../../services/medicalService';
+import { todayIso } from '../../../utils/date';
 
 const ALLOWED_BILL_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -49,7 +50,7 @@ function EditPurchaseForm({ id }) {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: todayIso(),
     quantity: '',
     batchNo: '',
     expiryDate: '',
@@ -260,7 +261,7 @@ function BulkPurchaseForm({ editId }) {
   const isEdit = !!editId;
 
   const [header, setHeader] = useState({
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: todayIso(),
     supplier: '',
     invoiceNumber: '',
     batchNo: '',
@@ -288,7 +289,7 @@ function BulkPurchaseForm({ editId }) {
           const batch = await medicalService.getPurchaseBatchById(editId);
           if (cancelled) return;
           setHeader({
-            purchaseDate: toDateInput(batch.purchaseDate) || new Date().toISOString().split('T')[0],
+            purchaseDate: toDateInput(batch.purchaseDate) || todayIso(),
             supplier: batch.supplier || '',
             invoiceNumber: batch.invoiceNumber || '',
             batchNo: batch.batchNo || '',

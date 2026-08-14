@@ -6,7 +6,7 @@ import { Print as PrintIcon, MenuBook as RegisterIcon, Search as SearchIcon } fr
 import { classService } from '../../services/classService';
 import { attendanceService } from '../../services/attendanceService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
-import { fmtDateLong } from '../../utils/date';
+import { fmtDateLong, todayIso } from '../../utils/date';
 
 // status -> { letter, bg } — consistent with the student attendance panel.
 const CODE = {
@@ -16,7 +16,7 @@ const CODE = {
   late: { letter: 'Lt', bg: '#dbeafe', fg: '#1d4ed8' },
 };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => todayIso();
 const monthStartISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
 const dayNum = (iso) => iso.slice(8, 10);
 const monthOf = (iso) => MONTHS[+iso.slice(5, 7) - 1];

@@ -23,6 +23,7 @@ import { medicalService } from '../../../services/medicalService';
 import { useAuth } from '../../../context/AuthContext';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 export default function IssueForm() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function IssueForm() {
 
   const [formData, setFormData] = useState({
     itemId: '',
-    issueDate: new Date().toISOString().split('T')[0],
+    issueDate: todayIso(),
     entityType: 'student',
     entityId: '',
     quantity: '',

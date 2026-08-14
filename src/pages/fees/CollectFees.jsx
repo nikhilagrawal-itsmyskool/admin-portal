@@ -14,11 +14,12 @@ import StudentFeesPanel from '../student/StudentFeesPanel';
 import { errMsg, inr, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from './feesUi';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import { todayIso } from '../../utils/date';
 
 const PAY_MODES = ['cash', 'online', 'card', 'cheque', 'draft', 'neft', 'ecs', 'bank-deposit', 'rte'];
 const RECEIVED = ['father', 'mother', 'guardian', 'other'];
 const TRANSPORT_MONTHS = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 
 export default function CollectFees() {
   const { academicYearId } = useAcademicYear();

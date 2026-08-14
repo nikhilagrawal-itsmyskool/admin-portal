@@ -24,6 +24,7 @@ import {
 import { suppliesService } from '../../../services/suppliesService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 export default function SupplyWastageForm() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function SupplyWastageForm() {
 
   const [formData, setFormData] = useState({
     itemId: '',
-    wastageDate: new Date().toISOString().split('T')[0],
+    wastageDate: todayIso(),
     quantity: '1',
     reason: '',
     responsibleType: '',

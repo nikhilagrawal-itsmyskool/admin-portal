@@ -30,11 +30,11 @@ import {
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
-import { fmtDate } from '../../../utils/date';
+import { fmtDate, todayIso } from '../../../utils/date';
 
 function ReturnDialog({ open, issue, onClose, onSuccess }) {
   const [returnData, setReturnData] = useState({
-    returnDate: new Date().toISOString().split('T')[0],
+    returnDate: todayIso(),
     returnCondition: 'good',
     returnRemarks: '',
   });

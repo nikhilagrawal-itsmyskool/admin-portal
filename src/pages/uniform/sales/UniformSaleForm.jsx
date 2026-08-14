@@ -8,6 +8,7 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon, Clear as ClearIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
 const PAYMENT_COLORS = { paid: 'success', partial: 'warning', due: 'error' };
@@ -21,7 +22,7 @@ export default function UniformSaleForm() {
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
 
   const [student, setStudent] = useState(null);
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saleDate, setSaleDate] = useState(todayIso());
   const [saleType, setSaleType] = useState('student');
   const [selectedSetId, setSelectedSetId] = useState('');
   const [notes, setNotes] = useState('');

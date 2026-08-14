@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, ArrowBack as BackIcon } from '@mui/icons-material';
 import shopService from '../../../services/shopService';
+import { todayIso } from '../../../utils/date';
 
 const emptyLine = () => ({ itemId: '', itemName: '', quantity: 1, mrp: '', studentDiscountPct: '', bulkDiscountPct: '', costPerUnit: '' });
 
@@ -18,7 +19,7 @@ export default function ShopPurchaseForm() {
   const [batch, setBatch] = useState(null);
   const [allItems, setAllItems] = useState([]);
   const [form, setForm] = useState({
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: todayIso(),
     academicSession: '',
     supplier: '',
     invoiceNumber: '',

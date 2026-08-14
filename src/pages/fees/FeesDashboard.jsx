@@ -12,6 +12,7 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, inrShort, errMsg, fmtDate, openReceipt, PAYMENT_MODE_LABELS, FEE_COLORS } from './feesUi';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { todayIso } from '../../utils/date';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -50,7 +51,7 @@ export default function FeesDashboard() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const today = new Date();
+      const today = new Date(`${todayIso()}T00:00:00Z`); // anchor on the IST calendar day (midnight UTC of it), so iso()/dayLabel read the right days
       const days = Array.from({ length: 7 }, (_, i) => new Date(today.getTime() - (6 - i) * DAY_MS));
       const [ov, todayReport, recentReceipts, ...daily] = await Promise.all([
         feesService.getOverview(academicYearId).catch(() => null),

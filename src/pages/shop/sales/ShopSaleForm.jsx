@@ -8,6 +8,7 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon, ArrowBack as BackIcon } from '@mui/icons-material';
 import shopService from '../../../services/shopService';
 import api from '../../../config/api';
+import { todayIso } from '../../../utils/date';
 
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0';
 const emptyLine = () => ({ itemId: '', itemName: '', quantity: 1 });
@@ -18,7 +19,7 @@ export default function ShopSaleForm() {
   const [allItems, setAllItems] = useState([]);
   const [sets, setSets] = useState([]);
   const [form, setForm] = useState({
-    studentId: '', saleDate: new Date().toISOString().split('T')[0],
+    studentId: '', saleDate: todayIso(),
     academicSession: '', setId: '', amountPaid: '', notes: '',
   });
   const [lines, setLines] = useState([emptyLine()]);

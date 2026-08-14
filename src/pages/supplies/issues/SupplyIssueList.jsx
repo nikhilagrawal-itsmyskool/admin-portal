@@ -32,10 +32,10 @@ import { suppliesService } from '../../../services/suppliesService';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
-import { fmtDate } from '../../../utils/date';
+import { fmtDate, todayIso } from '../../../utils/date';
 
 function ReturnDialog({ open, issue, onClose, onSuccess }) {
-  const [returnData, setReturnData] = useState({ returnDate: new Date().toISOString().split('T')[0], returnCondition: 'good', returnRemarks: '' });
+  const [returnData, setReturnData] = useState({ returnDate: todayIso(), returnCondition: 'good', returnRemarks: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 

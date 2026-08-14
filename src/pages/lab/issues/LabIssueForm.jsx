@@ -20,6 +20,7 @@ import { labService } from '../../../services/labService';
 import { classService } from '../../../services/classService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 export default function LabIssueForm() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function LabIssueForm() {
   const [formData, setFormData] = useState({
     labId: '',
     itemId: '',
-    issueDate: new Date().toISOString().split('T')[0],
+    issueDate: todayIso(),
     quantity: '1',
     issueType: '',
     issuedTo: '',

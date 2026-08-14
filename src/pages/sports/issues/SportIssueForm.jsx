@@ -20,6 +20,7 @@ import { sportsService } from '../../../services/sportsService';
 import { classService } from '../../../services/classService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 export default function SportIssueForm() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function SportIssueForm() {
   const [formData, setFormData] = useState({
     sportType: '',
     itemId: '',
-    issueDate: new Date().toISOString().split('T')[0],
+    issueDate: todayIso(),
     quantity: '1',
     issueType: '',
     issuedTo: '',

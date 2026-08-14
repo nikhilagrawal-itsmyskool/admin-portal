@@ -12,6 +12,7 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import { todayIso } from '../../utils/date';
 
 const STATUSES = [
   { value: 'present', label: 'P', color: 'success' },
@@ -20,7 +21,7 @@ const STATUSES = [
   { value: 'leave', label: 'Lv', color: 'info' },
 ];
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 
 export default function TakeAttendance() {
   const can = useCan();

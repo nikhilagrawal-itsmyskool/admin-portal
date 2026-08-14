@@ -11,8 +11,9 @@ import {
 import { homeworkService } from '../../services/homeworkService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { todayIso } from '../../utils/date';
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 
 // Read a File to raw base64 (no data: URI prefix), for the image upload payload.
 function readFileB64(file) {

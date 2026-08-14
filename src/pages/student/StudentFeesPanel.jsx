@@ -11,7 +11,7 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from '../fees/feesUi';
 import ReceiptPrintButton from '../fees/ReceiptPrintButton';
-import { fmtDate } from '../../utils/date';
+import { fmtDate, todayIso } from '../../utils/date';
 import FollowupDialog, { fLabel, fColor } from '../fees/FollowupDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -277,7 +277,7 @@ export default function StudentFeesPanel({ studentId, student }) {
           </ToggleButtonGroup>
           {isCurrent && !isMobile && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
           {canManage && (student?.status || 'active') === 'active' && (
-            <Button size="small" color="warning" onClick={() => setWd({ date: new Date().toISOString().slice(0, 10), reason: '', busy: false })}>Mark withdrawn</Button>
+            <Button size="small" color="warning" onClick={() => setWd({ date: todayIso(), reason: '', busy: false })}>Mark withdrawn</Button>
           )}
         </Box>
       </CardContent>

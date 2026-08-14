@@ -14,6 +14,7 @@ import {
   Autocomplete,
 } from '@mui/material';
 import { sportsService } from '../../../services/sportsService';
+import { todayIso } from '../../../utils/date';
 
 export default function SportPurchaseForm() {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function SportPurchaseForm() {
   const [formData, setFormData] = useState({
     sportType: '',
     itemId: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: todayIso(),
     quantity: '',
     costPerUnit: '',
     supplier: '',

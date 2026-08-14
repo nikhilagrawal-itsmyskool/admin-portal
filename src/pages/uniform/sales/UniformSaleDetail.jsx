@@ -11,19 +11,19 @@ import {
   Visibility as VisibilityIcon, AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
-import { fmtDate, fmtDateLong } from '../../../utils/date';
+import { fmtDate, fmtDateLong, todayIso } from '../../../utils/date';
 
 const PAYMENT_COLORS = { paid: 'success', partial: 'warning', due: 'error' };
 const PAYMENT_LABELS = { paid: 'Fully Paid', partial: 'Partially Paid', due: 'Due' };
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
 
 function PaymentDialog({ open, onClose, onSave, sale }) {
-  const [form, setForm] = useState({ amount: '', paymentDate: new Date().toISOString().split('T')[0], notes: '' });
+  const [form, setForm] = useState({ amount: '', paymentDate: todayIso(), notes: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (open) { setForm({ amount: '', paymentDate: new Date().toISOString().split('T')[0], notes: '' }); setError(''); }
+    if (open) { setForm({ amount: '', paymentDate: todayIso(), notes: '' }); setError(''); }
   }, [open]);
 
   const balance = sale ? (sale.totalAmount || 0) - (sale.amountPaid || 0) : 0;
@@ -79,13 +79,13 @@ function PaymentDialog({ open, onClose, onSave, sale }) {
 }
 
 function ReturnDialog({ open, onClose, onSave, saleId, saleItem }) {
-  const [form, setForm] = useState({ returnDate: new Date().toISOString().split('T')[0], quantity: 1, reason: '', evidence: null });
+  const [form, setForm] = useState({ returnDate: todayIso(), quantity: 1, reason: '', evidence: null });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (open) { setForm({ returnDate: new Date().toISOString().split('T')[0], quantity: 1, reason: '', evidence: null }); setError(''); }
+    if (open) { setForm({ returnDate: todayIso(), quantity: 1, reason: '', evidence: null }); setError(''); }
   }, [open]);
 
   const available = saleItem ? saleItem.quantity - (saleItem.returnedQuantity || 0) : 0;

@@ -10,9 +10,10 @@ import { feesService } from '../../services/feesService';
 import { studentService } from '../../services/studentService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { errMsg, inr, FEE_COLORS } from './feesUi';
+import { todayIso } from '../../utils/date';
 
 const STATUS = { not_refunded: { label: 'Not refunded', color: 'warning' }, refunded: { label: 'Refunded', color: 'primary' }, dispersed: { label: 'Received by parent', color: 'success' } };
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 
 export default function RefundList() {
   const { academicYearId } = useAcademicYear();

@@ -20,6 +20,7 @@ import { suppliesService } from '../../../services/suppliesService';
 import { classService } from '../../../services/classService';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 export default function SupplyIssueForm() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function SupplyIssueForm() {
 
   const [formData, setFormData] = useState({
     itemId: '',
-    issueDate: new Date().toISOString().split('T')[0],
+    issueDate: todayIso(),
     quantity: '1',
     issueType: '',
     issuedTo: '',

@@ -22,6 +22,7 @@ import { fineService } from '../../../services/fineService';
 import { useAuth } from '../../../context/AuthContext';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
+import { todayIso } from '../../../utils/date';
 
 const CATEGORY_OPTIONS = [
   { value: 'library', label: 'Library' },
@@ -39,7 +40,7 @@ export default function FineIncidentForm() {
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    incidentDate: new Date().toISOString().split('T')[0],
+    incidentDate: todayIso(),
     category: '',
     personType: 'student',
     personId: '',

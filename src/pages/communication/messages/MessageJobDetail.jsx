@@ -7,6 +7,7 @@ import {
 import { ArrowBack as BackIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { communicationService } from '../../../services/communicationService';
 import { maskPhone } from '../../../utils/mask';
+import { fmtDateTime } from '../../../utils/date';
 
 const jobColor = (s) => ({ completed: 'success', failed: 'error', running: 'info', queued: 'default', canceled: 'warning' }[s] || 'default');
 const recColor = (s) => ({ sent: 'success', delivered: 'success', read: 'success', failed: 'error', skipped: 'warning', pending: 'default' }[s] || 'default');
@@ -67,7 +68,7 @@ export default function MessageJobDetail() {
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {job.audienceSummary} · source: {job.source || '-'}
-            {job.scheduledAt ? ` · scheduled: ${String(job.scheduledAt).slice(0, 19).replace('T', ' ')}` : ''}
+            {job.scheduledAt ? ` · scheduled: ${fmtDateTime(job.scheduledAt)}` : ''}
             {job.error ? ` · error: ${job.error}` : ''}
           </Typography>
         </CardContent>

@@ -14,6 +14,7 @@ import {
   Autocomplete,
 } from '@mui/material';
 import { labService } from '../../../services/labService';
+import { todayIso } from '../../../utils/date';
 
 export default function LabPurchaseForm() {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function LabPurchaseForm() {
   const [formData, setFormData] = useState({
     labId: '',
     itemId: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: todayIso(),
     quantity: '',
     costPerUnit: '',
     supplier: '',

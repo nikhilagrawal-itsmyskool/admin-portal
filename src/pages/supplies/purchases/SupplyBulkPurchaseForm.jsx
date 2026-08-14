@@ -36,6 +36,7 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { suppliesService } from '../../../services/suppliesService';
+import { todayIso } from '../../../utils/date';
 
 const emptyItem = () => ({
   _key: Math.random(),
@@ -67,7 +68,7 @@ export default function SupplyBulkPurchaseForm() {
   const [error, setError] = useState('');
 
   // Header
-  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [purchaseDate, setPurchaseDate] = useState(todayIso());
   const [supplier, setSupplier] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [defaultBatchNo, setDefaultBatchNo] = useState('');
@@ -100,7 +101,7 @@ export default function SupplyBulkPurchaseForm() {
         if (isEdit) {
           const batch = await suppliesService.getPurchaseBatchById(id);
           if (cancelled) return;
-          setPurchaseDate(toDateInput(batch.purchaseDate) || new Date().toISOString().split('T')[0]);
+          setPurchaseDate(toDateInput(batch.purchaseDate) || todayIso());
           setSupplier(batch.supplier || '');
           setInvoiceNumber(batch.invoiceNumber || '');
           setDefaultBatchNo(batch.batchNo || '');

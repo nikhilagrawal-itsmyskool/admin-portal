@@ -11,6 +11,7 @@ import { useCan } from '../../../permissions/can';
 import { useAuth } from '../../../context/AuthContext';
 import { useAcademicYear } from '../../../context/AcademicYearContext';
 import { visibleTransportRoutes } from '../../../permissions/transportAccess';
+import { todayIso } from '../../../utils/date';
 
 const STATUSES = [
   { value: 'boarded', label: 'B', color: 'success' },
@@ -18,7 +19,7 @@ const STATUSES = [
   { value: 'excused', label: 'E', color: 'warning' },
 ];
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayIso();
 
 export default function TransportTakeAttendance() {
   const can = useCan();

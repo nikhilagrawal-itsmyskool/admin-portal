@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, AttachFile as AttachIcon, OpenInNew as OpenIcon } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
-import { fmtDate } from '../../../utils/date';
+import { fmtDate, todayIso } from '../../../utils/date';
 
 const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -29,7 +29,7 @@ export default function UniformPurchaseForm() {
   const [billLoading, setBillLoading] = useState(false);
 
   const [header, setHeader] = useState({
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: todayIso(),
     supplier: '',
     invoiceNumber: '',
     notes: '',

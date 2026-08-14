@@ -14,7 +14,7 @@ import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import StudentFeesPanel from '../student/StudentFeesPanel';
 import FollowupDialog from './FollowupDialog';
 import { errMsg, inr, classRank, FEE_COLORS } from './feesUi';
-import { fmtDate, fmtDateLong, isoDate } from '../../utils/date';
+import { fmtDate, fmtDateLong, isoDate, todayIso } from '../../utils/date';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Compact per-student figure for the mobile dues card.
@@ -144,7 +144,7 @@ export default function DuesReport() {
     const lines = rows.map((r) => [r.className || '', r.admissionNumber || '', r.name || '', (r.studentStatus || 'active') === 'active' ? 'Active' : 'Left', isoDate(r.withdrawalDate), r.fatherMobile || '', Math.round(r.dueNow || 0), Math.round(dueNowPrev(r)), Math.round(r.dueQuarter || 0), Math.round(r.fullYear || 0), Math.round(r.prevYears || 0), fLabel(r.followupStatus)]);
     const csv = [head, ...lines].map((a) => a.map((v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    const a = document.createElement('a'); a.href = url; a.download = `dues-${mode}-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = `dues-${mode}-${todayIso()}.csv`; a.click(); URL.revokeObjectURL(url);
   };
   const printList = () => {
     const amt = (r) => includePrev ? dueNowPrev(r) : dueNow(r);
