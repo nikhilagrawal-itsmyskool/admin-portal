@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Skool Assistant — Device Sign-in</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+  <style>
+    :root { --accent: #3366ff; --bg: #0f1419; --card: #1a2230; --line: #2a3547; --muted: #9aa5b8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: #fff;
+      font-family: -apple-system, Roboto, "Segoe UI", sans-serif;
+      display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { width: 100%; max-width: 400px; background: var(--card); border-radius: 16px; padding: 24px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    p.sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+    label { display: block; color: var(--muted); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; margin: 0 0 6px; }
+    input { width: 100%; background: #0f1622; color: #fff; border: 1px solid var(--line);
+      border-radius: 10px; padding: 12px 14px; font-size: 16px; margin-bottom: 14px; }
+    button { width: 100%; background: var(--accent); color: #fff; border: 0; border-radius: 10px;
+      padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
+    button[disabled] { opacity: .6; }
+    .msg { color: #ff6b6b; font-size: 14px; min-height: 18px; margin: 6px 0 12px; }
+    .ok { color: #37d67a; }
+    #ts { margin: 4px 0 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Skool Assistant</h1>
+    <p class="sub">Sign in once to pair this device.</p>
+    <label for="school">School code</label>
+    <input id="school" value="DBPASN" autocapitalize="characters" autocomplete="off" />
+    <label for="user">Username</label>
+    <input id="user" autocapitalize="none" autocomplete="username" />
+    <label for="pass">Password</label>
+    <input id="pass" type="password" autocomplete="current-password" />
+    <div id="ts"></div>
+    <div id="msg" class="msg"></div>
+    <button id="go">Sign in</button>
+  </div>
+
+  <script>
+    var API = 'https://api-prod.itsmyskool.com';
+    var SITEKEY = '0x4AAAAAAEQZDj7_MQqdQ3uh';
+    var tsToken = '';
+    var widgetId = null;
+    var msg = document.getElementById('msg');
+    var btn = document.getElementById('go');
+
+    function setMsg(t, ok) { msg.textContent = t || ''; msg.className = 'msg' + (ok ? ' ok' : ''); }
+
+    // Render the Turnstile widget once the CF script is ready.
+    window.onloadTurnstileCallback = function () {
+      widgetId = window.turnstile.render('#ts', {
+        sitekey: SITEKEY, theme: 'dark',
+        callback: function (t) { tsToken = t; },
+        'expired-callback': function () { tsToken = ''; },
+        'error-callback': function () { tsToken = ''; },
+      });
+    };
+    // The async script may load before/after this file — poll briefly to render.
+    (function waitTs(n) {
+      if (window.turnstile && window.turnstile.render) return window.onloadTurnstileCallback();
+      if (n > 0) setTimeout(function () { waitTs(n - 1); }, 150);
+    })(40);
+
+    function post(token, displayName, schoolCode) {
+      var payload = JSON.stringify({ token: token, displayName: displayName || '', schoolCode: schoolCode });
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(payload); // hand the session to the app
+      } else {
+        setMsg('Signed in. (Open this from the Skool Assistant app to finish pairing.)', true);
+      }
+    }
+
+    btn.addEventListener('click', function () {
+      var schoolCode = (document.getElementById('school').value || '').trim().toUpperCase();
+      var username = (document.getElementById('user').value || '').trim();
+      var password = document.getElementById('pass').value || '';
+      if (!schoolCode || !username || !password) { setMsg('Enter school code, username and password.'); return; }
+      if (!tsToken) { setMsg('Please complete the checkbox above.'); return; }
+      btn.disabled = true; setMsg('Signing in…', true);
+      fetch(API + '/auth/employee/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-School-Code': schoolCode },
+        body: JSON.stringify({ username: username, password: password, turnstileToken: tsToken }),
+      })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+        .then(function (res) {
+          if (res.ok && res.b && res.b.token) {
+            setMsg('Success! Pairing device…', true);
+            post(res.b.token, res.b.displayName, schoolCode);
+          } else {
+            setMsg((res.b && res.b.error && res.b.error.description) || 'Sign in failed.');
+            if (window.turnstile && widgetId !== null) { window.turnstile.reset(widgetId); tsToken = ''; }
+          }
+        })
+        .catch(function () { setMsg('Network error. Please try again.'); })
+        .finally(function () { btn.disabled = false; });
+    });
+  </script>
+</body>
+</html>
