@@ -69,7 +69,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // A 401 from an authenticated call means the session died — bounce to login.
+    // But a 401 FROM the login attempt itself (bad password, lockout, bot check)
+    // must fall through so the login page can show the message instead of reloading.
+    if (error.response?.status === 401 && window.location.pathname !== '/login') {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
       window.location.href = '/login';

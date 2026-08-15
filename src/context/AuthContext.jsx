@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const login = async (username, password, userType = 'employee') => {
+  const login = async (username, password, userType = 'employee', turnstileToken = '') => {
     const endpoint = userType === 'student'
       ? '/auth/student/login'
       : '/auth/employee/login';
@@ -30,6 +30,7 @@ export function AuthProvider({ children }) {
     const response = await api.post(endpoint, {
       username,
       password,
+      turnstileToken,
     });
 
     const { token, displayName } = response.data;

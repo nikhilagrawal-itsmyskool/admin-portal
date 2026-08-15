@@ -20,6 +20,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { getSchoolCode } from '../config/api';
 import { useIsMobile } from '../hooks/useIsMobile';
+import TurnstileWidget from '../components/TurnstileWidget';
+
+const TURNSTILE_SITEKEY = import.meta.env.VITE_TURNSTILE_SITEKEY || '';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -39,6 +42,10 @@ export default function Login() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Turnstile token + a key we bump to force a fresh widget after a failed attempt
+  // (tokens are single-use).
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
   const schoolCode = getSchoolCode();
   const from = location.state?.from?.pathname || '/';
@@ -67,11 +74,14 @@ export default function Login() {
     setError('');
 
     try {
-      await login(formData.username, formData.password, effectiveUserType);
+      await login(formData.username, formData.password, effectiveUserType, turnstileToken);
       navigate(from, { replace: true });
     } catch (err) {
       const message = err.response?.data?.error?.description || 'Login failed. Please try again.';
       setError(message);
+      // A used/failed attempt burns the token — reset the widget for a fresh one.
+      setTurnstileToken('');
+      setTurnstileKey((k) => k + 1);
     } finally {
       setLoading(false);
     }
@@ -162,6 +172,11 @@ export default function Login() {
               margin="normal"
               required
               disabled={loading}
+            />
+            <TurnstileWidget
+              key={turnstileKey}
+              sitekey={TURNSTILE_SITEKEY}
+              onToken={setTurnstileToken}
             />
             <Button
               type="submit"
