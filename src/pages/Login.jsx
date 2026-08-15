@@ -11,6 +11,7 @@ import {
   CircularProgress,
   ToggleButton,
   ToggleButtonGroup,
+  Link,
 } from '@mui/material';
 import {
   Person as EmployeeIcon,
@@ -173,6 +174,18 @@ export default function Login() {
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
             </Button>
           </form>
+
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Link
+              component="button"
+              type="button"
+              variant="body2"
+              underline="hover"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot username or password?
+            </Link>
+          </Box>
         </CardContent>
       </Card>
     </Box>

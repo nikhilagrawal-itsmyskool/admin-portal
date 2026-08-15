@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import VerifyReceipt from './pages/public/VerifyReceipt';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import MedicalDashboard from './pages/medical/MedicalDashboard';
 import ItemList from './pages/medical/items/ItemList';
@@ -179,6 +180,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify/receipt/:uuid" element={<VerifyReceipt />} />
 
       <Route
