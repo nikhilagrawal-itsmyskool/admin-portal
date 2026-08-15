@@ -17,11 +17,12 @@ import { useCan } from '../../permissions/can';
 const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 const CAN_SPEAK = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
-// Read long digit runs (phone numbers) digit-by-digit — otherwise TTS says "eight billion…".
-// Runs of 7+ digits only, so years (2026), attendance (94, 47) and admission ("1041") are
-// left to read naturally. A comma every 5 digits gives a natural pause.
+// Read phone-shaped digit runs (10–12 digits) digit-by-digit — otherwise TTS says "eight
+// billion…". Scoped to 10–12 so years (2026), attendance (94, 47), admission numbers and — most
+// importantly — rupee amounts (which the assistant already speaks in Indian words) are left to
+// read naturally. A comma every 5 digits gives a natural pause.
 function forSpeech(text) {
-  return String(text || '').replace(/\d{7,}/g, (run) =>
+  return String(text || '').replace(/\b\d{10,12}\b/g, (run) =>
     run.split('').map((d, i) => (i > 0 && i % 5 === 0 ? ', ' : '') + d).join(' '));
 }
 
