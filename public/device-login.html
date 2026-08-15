@@ -44,6 +44,11 @@
   <script>
     var API = 'https://api-prod.itsmyskool.com';
     var SITEKEY = '0x4AAAAAAEQZDj7_MQqdQ3uh';
+    // The app passes a stable per-install deviceId (+ label) so the issued token is device-bound
+    // and can be revoked from the portal. Absent (opened in a plain browser) → a normal login.
+    var Q = new URLSearchParams(location.search);
+    var DEVICE_ID = Q.get('deviceId') || '';
+    var DEVICE_LABEL = Q.get('label') || 'Front Desk';
     var tsToken = '';
     var widgetId = null;
     var msg = document.getElementById('msg');
@@ -85,7 +90,7 @@
       fetch(API + '/auth/employee/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-School-Code': schoolCode },
-        body: JSON.stringify({ username: username, password: password, turnstileToken: tsToken }),
+        body: JSON.stringify({ username: username, password: password, turnstileToken: tsToken, deviceId: DEVICE_ID, deviceLabel: DEVICE_LABEL }),
       })
         .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
         .then(function (res) {
