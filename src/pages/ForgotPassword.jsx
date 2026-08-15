@@ -1,32 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Typography,
-  Alert,
-  CircularProgress,
-  ToggleButton,
-  ToggleButtonGroup,
-  Link,
-  Stack,
+  Box, Card, CardContent, TextField, Button, Typography,
+  Alert, CircularProgress, Link, Divider, Stack, InputAdornment, IconButton,
 } from '@mui/material';
-import {
-  Person as EmployeeIcon,
-  School as StudentIcon,
-  ArrowBack as BackIcon,
-} from '@mui/icons-material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import api, { getSchoolCode } from '../config/api';
 import { useIsMobile } from '../hooks/useIsMobile';
+import {
+  AUTH, authPageSx, authCardSx, authFieldSx, authCtaSx,
+  BrandHeader, FieldCaption, UserTypeToggle,
+} from '../components/auth/authKit';
 
-// Self-service account recovery for the staff portal. Mirrors the Login screen's
-// user-type toggle (desktop = Student|Employee, mobile = Employee-only) and maps it
-// onto the auth module's recovery userType (employee -> staff, student -> parent).
-// Two purposes share one OTP challenge: reveal the username, or set a new password.
-// All three calls go through the shared axios `api`, which injects X-School-Code.
+// Self-service account recovery for the staff portal. Password-first: the page defaults
+// to resetting a password, with a link to switch to username lookup. The Employee/Student
+// choice mirrors Login and maps to the auth recovery userType (employee -> staff,
+// student -> parent). All three calls go through the shared axios `api`, which injects
+// X-School-Code. Steps: identify -> otp -> setpw -> done.
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -36,29 +26,38 @@ export default function ForgotPassword() {
   const effectiveUserType = isMobile ? 'employee' : userType;
   const recoverUserType = effectiveUserType === 'student' ? 'parent' : 'staff';
 
-  const [purpose, setPurpose] = useState('password'); // 'username' | 'password'
+  const [purpose, setPurpose] = useState('password'); // 'password' | 'username'
   const [phone, setPhone] = useState('');
 
-  // step: identify -> otp -> setpw -> done
-  const [step, setStep] = useState('identify');
+  const [step, setStep] = useState('identify'); // identify | otp | setpw | done
   const [otpId, setOtpId] = useState('');
   const [code, setCode] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [usernames, setUsernames] = useState([]);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const apiError = (err, fallback) =>
-    err.response?.data?.error?.description || fallback;
+  const apiError = (err, fallback) => err.response?.data?.error?.description || fallback;
+
+  const resetAll = () => {
+    setStep('identify'); setOtpId(''); setCode(''); setResetToken('');
+    setUsernames([]); setNewPassword(''); setConfirmPassword('');
+    setError(''); setInfo('');
+  };
+
+  const switchPurpose = () => {
+    setPurpose((p) => (p === 'password' ? 'username' : 'password'));
+    setError(''); setInfo('');
+  };
 
   const requestOtp = async (e) => {
     e?.preventDefault();
-    setError('');
-    setInfo('');
+    setError(''); setInfo('');
     if (phone.replace(/\D/g, '').length < 10) {
       setError('Enter a valid registered mobile number.');
       return;
@@ -82,8 +81,7 @@ export default function ForgotPassword() {
 
   const verifyOtp = async (e) => {
     e?.preventDefault();
-    setError('');
-    setInfo('');
+    setError(''); setInfo('');
     if (code.replace(/\D/g, '').length !== 6) {
       setError('Enter the 6-digit code from the SMS.');
       return;
@@ -105,7 +103,7 @@ export default function ForgotPassword() {
     }
   };
 
-  const setPassword = async (e) => {
+  const submitPassword = async (e) => {
     e?.preventDefault();
     setError('');
     if (newPassword.length < 6) {
@@ -127,146 +125,130 @@ export default function ForgotPassword() {
     }
   };
 
-  const resetAll = () => {
-    setStep('identify');
-    setOtpId('');
-    setCode('');
-    setResetToken('');
-    setUsernames([]);
-    setNewPassword('');
-    setConfirmPassword('');
-    setError('');
-    setInfo('');
-  };
+  const headerTitle = step === 'done'
+    ? 'All set'
+    : purpose === 'password' ? 'Reset your password' : 'Find your username';
+  const headerSub = step !== 'identify'
+    ? undefined
+    : purpose === 'password'
+      ? "We'll text a code to your registered mobile number"
+      : "We'll text a code, then show your username";
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#edf1f7',
-        p: 2,
-      }}
-    >
-      <Card sx={{ maxWidth: 400, width: '100%' }}>
+    <Box sx={authPageSx}>
+      <Card sx={authCardSx}>
         <CardContent sx={{ p: 4 }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Typography variant="h5" sx={{ color: '#222b45', fontWeight: 700 }}>
-              Account Recovery
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#8f9bb3', mt: 1 }}>
-              {schoolCode} · Staff Portal
-            </Typography>
-          </Box>
+          <BrandHeader title={headerTitle} titleSize={23} sub={headerSub} badge={`${schoolCode} · Staff Portal`} />
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          {info && step !== 'identify' && <Alert severity="info" sx={{ mb: 2 }}>{info}</Alert>}
+          {info && step !== 'identify' && step !== 'done' && <Alert severity="info" sx={{ mb: 2 }}>{info}</Alert>}
 
           {/* Step 1 — identify */}
           {step === 'identify' && (
             <form onSubmit={requestOtp}>
-              <ToggleButtonGroup
-                value={purpose}
-                exclusive
-                onChange={(_, v) => v && setPurpose(v)}
-                fullWidth
-                size="small"
-                sx={{ mb: 2 }}
-              >
-                <ToggleButton value="password" sx={{ py: 1 }}>Forgot password</ToggleButton>
-                <ToggleButton value="username" sx={{ py: 1 }}>Forgot username</ToggleButton>
-              </ToggleButtonGroup>
-
               {!isMobile && (
-                <ToggleButtonGroup
-                  value={effectiveUserType}
-                  exclusive
-                  onChange={(_, v) => v && setUserType(v)}
-                  fullWidth
-                  sx={{ mb: 2 }}
-                >
-                  <ToggleButton value="student" sx={{ py: 1.25 }}>
-                    <StudentIcon sx={{ mr: 1 }} /> Student
-                  </ToggleButton>
-                  <ToggleButton value="employee" sx={{ py: 1.25 }}>
-                    <EmployeeIcon sx={{ mr: 1 }} /> Employee
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                <Box sx={{ mb: 2.5 }}>
+                  <FieldCaption>I sign in as</FieldCaption>
+                  <UserTypeToggle value={userType} onChange={setUserType} disabled={loading} />
+                </Box>
               )}
 
-              <TextField
-                fullWidth
-                label="Registered mobile number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                margin="normal"
-                required
-                autoFocus
-                disabled={loading}
-                inputProps={{ inputMode: 'numeric', maxLength: 15 }}
-              />
-              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={{ mt: 2 }}>
+              <Box>
+                <FieldCaption>Registered mobile number</FieldCaption>
+                <TextField
+                  fullWidth hiddenLabel
+                  placeholder="e.g. 98765 43210"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required autoFocus disabled={loading}
+                  inputProps={{ inputMode: 'numeric', maxLength: 15 }}
+                  sx={authFieldSx}
+                />
+                <Typography sx={{ color: AUTH.muted, fontSize: 12, mt: 1 }}>
+                  {purpose === 'password'
+                    ? 'We’ll send a 6-digit code to reset your password.'
+                    : 'We’ll send a 6-digit code, then show your username.'}
+                </Typography>
+              </Box>
+
+              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={authCtaSx}>
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Send code'}
               </Button>
+
+              <Divider sx={{ mt: 2.5 }} />
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Link component="button" type="button" variant="body2" underline="hover" onClick={switchPurpose}>
+                  {purpose === 'password' ? 'Just need your username instead?' : '← I forgot my password instead'}
+                </Link>
+              </Box>
             </form>
           )}
 
           {/* Step 2 — OTP */}
           {step === 'otp' && (
             <form onSubmit={verifyOtp}>
-              <Typography variant="body2" sx={{ color: '#8f9bb3', mb: 1 }}>
-                Enter the 6-digit code sent to your registered mobile number.
-              </Typography>
+              <FieldCaption>6-digit code</FieldCaption>
               <TextField
-                fullWidth
-                label="6-digit code"
+                fullWidth hiddenLabel
+                placeholder="Enter the code from the SMS"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                margin="normal"
-                required
-                autoFocus
-                disabled={loading}
-                inputProps={{ inputMode: 'numeric', maxLength: 6 }}
+                required autoFocus disabled={loading}
+                inputProps={{ inputMode: 'numeric', maxLength: 6, style: { letterSpacing: '0.3em' } }}
+                sx={authFieldSx}
               />
-              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={{ mt: 2 }}>
+              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={authCtaSx}>
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify'}
               </Button>
-              <Button fullWidth variant="text" size="small" disabled={loading} sx={{ mt: 1 }} onClick={resetAll}>
-                Use a different number
-              </Button>
+              <Box sx={{ textAlign: 'center', mt: 1.5 }}>
+                <Link component="button" type="button" variant="body2" underline="hover" onClick={resetAll}>
+                  Use a different number
+                </Link>
+              </Box>
             </form>
           )}
 
           {/* Step 3 — set new password */}
           {step === 'setpw' && (
-            <form onSubmit={setPassword}>
-              <Typography variant="body2" sx={{ color: '#8f9bb3', mb: 1 }}>
-                Choose a new password (at least 6 characters).
-              </Typography>
-              <TextField
-                fullWidth
-                label="New password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                margin="normal"
-                required
-                autoFocus
-                disabled={loading}
-              />
-              <TextField
-                fullWidth
-                label="Confirm new password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                margin="normal"
-                required
-                disabled={loading}
-              />
-              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={{ mt: 2 }}>
+            <form onSubmit={submitPassword}>
+              <Box>
+                <FieldCaption>New password</FieldCaption>
+                <TextField
+                  fullWidth hiddenLabel
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="At least 6 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required autoFocus disabled={loading}
+                  sx={authFieldSx}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          onClick={() => setShowPassword((s) => !s)}
+                          edge="end" tabIndex={-1}
+                        >
+                          {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <FieldCaption>Confirm new password</FieldCaption>
+                <TextField
+                  fullWidth hiddenLabel
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Re-enter new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required disabled={loading}
+                  sx={authFieldSx}
+                />
+              </Box>
+              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={authCtaSx}>
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Set new password'}
               </Button>
             </form>
@@ -279,12 +261,12 @@ export default function ForgotPassword() {
                 <>
                   <Alert severity="success">
                     Your username{usernames.length > 1 ? 's' : ''}:
-                    <Box component="div" sx={{ mt: 1, fontWeight: 700, fontSize: 18 }}>
+                    <Box component="div" sx={{ mt: 1, fontFamily: AUTH.serif, fontWeight: 700, fontSize: 22 }}>
                       {usernames.join(', ')}
                     </Box>
                   </Alert>
-                  <Typography variant="body2" sx={{ color: '#8f9bb3' }}>
-                    Use this to sign in. If you also forgot your password, choose “Forgot password”.
+                  <Typography variant="body2" sx={{ color: AUTH.muted }}>
+                    Use this to sign in. If you also forgot your password, choose “Reset your password”.
                   </Typography>
                 </>
               ) : (
@@ -292,23 +274,20 @@ export default function ForgotPassword() {
                   Your password has been reset. You can now sign in with your new password.
                 </Alert>
               )}
-              <Button fullWidth variant="contained" size="large" onClick={() => navigate('/login')}>
+              <Button fullWidth variant="contained" size="large" onClick={() => navigate('/login')} sx={authCtaSx}>
                 Back to sign in
               </Button>
             </Stack>
           )}
 
           {step !== 'done' && (
-            <Box sx={{ textAlign: 'center', mt: 3 }}>
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
               <Link
-                component="button"
-                type="button"
-                variant="body2"
-                underline="hover"
+                component="button" type="button" variant="body2" underline="hover"
+                sx={{ color: AUTH.muted }}
                 onClick={() => navigate('/login')}
               >
-                <BackIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
-                Back to sign in
+                ← Back to sign in
               </Link>
             </Box>
           )}
