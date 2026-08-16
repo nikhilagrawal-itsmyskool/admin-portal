@@ -66,7 +66,7 @@ export default function DeviceLogin() {
     <Box sx={authPageSx}>
       <Card sx={authCardSx}>
         <CardContent sx={{ p: 4 }}>
-          <BrandHeader title="Skool Assistant" sub="Pair this device" badge={schoolCode} />
+          <BrandHeader title="Vega" sub="Pair this device" badge={schoolCode} />
           {done ? (
             <Alert severity="success" sx={{ mt: 1 }}>Device paired. You can close this and start asking.</Alert>
           ) : (
