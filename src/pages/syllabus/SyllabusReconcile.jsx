@@ -9,6 +9,7 @@ import {
   Warning as WarnIcon, ExpandMore as ExpandIcon, ExpandLess as CollapseIcon, History as HistoryIcon,
 } from '@mui/icons-material';
 import { syllabusService } from '../../services/syllabusService';
+import { fmtDateTime } from '../../utils/date';
 
 // ── shared file helpers ───────────────────────────────────────────────────────
 const fileToBase64 = (file) =>
@@ -33,9 +34,10 @@ export function downloadBase64(fileName, mimeType, base64) {
 // A compact one-line description of an entry (old or new side).
 const entryLabel = (e) => {
   if (!e) return '—';
+  const chap = e.parentTitle ? `${e.parentTitle} › ` : '';
   const no = e.topicNo ? `${e.topicNo} ` : '';
   const comp = e.component ? `{${e.component}} ` : '';
-  return `${comp}${no}${e.title}`;
+  return `${chap}${comp}${no}${e.title}`;
 };
 
 // ── the reconcile dialog ──────────────────────────────────────────────────────
@@ -270,7 +272,7 @@ export function RevisionsDialog({ open, onClose, revisions, loading }) {
       setErr(e.response?.data?.error?.description || 'No source document for this revision');
     }
   };
-  const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB'); } catch { return d; } };
+  const fmt = (d) => fmtDateTime(d) || d; // IST-pinned dd-mm-yyyy HH:MM (multiple revisions/day)
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Revision history <Typography component="span" variant="body2" color="text.secondary">· last {revisions?.length || 0}</Typography></DialogTitle>
