@@ -54,10 +54,11 @@ export default function ReconcileDialog({ syllabusId, open, onClose, onApplied }
   const [removedChoice, setRemovedChoice] = useState({});
   const [showKept, setShowKept] = useState(false);
   const [showAdded, setShowAdded] = useState(false);
+  const [showRemoved, setShowRemoved] = useState(false);
 
   const reset = () => {
     setFile(null); setPreview(null); setError(''); setNote('');
-    setProposalChoice({}); setRemovedChoice({}); setShowKept(false); setShowAdded(false);
+    setProposalChoice({}); setRemovedChoice({}); setShowKept(false); setShowAdded(false); setShowRemoved(false);
   };
   const close = () => { if (!applying) { reset(); onClose(); } };
 
@@ -240,6 +241,23 @@ export default function ReconcileDialog({ syllabusId, open, onClose, onApplied }
               </Box>
             )}
 
+            {/* removed (shows what's going away; mark-risky ones are also in "attention" above) */}
+            {(preview.removed || []).length > 0 && (
+              <Box sx={{ mb: 1 }}>
+                <Button size="small" color="warning" onClick={() => setShowRemoved((v) => !v)} startIcon={showRemoved ? <CollapseIcon /> : <ExpandIcon />}>
+                  {preview.removed.length} removed from the plan
+                </Button>
+                <Collapse in={showRemoved}>
+                  {preview.removed.map((r) => (
+                    <Box key={r.oldId} sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: 1, py: 0.25 }}>
+                      <Typography variant="body2" color="warning.main" sx={{ textDecoration: 'line-through' }}>− {entryLabel(r.old)}</Typography>
+                      {r.markCount > 0 && <Chip size="small" color="error" label={`${r.markCount} marks`} />}
+                    </Box>
+                  ))}
+                </Collapse>
+              </Box>
+            )}
+
             <Divider sx={{ my: 2 }} />
             <TextField fullWidth size="small" label="Note for the revision history (optional)"
               value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. 2026-27 minor page corrections" />
@@ -263,6 +281,7 @@ export default function ReconcileDialog({ syllabusId, open, onClose, onApplied }
 // ── revisions strip (browse + download; restore is Phase B) ───────────────────
 export function RevisionsDialog({ open, onClose, revisions, loading }) {
   const [err, setErr] = useState('');
+  const [open2, setOpen2] = useState(null); // expanded revision uuid
   const download = async (rev) => {
     setErr('');
     try {
@@ -273,30 +292,64 @@ export function RevisionsDialog({ open, onClose, revisions, loading }) {
     }
   };
   const fmt = (d) => fmtDateTime(d) || d; // IST-pinned dd-mm-yyyy HH:MM (multiple revisions/day)
+  const lbl = (x) => x ? `${x.chapter ? `${x.chapter} › ` : ''}${x.component ? `{${x.component}} ` : ''}${x.title}` : '—';
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Revision history <Typography component="span" variant="body2" color="text.secondary">· last {revisions?.length || 0}</Typography></DialogTitle>
       <DialogContent dividers>
         {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
+        {(revisions || []).length > 0 && !loading && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+            Click a revision to see what it changed. To roll back: download that version's Word, redo the edits you want, and re-upload it.
+          </Typography>
+        )}
         {loading ? <Box sx={{ textAlign: 'center', py: 3 }}><CircularProgress size={22} /></Box>
           : (revisions || []).length === 0 ? (
             <Typography variant="body2" color="text.secondary">No revisions yet. The first reconcile will snapshot the current plan here.</Typography>
           ) : (
-            <Stack divider={<Divider flexItem />} spacing={1}>
-              {revisions.map((r) => (
-                <Box key={r.uuid} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
-                  <Chip size="small" color="primary" label={`v${r.revNo}`} />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" noWrap>{r.note || 'Reconcile'}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {fmt(r.createdAt)}
-                      {r.counts && ` · ${r.counts.kept ?? '?'} kept · ${r.counts.added ?? '?'} new · ${r.counts.removed ?? '?'} removed`}
-                    </Typography>
+            <Stack divider={<Divider flexItem />} spacing={0.5}>
+              {revisions.map((r) => {
+                const ch = r.changes || {};
+                const nChanges = (ch.added?.length || 0) + (ch.removed?.length || 0) + (ch.changed?.length || 0) + (ch.renamed?.length || 0);
+                const expanded = open2 === r.uuid;
+                return (
+                <Box key={r.uuid}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
+                    <Chip size="small" color="primary" label={`v${r.revNo}`} />
+                    <Box sx={{ flex: 1, minWidth: 0, cursor: nChanges ? 'pointer' : 'default' }} onClick={() => nChanges && setOpen2(expanded ? null : r.uuid)}>
+                      <Typography variant="body2" noWrap>
+                        {r.note || 'Reconcile'}
+                        {nChanges > 0 && (expanded ? <CollapseIcon fontSize="inherit" sx={{ verticalAlign: 'middle', ml: 0.5 }} /> : <ExpandIcon fontSize="inherit" sx={{ verticalAlign: 'middle', ml: 0.5 }} />)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {fmt(r.createdAt)}
+                        {r.counts && ` · ${r.counts.kept ?? '?'} kept · ${r.counts.added ?? '?'} new · ${r.counts.removed ?? '?'} removed${r.counts.changed ? ` · ${r.counts.changed} changed` : ''}`}
+                      </Typography>
+                    </Box>
+                    <Button size="small" startIcon={<DownloadIcon />} disabled={!r.sourceFileId} onClick={() => download(r)}>Word</Button>
                   </Box>
-                  <Button size="small" startIcon={<DownloadIcon />} disabled={!r.sourceFileId} onClick={() => download(r)}>Word</Button>
-                  <Button size="small" disabled title="Available in a later update">Restore</Button>
+                  <Collapse in={expanded}>
+                    <Box sx={{ pl: 5, pb: 1 }}>
+                      {nChanges === 0 && <Typography variant="caption" color="text.secondary">No entry changes (re-import matched everything).</Typography>}
+                      {(ch.renamed || []).map((x, i) => (
+                        <Typography key={`rn${i}`} variant="caption" display="block" color="text.primary">✎ {lbl(x.from)} → {lbl(x.to)}</Typography>
+                      ))}
+                      {(ch.changed || []).map((x, i) => (
+                        <Typography key={`cg${i}`} variant="caption" display="block" color="text.secondary">
+                          ~ {lbl(x)} {(x.changes || []).map((c) => `${c.field}: ${c.from ?? '∅'}→${c.to ?? '∅'}`).join(', ')}
+                        </Typography>
+                      ))}
+                      {(ch.added || []).map((x, i) => (
+                        <Typography key={`ad${i}`} variant="caption" display="block" color="info.main">+ {lbl(x)}</Typography>
+                      ))}
+                      {(ch.removed || []).map((x, i) => (
+                        <Typography key={`rm${i}`} variant="caption" display="block" color="warning.main">− {lbl(x)}{x.markCount > 0 ? ` (${x.markCount} marks)` : ''}</Typography>
+                      ))}
+                    </Box>
+                  </Collapse>
                 </Box>
-              ))}
+                );
+              })}
             </Stack>
           )}
       </DialogContent>
