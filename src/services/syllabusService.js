@@ -96,6 +96,25 @@ export const syllabusService = {
     return response.data;
   },
 
+  // ---- Reconcile (in-place re-import from a revised .docx; admin/god) ----
+  reconcilePreview: async (syllabusId, { fileName, base64Data }) => {
+    // Parse + match the uploaded doc against the plan's live entries. No writes.
+    const response = await api.post(`/syllabus/syllabi/${syllabusId}/reconcile/preview`, { fileName, base64Data });
+    return response.data; // { counts, sanity, kept[], proposals[], added[], removed[] }
+  },
+  reconcileApply: async (syllabusId, { fileName, base64Data, decisions, note }) => {
+    const response = await api.post(`/syllabus/syllabi/${syllabusId}/reconcile/apply`, { fileName, base64Data, decisions, note });
+    return response.data; // { applied, counts, sourceFileId }
+  },
+  getRevisions: async (syllabusId) => {
+    const response = await api.get(`/syllabus/syllabi/${syllabusId}/revisions`);
+    return response.data; // [{ uuid, revNo, note, sourceFileId, counts, createdbyUserid, createdAt }]
+  },
+  getRevisionSource: async (revisionId) => {
+    const response = await api.get(`/syllabus/revisions/${revisionId}/source`);
+    return response.data; // { fileName, mimeType, base64Data }
+  },
+
   // ---- Plan ↔ teacher assignment (per section) ----
   getPlanTeachers: async (syllabusId) => {
     const response = await api.get(`/syllabus/syllabi/${syllabusId}/teachers`);

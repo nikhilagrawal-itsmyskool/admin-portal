@@ -8,12 +8,14 @@ import {
 import {
   ArrowBack as BackIcon, Save as SaveIcon, ArrowUpward as UpIcon, ArrowDownward as DownIcon,
   Delete as DeleteIcon, Add as AddIcon, PlaylistAdd as BulkIcon, Edit as EditIcon,
-  Download as DownloadIcon,
+  Download as DownloadIcon, UploadFile as UploadFileIcon,
 } from '@mui/icons-material';
 import { syllabusService } from '../../services/syllabusService';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useCan } from '../../permissions/can';
+import { useAuth } from '../../context/AuthContext';
 import PlanTeachers from './PlanTeachers';
+import ReconcileDialog, { RevisionsDialog, HistoryIcon } from './SyllabusReconcile';
 
 const EMPTY_ENTRY = { month: '', entryType: 'topic', topicNo: '', title: '', theme: '', pageRef: '', term: '' };
 
@@ -29,6 +31,13 @@ export default function SyllabusBuilder() {
   const { id } = useParams();
   const can = useCan();
   const canManage = can('syllabus.manage');
+  const { user } = useAuth();
+  const isAdminGod = (user?.roles || []).some((r) => r === 'admin' || r === 'god');
+
+  const [reconcileOpen, setReconcileOpen] = useState(false);
+  const [revisionsOpen, setRevisionsOpen] = useState(false);
+  const [revisions, setRevisions] = useState([]);
+  const [revisionsLoading, setRevisionsLoading] = useState(false);
 
   const [plan, setPlan] = useState(null);
   const [entries, setEntries] = useState([]);
@@ -97,6 +106,19 @@ export default function SyllabusBuilder() {
     } catch (err) {
       setError(err.response?.data?.error?.description || 'No source document for this plan');
     }
+  };
+
+  const openRevisions = async () => {
+    setRevisionsOpen(true); setRevisionsLoading(true);
+    try { setRevisions(await syllabusService.getRevisions(id)); }
+    catch { setRevisions([]); }
+    finally { setRevisionsLoading(false); }
+  };
+
+  const onReconciled = (res) => {
+    setReconcileOpen(false);
+    setSuccess(`Updated: ${res.counts.kept} kept, ${res.counts.added} new, ${res.counts.removed} removed`);
+    load();
   };
 
   const gradeChanged = plan && header.grade && header.grade !== plan.grade;
@@ -253,6 +275,12 @@ export default function SyllabusBuilder() {
         <Box sx={{ flex: 1 }} />
         {plan.sourceFileId && (
           <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={downloadSource}>Download Word</Button>
+        )}
+        {isAdminGod && (
+          <>
+            <Button size="small" variant="outlined" startIcon={<UploadFileIcon />} onClick={() => setReconcileOpen(true)}>Upload revised .docx</Button>
+            <Button size="small" startIcon={<HistoryIcon />} onClick={openRevisions}>Revisions</Button>
+          </>
         )}
       </Box>
 
@@ -527,6 +555,13 @@ export default function SyllabusBuilder() {
         onConfirm={() => { setGradeConfirm(false); doSaveHeader(); }}
         onCancel={() => setGradeConfirm(false)}
       />
+
+      {isAdminGod && (
+        <>
+          <ReconcileDialog syllabusId={id} open={reconcileOpen} onClose={() => setReconcileOpen(false)} onApplied={onReconciled} />
+          <RevisionsDialog open={revisionsOpen} onClose={() => setRevisionsOpen(false)} revisions={revisions} loading={revisionsLoading} />
+        </>
+      )}
     </Box>
   );
 }
