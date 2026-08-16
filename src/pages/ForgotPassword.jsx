@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, TextField, Button, Typography,
@@ -41,13 +41,21 @@ export default function ForgotPassword() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendIn, setResendIn] = useState(0); // seconds left on the per-number cooldown
+
+  // Tick the resend cooldown down to zero, driving the live countdown in the UI.
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   const apiError = (err, fallback) => err.response?.data?.error?.description || fallback;
 
   const resetAll = () => {
     setStep('identify'); setOtpId(''); setCode(''); setResetToken('');
     setUsernames([]); setNewPassword(''); setConfirmPassword('');
-    setError(''); setInfo('');
+    setError(''); setInfo(''); setResendIn(0);
   };
 
   const switchPurpose = () => {
@@ -70,10 +78,17 @@ export default function ForgotPassword() {
         phone: phone.replace(/\D/g, ''),
       });
       setOtpId(res.data.otpId);
+      setCode('');
       setStep('otp');
+      setResendIn(res.data.resendInSec || 60);
       setInfo(res.data.message || 'If an account matches this number, a code has been sent by SMS.');
     } catch (err) {
-      setError(apiError(err, 'Could not send the code. Please try again.'));
+      const msg = apiError(err, 'Could not send the code. Please try again.');
+      // The server enforces a per-number cooldown ("Please wait Ns…"). Reflect the
+      // remaining seconds as a live countdown instead of a frozen message.
+      const m = /(\d+)\s*s/.exec(msg);
+      if (m) { setResendIn(parseInt(m[1], 10)); setError(''); }
+      else setError(msg);
     } finally {
       setLoading(false);
     }
@@ -171,8 +186,10 @@ export default function ForgotPassword() {
                 </Typography>
               </Box>
 
-              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={authCtaSx}>
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Send code'}
+              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading || resendIn > 0} sx={authCtaSx}>
+                {loading
+                  ? <CircularProgress size={24} color="inherit" />
+                  : resendIn > 0 ? `Resend in ${resendIn}s` : 'Send code'}
               </Button>
 
               <Divider sx={{ mt: 2.5 }} />
@@ -201,7 +218,18 @@ export default function ForgotPassword() {
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify'}
               </Button>
               <Box sx={{ textAlign: 'center', mt: 1.5 }}>
-                <Link component="button" type="button" variant="body2" underline="hover" onClick={resetAll}>
+                {resendIn > 0 ? (
+                  <Typography sx={{ color: AUTH.muted, fontSize: 13 }}>
+                    Didn’t get it? Resend in {resendIn}s
+                  </Typography>
+                ) : (
+                  <Link component="button" type="button" variant="body2" underline="hover" onClick={() => requestOtp()} disabled={loading}>
+                    Resend code
+                  </Link>
+                )}
+              </Box>
+              <Box sx={{ textAlign: 'center', mt: 1 }}>
+                <Link component="button" type="button" variant="body2" underline="hover" sx={{ color: AUTH.muted }} onClick={resetAll}>
                   Use a different number
                 </Link>
               </Box>
