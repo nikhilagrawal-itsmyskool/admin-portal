@@ -253,10 +253,12 @@ const menuItems = [
     icon: AttendanceIcon,
     perm: 'attendance.mark',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/attendance' },
+      // Class teachers (attendance.mark, no finalize) get only Take Attendance;
+      // the review surfaces (Overview/Register/History) are admin/god (attendance.finalize).
+      { title: 'Overview', icon: OverviewIcon, path: '/attendance', perm: 'attendance.finalize' },
       { title: 'Take Attendance', icon: MarkIcon, path: '/attendance/mark' },
-      { title: 'Register', icon: MenuBookIcon, path: '/attendance/register' },
-      { title: 'History', icon: HistoryIcon, path: '/attendance/sessions' },
+      { title: 'Register', icon: MenuBookIcon, path: '/attendance/register', perm: 'attendance.finalize' },
+      { title: 'History', icon: HistoryIcon, path: '/attendance/sessions', perm: 'attendance.finalize' },
     ],
   },
   {
@@ -282,7 +284,7 @@ const menuItems = [
     perm: 'student.view',
     children: [
       { title: 'All Students', icon: PeopleIcon, path: '/students' },
-      { title: 'Class Strength', icon: OverviewIcon, path: '/students/class-strength' },
+      { title: 'Class Strength', icon: OverviewIcon, path: '/students/class-strength', perm: 'student.manage' },
       { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.manage' },
     ],
   },
@@ -321,17 +323,20 @@ const menuItems = [
     ],
   },
   {
-    // No parent perm: teachers (syllabus.view) see Plans + Coverage; managers also
-    // see Subjects (gated per-child by syllabus.manage).
+    // No parent perm: teachers (syllabus.view, no manage) see only "My Plans" —
+    // their own assigned sections. Managers (syllabus.manage) get the school-wide
+    // authoring surfaces + the "Coverage" picker. Both the full Plans list and the
+    // Coverage picker expose every subject, so they are manage-gated.
     title: 'Syllabus',
     icon: SyllabusIcon,
     children: [
       { title: 'Overview', icon: SyllabusSubjectIcon, path: '/syllabus/overview', perm: 'syllabus.manage' },
       { title: 'Subjects', icon: SyllabusSubjectIcon, path: '/syllabus/subjects', perm: 'syllabus.manage' },
       { title: 'Offerings', icon: SyllabusSubjectIcon, path: '/syllabus/offerings', perm: 'syllabus.manage' },
-      { title: 'Plans', icon: PlanIcon, path: '/syllabus', perm: 'syllabus.view' },
+      { title: 'My Plans', icon: AssignmentIcon, path: '/syllabus/my', perm: 'syllabus.view', notPerm: 'syllabus.manage' },
+      { title: 'Plans', icon: PlanIcon, path: '/syllabus', perm: 'syllabus.manage' },
       { title: 'Model Papers', icon: SyllabusSubjectIcon, path: '/syllabus/model-papers', perm: 'syllabus.manage' },
-      { title: 'Coverage', icon: CoverageIcon, path: '/syllabus/progress', perm: 'syllabus.progress.mark' },
+      { title: 'Coverage', icon: CoverageIcon, path: '/syllabus/progress', perm: 'syllabus.manage' },
     ],
   },
   {
@@ -394,6 +399,9 @@ export default function Sidebar({ open, onClose, isDesktop }) {
       const children = item.children.filter((c) => {
         const perm = c.perm ?? item.perm;
         if (perm && !can(perm)) return false;
+        // Negative gate: hide from anyone who HAS this action (e.g. show the scoped
+        // "My Plans" to teachers but not to managers, who use the full "Plans" list).
+        if (c.notPerm && can(c.notPerm)) return false;
         // Derived "my" entries (house member / evaluator): shown to the matching
         // teacher only; admins use the authoring entries instead.
         if (c.derived) return !can('assembly.manage') && mobileVisible(c);
