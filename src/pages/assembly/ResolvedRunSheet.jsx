@@ -1,6 +1,52 @@
-import React from 'react';
-import { Box, Typography, Chip, Stack, Avatar } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Chip, Stack, Avatar, Dialog, DialogContent, Link } from '@mui/material';
 import { Cake as CakeIcon } from '@mui/icons-material';
+import { assemblyService } from '../../services/assemblyService';
+
+// The image for a reference — presigned imageUrl (prod) or a lazily-fetched base64
+// data URI (local dev). Shown inside the "view" popup.
+function RefViewImage({ reference }) {
+  const [src, setSrc] = useState(reference.imageUrl || '');
+  useEffect(() => {
+    let alive = true;
+    if (reference.imageUrl) { setSrc(reference.imageUrl); return undefined; }
+    assemblyService.getReferenceImage(reference.uuid)
+      .then((r) => { if (alive && r) setSrc(`data:${r.mimeType};base64,${r.base64Data}`); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [reference.uuid, reference.imageUrl]);
+  return (
+    <Box component="img" src={src || undefined} alt={reference.description}
+      sx={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />
+  );
+}
+
+// Day-level references (staff-only): a description list; tap "view" to see the image.
+function References({ references }) {
+  const [open, setOpen] = useState(null);
+  if (!references?.length) return null;
+  return (
+    <Box sx={{ my: 0.5 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>References</Typography>
+      <Stack spacing={0.25} sx={{ pl: 0.5 }}>
+        {references.map((r) => (
+          <Stack key={r.uuid} direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>• {r.description}</Typography>
+            <Link component="button" type="button" variant="caption" onClick={() => setOpen(r)}>view</Link>
+          </Stack>
+        ))}
+      </Stack>
+      <Dialog open={!!open} onClose={() => setOpen(null)} maxWidth="md" fullWidth>
+        {open && (
+          <DialogContent sx={{ p: 1 }}>
+            <RefViewImage reference={open} />
+            <Typography variant="body2" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{open.description}</Typography>
+          </DialogContent>
+        )}
+      </Dialog>
+    </Box>
+  );
+}
 
 // Person label with the student's section in brackets: "Siddhi Rathore (VIII-A)".
 const personName = (p) => {
@@ -93,6 +139,8 @@ export default function ResolvedRunSheet({ resolved, showThemes = true, showDesc
           <Chip key={label} size="small" color="success" variant="outlined" sx={{ mb: 0.5, mr: 0.5 }} label={`${label}: ${names}`} />
         ) : null;
       })}
+      {/* Day-level references (staff-only; present only on approved rosters). */}
+      <References references={resolved.references} />
       {resolved.nodes?.length
         ? <RunNodes nodes={resolved.nodes} showDescriptions={showDescriptions} showContent={showContent} />
         : <Typography variant="caption" color="text.secondary">No items for this day.</Typography>}

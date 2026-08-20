@@ -66,6 +66,7 @@ export default function RosterEditor() {
       date: d.date, weekday: d.weekday,
       anchors: toRows(d.anchors), owners: toRows(d.owners),
       commanders: toRows(d.commanders), drummers: toRows(d.drummers),
+      references: d.references || [],
       slots: (d.slots || []).map((s) => ({ ...s, participants: toRows(s.participants) })),
     })),
   });
@@ -195,7 +196,8 @@ export default function RosterEditor() {
 
           {/* Day accordions */}
           <RosterDays days={draft.days} onDayChange={setDay} onSlotChange={setSlot}
-            targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId} disabled={ro} />
+            targetTypes={targetTypes} classOptions={classOptions} academicYearId={academicYearId} disabled={ro}
+            weekId={week.uuid} mine={false} />
         </>
       )}
     </Box>

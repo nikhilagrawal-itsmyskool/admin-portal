@@ -41,6 +41,7 @@ function TeacherRoster() {
     days: (detail.days || []).map((d) => ({
       date: d.date, weekday: d.weekday, anchors: toRows(d.anchors), owners: toRows(d.owners),
       commanders: toRows(d.commanders), drummers: toRows(d.drummers),
+      references: d.references || [],
       slots: (d.slots || []).map((s) => ({ ...s, participants: toRows(s.participants) })),
     })),
   });
@@ -161,7 +162,8 @@ function TeacherRoster() {
             </CardContent>
           </Card>
           <RosterDays days={draft.days} onDayChange={setDay} onSlotChange={setSlot}
-            targetTypes={targetTypes} classOptions={classOptions} academicYearId={week.academicYearId} disabled={ro} />
+            targetTypes={targetTypes} classOptions={classOptions} academicYearId={week.academicYearId} disabled={ro}
+            weekId={week.uuid} mine />
         </>
       )}
     </Box>

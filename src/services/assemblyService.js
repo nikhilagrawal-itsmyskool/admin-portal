@@ -70,6 +70,12 @@ export const assemblyService = {
   getWeek: async (weekId) => (await api.get(`/assembly/weeks/${weekId}`)).data,
   saveRoster: async (weekId, data) => (await api.put(`/assembly/weeks/${weekId}/roster`, data)).data,
   submitWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/submit`)).data,
+
+  // ---- Day-level references (description + one image, up to 5 per day) ----
+  addReference: async (weekId, data) => (await api.post(`/assembly/weeks/${weekId}/references`, data)).data, // { entryDate, description, fileName, mimeType, base64Data } -> that date's refs
+  updateReference: async (weekId, refId, data) => (await api.put(`/assembly/weeks/${weekId}/references/${refId}`, data)).data, // { description }
+  removeReference: async (weekId, refId) => (await api.delete(`/assembly/weeks/${weekId}/references/${refId}`)).data,
+  getReferenceImage: async (refId) => (await api.get(`/assembly/references/${refId}/file`)).data, // { fileName, mimeType, base64Data } (local fallback)
   approveWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/approve`)).data,
   recallWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/recall`)).data,
   lockWeek: async (weekId) => (await api.post(`/assembly/weeks/${weekId}/lock`)).data,
@@ -113,6 +119,9 @@ export const assemblyService = {
   myEnsureWeek: async (planId, weekStart) => (await api.post(`/assembly/me/assembly/plans/${planId}/weeks`, { weekStart })).data,
   myWeek: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}`)).data,
   mySaveRoster: async (weekId, data) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/roster`, data)).data,
+  myAddReference: async (weekId, data) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/references`, data)).data,
+  myUpdateReference: async (weekId, refId, data) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/references/${refId}`, data)).data,
+  myRemoveReference: async (weekId, refId) => (await api.delete(`/assembly/me/assembly/weeks/${weekId}/references/${refId}`)).data,
   mySubmitWeek: async (weekId) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/submit`)).data,
   myRecallWeek: async (weekId) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/recall`)).data,
   myWeekChecklist: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}/checklist`)).data,
