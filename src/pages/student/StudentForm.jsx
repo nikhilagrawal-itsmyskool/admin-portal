@@ -12,6 +12,8 @@ import {
   Autocomplete,
   Alert,
   Divider,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { ArrowBack as BackIcon, Save as SaveIcon } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
@@ -74,6 +76,8 @@ export default function StudentForm() {
     aadhaarNumber: '',
     previousSchool: '',
     admissionDate: '',
+    examOnly: false,
+    examOnlyReason: '',
   });
   const [house, setHouse] = useState(null);
   // Initial enrollment (create only)
@@ -148,6 +152,8 @@ export default function StudentForm() {
         aadhaarNumber: s.aadhaarNumber || '',
         previousSchool: s.previousSchool || '',
         admissionDate: s.admissionDate ? String(s.admissionDate).slice(0, 10) : '',
+        examOnly: !!s.examOnly,
+        examOnlyReason: s.examOnlyReason || '',
       });
       if (s.houseId) setHouse({ uuid: s.houseId, name: s.houseName });
       // Current enrollment class + its stream (if the class offers streams).
@@ -424,6 +430,34 @@ export default function StudentForm() {
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Previous school attended" value={form.previousSchool} onChange={setField('previousSchool')} size="small" />
             </Grid>
+
+            {/* Exam-only: registered here but studying elsewhere → pays no fees. The
+                fees module reads this flag to skip demands and to cancel any posted. */}
+            <Grid item xs={12} md={4}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={!!form.examOnly}
+                    onChange={(e) => setForm((f) => ({ ...f, examOnly: e.target.checked }))}
+                    size="small"
+                  />
+                }
+                label="Exam only (studying elsewhere)"
+              />
+            </Grid>
+            {form.examOnly && (
+              <Grid item xs={12} md={8}>
+                <TextField
+                  fullWidth
+                  label="Reason / other school"
+                  placeholder="e.g. Studying at St. Xavier's, Kanpur"
+                  value={form.examOnlyReason}
+                  onChange={setField('examOnlyReason')}
+                  size="small"
+                  helperText="Registered with us only to sit exams; no fees are charged."
+                />
+              </Grid>
+            )}
 
             {!isEdit && (
               <>

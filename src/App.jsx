@@ -51,6 +51,7 @@ import ReceiptsSearch from './pages/fees/ReceiptsSearch';
 import TransportSlabList from './pages/fees/TransportSlabList';
 import LateFeeSettings from './pages/fees/LateFeeSettings';
 import FineExemptions from './pages/fees/FineExemptions';
+import ExamOnlyStudents from './pages/fees/ExamOnlyStudents';
 import ScanVerify from './pages/fees/ScanVerify';
 import WaiverList from './pages/fees/WaiverList';
 import RefundList from './pages/fees/RefundList';
@@ -117,6 +118,7 @@ import StudentList from './pages/student/StudentList';
 import AssistantPage from './pages/assistant/AssistantPage';
 import StudentForm from './pages/student/StudentForm';
 import StudentDetail from './pages/student/StudentDetail';
+import BulkEditClass from './pages/student/BulkEditClass';
 import ClassStrength from './pages/student/ClassStrength';
 import HouseList from './pages/student/houses/HouseList';
 import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
@@ -255,6 +257,7 @@ export default function App() {
         <Route path="fees/transport-slabs" element={<TransportSlabList />} />
         <Route path="fees/late-fees" element={<LateFeeSettings />} />
         <Route path="fees/fine-exemptions" element={<FineExemptions />} />
+        <Route path="fees/exam-only" element={<ExamOnlyStudents />} />
         <Route path="verify/scan" element={<ScanVerify />} />
         <Route path="fees/waivers" element={<WaiverList />} />
         <Route path="fees/refunds" element={<RefundList />} />
@@ -293,6 +296,7 @@ export default function App() {
         <Route path="students/new" element={<StudentForm />} />
         <Route path="students/class-strength" element={<ClassStrength />} />
         <Route path="students/houses" element={<HouseList />} />
+        <Route path="students/bulk-edit" element={<BulkEditClass />} />
         <Route path="students/:id" element={<StudentDetail />} />
         <Route path="students/:id/edit" element={<StudentForm />} />
         <Route path="transfer" element={<TransferList />} />

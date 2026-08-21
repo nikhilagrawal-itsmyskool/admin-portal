@@ -94,6 +94,7 @@ import {
   Undo as RefundIcon,
   ReceiptLong as DuesIcon,
   Receipt as ReceiptIcon,
+  SchoolOutlined as ExamOnlyIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -152,6 +153,7 @@ const menuItems = [
       { title: 'Transport Slabs', icon: TransportIcon, path: '/fees/transport-slabs', perm: 'fee.manage' },
       { title: 'Late Fees', icon: ScheduleIcon, path: '/fees/late-fees', perm: 'fee.manage' },
       { title: 'Fine Exemptions', icon: WaiverIcon, path: '/fees/fine-exemptions', perm: 'fee.manage' },
+      { title: 'Fee Exempt', icon: ExamOnlyIcon, path: '/fees/exam-only', perm: 'fee.manage' },
       { title: 'Waivers', icon: WaiverIcon, path: '/fees/waivers', perm: 'fee.manage' },
       { title: 'Refunds', icon: RefundIcon, path: '/fees/refunds', perm: 'fee.collect' },
     ],

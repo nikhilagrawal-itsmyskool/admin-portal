@@ -108,6 +108,10 @@ export const feesService = {
   withdrawStudent: async (studentId, data) => (await api.post(`/fees/students/${studentId}/withdraw`, data)).data,
   getDuesByYear: async (studentId) => (await api.get(`/fees/students/${studentId}/dues-by-year`)).data,
   getFineExemptions: async (params = {}) => (await api.get('/fees/reports/fine-exemptions', { params })).data,
+  // Exam-only (studying elsewhere): list flagged students + their open demands; cancel their demands.
+  getExamOnlyStudents: async (academicYearId) =>
+    (await api.get('/fees/reports/exam-only-students', { params: { academicYearId } })).data,
+  cancelExamOnlyDemands: async (data) => (await api.post('/fees/reports/exam-only-cancel', data)).data,
   verifyReceiptStaff: async (uuid) => (await api.get(`/fees/verify/staff/${uuid}`)).data,
 };
 

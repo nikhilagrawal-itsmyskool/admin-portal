@@ -195,6 +195,25 @@ export const studentService = {
     return response.data;
   },
 
+  // ---- Bulk class edit ----
+  // Roster for the bulk-edit grid: every active student in the class for the year,
+  // ordered by admission date, with roll / house / father-mother-guardian contacts.
+  // Contacts are masked server-side unless the caller is admin/god.
+  getBulkClassRoster: async ({ classId, academicYearId }, signal) => {
+    const response = await api.get('/students/bulk-class', {
+      params: { classId, academicYearId },
+      signal,
+    });
+    return response.data; // { students: [...] }
+  },
+
+  // Apply staged grid edits. items: [{ studentId, rollNumber?, houseId?, contacts? }]
+  // where contacts = { father?: { mobile?, whatsapp? }, mother?: {...}, guardian?: {...} }.
+  bulkUpdateClass: async ({ classId, academicYearId, items }) => {
+    const response = await api.post('/students/bulk-update', { classId, academicYearId, items });
+    return response.data; // { updated, failed, results: [...] }
+  },
+
   // ---- Promotion lifecycle ----
   promote: async (data) => {
     // { academicYearFromId, academicYearToId, items: [{ studentId, toClassId, rollNumber? }] }

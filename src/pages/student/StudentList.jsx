@@ -34,6 +34,7 @@ import {
   TrendingUp as PromoteIcon,
   Home as HouseIcon,
   School as GraduateIcon,
+  GridView as BulkEditIcon,
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { classService } from '../../services/classService';
@@ -42,13 +43,17 @@ import PromoteDialog from './PromoteDialog';
 import AssignHouseDialog from './AssignHouseDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import { useAuth } from '../../context/AuthContext';
 
 const STATUS_COLORS = { active: 'success', inactive: 'default', deleted: 'error' };
 
 export default function StudentList() {
   const navigate = useNavigate();
   const can = useCan();
+  const { user } = useAuth();
   const canManage = can(ACTIONS.STUDENT_MANAGE);
+  // Bulk class edit is an admin/god-only surface (it reveals unmasked contacts).
+  const isAdminGod = (user?.roles || []).some((r) => r === 'admin' || r === 'god');
   const { academicYearId, years } = useAcademicYear(); // portal-wide year — student search scopes to this
   const [students, setStudents] = useState([]);
   const [houses, setHouses] = useState([]);
@@ -286,6 +291,19 @@ export default function StudentList() {
         <Typography variant="h4">Students</Typography>
         {canManage && (
           <Stack direction="row" spacing={1} sx={{ display: { xs: 'none', sm: 'flex' } }}>
+            {isAdminGod && (
+              <Button
+                variant="outlined"
+                startIcon={<BulkEditIcon />}
+                onClick={() =>
+                  navigate(
+                    selectedClass ? `/students/bulk-edit?classId=${selectedClass.uuid}` : '/students/bulk-edit',
+                  )
+                }
+              >
+                Bulk Edit
+              </Button>
+            )}
             <Button variant="outlined" startIcon={<PromoteIcon />} onClick={() => setPromoteOpen(true)}>
               Promote Class
             </Button>
