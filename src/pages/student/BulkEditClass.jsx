@@ -106,7 +106,7 @@ export default function BulkEditClass() {
   const [toast, setToast] = useState('');
   const [saveResult, setSaveResult] = useState(null); // { updated, failed, failures: [{name, error}] }
 
-  const [cols, setCols] = useState({ roll: true, house: true, father: true, mother: false, guardian: false });
+  const [cols, setCols] = useState({ roll: true, house: true, father: true, mother: true, guardian: true });
   const [colAnchor, setColAnchor] = useState(null);
 
   const yearName = useMemo(
