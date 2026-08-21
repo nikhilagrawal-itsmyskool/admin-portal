@@ -287,6 +287,7 @@ const menuItems = [
     children: [
       { title: 'All Students', icon: PeopleIcon, path: '/students' },
       { title: 'Class Strength', icon: OverviewIcon, path: '/students/class-strength', perm: 'student.manage' },
+      { title: 'Bulk Edit', icon: GridIcon, path: '/students/bulk-edit', perm: 'student.manage' },
       { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.manage' },
     ],
   },
