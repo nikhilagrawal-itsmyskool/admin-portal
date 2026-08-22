@@ -18,14 +18,40 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { useSearchParams } from 'react-router-dom';
 import { studentService } from '../../../services/studentService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
+import HouseBalance from './HouseBalance';
 
 export default function HouseList() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'manage' ? 'manage' : 'balance';
+  const setTab = (t) => setSearchParams(t === 'manage' ? { tab: 'manage' } : {}, { replace: true });
+
+  return (
+    <Box>
+      <Typography variant="h4" sx={{ mb: 2 }}>Houses</Typography>
+      <Tabs value={tab} onChange={(_e, v) => setTab(v)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Tab value="balance" label="Balance" />
+        <Tab value="manage" label="Manage" />
+      </Tabs>
+
+      {tab === 'balance' ? (
+        <HouseBalance onGoManage={() => setTab('manage')} />
+      ) : (
+        <ManageHouses />
+      )}
+    </Box>
+  );
+}
+
+function ManageHouses() {
   const can = useCan();
   const canManage = can(ACTIONS.STUDENT_MANAGE);
   const [houses, setHouses] = useState([]);
@@ -96,8 +122,7 @@ export default function HouseList() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Houses</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
         {canManage && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => openDialog(null)}>
             Add House

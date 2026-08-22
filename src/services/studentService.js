@@ -85,6 +85,14 @@ export const studentService = {
     return response.data; // { houses: [...] }
   },
 
+  // House-balance analytics for a year (defaults to the current session when omitted).
+  getHouseAnalytics: async (academicYearId) => {
+    const response = await api.get('/students/houses/analytics', {
+      params: academicYearId ? { academicYearId } : {},
+    });
+    return response.data; // { summary, houses, grades, unassigned, siblingsClustered }
+  },
+
   createHouse: async (data) => {
     const response = await api.post('/students/houses', data);
     return response.data;
