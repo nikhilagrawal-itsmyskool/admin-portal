@@ -7,15 +7,17 @@ import { monthGridSun, WEEKDAY_HEADS, CHIP_CODES, typeMeta, typeAbbr } from './c
 export default function MonthGrid({ year, month, daysByDate, today, onSelect }) {
   const weeks = monthGridSun(year, month);
   return (
-    <Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75, mb: 0.75 }}>
+    // Fills the height its parent gives it; rows share that height equally, so the
+    // whole month is visible on any monitor. A busy day scrolls inside its own cell.
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75, mb: 0.75, flex: '0 0 auto' }}>
         {WEEKDAY_HEADS.map((h) => (
           <Typography key={h} variant="caption" align="center" sx={{ fontWeight: 700, letterSpacing: 0.6, color: 'text.disabled', textTransform: 'uppercase' }}>{h}</Typography>
         ))}
       </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75 }}>
+      <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))`, gap: 0.75 }}>
         {weeks.flat().map((cell) => {
-          if (!cell.inMonth) return <Box key={cell.date} sx={{ minHeight: 118, borderRadius: 1.5, bgcolor: 'action.hover', opacity: 0.5 }} />;
+          if (!cell.inMonth) return <Box key={cell.date} sx={{ borderRadius: 1.5, bgcolor: 'action.hover', opacity: 0.5 }} />;
           const d = daysByDate[cell.date];
           const hol = d?.holiday;
           const isSun = d?.isWeeklyOff;
@@ -28,28 +30,29 @@ export default function MonthGrid({ year, month, daysByDate, today, onSelect }) 
           return (
             <Box key={cell.date} onClick={() => onSelect(cell.date)}
               sx={{
-                minHeight: 118, p: 1, borderRadius: 1.5, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 0.5,
+                minHeight: 0, p: 0.75, borderRadius: 1.5, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 0.4, overflow: 'hidden',
                 bgcolor: hol ? '#fff7f6' : (isSun ? '#fbfcfe' : 'background.paper'),
                 border: '1px solid', borderColor: hol ? '#f6cfca' : 'divider',
                 outline: isToday ? '2px solid' : 'none', outlineColor: 'primary.main', outlineOffset: '-2px',
                 transition: 'box-shadow .12s, border-color .12s',
                 '&:hover': { boxShadow: 2, borderColor: 'primary.light' },
               }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isSun ? 'secondary.main' : 'text.primary' }}>{cell.day}</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flex: '0 0 auto' }}>
+                <Typography sx={{ fontWeight: 700, fontSize: 13, fontVariantNumeric: 'tabular-nums', color: isSun ? 'secondary.main' : 'text.primary' }}>{cell.day}</Typography>
                 {hol
-                  ? <Box sx={{ fontSize: 9.5, fontWeight: 700, color: '#fff', bgcolor: hol.kind === 'restricted' ? 'warning.main' : 'error.main', px: 0.75, py: 0.25, borderRadius: 3 }}>{hol.kind === 'restricted' ? 'RH' : 'HOLIDAY'}</Box>
-                  : (isSun ? <Typography sx={{ fontSize: 9.5, fontWeight: 600, color: 'secondary.main', textTransform: 'uppercase' }}>Off</Typography> : null)}
+                  ? <Box sx={{ fontSize: 9, fontWeight: 700, color: '#fff', bgcolor: hol.kind === 'restricted' ? 'warning.main' : 'error.main', px: 0.6, py: 0.2, borderRadius: 3 }}>{hol.kind === 'restricted' ? 'RH' : 'HOLIDAY'}</Box>
+                  : (isSun ? <Typography sx={{ fontSize: 9, fontWeight: 600, color: 'secondary.main', textTransform: 'uppercase' }}>Off</Typography> : null)}
               </Box>
-              {theme && (
-                <Typography sx={{ fontSize: 11.5, fontStyle: 'italic', color: '#41506b', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{theme.value}</Typography>
-              )}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4, mt: 'auto' }}>
+              {/* Scrolls inside the cell when a day is busy — the grid itself never grows. */}
+              <Box sx={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.4, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,.15)', borderRadius: 2 } }}>
+                {theme && (
+                  <Typography sx={{ fontSize: 11, fontStyle: 'italic', color: '#41506b', lineHeight: 1.3, flex: '0 0 auto' }}>{theme.value}</Typography>
+                )}
                 {chips.map((e) => {
                   const m = typeMeta(e.typeCode);
                   return (
                     <Box key={e.uuid} title={`${e.typeName}: ${e.value}`}
-                      sx={{ fontSize: 10.5, lineHeight: 1.25, px: 0.75, py: 0.25, borderRadius: 0.75, color: m.color, bgcolor: m.bg, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      sx={{ fontSize: 10.5, lineHeight: 1.25, px: 0.6, py: 0.25, borderRadius: 0.75, color: m.color, bgcolor: m.bg, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '0 0 auto' }}>
                       <Box component="span" sx={{ fontWeight: 800, letterSpacing: 0.3, mr: 0.5 }}>{typeAbbr(e.typeCode, e.typeName)}</Box>
                       <Box component="span" sx={{ fontWeight: 500 }}>{e.value}</Box>
                     </Box>

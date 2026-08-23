@@ -32,4 +32,7 @@ export const activityCalendarService = {
   // Import (xlsx) — preview returns the diff; apply writes it.
   importPreview: async (body) => (await api.post('/academic-calendar/import/preview', body)).data,
   importApply: async (body) => (await api.post('/academic-calendar/import/apply', body)).data,
+  // Upload history (last 10) + download a stored workbook.
+  importHistory: async (params) => (await api.get('/academic-calendar/import/history', { params })).data,
+  importFile: async (id) => (await api.get(`/academic-calendar/import/history/${id}/file`)).data,
 };

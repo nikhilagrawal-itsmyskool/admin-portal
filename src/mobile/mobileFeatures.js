@@ -22,6 +22,7 @@ import {
   MenuBook as SyllabusIcon,
   PhotoCamera as HomeworkIcon,
   RecordVoiceOver as AssistantIcon,
+  Event as AcademicCalendarIcon,
   Payments as FeesIcon,
   ReceiptLong as DuesIcon,
   Receipt as ReceiptIcon,
@@ -64,6 +65,9 @@ export const MOBILE_FEATURES = [
   // Assembly hub: the read-only day view (everyone with assembly.view) + the house
   // member's roster/checklist + the evaluator's grade. A plain teacher only has the day
   // view, so their Assembly tile links straight to it (no hub screen).
+  // Read-only academic calendar (month view + holidays). No operations on mobile —
+  // the page forces read-only and hides Import/Manage columns below the sm breakpoint.
+  { title: "Academic Calendar", icon: AcademicCalendarIcon, path: "/academic-calendar", perm: "academic-calendar.view", section: "today", color: "#3366ff", routes: ["/academic-calendar"] },
   { title: "Today's assembly", hubLabel: "Today's assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view", section: "today", hub: "assembly" },
   { title: "My Roster", hubLabel: "My Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
   { title: "My Checklist", hubLabel: "My Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },

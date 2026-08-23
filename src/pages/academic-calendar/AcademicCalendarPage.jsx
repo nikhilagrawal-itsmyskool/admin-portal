@@ -7,6 +7,7 @@ import {
 } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { activityCalendarService } from '../../services/activityCalendarService';
 import { todayIso } from '../../utils/date';
 import { monthLabel, typeMeta, typeAbbr } from './calendarUtils';
@@ -25,7 +26,9 @@ const LEGEND = [
 
 export default function AcademicCalendarPage() {
   const { academicYearId } = useAcademicYear();
-  const canManage = useCan()('academic-calendar.manage');
+  const isMobile = useIsMobile();
+  // PWA (small screen) is strictly read-only — no operations for anyone, incl. admins.
+  const canManage = useCan()('academic-calendar.manage') && !isMobile;
   const today = todayIso();
 
   const [tab, setTab] = useState('month');
@@ -71,6 +74,8 @@ export default function AcademicCalendarPage() {
   }, [printing]);
 
   const selectedDay = selectedDate ? (daysByDate[selectedDate] || { date: selectedDate, weekday: '', isWeeklyOff: false, holiday: null, entries: [] }) : null;
+  // On mobile only Month + Holidays exist; fall back so the tab value always matches a rendered tab.
+  const effectiveTab = isMobile && (tab === 'import' || tab === 'types') ? 'month' : tab;
 
   return (
     <Box>
@@ -79,16 +84,16 @@ export default function AcademicCalendarPage() {
         Plan the year's festivals, important days, remembrances, thoughts and academic milestones — the daily thought feeds the morning assembly, and holidays flow into attendance.
       </Typography>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <Tabs value={effectiveTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="month" label="Month view" />
         <Tab value="holidays" label="Holidays" />
-        <Tab value="import" label="Import from Excel" />
-        <Tab value="types" label="Manage columns" />
+        {!isMobile && <Tab value="import" label="Import from Excel" />}
+        {!isMobile && <Tab value="types" label="Manage columns" />}
       </Tabs>
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
 
-      {tab === 'month' && (
+      {effectiveTab === 'month' && (
         <>
           <Card>
             <CardContent>
@@ -118,19 +123,23 @@ export default function AcademicCalendarPage() {
               {loading ? (
                 <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>
               ) : (
-                <MonthGrid year={year} month={month} daysByDate={daysByDate} today={today} onSelect={setSelectedDate} />
+                <Box sx={{ height: { xs: 'calc(100vh - 300px)', md: 'calc(100vh - 290px)' }, minHeight: 360 }}>
+                  <MonthGrid year={year} month={month} daysByDate={daysByDate} today={today} onSelect={setSelectedDate} />
+                </Box>
               )}
             </CardContent>
           </Card>
           <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1.5 }}>
-            Click any day to edit its line items, add entries under any column, or mark it a holiday. Sundays are the weekly off.
+            {canManage
+              ? 'Click any day to edit its line items, add entries under any column, or mark it a holiday. Sundays are the weekly off.'
+              : 'Tap any day to see its full details. Busy days scroll inside the cell.'}
           </Typography>
         </>
       )}
 
-      {tab === 'holidays' && <HolidaysTab canManage={canManage} />}
-      {tab === 'import' && <ImportTab academicYearId={academicYearId} canManage={canManage} onApplied={load} />}
-      {tab === 'types' && <ColumnsTab types={types} canManage={canManage} onChanged={load} />}
+      {effectiveTab === 'holidays' && <HolidaysTab canManage={canManage} />}
+      {effectiveTab === 'import' && <ImportTab academicYearId={academicYearId} canManage={canManage} onApplied={load} />}
+      {effectiveTab === 'types' && <ColumnsTab types={types} canManage={canManage} onChanged={load} />}
 
       <DayEditorDrawer
         day={selectedDay}

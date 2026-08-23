@@ -1,11 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   Card, CardContent, Box, Stack, Typography, Button, Alert, CircularProgress,
-  Table, TableHead, TableRow, TableCell, TableBody, Chip, Checkbox, FormControlLabel,
+  Table, TableHead, TableRow, TableCell, TableBody, Chip, Checkbox, FormControlLabel, Link, Divider,
 } from '@mui/material';
-import { UploadFile as UploadIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
+import { UploadFile as UploadIcon, CheckCircle as CheckIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { activityCalendarService } from '../../services/activityCalendarService';
-import { fmtDate } from '../../utils/date';
+import { fmtDate, fmtDateTime } from '../../utils/date';
 
 const readBase64 = (file) => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -25,6 +25,23 @@ export default function ImportTab({ academicYearId, canManage, onApplied }) {
   const [done, setDone] = useState(null);
   const [includeAA, setIncludeAA] = useState(false);
   const [replace, setReplace] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  const loadHistory = useCallback(async () => {
+    if (!academicYearId) return;
+    try { setHistory(await activityCalendarService.importHistory({ academicYearId })); }
+    catch { setHistory([]); }
+  }, [academicYearId]);
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  const download = async (id) => {
+    try {
+      const f = await activityCalendarService.importFile(id);
+      const a = document.createElement('a');
+      a.href = f.dataUri; a.download = f.fileName || 'activity-calendar.xlsx';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { setErr(e.response?.data?.error?.description || 'Download failed'); }
+  };
 
   const pick = async (f) => {
     if (!f) return;
@@ -45,6 +62,7 @@ export default function ImportTab({ academicYearId, canManage, onApplied }) {
       const res = await activityCalendarService.importApply({ fileBase64, academicYearId, includeAcademicActivities: includeAA, replace, fileName: file.name });
       setDone(res); setPreview(null); setFile(null);
       await onApplied?.();
+      await loadHistory();
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Import failed');
     } finally { setBusy(false); }
@@ -122,6 +140,29 @@ export default function ImportTab({ academicYearId, canManage, onApplied }) {
           )}
         </CardContent>
       </Card>
+
+      {history.length > 0 && (
+        <Card sx={{ mt: 2 }}>
+          <CardContent>
+            <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Recent uploads <Typography component="span" variant="body2" color="text.secondary">(last {history.length})</Typography></Typography>
+            <Divider sx={{ mb: 1 }} />
+            <Stack spacing={0.5}>
+              {history.map((h) => (
+                <Stack key={h.uuid} direction="row" alignItems="center" spacing={1.5} sx={{ py: 0.5 }}>
+                  <UploadIcon fontSize="small" color="disabled" />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" noWrap>{h.fileName}</Typography>
+                    <Typography variant="caption" color="text.secondary">{fmtDateTime(h.createdAt)}{h.sizeBytes ? ` · ${Math.round(h.sizeBytes / 1024)} KB` : ''}</Typography>
+                  </Box>
+                  <Link component="button" type="button" variant="caption" onClick={() => download(h.uuid)} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                    <DownloadIcon sx={{ fontSize: 15 }} /> download
+                  </Link>
+                </Stack>
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }
