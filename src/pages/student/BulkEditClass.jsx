@@ -26,6 +26,8 @@ import {
   Stack,
   Tooltip,
   Link,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -67,6 +69,7 @@ function toRow(r) {
     name: r.name,
     admissionNumber: r.admissionNumber || '',
     admissionDate: r.admissionDate || null,
+    className: r.className || '', // exam-only roster carries this for context
     roll: r.rollNumber != null ? String(r.rollNumber) : '',
     houseId: r.houseId || '',
     father: contact(r.fatherGuardianId, r.fatherMobile, r.fatherWhatsapp),
@@ -97,6 +100,9 @@ export default function BulkEditClass() {
   const [classes, setClasses] = useState([]);
   const [houses, setHouses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
+  // 'class' = pick a class (roll + house + contacts); 'examOnly' = cross-class
+  // cohort of exam-only students (house + contacts only, no roll).
+  const [mode, setMode] = useState('class');
 
   const [rows, setRows] = useState([]);
   const [orig, setOrig] = useState({}); // uuid -> snapshot string
@@ -132,28 +138,28 @@ export default function BulkEditClass() {
   }, []);
 
   const loadRoster = useCallback(async () => {
-    if (!selectedClass || !academicYearId) return;
+    if (mode === 'class' && (!selectedClass || !academicYearId)) return;
     setLoading(true);
     setError('');
     setSaveResult(null);
     try {
-      const data = await studentService.getBulkClassRoster({
-        classId: selectedClass.uuid,
-        academicYearId,
-      });
+      const data =
+        mode === 'examOnly'
+          ? await studentService.getExamOnlyRoster()
+          : await studentService.getBulkClassRoster({ classId: selectedClass.uuid, academicYearId });
       const list = (data.students || []).map(toRow);
       setRows(list);
       const o = {};
       list.forEach((r) => (o[r.uuid] = snapshot(r)));
       setOrig(o);
     } catch {
-      setError('Failed to load the class roster.');
+      setError(mode === 'examOnly' ? 'Failed to load exam-only students.' : 'Failed to load the class roster.');
       setRows([]);
       setOrig({});
     } finally {
       setLoading(false);
     }
-  }, [selectedClass, academicYearId]);
+  }, [mode, selectedClass, academicYearId]);
 
   useEffect(() => {
     loadRoster();
@@ -184,9 +190,12 @@ export default function BulkEditClass() {
     setToast(filled ? `Copied ${filled} SMS number${filled > 1 ? 's' : ''} into blank WhatsApp cells` : 'All WhatsApp numbers already filled');
   };
 
+  // Roll is class-scoped, so it only applies in class mode.
+  const showRoll = mode === 'class' && cols.roll;
+
   // ---- derived: dirty, validation, save payload ----
   const rollDupes = useMemo(() => {
-    if (!cols.roll) return new Set();
+    if (!showRoll) return new Set();
     const seen = new Map();
     const dup = new Set();
     rows.forEach((r) => {
@@ -196,7 +205,7 @@ export default function BulkEditClass() {
       else seen.set(v, r.uuid);
     });
     return dup;
-  }, [rows, cols.roll]);
+  }, [rows, showRoll]);
 
   const { items, editedRows, invalidCount } = useMemo(() => {
     let invalid = 0;
@@ -208,7 +217,7 @@ export default function BulkEditClass() {
       const item = { studentId: r.uuid };
       let has = false;
 
-      if (cols.roll && r.roll.trim() !== o.roll) {
+      if (showRoll && r.roll.trim() !== o.roll) {
         item.rollNumber = r.roll.trim() === '' ? null : parseInt(r.roll.trim(), 10);
         has = true;
       }
@@ -238,7 +247,7 @@ export default function BulkEditClass() {
       }
     });
     return { items: built, editedRows: changed, invalidCount: invalid + rollDupes.size };
-  }, [rows, orig, cols, rollDupes]);
+  }, [rows, orig, cols, rollDupes, showRoll]);
 
   const isDirty = (uuid, field) => {
     const o = orig[uuid] ? JSON.parse(orig[uuid]) : null;
@@ -258,11 +267,11 @@ export default function BulkEditClass() {
     setSaving(true);
     setError('');
     try {
-      const res = await studentService.bulkUpdateClass({
-        classId: selectedClass.uuid,
-        academicYearId,
-        items,
-      });
+      const res = await studentService.bulkUpdateClass(
+        mode === 'examOnly'
+          ? { items }
+          : { classId: selectedClass.uuid, academicYearId, items },
+      );
       const nameById = Object.fromEntries(rows.map((r) => [r.uuid, r.name]));
       const failures = (res.results || [])
         .filter((x) => !x.ok)
@@ -310,9 +319,10 @@ export default function BulkEditClass() {
           Students
         </Button>
         <Typography variant="h4" sx={{ flexShrink: 0 }}>
-          Bulk Edit Class
+          Bulk Edit
         </Typography>
-        {yearName && <Chip size="small" color="primary" variant="outlined" label={yearName} />}
+        {mode === 'class' && yearName && <Chip size="small" color="primary" variant="outlined" label={yearName} />}
+        {mode === 'examOnly' && <Chip size="small" color="secondary" variant="outlined" label="Exam-only students" />}
       </Box>
 
       {error && (
@@ -324,15 +334,26 @@ export default function BulkEditClass() {
       {/* Toolbar */}
       <Paper variant="outlined" sx={{ p: 1.5, mb: 2 }}>
         <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
-          <Autocomplete
-            options={classes}
-            getOptionLabel={(o) => o.name || ''}
-            value={selectedClass}
-            onChange={(e, v) => setSelectedClass(v)}
-            isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-            sx={{ width: 220 }}
-            renderInput={(p) => <TextField {...p} label="Class" size="small" />}
-          />
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(e, v) => v && setMode(v)}
+          >
+            <ToggleButton value="class">By class</ToggleButton>
+            <ToggleButton value="examOnly">Exam-only</ToggleButton>
+          </ToggleButtonGroup>
+          {mode === 'class' && (
+            <Autocomplete
+              options={classes}
+              getOptionLabel={(o) => o.name || ''}
+              value={selectedClass}
+              onChange={(e, v) => setSelectedClass(v)}
+              isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+              sx={{ width: 220 }}
+              renderInput={(p) => <TextField {...p} label="Class" size="small" />}
+            />
+          )}
           <Typography variant="body2" color="text.secondary">
             {rows.length > 0 && `${rows.length} student${rows.length === 1 ? '' : 's'}`}
           </Typography>
@@ -350,7 +371,7 @@ export default function BulkEditClass() {
               FIELDS TO EDIT
             </Typography>
             {[
-              { key: 'roll', label: 'Roll number' },
+              ...(mode === 'class' ? [{ key: 'roll', label: 'Roll number' }] : []),
               { key: 'house', label: 'House' },
               { key: 'father', label: 'Father contact' },
               { key: 'mother', label: 'Mother contact' },
@@ -393,14 +414,18 @@ export default function BulkEditClass() {
         </Alert>
       )}
 
-      {!selectedClass ? (
+      {mode === 'class' && !selectedClass ? (
         <Alert severity="info">Pick a class to begin. Students load in admission-date order.</Alert>
       ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
           <CircularProgress />
         </Box>
       ) : rows.length === 0 ? (
-        <Alert severity="info">No students found in this class for {yearName || 'the selected year'}.</Alert>
+        <Alert severity="info">
+          {mode === 'examOnly'
+            ? 'No exam-only students found. Mark a student exam-only from their profile first.'
+            : `No students found in this class for ${yearName || 'the selected year'}.`}
+        </Alert>
       ) : (
         <Paper variant="outlined">
           {/* Legend */}
@@ -435,7 +460,8 @@ export default function BulkEditClass() {
                   <TableCell sx={{ bgcolor: 'background.paper' }} />
                   <TableCell sx={{ bgcolor: 'background.paper' }} />
                   <TableCell sx={{ bgcolor: 'background.paper' }} />
-                  {cols.roll && <TableCell sx={{ bgcolor: 'background.paper' }} />}
+                  {showRoll && <TableCell sx={{ bgcolor: 'background.paper' }} />}
+                  {mode === 'examOnly' && <TableCell sx={{ bgcolor: 'background.paper' }} />}
                   {cols.house && <TableCell sx={{ bgcolor: 'background.paper' }} />}
                   {activeContacts.map((rel) => (
                     <TableCell
@@ -468,7 +494,8 @@ export default function BulkEditClass() {
                   <TableCell sx={{ width: 36 }}>#</TableCell>
                   <TableCell>Student</TableCell>
                   <TableCell>Admitted</TableCell>
-                  {cols.roll && <TableCell align="center">Roll</TableCell>}
+                  {showRoll && <TableCell align="center">Roll</TableCell>}
+                  {mode === 'examOnly' && <TableCell>Class</TableCell>}
                   {cols.house && <TableCell>House</TableCell>}
                   {activeContacts.map((rel) => [
                     <TableCell key={`${rel.key}-s`} sx={{ borderLeft: '2px solid', borderColor: 'divider' }}>
@@ -499,7 +526,7 @@ export default function BulkEditClass() {
                     </TableCell>
                     <TableCell sx={{ color: 'text.secondary' }}>{fmtDate(r.admissionDate)}</TableCell>
 
-                    {cols.roll && (
+                    {showRoll && (
                       <TableCell align="center" sx={cellSx(isDirty(r.uuid, 'roll'), rollDupes.has(r.roll.trim()) && r.roll.trim())}>
                         <TextField
                           variant="standard"
@@ -512,6 +539,10 @@ export default function BulkEditClass() {
                           FormHelperTextProps={{ sx: { m: 0, fontSize: 10, textAlign: 'center' } }}
                         />
                       </TableCell>
+                    )}
+
+                    {mode === 'examOnly' && (
+                      <TableCell sx={{ color: 'text.secondary' }}>{r.className || '—'}</TableCell>
                     )}
 
                     {cols.house && (
