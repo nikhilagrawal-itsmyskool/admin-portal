@@ -166,10 +166,21 @@ const DayAccordion = memo(function DayAccordion({
     <Accordion defaultExpanded={defaultExpanded}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography sx={{ fontWeight: 600 }}>{fmtDateDow(d.date)}</Typography>
+        {d.dailyTheme && (
+          <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'primary.main', ml: 2, display: { xs: 'none', sm: 'block' }, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            “{d.dailyTheme}”
+          </Typography>
+        )}
         <Box sx={{ flex: 1 }} />
         <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>{d.slots.length} slot(s)</Typography>
       </AccordionSummary>
       <AccordionDetails>
+        {d.dailyTheme && (
+          <Box sx={{ mb: 2, p: 1.25, bgcolor: '#eef4ff', border: '1px solid', borderColor: '#cfe0ff', borderRadius: 1 }}>
+            <Typography variant="overline" color="primary.main" sx={{ display: 'block', lineHeight: 1.4 }}>Thought of the day</Typography>
+            <Typography variant="body2" sx={{ fontStyle: 'italic' }}>“{d.dailyTheme}”</Typography>
+          </Box>
+        )}
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>Anchors (MCs)</Typography>

@@ -27,6 +27,8 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [summary, setSummary] = useState(null);
   const [lines, setLines] = useState([]);
   const [entries, setEntries] = useState([]);
+  const [cancelledEntries, setCancelledEntries] = useState([]); // superseded/cancelled ledger rows (history)
+  const [showCancelledLedger, setShowCancelledLedger] = useState(false);
   const [view, setView] = useState('dues'); // 'dues' | 'all' | 'receipts' | 'transport'
   const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
   const [transport, setTransport] = useState(null); // lazy-loaded for the Transport view
@@ -73,20 +75,21 @@ export default function StudentFeesPanel({ studentId, student }) {
       try {
         const [sm, led, fu] = await Promise.all([
           feesService.getStudentSummary(effStudentId, selYear).catch(() => null),
-          feesService.getStudentLedger(effStudentId, selYear),
+          feesService.getStudentLedger(effStudentId, selYear, showCancelledLedger),
           feesService.getFollowup({ studentId: effStudentId, academicYearId: selYear }).catch(() => ({ entries: [] })),
         ]);
         if (!alive) return;
         setSummary(sm);
         setLines(led?.lines || []);
         setEntries(led?.entries || []);
+        setCancelledEntries(led?.cancelledEntries || []);
         setFollowup(fu?.entries || []);
         setReceipts(null);
       } catch (err) { if (alive) setError(errMsg(err, 'Failed to load fees')); }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [effStudentId, selYear, refreshKey]);
+  }, [effStudentId, selYear, refreshKey, showCancelledLedger]);
 
   const due = lines.filter((l) => l.remaining > 0);
   const dueNowLines = due.filter((l) => (l.bucket ? l.bucket === 'due' : l.due));
@@ -347,32 +350,44 @@ export default function StudentFeesPanel({ studentId, student }) {
                   )}
                 </Table>
               </Box>
-            )) : view === 'all' ? (isMobile ? mobileFull : (
-              <Box sx={{ overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 620 }}>
-                  <TableHead><TableRow>
-                    <TableCell>Status</TableCell><TableCell>Cycle</TableCell><TableCell>Head</TableCell>
-                    <TableCell align="right">Charged</TableCell><TableCell align="right">Discount</TableCell>
-                    <TableCell align="right">Paid</TableCell><TableCell align="right">Balance</TableCell>
-                  </TableRow></TableHead>
-                  <TableBody>
-                    {lines.length === 0 && <TableRow><TableCell colSpan={7} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No fee activity this year.</TableCell></TableRow>}
-                    {lines.map((l) => <FullRow key={l.chargeId} l={l} receiptId={receiptByCharge[l.chargeId]} />)}
-                  </TableBody>
-                  {lines.length > 0 && (
-                    <TableFooter>
-                      <TableRow>
-                        <TableCell colSpan={3} sx={{ fontWeight: 700, color: 'text.primary' }}>Totals</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>{inr(tot.charged)}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>{tot.concession ? '−' + inr(tot.concession) : '0'}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.success }}>{inr(tot.paid)}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(tot.remaining)}</TableCell>
-                      </TableRow>
-                    </TableFooter>
-                  )}
-                </Table>
-              </Box>
-            )) : view === 'transport' ? (
+            )) : view === 'all' ? (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <FormControlLabel
+                    control={<Switch size="small" checked={showCancelledLedger} onChange={(e) => setShowCancelledLedger(e.target.checked)} />}
+                    label="Show cancelled / history"
+                    sx={{ '& .MuiFormControlLabel-label': { fontSize: 13 } }}
+                  />
+                </Box>
+                {isMobile ? mobileFull : (
+                  <Box sx={{ overflowX: 'auto' }}>
+                    <Table size="small" sx={{ minWidth: 620 }}>
+                      <TableHead><TableRow>
+                        <TableCell>Status</TableCell><TableCell>Cycle</TableCell><TableCell>Head</TableCell>
+                        <TableCell align="right">Charged</TableCell><TableCell align="right">Discount</TableCell>
+                        <TableCell align="right">Paid</TableCell><TableCell align="right">Balance</TableCell>
+                      </TableRow></TableHead>
+                      <TableBody>
+                        {lines.length === 0 && <TableRow><TableCell colSpan={7} align="center" sx={{ color: FEE_COLORS.muted, py: 2 }}>No fee activity this year.</TableCell></TableRow>}
+                        {lines.map((l) => <FullRow key={l.chargeId} l={l} receiptId={receiptByCharge[l.chargeId]} />)}
+                      </TableBody>
+                      {lines.length > 0 && (
+                        <TableFooter>
+                          <TableRow>
+                            <TableCell colSpan={3} sx={{ fontWeight: 700, color: 'text.primary' }}>Totals</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700 }}>{inr(tot.charged)}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700 }}>{tot.concession ? '−' + inr(tot.concession) : '0'}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.success }}>{inr(tot.paid)}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, color: FEE_COLORS.danger }}>{inr(tot.remaining)}</TableCell>
+                          </TableRow>
+                        </TableFooter>
+                      )}
+                    </Table>
+                  </Box>
+                )}
+                {showCancelledLedger && <CancelledLedger rows={cancelledEntries} />}
+              </>
+            ) : view === 'transport' ? (
               <Box sx={{ overflowX: 'auto' }}>
                 {transport === null ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>
@@ -514,6 +529,45 @@ function statusChip(l) {
   if (l.status === 'partial') return <Chip size="small" color="warning" label="Part-paid" />;
   if (!l.due) return <Chip size="small" variant="outlined" label="Upcoming" />;
   return <Chip size="small" color="error" label="Due" />;
+}
+
+// Cancelled / superseded ledger rows — the audit trail (exam-only rollback, receipt cancel,
+// concession change). Struck-through + greyed, with the reason from each row's remarks.
+function CancelledLedger({ rows }) {
+  const kindLabel = { charge: 'Charge', concession: 'Concession', waiver: 'Waiver', payment: 'Payment', adjust: 'Adjustment' };
+  if (!rows || rows.length === 0) {
+    return <Typography sx={{ fontSize: 12.5, color: FEE_COLORS.muted, mt: 2, fontStyle: 'italic' }}>No cancelled or superseded entries for this year.</Typography>;
+  }
+  return (
+    <Box sx={{ mt: 2 }}>
+      <Typography sx={{ fontSize: 12, fontWeight: 700, color: FEE_COLORS.muted, textTransform: 'uppercase', letterSpacing: '.04em', mb: 0.5 }}>
+        Cancelled / superseded ({rows.length}) — not counted in dues
+      </Typography>
+      <Box sx={{ overflowX: 'auto' }}>
+        <Table size="small" sx={{ minWidth: 620 }}>
+          <TableHead><TableRow>
+            <TableCell>Type</TableCell><TableCell>Cycle</TableCell><TableCell>Head</TableCell>
+            <TableCell align="right">Amount</TableCell><TableCell>Reason</TableCell>
+          </TableRow></TableHead>
+          <TableBody>
+            {rows.map((e) => {
+              const amt = Number(e.debit || 0) || Number(e.credit || 0);
+              const strike = { textDecoration: 'line-through', color: FEE_COLORS.muted };
+              return (
+                <TableRow key={e.uuid} sx={{ opacity: 0.75 }}>
+                  <TableCell sx={strike}>{kindLabel[e.kind] || e.kind}</TableCell>
+                  <TableCell sx={strike}>{e.cycleLabel || '—'}</TableCell>
+                  <TableCell sx={strike}>{e.headLabel || '—'}</TableCell>
+                  <TableCell align="right" sx={strike}>{inr(amt)}</TableCell>
+                  <TableCell sx={{ fontSize: 12, color: FEE_COLORS.muted, maxWidth: 300, whiteSpace: 'normal' }}>{e.remarks || '—'}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
+  );
 }
 
 function DueRow({ l, upcoming }) {

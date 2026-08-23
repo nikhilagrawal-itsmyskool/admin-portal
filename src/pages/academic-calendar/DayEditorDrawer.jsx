@@ -73,7 +73,7 @@ export default function DayEditorDrawer({ day, types, academicYearId, canManage,
         {err && <Typography variant="body2" color="error" sx={{ mb: 1 }}>{err}</Typography>}
 
         {/* Holiday */}
-        <Box sx={{ bgcolor: hol ? 'error.50' : 'grey.50', border: '1px solid', borderColor: hol ? 'error.light' : 'divider', borderRadius: 1.5, p: 1.5, mb: 2 }}>
+        <Box sx={{ bgcolor: hol ? '#fdecea' : 'grey.50', border: '1px solid', borderColor: hol ? 'error.light' : 'divider', borderRadius: 1.5, p: 1.5, mb: 2 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <Box sx={{ flex: 1 }}>
               <Typography variant="subtitle2">{hol ? `Holiday · ${hol.name}` : 'Not a holiday'}</Typography>

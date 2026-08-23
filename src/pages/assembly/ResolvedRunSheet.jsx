@@ -111,16 +111,24 @@ function RunNodes({ nodes, depth = 0, showDescriptions = true, showContent = tru
 
 export default function ResolvedRunSheet({ resolved, showThemes = true, showDescriptions = true, showContent = true }) {
   if (!resolved) return null;
+  const themeBlock = resolved.dailyTheme ? (
+    <Box sx={{ mb: 1, p: 1.25, bgcolor: '#eef4ff', border: '1px solid', borderColor: '#cfe0ff', borderRadius: 1 }}>
+      <Typography variant="overline" color="primary.main" sx={{ display: 'block', lineHeight: 1.4 }}>Thought of the day</Typography>
+      <Typography variant="body2" sx={{ fontStyle: 'italic' }}>“{resolved.dailyTheme}”</Typography>
+    </Box>
+  ) : null;
   if (!resolved.held) {
     return (
-      <Box sx={{ color: 'text.secondary', py: 1 }}>
-        <Typography variant="body2">No assembly</Typography>
-        <Typography variant="caption">({resolved.weekday})</Typography>
+      <Box sx={{ py: 1 }}>
+        {themeBlock}
+        <Typography variant="body2" color="text.secondary">No assembly</Typography>
+        <Typography variant="caption" color="text.secondary">({resolved.weekday})</Typography>
       </Box>
     );
   }
   return (
     <Box>
+      {themeBlock}
       {resolved.source === 'special' && (
         <Chip size="small" color="secondary" sx={{ mb: 0.5, mr: 0.5 }} label={`Special: ${resolved.title || ''}`} />
       )}

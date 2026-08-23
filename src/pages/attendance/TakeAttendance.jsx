@@ -40,6 +40,7 @@ export default function TakeAttendance() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [dayInfo, setDayInfo] = useState(null);
   const [finalizeDialog, setFinalizeDialog] = useState(false);
 
   useEffect(() => {
@@ -60,11 +61,12 @@ export default function TakeAttendance() {
       setError('Select class, academic year and date');
       return;
     }
-    setLoading(true); setError(''); setSuccess('');
+    setLoading(true); setError(''); setSuccess(''); setDayInfo(null);
     try {
       const sess = await attendanceService.openSession({ classId: selectedClass.uuid, academicYearId, date });
       setSession(sess);
       const roster = await attendanceService.getRoster({ classId: selectedClass.uuid, academicYearId, date });
+      setDayInfo(roster.dayInfo || sess.dayInfo || null);
       setStudents((roster.students || []).map((s) => ({
         ...s,
         status: s.status || 'present',
@@ -129,6 +131,11 @@ export default function TakeAttendance() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {dayInfo?.warning && !finalized && (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setDayInfo(null)}>
+          {dayInfo.warning}{dayInfo.isNonTeaching ? ' — attendance isn’t usually taken on this day, but you can proceed if needed.' : ''}
+        </Alert>
+      )}
 
       <Card sx={{ mb: 3 }}>
         <CardContent>

@@ -68,9 +68,9 @@ export const feesService = {
   deleteWaiver: async (id) => (await api.delete(`/fees/waivers/${id}`)).data,
 
   // ---- Ledger + charge run ----
-  getStudentLedger: async (studentId, academicYearId) =>
+  getStudentLedger: async (studentId, academicYearId, includeCancelled) =>
     (await api.get(`/fees/students/${studentId}/ledger`, {
-      params: academicYearId ? { academicYearId } : {},
+      params: { ...(academicYearId ? { academicYearId } : {}), ...(includeCancelled ? { includeCancelled: 'true' } : {}) },
     })).data,
   getStudentSummary: async (studentId, academicYearId) =>
     (await api.get(`/fees/students/${studentId}/summary`, {

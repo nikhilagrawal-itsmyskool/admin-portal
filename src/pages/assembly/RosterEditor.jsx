@@ -63,7 +63,7 @@ export default function RosterEditor() {
 
   const buildDraft = (detail) => ({
     days: (detail.days || []).map((d) => ({
-      date: d.date, weekday: d.weekday,
+      date: d.date, weekday: d.weekday, dailyTheme: d.dailyTheme || null,
       anchors: toRows(d.anchors), owners: toRows(d.owners),
       commanders: toRows(d.commanders), drummers: toRows(d.drummers),
       references: d.references || [],
