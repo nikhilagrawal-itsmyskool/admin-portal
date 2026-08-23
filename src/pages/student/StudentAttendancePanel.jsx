@@ -5,6 +5,7 @@ import {
 import { EventAvailable as AttIcon } from '@mui/icons-material';
 import { attendanceService } from '../../services/attendanceService';
 import { academicCalendarService } from '../../services/academicCalendarService';
+import { activityCalendarService } from '../../services/activityCalendarService';
 
 // Semantic status palette (consistent everywhere attendance is shown).
 const STATUS = {
@@ -14,6 +15,8 @@ const STATUS = {
   late: { color: '#3b82f6', label: 'Late' },
 };
 const NONE = '#eef1f6';
+const HOLIDAY_COLOR = '#f8b4b4'; // declared full holiday
+const OFF_COLOR = '#cdd4e0';     // weekly off (e.g. Sunday)
 const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -26,8 +29,9 @@ function StatTile({ value, label, color }) {
   );
 }
 
-// One month as a mini calendar heatmap.
-function MonthGrid({ year, month, map }) {
+// One month as a mini calendar heatmap. `nt` maps date -> { kind, name } for
+// non-teaching days (holiday / weekly-off), shaded distinctly and never a "gap".
+function MonthGrid({ year, month, map, nt }) {
   const first = new Date(year, month, 1).getDay();
   const days = new Date(year, month + 1, 0).getDate();
   const cells = [];
@@ -44,17 +48,20 @@ function MonthGrid({ year, month, map }) {
           if (!d) return <Box key={i} />;
           const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           const st = map[iso];
-          const color = st ? STATUS[st]?.color || NONE : NONE;
+          const off = nt[iso];
+          // A marked status wins; else a non-teaching day gets its own shade; else empty.
+          const color = st ? STATUS[st]?.color || NONE : off ? (off.kind === 'holiday' ? HOLIDAY_COLOR : OFF_COLOR) : NONE;
+          const filled = !!st || !!off;
           const cell = (
             <Box sx={{
               aspectRatio: '1 / 1', borderRadius: '5px', bgcolor: color,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10, fontWeight: 600, color: st ? '#fff' : 'text.disabled',
+              fontSize: 10, fontWeight: 600, color: st ? '#fff' : filled ? 'rgba(0,0,0,0.55)' : 'text.disabled',
             }}>{d}</Box>
           );
-          return st ? (
-            <Tooltip key={i} title={`${d} ${MONTHS[month]} — ${STATUS[st]?.label || st}`} arrow>{cell}</Tooltip>
-          ) : <Box key={i}>{cell}</Box>;
+          const tip = st ? `${d} ${MONTHS[month]} — ${STATUS[st]?.label || st}`
+            : off ? `${d} ${MONTHS[month]} — ${off.kind === 'holiday' ? off.name : `${off.name} (weekly off)`}` : null;
+          return tip ? <Tooltip key={i} title={tip} arrow>{cell}</Tooltip> : <Box key={i}>{cell}</Box>;
         })}
       </Box>
     </Box>
@@ -64,6 +71,7 @@ function MonthGrid({ year, month, map }) {
 export default function StudentAttendancePanel({ studentId }) {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState([]);
+  const [nt, setNt] = useState({});
   const [yearName, setYearName] = useState('');
 
   useEffect(() => {
@@ -74,9 +82,22 @@ export default function StudentAttendancePanel({ studentId }) {
         const cur = await academicCalendarService.getCurrentAcademicYear();
         if (alive) setYearName(cur?.name || '');
         const data = await attendanceService.getStudentAttendance(studentId, cur?.uuid ? { academicYearId: cur.uuid } : {});
-        if (alive) setDays(data.days || []);
+        const rows = data.days || [];
+        if (alive) setDays(rows);
+        // Overlay the year's non-teaching days (holidays + weekly-offs) across the
+        // span the heatmap covers, so they're shaded even where there's no record.
+        let ntMap = {};
+        if (cur?.uuid && rows.length) {
+          const from = rows[rows.length - 1].date; // DESC order -> earliest last
+          const to = rows[0].date;
+          try {
+            const list = await activityCalendarService.getNonTeaching({ from, to, academicYearId: cur.uuid });
+            for (const x of list) ntMap[x.date] = { kind: x.kind, name: x.name };
+          } catch { /* calendar optional */ }
+        }
+        if (alive) setNt(ntMap);
       } catch {
-        if (alive) setDays([]);
+        if (alive) { setDays([]); setNt({}); }
       } finally {
         if (alive) setLoading(false);
       }
@@ -90,15 +111,16 @@ export default function StudentAttendancePanel({ studentId }) {
     const monthSet = new Set();
     for (const d of days) {
       map[d.date] = d.status;
-      if (totals[d.status] !== undefined) totals[d.status]++;
       monthSet.add(d.date.slice(0, 7)); // YYYY-MM
+      if (d.nonTeaching || nt[d.date]) continue; // holiday / weekly-off: not a working day
+      if (totals[d.status] !== undefined) totals[d.status]++;
     }
     const months = [...monthSet].sort().map((ym) => {
       const [y, m] = ym.split('-');
       return { year: +y, month: +m - 1 };
     });
     return { map, totals, months };
-  }, [days]);
+  }, [days, nt]);
 
   const working = totals.present + totals.absent + totals.late;
   const percent = working > 0 ? Math.round(((totals.present + totals.late) / working) * 100) : 0;
@@ -143,7 +165,7 @@ export default function StudentAttendancePanel({ studentId }) {
 
             {/* Calendar heatmaps */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 1 }}>
-              {months.map((m) => <MonthGrid key={`${m.year}-${m.month}`} year={m.year} month={m.month} map={map} />)}
+              {months.map((m) => <MonthGrid key={`${m.year}-${m.month}`} year={m.year} month={m.month} map={map} nt={nt} />)}
             </Box>
 
             {/* Legend */}
@@ -152,6 +174,12 @@ export default function StudentAttendancePanel({ studentId }) {
                 <Stack key={s.label} direction="row" spacing={0.5} alignItems="center">
                   <Box sx={{ width: 12, height: 12, borderRadius: '3px', bgcolor: s.color }} />
                   <Typography variant="caption" color="text.secondary">{s.label}</Typography>
+                </Stack>
+              ))}
+              {[['Holiday', HOLIDAY_COLOR], ['Weekly off', OFF_COLOR]].map(([label, color]) => (
+                <Stack key={label} direction="row" spacing={0.5} alignItems="center">
+                  <Box sx={{ width: 12, height: 12, borderRadius: '3px', bgcolor: color }} />
+                  <Typography variant="caption" color="text.secondary">{label}</Typography>
                 </Stack>
               ))}
             </Stack>

@@ -13,6 +13,7 @@ import { monthLabel, typeMeta, typeAbbr } from './calendarUtils';
 import MonthGrid from './MonthGrid';
 import DayEditorDrawer from './DayEditorDrawer';
 import ColumnsTab from './ColumnsTab';
+import HolidaysTab from './HolidaysTab';
 import ImportTab from './ImportTab';
 import MonthPrint from './MonthPrint';
 
@@ -80,6 +81,7 @@ export default function AcademicCalendarPage() {
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="month" label="Month view" />
+        <Tab value="holidays" label="Holidays" />
         <Tab value="import" label="Import from Excel" />
         <Tab value="types" label="Manage columns" />
       </Tabs>
@@ -126,6 +128,7 @@ export default function AcademicCalendarPage() {
         </>
       )}
 
+      {tab === 'holidays' && <HolidaysTab canManage={canManage} />}
       {tab === 'import' && <ImportTab academicYearId={academicYearId} canManage={canManage} onApplied={load} />}
       {tab === 'types' && <ColumnsTab types={types} canManage={canManage} onChanged={load} />}
 

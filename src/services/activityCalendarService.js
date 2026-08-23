@@ -23,6 +23,12 @@ export const activityCalendarService = {
   setHoliday: async (body) => (await api.post('/academic-calendar/holidays', body)).data,
   deleteHoliday: async (id) => (await api.delete(`/academic-calendar/holidays/${id}`)).data,
 
+  // Settings (weekly-off) + non-teaching resolver
+  getSettings: async (params) => (await api.get('/academic-calendar/settings', { params })).data,
+  setSettings: async (body) => (await api.put('/academic-calendar/settings', body)).data,
+  // -> [{ date, kind: 'holiday'|'weekly_off', name }]
+  getNonTeaching: async (params) => (await api.get('/academic-calendar/non-teaching', { params })).data,
+
   // Import (xlsx) — preview returns the diff; apply writes it.
   importPreview: async (body) => (await api.post('/academic-calendar/import/preview', body)).data,
   importApply: async (body) => (await api.post('/academic-calendar/import/apply', body)).data,
