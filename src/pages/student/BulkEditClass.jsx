@@ -51,6 +51,7 @@ const COLUMN_OPTIONS = [
   { key: 'roll', label: 'Roll number' },
   { key: 'house', label: 'House' },
   { key: 'examOnly', label: 'Exam only' },
+  { key: 'rte', label: 'RTE' },
   { key: 'father', label: 'Father contact' },
   { key: 'mother', label: 'Mother contact' },
   { key: 'guardian', label: 'Guardian contact' },
@@ -80,6 +81,7 @@ function toRow(r) {
     roll: r.rollNumber != null ? String(r.rollNumber) : '',
     houseId: r.houseId || '',
     examOnly: !!r.examOnly,
+    rte: !!r.rte,
     father: contact(r.fatherGuardianId, r.fatherMobile, r.fatherWhatsapp),
     mother: contact(r.motherGuardianId, r.motherMobile, r.motherWhatsapp),
     guardian: contact(r.guardianGuardianId, r.guardianMobile, r.guardianWhatsapp),
@@ -93,6 +95,7 @@ function snapshot(row) {
     roll: row.roll,
     houseId: row.houseId,
     examOnly: row.examOnly,
+    rte: row.rte,
     father: c(row.father),
     mother: c(row.mother),
     guardian: c(row.guardian),
@@ -118,7 +121,7 @@ export default function BulkEditClass() {
   const [toast, setToast] = useState('');
   const [saveResult, setSaveResult] = useState(null); // { updated, failed, failures: [{name, error}] }
 
-  const [cols, setCols] = useState({ roll: true, house: true, examOnly: true, father: true, mother: true, guardian: true });
+  const [cols, setCols] = useState({ roll: true, house: true, examOnly: true, rte: true, father: true, mother: true, guardian: true });
   const [colAnchor, setColAnchor] = useState(null);
 
   const yearName = useMemo(
@@ -178,6 +181,7 @@ export default function BulkEditClass() {
   const editRoll = (uuid, val) => setCell(uuid, (r) => ({ ...r, roll: val.replace(/[^\d]/g, '') }));
   const editHouse = (uuid, val) => setCell(uuid, (r) => ({ ...r, houseId: val }));
   const editExam = (uuid, checked) => setCell(uuid, (r) => ({ ...r, examOnly: checked }));
+  const editRte = (uuid, checked) => setCell(uuid, (r) => ({ ...r, rte: checked }));
   const editContact = (uuid, rel, field, val) =>
     setCell(uuid, (r) => ({ ...r, [rel]: { ...r[rel], [field]: val.replace(/[^\d]/g, '') } }));
 
@@ -197,8 +201,9 @@ export default function BulkEditClass() {
     setToast(filled ? `Copied ${filled} SMS number${filled > 1 ? 's' : ''} into blank WhatsApp cells` : 'All WhatsApp numbers already filled');
   };
 
-  // Mark / clear exam-only for every row at once (respects the current filter — here, the class).
+  // Mark / clear a boolean flag for every row at once (whole class).
   const setAllExam = (checked) => setRows((prev) => prev.map((r) => ({ ...r, examOnly: checked })));
+  const setAllRte = (checked) => setRows((prev) => prev.map((r) => ({ ...r, rte: checked })));
 
   // ---- derived: dirty, validation, save payload ----
   const rollDupes = useMemo(() => {
@@ -236,6 +241,10 @@ export default function BulkEditClass() {
         item.examOnly = !!r.examOnly;
         has = true;
       }
+      if (cols.rte && !!r.rte !== !!o.rte) {
+        item.rte = !!r.rte;
+        has = true;
+      }
       const contacts = {};
       RELATIONS.forEach(({ key }) => {
         if (!cols[key]) return;
@@ -268,6 +277,7 @@ export default function BulkEditClass() {
     if (field === 'roll') return r.roll.trim() !== o.roll;
     if (field === 'house') return (r.houseId || '') !== (o.houseId || '');
     if (field === 'exam') return !!r.examOnly !== !!o.examOnly;
+    if (field === 'rte') return !!r.rte !== !!o.rte;
     const [rel, sub] = field.split('.');
     return r[rel][sub] !== o[rel][sub];
   };
@@ -453,6 +463,7 @@ export default function BulkEditClass() {
                   {cols.roll && <TableCell sx={{ bgcolor: 'background.paper' }} />}
                   {cols.house && <TableCell sx={{ bgcolor: 'background.paper' }} />}
                   {cols.examOnly && <TableCell sx={{ bgcolor: 'background.paper' }} />}
+                  {cols.rte && <TableCell sx={{ bgcolor: 'background.paper' }} />}
                   {activeContacts.map((rel) => (
                     <TableCell
                       key={rel.key}
@@ -488,7 +499,7 @@ export default function BulkEditClass() {
                   {cols.house && <TableCell>House</TableCell>}
                   {cols.examOnly && (
                     <TableCell align="center">
-                      <Tooltip title="Tick students registered here only to sit exams">
+                      <Tooltip title="Tick students registered here only to sit exams (click to tick all)">
                         <Link
                           component="button"
                           type="button"
@@ -497,6 +508,21 @@ export default function BulkEditClass() {
                           sx={{ fontSize: 11, fontWeight: 700 }}
                         >
                           Exam only
+                        </Link>
+                      </Tooltip>
+                    </TableCell>
+                  )}
+                  {cols.rte && (
+                    <TableCell align="center">
+                      <Tooltip title="Tick students admitted under the RTE quota (click to tick all)">
+                        <Link
+                          component="button"
+                          type="button"
+                          underline="none"
+                          onClick={() => setAllRte(true)}
+                          sx={{ fontSize: 11, fontWeight: 700 }}
+                        >
+                          RTE
                         </Link>
                       </Tooltip>
                     </TableCell>
@@ -535,9 +561,9 @@ export default function BulkEditClass() {
                         <TextField
                           variant="standard"
                           value={r.roll}
+                          placeholder="—"
                           onChange={(e) => editRoll(r.uuid, e.target.value)}
                           inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', width: 52, fontWeight: 600 } }}
-                          InputProps={{ disableUnderline: true }}
                           error={Boolean(rollDupes.has(r.roll.trim()) && r.roll.trim())}
                           helperText={rollDupes.has(r.roll.trim()) && r.roll.trim() ? 'dup' : ''}
                           FormHelperTextProps={{ sx: { m: 0, fontSize: 10, textAlign: 'center' } }}
@@ -549,12 +575,11 @@ export default function BulkEditClass() {
                       <TableCell sx={cellSx(isDirty(r.uuid, 'house'), false)}>
                         <Select
                           variant="standard"
-                          disableUnderline
                           value={r.houseId}
                           displayEmpty
                           onChange={(e) => editHouse(r.uuid, e.target.value)}
-                          sx={{ fontSize: 13, minWidth: 96 }}
-                          renderValue={(v) => (v ? houseNameById[v] || '—' : <span style={{ color: '#8f9bb3' }}>—</span>)}
+                          sx={{ fontSize: 13, minWidth: 110, '& .MuiSelect-select': { pl: 0.5 } }}
+                          renderValue={(v) => (v ? houseNameById[v] || '—' : <span style={{ color: '#8f9bb3' }}>Select…</span>)}
                         >
                           <MenuItem value="">—</MenuItem>
                           {houses.map((h) => (
@@ -572,6 +597,17 @@ export default function BulkEditClass() {
                           size="small"
                           checked={r.examOnly}
                           onChange={(e) => editExam(r.uuid, e.target.checked)}
+                          sx={{ p: 0.25 }}
+                        />
+                      </TableCell>
+                    )}
+
+                    {cols.rte && (
+                      <TableCell align="center" sx={cellSx(isDirty(r.uuid, 'rte'), false)}>
+                        <Checkbox
+                          size="small"
+                          checked={r.rte}
+                          onChange={(e) => editRte(r.uuid, e.target.checked)}
                           sx={{ p: 0.25 }}
                         />
                       </TableCell>
@@ -682,7 +718,6 @@ function ContactInput({ value, bad, adornment, onChange }) {
         onChange={(e) => onChange(e.target.value)}
         error={bad}
         inputProps={{ inputMode: 'numeric', style: { fontSize: 13, width: 108 } }}
-        InputProps={{ disableUnderline: true }}
       />
     </Box>
   );

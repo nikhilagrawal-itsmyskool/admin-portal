@@ -78,6 +78,7 @@ export default function StudentForm() {
     admissionDate: '',
     examOnly: false,
     examOnlyReason: '',
+    rte: false,
   });
   const [house, setHouse] = useState(null);
   // Initial enrollment (create only)
@@ -154,6 +155,7 @@ export default function StudentForm() {
         admissionDate: s.admissionDate ? String(s.admissionDate).slice(0, 10) : '',
         examOnly: !!s.examOnly,
         examOnlyReason: s.examOnlyReason || '',
+        rte: !!s.rte,
       });
       if (s.houseId) setHouse({ uuid: s.houseId, name: s.houseName });
       // Current enrollment class + its stream (if the class offers streams).
@@ -458,6 +460,20 @@ export default function StudentForm() {
                 />
               </Grid>
             )}
+
+            {/* RTE: admitted under the Right to Education quota. A plain flag. */}
+            <Grid item xs={12} md={4}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={!!form.rte}
+                    onChange={(e) => setForm((f) => ({ ...f, rte: e.target.checked }))}
+                    size="small"
+                  />
+                }
+                label="RTE (Right to Education quota)"
+              />
+            </Grid>
 
             {!isEdit && (
               <>
