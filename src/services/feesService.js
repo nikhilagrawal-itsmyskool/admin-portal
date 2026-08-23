@@ -56,6 +56,10 @@ export const feesService = {
   updateConcession: async (id, data) => (await api.put(`/fees/concessions/${id}`, data)).data,
   deleteConcession: async (id) => (await api.delete(`/fees/concessions/${id}`)).data,
   getConcessionStudents: async (id) => (await api.get(`/fees/concessions/${id}/students`)).data,
+  // Mid-year concession change (stop/switch from a cycle). Pass dryRun:true for the preview.
+  changeConcession: async (data) => (await api.post('/fees/concessions/change', data)).data,
+  getConcessionTimeline: async (studentId, academicYearId) =>
+    (await api.get(`/fees/students/${studentId}/concession-timeline`, { params: { academicYearId } })).data,
   getMultiConcession: async (academicYearId) => (await api.get('/fees/concessions/multi', { params: { academicYearId } })).data,
   addConcessionStudents: async (id, data) =>
     (await api.post(`/fees/concessions/${id}/students`, data)).data,

@@ -13,6 +13,7 @@ import { inr, errMsg, openReceipt, FEE_COLORS, PAYMENT_MODE_LABELS } from '../fe
 import ReceiptPrintButton from '../fees/ReceiptPrintButton';
 import { fmtDate, todayIso } from '../../utils/date';
 import FollowupDialog, { fLabel, fColor } from '../fees/FollowupDialog';
+import ConcessionTimeline from '../fees/ConcessionTimeline';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -276,6 +277,7 @@ export default function StudentFeesPanel({ studentId, student }) {
             <ToggleButton value="dues" sx={{ textTransform: 'none', py: 0.25 }}>Dues</ToggleButton>
             <ToggleButton value="all" sx={{ textTransform: 'none', py: 0.25 }}>Full ledger</ToggleButton>
             <ToggleButton value="receipts" sx={{ textTransform: 'none', py: 0.25 }}>Receipts</ToggleButton>
+            <ToggleButton value="concession" sx={{ textTransform: 'none', py: 0.25 }}>Concession</ToggleButton>
             <ToggleButton value="transport" sx={{ textTransform: 'none', py: 0.25 }}>Transport</ToggleButton>
           </ToggleButtonGroup>
           {isCurrent && !isMobile && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
@@ -387,6 +389,8 @@ export default function StudentFeesPanel({ studentId, student }) {
                 )}
                 {showCancelledLedger && <CancelledLedger rows={cancelledEntries} />}
               </>
+            ) : view === 'concession' ? (
+              <ConcessionTimeline studentId={effStudentId} academicYearId={selYear} canManage={canManage && isCurrent} studentName={student?.name} />
             ) : view === 'transport' ? (
               <Box sx={{ overflowX: 'auto' }}>
                 {transport === null ? (
