@@ -51,8 +51,10 @@ export default function HouseBalance({ onGoManage }) {
   const [error, setError] = useState('');
   const [anomalyTab, setAnomalyTab] = useState(0);
   const [selected, setSelected] = useState({});   // studentId -> chosen houseId (unassigned)
+  const [sibTarget, setSibTarget] = useState({}); // familyKey -> target houseId for the suggested move
   const [savingId, setSavingId] = useState(null);
   const [bulkSaving, setBulkSaving] = useState(false);
+  const [sibBulkSaving, setSibBulkSaving] = useState(false);
   const [toast, setToast] = useState('');
 
   const load = useCallback(async () => {
@@ -64,6 +66,9 @@ export default function HouseBalance({ onGoManage }) {
       const seed = {};
       (res.unassigned || []).forEach((u) => { seed[u.uuid] = u.suggestedHouseId || (res.houses[0] && res.houses[0].uuid) || ''; });
       setSelected(seed);
+      const sibSeed = {};
+      (res.siblingsClustered || []).forEach((f) => { if (f.suggestedMove) sibSeed[f.familyKey] = f.suggestedMove.toHouseId; });
+      setSibTarget(sibSeed);
     } catch {
       setError('Failed to load house balance');
     } finally {
@@ -112,6 +117,24 @@ export default function HouseBalance({ onGoManage }) {
       setError(e?.response?.data?.error?.message || 'Failed to assign some students');
     } finally {
       setBulkSaving(false);
+    }
+  };
+
+  const moveAllSiblings = async () => {
+    if (!data?.siblingsClustered?.length) return;
+    setSibBulkSaving(true);
+    try {
+      for (const f of data.siblingsClustered) {
+        if (!f.suggestedMove) continue;
+        const target = sibTarget[f.familyKey] || f.suggestedMove.toHouseId;
+        if (target && target !== f.houseId) await studentService.assignHouse(f.suggestedMove.studentId, target);
+      }
+      setToast('Families split');
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || 'Failed to move some students');
+    } finally {
+      setSibBulkSaving(false);
     }
   };
 
@@ -404,50 +427,73 @@ export default function HouseBalance({ onGoManage }) {
                   <Alert severity="success">No families have all their children in one house.</Alert>
                 ) : (
                   <>
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      These families have every child in the <strong>same</strong> house. Your rule is siblings in different
-                      houses (families of 5+ are exempt), so move one child to a different house to split them.
-                    </Alert>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
+                      <Alert severity="info" sx={{ flex: 1, minWidth: 240, py: 0 }}>
+                        The pre-selected move takes one child to a different house — chosen to split the family while
+                        keeping grade and size even. Review, then move. (Families of 5+ are exempt.)
+                      </Alert>
+                      {canManage && (
+                        <Button variant="contained" onClick={moveAllSiblings} disabled={sibBulkSaving}>
+                          {sibBulkSaving ? 'Moving…' : 'Move all suggested'}
+                        </Button>
+                      )}
+                    </Box>
                     <Box sx={{ overflowX: 'auto' }}>
                       <Table size="small">
                         <TableHead>
                           <TableRow>
                             <TableCell>Family — all in one house</TableCell>
-                            <TableCell>Move a child</TableCell>
+                            <TableCell>Suggested move</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {siblingsClustered.map((f) => (
-                            <TableRow key={f.familyKey}>
-                              <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
-                                  <Box sx={{ width: 10, height: 10, borderRadius: '3px', bgcolor: colorFor[f.houseId] }} />
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{f.houseName}</Typography>
-                                </Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  {f.members.map((m) => `${m.name} (${m.className})`).join(' · ')}
-                                </Typography>
-                              </TableCell>
-                              <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>
-                                {f.members.map((m) => (
-                                  <Box key={m.uuid} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                                    <Typography variant="body2" sx={{ minWidth: 150 }}>{m.name}</Typography>
-                                    <Select
-                                      size="small"
-                                      value={f.houseId}
-                                      disabled={!canManage || savingId === m.uuid}
-                                      onChange={(e) => assign(m.uuid, e.target.value)}
-                                      sx={{ minWidth: 150 }}
-                                    >
-                                      {houses.map((h) => (
-                                        <MenuItem key={h.uuid} value={h.uuid}>{h.name}</MenuItem>
-                                      ))}
-                                    </Select>
+                          {siblingsClustered.map((f) => {
+                            const sm = f.suggestedMove;
+                            const target = sibTarget[f.familyKey] || (sm && sm.toHouseId) || '';
+                            return (
+                              <TableRow key={f.familyKey}>
+                                <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                                    <Box sx={{ width: 10, height: 10, borderRadius: '3px', bgcolor: colorFor[f.houseId] }} />
+                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{f.houseName}</Typography>
                                   </Box>
-                                ))}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                  <Typography variant="body2" color="text.secondary">
+                                    {f.members.map((m) => `${m.name} (${m.className})`).join(' · ')}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>
+                                  {sm ? (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                      <Typography variant="body2">Move <strong>{sm.studentName}</strong> →</Typography>
+                                      <Select
+                                        size="small"
+                                        value={target}
+                                        disabled={!canManage || savingId === sm.studentId}
+                                        onChange={(e) => setSibTarget((s) => ({ ...s, [f.familyKey]: e.target.value }))}
+                                        renderValue={(val) => houseName[val] || 'Select house'}
+                                        sx={{ minWidth: 150 }}
+                                      >
+                                        {houses.filter((h) => h.uuid !== f.houseId).map((h) => (
+                                          <MenuItem key={h.uuid} value={h.uuid}>{h.name}</MenuItem>
+                                        ))}
+                                      </Select>
+                                      {canManage && (
+                                        <Button size="small" variant="outlined" disabled={savingId === sm.studentId}
+                                          onClick={() => assign(sm.studentId, target)}>
+                                          {savingId === sm.studentId ? '…' : 'Move'}
+                                        </Button>
+                                      )}
+                                      {target === sm.toHouseId && (
+                                        <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600 }}>✓ keeps balance</Typography>
+                                      )}
+                                    </Box>
+                                  ) : (
+                                    <Typography variant="body2" color="text.secondary">—</Typography>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </Box>
