@@ -110,7 +110,7 @@ export default function DayEditorDrawer({ day, types, academicYearId, canManage,
               </Stack>
 
               {items.length === 0 && addFor !== t.code && (
-                <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>No {isTheme ? 'thought' : 'entry'} yet.</Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>No {isTheme ? 'theme' : 'entry'} yet.</Typography>
               )}
 
               {items.map((e) => (
@@ -146,7 +146,7 @@ export default function DayEditorDrawer({ day, types, academicYearId, canManage,
               {addFor === t.code && (
                 <Box sx={{ border: '1px dashed', borderColor: 'primary.light', borderRadius: 1, p: 1, mb: 0.75 }}>
                   <Stack spacing={1}>
-                    <TextField size="small" fullWidth autoFocus multiline placeholder={isTheme ? 'Thought of the day…' : 'Value…'}
+                    <TextField size="small" fullWidth autoFocus multiline placeholder={isTheme ? 'Theme of the day…' : 'Value…'}
                       value={addVal.value} onChange={(e) => setAddVal((v) => ({ ...v, value: e.target.value }))} />
                     {t.code === 'remembrance' && (
                       <TextField size="small" fullWidth label="Detail (e.g. role)" value={addVal.detail} onChange={(e) => setAddVal((v) => ({ ...v, detail: e.target.value }))} />
