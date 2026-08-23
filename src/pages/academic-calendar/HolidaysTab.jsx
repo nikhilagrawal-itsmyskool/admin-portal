@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, CardContent, Box, Stack, Typography, TextField, Button, IconButton, Alert, MenuItem,
   Table, TableHead, TableRow, TableCell, TableBody, Chip, FormGroup, FormControlLabel, Checkbox,
-  CircularProgress, Tooltip,
+  CircularProgress, Tooltip, Grid,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
@@ -84,18 +84,12 @@ export default function HolidaysTab({ canManage }) {
 
   return (
     <Box>
-      <Alert severity="info" sx={{ mb: 2 }}>
-        This is the same holiday data as the month view — edit here or by clicking a day; both stay in sync. Full holidays and weekly-offs close the school and are excluded from attendance percentages.
-      </Alert>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
 
       {/* Weekly-off */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>Weekly off</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Days of the week the school is closed every week. These count as holidays everywhere (calendar, attendance, student reports).
-          </Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Weekly off</Typography>
           <FormGroup row>
             {WEEKDAYS.map((d) => (
               <FormControlLabel key={d.n}
@@ -107,14 +101,16 @@ export default function HolidaysTab({ canManage }) {
       </Card>
 
       {/* Summary */}
-      <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', mb: 2 }}>
+      <Grid container spacing={1.5} sx={{ mb: 2 }}>
         {[[totalNonTeaching, 'Non-teaching days'], [weeklyOffCount, 'Weekly offs'], [fullHols, 'Declared holidays'], [rhHols, 'Restricted (open)']].map(([n, l]) => (
-          <Box key={l} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 130 }}>
-            <Typography sx={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{n}</Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>{l}</Typography>
-          </Box>
+          <Grid item xs={6} sm={3} key={l}>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, height: '100%' }}>
+              <Typography sx={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{n}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>{l}</Typography>
+            </Box>
+          </Grid>
         ))}
-      </Stack>
+      </Grid>
 
       {/* Declared holidays list */}
       <Card>

@@ -2,6 +2,8 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { monthGridSun, WEEKDAY_HEADS, CHIP_CODES, typeMeta, typeAbbr } from './calendarUtils';
 
+const MAX_CHIPS = 3; // entries shown per cell before "+N more" (keeps cells scroll-free)
+
 // The month grid. `daysByDate` maps yyyy-mm-dd -> CalendarDay ({ weekday, isWeeklyOff,
 // holiday, entries }). Cells are clickable (except padding days from adjacent months).
 export default function MonthGrid({ year, month, daysByDate, today, onSelect }) {
@@ -43,12 +45,13 @@ export default function MonthGrid({ year, month, daysByDate, today, onSelect }) 
                   ? <Box sx={{ fontSize: 9, fontWeight: 700, color: '#fff', bgcolor: hol.kind === 'restricted' ? 'warning.main' : 'error.main', px: 0.6, py: 0.2, borderRadius: 3 }}>{hol.kind === 'restricted' ? 'RH' : 'HOLIDAY'}</Box>
                   : (isSun ? <Typography sx={{ fontSize: 9, fontWeight: 600, color: 'secondary.main', textTransform: 'uppercase' }}>Off</Typography> : null)}
               </Box>
-              {/* Scrolls inside the cell when a day is busy — the grid itself never grows. */}
-              <Box sx={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.4, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,.15)', borderRadius: 2 } }}>
+              {/* Clamped (never scrolls): theme + a few tagged entries + "+N more".
+                  Full detail is one tap away in the day view / drawer. */}
+              <Box sx={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
                 {theme && (
-                  <Typography sx={{ fontSize: 11, fontStyle: 'italic', color: '#41506b', lineHeight: 1.3, flex: '0 0 auto' }}>{theme.value}</Typography>
+                  <Typography sx={{ fontSize: 11, fontStyle: 'italic', color: '#41506b', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: '0 0 auto' }}>{theme.value}</Typography>
                 )}
-                {chips.map((e) => {
+                {chips.slice(0, MAX_CHIPS).map((e) => {
                   const m = typeMeta(e.typeCode);
                   return (
                     <Box key={e.uuid} title={`${e.typeName}: ${e.value}`}
@@ -58,6 +61,9 @@ export default function MonthGrid({ year, month, daysByDate, today, onSelect }) 
                     </Box>
                   );
                 })}
+                {chips.length > MAX_CHIPS && (
+                  <Typography sx={{ fontSize: 10, fontWeight: 600, color: 'text.secondary', flex: '0 0 auto' }}>+{chips.length - MAX_CHIPS} more</Typography>
+                )}
               </Box>
             </Box>
           );

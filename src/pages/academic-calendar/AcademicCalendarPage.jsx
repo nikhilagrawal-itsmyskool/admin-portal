@@ -16,6 +16,7 @@ import DayEditorDrawer from './DayEditorDrawer';
 import ColumnsTab from './ColumnsTab';
 import HolidaysTab from './HolidaysTab';
 import ImportTab from './ImportTab';
+import MobileCalendarView from './MobileCalendarView';
 import MonthPrint from './MonthPrint';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -57,6 +58,15 @@ export default function AcademicCalendarPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // On the PWA the calendar opens on today's day view.
+  useEffect(() => { if (isMobile) setSelectedDate((d) => d || today); }, [isMobile, today]);
+
+  // Load the month that contains a date (used by the mobile day navigation).
+  const ensureMonth = (dateStr) => {
+    const y = Number(dateStr.slice(0, 4)); const m = Number(dateStr.slice(5, 7));
+    if (y !== year || m !== month) { setYear(y); setMonth(m); }
+  };
+
   const step = (delta) => {
     let m = month + delta, y = year;
     if (m < 1) { m = 12; y -= 1; } else if (m > 12) { m = 1; y += 1; }
@@ -85,7 +95,7 @@ export default function AcademicCalendarPage() {
       </Typography>
 
       <Tabs value={effectiveTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Tab value="month" label="Month view" />
+        <Tab value="month" label={isMobile ? 'Calendar' : 'Month view'} />
         <Tab value="holidays" label="Holidays" />
         {!isMobile && <Tab value="import" label="Import from Excel" />}
         {!isMobile && <Tab value="types" label="Manage columns" />}
@@ -93,7 +103,15 @@ export default function AcademicCalendarPage() {
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
 
-      {effectiveTab === 'month' && (
+      {effectiveTab === 'month' && isMobile && (
+        <MobileCalendarView
+          daysByDate={daysByDate} types={types} today={today}
+          selectedDate={selectedDate || today} setSelectedDate={setSelectedDate}
+          ensureMonth={ensureMonth} year={year} month={month} stepMonth={step}
+        />
+      )}
+
+      {effectiveTab === 'month' && !isMobile && (
         <>
           <Card>
             <CardContent>
@@ -141,14 +159,16 @@ export default function AcademicCalendarPage() {
       {effectiveTab === 'import' && <ImportTab academicYearId={academicYearId} canManage={canManage} onApplied={load} />}
       {effectiveTab === 'types' && <ColumnsTab types={types} canManage={canManage} onChanged={load} />}
 
-      <DayEditorDrawer
-        day={selectedDay}
-        types={types}
-        academicYearId={academicYearId}
-        canManage={canManage}
-        onClose={() => setSelectedDate(null)}
-        onChanged={load}
-      />
+      {!isMobile && (
+        <DayEditorDrawer
+          day={selectedDay}
+          types={types}
+          academicYearId={academicYearId}
+          canManage={canManage}
+          onClose={() => setSelectedDate(null)}
+          onChanged={load}
+        />
+      )}
 
       {printing && <MonthPrint year={year} month={month} daysByDate={daysByDate} />}
     </Box>
