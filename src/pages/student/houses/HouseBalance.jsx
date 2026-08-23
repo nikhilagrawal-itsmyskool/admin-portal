@@ -175,14 +175,16 @@ export default function HouseBalance({ onGoManage }) {
     ? { kind: 'good', label: 'Balanced' }
     : Math.abs(worstGirlShort) < 10 ? { kind: 'warn', label: '1 house off' } : { kind: 'crit', label: 'Skewed' };
 
-  const gradeStatus = summary.unassigned > 0
+  const gradeStatus = summary.needHouse > 0
     ? { kind: 'warn', label: 'Some unassigned' }
     : { kind: 'good', label: 'Balanced' };
 
+  const examOnly = summary.examOnly || 0;
+  const houseEligible = Math.max(1, summary.onRoll - examOnly);
   const KPIS = [
-    { n: summary.onRoll, l: 'On roll', s: 'Active students this year' },
-    { n: summary.assigned, l: 'In a house', s: `${Math.round((summary.assigned / summary.onRoll) * 100)}% of students` },
-    { n: summary.unassigned, l: 'Need a house', s: 'No house yet', flag: summary.unassigned > 0 },
+    { n: summary.onRoll, l: 'On roll', s: examOnly > 0 ? `incl. ${examOnly} exam-only` : 'Active students this year' },
+    { n: summary.assigned, l: 'In a house', s: `${Math.round((summary.assigned / houseEligible) * 100)}% of house-eligible` },
+    { n: summary.needHouse, l: 'Need a house', s: examOnly > 0 ? `${examOnly} exam-only excluded (no house needed)` : 'No house yet', flag: summary.needHouse > 0 },
     { n: summary.familiesClustered, l: 'Families to split', s: 'Siblings sharing one house' },
   ];
 
