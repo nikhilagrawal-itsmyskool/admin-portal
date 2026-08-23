@@ -152,6 +152,7 @@ import MySyllabus from './pages/syllabus/MySyllabus';
 import TeacherCoverage from './pages/syllabus/TeacherCoverage';
 import HomeworkPage from './pages/homework/HomeworkPage';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
+import AcademicCalendarPage from './pages/academic-calendar/AcademicCalendarPage';
 import AssemblyList from './pages/assembly/AssemblyList';
 import PlanBuilder from './pages/assembly/PlanBuilder';
 import SpecialBuilder from './pages/assembly/SpecialBuilder';
@@ -372,6 +373,7 @@ export default function App() {
         <Route path="syllabus/my/:syllabusId/:classId" element={<TeacherCoverage />} />
         <Route path="homework" element={<HomeworkPage />} />
         <Route path="homework/class-teachers" element={<HomeworkMappingPage />} />
+        <Route path="academic-calendar" element={<AcademicCalendarPage />} />
         <Route path="assembly" element={<AssemblyList />} />
         <Route path="assembly/day" element={<ScheduleDay />} />
         <Route path="assembly/week" element={<ScheduleWeek />} />

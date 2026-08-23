@@ -59,6 +59,8 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `assembly.manage` | Add/edit/delete/publish assembly plans, nodes, special assemblies & themes | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `homework.post` | Post, edit, remove and publish/unpublish a class's daily homework photos | ✓ | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — |
 | `homework.manage` | Override which teacher is the homework class-teacher for a class | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `academic-calendar.view` | See the Academic Calendar menu and read the year's entries & holidays | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `academic-calendar.manage` | Add/edit/delete calendar entries, holidays & columns, and import from Excel | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `assistant.use` | Use the voice/LLM student assistant (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._

@@ -57,6 +57,8 @@ export const ACTIONS = {
   ASSEMBLY_MANAGE: "assembly.manage",
   HOMEWORK_POST: "homework.post",
   HOMEWORK_MANAGE: "homework.manage",
+  ACADEMIC_CALENDAR_VIEW: "academic-calendar.view",
+  ACADEMIC_CALENDAR_MANAGE: "academic-calendar.manage",
   // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
   ASSISTANT_USE: "assistant.use",
 };
@@ -274,6 +276,14 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.HOMEWORK_MANAGE,
     description: "Override which teacher is the homework class-teacher for a class",
+  },
+  {
+    action: ACTIONS.ACADEMIC_CALENDAR_VIEW,
+    description: "See the Academic Calendar menu and read the year's entries & holidays",
+  },
+  {
+    action: ACTIONS.ACADEMIC_CALENDAR_MANAGE,
+    description: "Add/edit/delete calendar entries, holidays & columns, and import from Excel",
   },
   {
     action: ACTIONS.ASSISTANT_USE,

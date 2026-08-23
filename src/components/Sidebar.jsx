@@ -353,6 +353,12 @@ const menuItems = [
     ],
   },
   {
+    title: 'Academic Calendar',
+    icon: CalendarIcon,
+    path: '/academic-calendar',
+    perm: 'academic-calendar.view',
+  },
+  {
     title: 'Assembly',
     icon: AssemblyIcon,
     children: [

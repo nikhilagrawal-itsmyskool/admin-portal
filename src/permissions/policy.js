@@ -46,6 +46,8 @@ export const ROLE_PERMISSIONS = {
     "assembly.manage",
     "homework.post",
     "homework.manage",
+    "academic-calendar.view",
+    "academic-calendar.manage",
     "receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
   ],
   // Standard teaching staff: view-only across the modules they can reach.
@@ -61,6 +63,7 @@ export const ROLE_PERMISSIONS = {
     "syllabus.view", // Read plans; class teachers also mark coverage for their section
     "syllabus.progress.mark",
     "assembly.view", // Read the assembly plan for their wing
+    "academic-calendar.view", // Read the school's academic calendar
   ],
   // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
   // can cover for an absent colleague) and to POST their class's daily homework photos.
