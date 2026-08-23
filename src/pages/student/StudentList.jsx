@@ -70,6 +70,9 @@ export default function StudentList() {
   const [phone, setPhone] = usePersistedState('studentList.phone', '');
   // Comms data-quality: show only students no notification can reach.
   const [unreachable, setUnreachable] = usePersistedState('studentList.unreachable', false);
+  // Attribute filters.
+  const [examOnly, setExamOnly] = usePersistedState('studentList.examOnly', false);
+  const [rte, setRte] = usePersistedState('studentList.rte', false);
   // Effective-contact breakdown for the current cohort ({ total, unreachable, breakdown }).
   const [commsSummary, setCommsSummary] = useState(null);
 
@@ -119,7 +122,20 @@ export default function StudentList() {
     if (admissionNumber) f.admissionNumber = admissionNumber;
     if (phone) f.phone = phone;
     if (unreachable) f.unreachable = true;
+    if (examOnly) f.examOnly = true;
+    if (rte) f.rte = true;
     return f;
+  };
+
+  // Toggle an attribute filter and re-run immediately (state is async, so pass an
+  // explicit override with the toggled key set/cleared).
+  const toggleFlag = (key, val, setter) => {
+    setter(val);
+    setPaginationModel((p) => ({ ...p, page: 0 }));
+    const f = buildFilters();
+    if (val) f[key] = true;
+    else delete f[key];
+    loadStudents(f);
   };
 
   const loadStudents = async (overrideFilters) => {
@@ -175,6 +191,8 @@ export default function StudentList() {
     setAdmissionNumber('');
     setPhone('');
     setUnreachable(false);
+    setExamOnly(false);
+    setRte(false);
     setPaginationModel((p) => ({ ...p, page: 0 }));
     loadStudents({});
   };
@@ -373,16 +391,30 @@ export default function StudentList() {
               </Box>
             </Grid>
             <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={unreachable}
-                    onChange={(e) => toggleUnreachable(e.target.checked)}
-                  />
-                }
-                label="Only unreachable (no mobile or WhatsApp on father, mother & guardian)"
-              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={unreachable}
+                      onChange={(e) => toggleUnreachable(e.target.checked)}
+                    />
+                  }
+                  label="Only unreachable (no mobile or WhatsApp on father, mother & guardian)"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox size="small" checked={examOnly} onChange={(e) => toggleFlag('examOnly', e.target.checked, setExamOnly)} />
+                  }
+                  label="Exam-only"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox size="small" checked={rte} onChange={(e) => toggleFlag('rte', e.target.checked, setRte)} />
+                  }
+                  label="RTE"
+                />
+              </Box>
             </Grid>
           </Grid>
         </CardContent>

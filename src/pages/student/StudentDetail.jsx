@@ -657,6 +657,23 @@ export default function StudentDetail() {
                 {student.currentStreamCode && <Fact label="Stream" value={student.currentStreamName || student.currentStreamCode} />}
                 <Fact label="Roll #" value={student.currentRollNumber} />
                 <Fact label="House" value={student.houseName} />
+                <Fact
+                  label="RTE"
+                  value={student.rte ? <Chip size="small" color="info" label="Yes" sx={{ height: 18 }} /> : 'No'}
+                />
+                <Fact
+                  label="Exam only"
+                  value={
+                    student.examOnly ? (
+                      <Chip size="small" color="warning" label="Yes" sx={{ height: 18 }} />
+                    ) : (
+                      'No'
+                    )
+                  }
+                />
+                {student.examOnly && student.examOnlyReason && (
+                  <Fact label="Exam-only reason" value={student.examOnlyReason} />
+                )}
                 {student.classTeacher && (
                   <>
                     <Fact label="Class teacher" value={student.classTeacher.name} />

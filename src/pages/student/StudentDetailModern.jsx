@@ -142,6 +142,8 @@ export default function StudentDetailModern({ ctx }) {
               {student.currentStreamCode && <Chip size="small" variant="outlined" label={student.currentStreamName || student.currentStreamCode} />}
               {student.currentRollNumber != null && <Chip size="small" variant="outlined" label={`Roll ${student.currentRollNumber}`} />}
               {student.houseName && <Chip size="small" variant="outlined" label={student.houseName} />}
+              {student.rte && <Chip size="small" color="info" label="RTE" />}
+              {student.examOnly && <Chip size="small" color="warning" label="Exam only" />}
               <Chip size="small" color={student.status === 'active' ? 'success' : 'default'} label={student.status} />
               <Chip size="small" color={reachable ? 'success' : 'warning'} variant="outlined" label={reachable ? 'Reachable' : 'No contact'} />
             </Stack>
