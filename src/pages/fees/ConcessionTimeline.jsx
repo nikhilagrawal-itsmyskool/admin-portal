@@ -96,7 +96,11 @@ export default function ConcessionTimeline({ studentId, academicYearId, canManag
         dryRun: false,
       });
       setDlg(null); setPreview(null);
-      setOk(`${r.transition} from ${r.fromCycle} — ${inr(r.totalDue)} now due${r.totalAdvance ? `, ${inr(r.totalAdvance)} advance` : ''}.`);
+      const parts = [];
+      if (r.totalDue) parts.push(`${inr(r.totalDue)} more due`);
+      if (r.totalReduced) parts.push(`${inr(r.totalReduced)} less due`);
+      if (r.totalAdvance) parts.push(`${inr(r.totalAdvance)} advance`);
+      setOk(`${r.transition} from ${r.fromCycle} — ${parts.join(', ') || 'no change'}.`);
       setRefresh((k) => k + 1);
     } catch (err) { setError(errMsg(err)); } finally { setBusy(false); }
   };
@@ -205,19 +209,27 @@ export default function ConcessionTimeline({ studentId, academicYearId, canManag
                   </Typography>
                   <Divider sx={{ my: 0.5 }} />
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                    {(preview.affectedCycles || []).filter((r) => r.dueDelta || r.advanceDelta).map((r, i) => (
-                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                        <span style={{ color: FEE_COLORS.muted }}>{r.cycle}{r.wasPaid ? ' · paid' : ''}</span>
-                        <span style={{ color: r.dueDelta ? FEE_COLORS.danger : FEE_COLORS.primary, fontWeight: 600 }}>
-                          {r.dueDelta ? `+ due ${inr(r.dueDelta)}` : `+ advance ${inr(r.advanceDelta)}`}
-                        </span>
-                      </Box>
-                    ))}
+                    {(preview.affectedCycles || []).filter((r) => r.dueDelta || r.advanceDelta).map((r, i) => {
+                      const isAdv = !r.dueDelta && r.advanceDelta;
+                      const label = r.dueDelta > 0 ? `+ ${inr(r.dueDelta)} due`
+                        : r.dueDelta < 0 ? `− ${inr(-r.dueDelta)} due (discount)`
+                        : `+ ${inr(r.advanceDelta)} advance`;
+                      const color = r.dueDelta > 0 ? FEE_COLORS.danger : r.dueDelta < 0 ? FEE_COLORS.success : FEE_COLORS.primary;
+                      return (
+                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                          <span style={{ color: FEE_COLORS.muted }}>{r.cycle}{r.wasPaid ? ' · paid' : ''}</span>
+                          <span style={{ color, fontWeight: 600 }}>{label}</span>
+                        </Box>
+                      );
+                    })}
                   </Box>
                   <Divider sx={{ my: 0.5 }} />
                   <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-                    Net: {preview.totalDue ? <span style={{ color: FEE_COLORS.danger }}>{inr(preview.totalDue)} due</span> : '₹0 due'}
-                    {preview.totalAdvance ? <span style={{ color: FEE_COLORS.primary }}> · {inr(preview.totalAdvance)} advance</span> : null}
+                    Net:{' '}
+                    {preview.totalDue ? <span style={{ color: FEE_COLORS.danger }}>{inr(preview.totalDue)} more due</span> : null}
+                    {preview.totalReduced ? <span style={{ color: FEE_COLORS.success }}>{preview.totalDue ? ' · ' : ''}{inr(preview.totalReduced)} less due (discount)</span> : null}
+                    {preview.totalAdvance ? <span style={{ color: FEE_COLORS.primary }}>{(preview.totalDue || preview.totalReduced) ? ' · ' : ''}{inr(preview.totalAdvance)} advance</span> : null}
+                    {!preview.totalDue && !preview.totalReduced && !preview.totalAdvance ? '₹0 — no change' : null}
                   </Typography>
                 </Box>
               )}
