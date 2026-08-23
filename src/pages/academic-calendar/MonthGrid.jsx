@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { monthGridSun, WEEKDAY_HEADS, CHIP_CODES, typeMeta } from './calendarUtils';
+import { monthGridSun, WEEKDAY_HEADS, CHIP_CODES, typeMeta, typeAbbr } from './calendarUtils';
 
 // The month grid. `daysByDate` maps yyyy-mm-dd -> CalendarDay ({ weekday, isWeeklyOff,
 // holiday, entries }). Cells are clickable (except padding days from adjacent months).
@@ -48,9 +48,10 @@ export default function MonthGrid({ year, month, daysByDate, today, onSelect }) 
                 {chips.map((e) => {
                   const m = typeMeta(e.typeCode);
                   return (
-                    <Box key={e.uuid} title={e.value}
-                      sx={{ fontSize: 10.5, lineHeight: 1.25, px: 0.75, py: 0.25, borderRadius: 0.75, fontWeight: 600, color: m.color, bgcolor: m.bg, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {e.value}
+                    <Box key={e.uuid} title={`${e.typeName}: ${e.value}`}
+                      sx={{ fontSize: 10.5, lineHeight: 1.25, px: 0.75, py: 0.25, borderRadius: 0.75, color: m.color, bgcolor: m.bg, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <Box component="span" sx={{ fontWeight: 800, letterSpacing: 0.3, mr: 0.5 }}>{typeAbbr(e.typeCode, e.typeName)}</Box>
+                      <Box component="span" sx={{ fontWeight: 500 }}>{e.value}</Box>
                     </Box>
                   );
                 })}

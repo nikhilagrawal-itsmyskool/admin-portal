@@ -43,12 +43,14 @@ export const WEEKDAY_LONG = {
 // the app accent). `theme` renders as an italic thought, not a chip. Unknown/custom
 // types fall back to a neutral slate.
 export const TYPE_META = {
-  festival: { color: '#7b41d8', bg: '#f1eafc' },
-  important_day: { color: '#0277bd', bg: '#e6f2fb' },
-  celebration_type: { color: '#00796b', bg: '#e2f3f1' },
-  remembrance: { color: '#8d6144', bg: '#f3ece6' },
-  theme: { color: '#3366ff', bg: '#eaf0ff' },
-  academics: { color: '#e06f00', bg: '#fdefe0' },
+  festival: { color: '#7b41d8', bg: '#f1eafc', abbr: 'FEST' },
+  important_day: { color: '#0277bd', bg: '#e6f2fb', abbr: 'IMP' },
+  celebration_type: { color: '#00796b', bg: '#e2f3f1', abbr: 'CEL' },
+  remembrance: { color: '#8d6144', bg: '#f3ece6', abbr: 'REM' },
+  theme: { color: '#3366ff', bg: '#eaf0ff', abbr: 'THT' },
+  academics: { color: '#e06f00', bg: '#fdefe0', abbr: 'ACAD' },
 };
 export const CHIP_CODES = ['festival', 'important_day', 'celebration_type', 'remembrance', 'academics'];
 export const typeMeta = (code) => TYPE_META[code] || { color: '#5f6c8f', bg: '#eef1f6' };
+// A short uppercase tag for a type: seeded abbreviation, else derived from its name.
+export const typeAbbr = (code, name) => TYPE_META[code]?.abbr || (name || code || '').replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase();

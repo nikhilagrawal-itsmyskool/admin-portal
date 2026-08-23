@@ -1,6 +1,6 @@
 import React from 'react';
 import PrintRoot from '../timetable/components/PrintRoot';
-import { monthGridSun, WEEKDAY_HEADS, CHIP_CODES, monthLabel } from './calendarUtils';
+import { monthGridSun, WEEKDAY_HEADS, CHIP_CODES, monthLabel, typeAbbr } from './calendarUtils';
 
 // A clean A4-landscape month grid for printing (mounted only while printing via
 // PrintRoot + print.css). Shows holiday, thought, and each day's entries as text.
@@ -35,7 +35,7 @@ export default function MonthPrint({ year, month, daysByDate, schoolName }) {
                       </div>
                       {hol && <div style={{ fontSize: 8.5, fontWeight: 600 }}>{hol.name}</div>}
                       {theme && <div style={{ fontStyle: 'italic', fontSize: 8.5, margin: '1px 0' }}>{theme.value}</div>}
-                      {others.map((e) => <div key={e.uuid} style={{ fontSize: 8.5 }}>• {e.value}</div>)}
+                      {others.map((e) => <div key={e.uuid} style={{ fontSize: 8.5 }}><b>{typeAbbr(e.typeCode, e.typeName)}</b> {e.value}</div>)}
                     </td>
                   );
                 })}

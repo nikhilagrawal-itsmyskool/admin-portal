@@ -9,7 +9,7 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 import { activityCalendarService } from '../../services/activityCalendarService';
 import { todayIso } from '../../utils/date';
-import { monthLabel, typeMeta } from './calendarUtils';
+import { monthLabel, typeMeta, typeAbbr } from './calendarUtils';
 import MonthGrid from './MonthGrid';
 import DayEditorDrawer from './DayEditorDrawer';
 import ColumnsTab from './ColumnsTab';
@@ -102,7 +102,7 @@ export default function AcademicCalendarPage() {
                 <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
                   {LEGEND.map(([code, label]) => (
                     <Stack key={code} direction="row" spacing={0.5} alignItems="center">
-                      <Box sx={{ width: 9, height: 9, borderRadius: '2px', bgcolor: typeMeta(code).color }} />
+                      <Box component="span" sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.3, px: 0.5, borderRadius: 0.5, color: typeMeta(code).color, bgcolor: typeMeta(code).bg }}>{typeAbbr(code)}</Box>
                       <Typography variant="caption" color="text.secondary">{label}</Typography>
                     </Stack>
                   ))}
