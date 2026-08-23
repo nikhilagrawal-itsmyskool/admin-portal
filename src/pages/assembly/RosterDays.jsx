@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect, memo } from 'react';
 import {
   Box, Typography, Grid, Stack, Accordion, AccordionSummary, AccordionDetails, Divider,
-  Switch, FormControlLabel, TextField, Chip, Button, IconButton, Alert,
+  Switch, FormControlLabel, TextField, Chip, Button, IconButton, Alert, Dialog, DialogContent,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon, Delete as DeleteIcon, AddPhotoAlternate as AddPhotoIcon,
@@ -22,9 +22,9 @@ function readImageB64(file) {
   });
 }
 
-// A reference's image thumbnail — uses the presigned imageUrl (prod), falling back to
-// a lazily-fetched base64 data URI (local dev, where there is no presigned URL).
-function RefThumb({ reference, size = 56 }) {
+// Resolve a reference's image src — the presigned imageUrl (prod), falling back to a
+// lazily-fetched base64 data URI (local dev, where there is no presigned URL).
+function useRefImageSrc(reference) {
   const [src, setSrc] = useState(reference.imageUrl || '');
   useEffect(() => {
     let alive = true;
@@ -34,9 +34,24 @@ function RefThumb({ reference, size = 56 }) {
       .catch(() => {});
     return () => { alive = false; };
   }, [reference.uuid, reference.imageUrl]);
+  return src;
+}
+
+// Clickable thumbnail — tap to open the full image in a popup.
+function RefThumb({ reference, size = 56, onView }) {
+  const src = useRefImageSrc(reference);
   return (
-    <Box component="img" src={src || undefined} alt=""
-      sx={{ width: size, height: size, objectFit: 'cover', borderRadius: 1, bgcolor: 'action.hover', flexShrink: 0 }} />
+    <Box component="img" src={src || undefined} alt="" onClick={onView}
+      sx={{ width: size, height: size, objectFit: 'cover', borderRadius: 1, bgcolor: 'action.hover', flexShrink: 0, cursor: 'pointer' }} />
+  );
+}
+
+// Full-size image inside the view popup.
+function RefFullImage({ reference }) {
+  const src = useRefImageSrc(reference);
+  return (
+    <Box component="img" src={src || undefined} alt={reference.description}
+      sx={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />
   );
 }
 
@@ -49,6 +64,7 @@ const DayReferences = memo(function DayReferences({ weekId, entryDate, initial, 
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [preview, setPreview] = useState(null);
   const api = mine
     ? { add: assemblyService.myAddReference, remove: assemblyService.myRemoveReference }
     : { add: assemblyService.addReference, remove: assemblyService.removeReference };
@@ -83,8 +99,11 @@ const DayReferences = memo(function DayReferences({ weekId, entryDate, initial, 
         {refs.map((r) => (
           <Stack key={r.uuid} direction="row" spacing={1.5} alignItems="flex-start"
             sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-            <RefThumb reference={r} />
-            <Typography variant="body2" sx={{ flex: 1, whiteSpace: 'pre-wrap', minWidth: 0 }}>{r.description}</Typography>
+            <RefThumb reference={r} onView={() => setPreview(r)} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{r.description}</Typography>
+              <Button size="small" onClick={() => setPreview(r)} sx={{ px: 0, minWidth: 0 }}>View image</Button>
+            </Box>
             {!disabled && (
               <IconButton size="small" color="error" onClick={() => remove(r.uuid)} disabled={busy}>
                 <DeleteIcon fontSize="small" />
@@ -113,6 +132,14 @@ const DayReferences = memo(function DayReferences({ weekId, entryDate, initial, 
       {!disabled && refs.length >= REF_MAX && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>Maximum {REF_MAX} references reached.</Typography>
       )}
+      <Dialog open={!!preview} onClose={() => setPreview(null)} maxWidth="md" fullWidth>
+        {preview && (
+          <DialogContent sx={{ p: 1 }}>
+            <RefFullImage reference={preview} />
+            <Typography variant="body2" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{preview.description}</Typography>
+          </DialogContent>
+        )}
+      </Dialog>
     </Box>
   );
 });
