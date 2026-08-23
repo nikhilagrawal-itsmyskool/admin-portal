@@ -26,8 +26,6 @@ import {
   Stack,
   Tooltip,
   Link,
-  ToggleButton,
-  ToggleButtonGroup,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -41,11 +39,21 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useAuth } from '../../context/AuthContext';
 import { fmtDate } from '../../utils/date';
 
-// The optional contact relations (father is on by default alongside roll + house).
+// Contact relations (all on by default alongside roll / house / exam-only).
 const RELATIONS = [
   { key: 'father', label: 'Father' },
   { key: 'mother', label: 'Mother' },
   { key: 'guardian', label: 'Guardian' },
+];
+
+// The full column set the picker offers, in grid order.
+const COLUMN_OPTIONS = [
+  { key: 'roll', label: 'Roll number' },
+  { key: 'house', label: 'House' },
+  { key: 'examOnly', label: 'Exam only' },
+  { key: 'father', label: 'Father contact' },
+  { key: 'mother', label: 'Mother contact' },
+  { key: 'guardian', label: 'Guardian contact' },
 ];
 
 const AVATAR_COLORS = ['#3366ff', '#ff3d71', '#00b383', '#8a4bff', '#d98a00', '#0095ff', '#e0357b', '#1aa6b8'];
@@ -69,9 +77,9 @@ function toRow(r) {
     name: r.name,
     admissionNumber: r.admissionNumber || '',
     admissionDate: r.admissionDate || null,
-    className: r.className || '', // exam-only roster carries this for context
     roll: r.rollNumber != null ? String(r.rollNumber) : '',
     houseId: r.houseId || '',
+    examOnly: !!r.examOnly,
     father: contact(r.fatherGuardianId, r.fatherMobile, r.fatherWhatsapp),
     mother: contact(r.motherGuardianId, r.motherMobile, r.motherWhatsapp),
     guardian: contact(r.guardianGuardianId, r.guardianMobile, r.guardianWhatsapp),
@@ -84,6 +92,7 @@ function snapshot(row) {
   return JSON.stringify({
     roll: row.roll,
     houseId: row.houseId,
+    examOnly: row.examOnly,
     father: c(row.father),
     mother: c(row.mother),
     guardian: c(row.guardian),
@@ -100,9 +109,6 @@ export default function BulkEditClass() {
   const [classes, setClasses] = useState([]);
   const [houses, setHouses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
-  // 'class' = pick a class (roll + house + contacts); 'examOnly' = cross-class
-  // cohort of exam-only students (house + contacts only, no roll).
-  const [mode, setMode] = useState('class');
 
   const [rows, setRows] = useState([]);
   const [orig, setOrig] = useState({}); // uuid -> snapshot string
@@ -112,7 +118,7 @@ export default function BulkEditClass() {
   const [toast, setToast] = useState('');
   const [saveResult, setSaveResult] = useState(null); // { updated, failed, failures: [{name, error}] }
 
-  const [cols, setCols] = useState({ roll: true, house: true, father: true, mother: true, guardian: true });
+  const [cols, setCols] = useState({ roll: true, house: true, examOnly: true, father: true, mother: true, guardian: true });
   const [colAnchor, setColAnchor] = useState(null);
 
   const yearName = useMemo(
@@ -138,28 +144,28 @@ export default function BulkEditClass() {
   }, []);
 
   const loadRoster = useCallback(async () => {
-    if (mode === 'class' && (!selectedClass || !academicYearId)) return;
+    if (!selectedClass || !academicYearId) return;
     setLoading(true);
     setError('');
     setSaveResult(null);
     try {
-      const data =
-        mode === 'examOnly'
-          ? await studentService.getExamOnlyRoster()
-          : await studentService.getBulkClassRoster({ classId: selectedClass.uuid, academicYearId });
+      const data = await studentService.getBulkClassRoster({
+        classId: selectedClass.uuid,
+        academicYearId,
+      });
       const list = (data.students || []).map(toRow);
       setRows(list);
       const o = {};
       list.forEach((r) => (o[r.uuid] = snapshot(r)));
       setOrig(o);
     } catch {
-      setError(mode === 'examOnly' ? 'Failed to load exam-only students.' : 'Failed to load the class roster.');
+      setError('Failed to load the class roster.');
       setRows([]);
       setOrig({});
     } finally {
       setLoading(false);
     }
-  }, [mode, selectedClass, academicYearId]);
+  }, [selectedClass, academicYearId]);
 
   useEffect(() => {
     loadRoster();
@@ -171,10 +177,11 @@ export default function BulkEditClass() {
 
   const editRoll = (uuid, val) => setCell(uuid, (r) => ({ ...r, roll: val.replace(/[^\d]/g, '') }));
   const editHouse = (uuid, val) => setCell(uuid, (r) => ({ ...r, houseId: val }));
+  const editExam = (uuid, checked) => setCell(uuid, (r) => ({ ...r, examOnly: checked }));
   const editContact = (uuid, rel, field, val) =>
     setCell(uuid, (r) => ({ ...r, [rel]: { ...r[rel], [field]: val.replace(/[^\d]/g, '') } }));
 
-  // Copy SMS -> WhatsApp for one relation: fill ONLY blank WhatsApp cells (Decision 2).
+  // Copy SMS -> WhatsApp for one relation: fill ONLY blank WhatsApp cells.
   const copySmsToWa = (rel) => {
     let filled = 0;
     setRows((prev) =>
@@ -190,12 +197,12 @@ export default function BulkEditClass() {
     setToast(filled ? `Copied ${filled} SMS number${filled > 1 ? 's' : ''} into blank WhatsApp cells` : 'All WhatsApp numbers already filled');
   };
 
-  // Roll is class-scoped, so it only applies in class mode.
-  const showRoll = mode === 'class' && cols.roll;
+  // Mark / clear exam-only for every row at once (respects the current filter — here, the class).
+  const setAllExam = (checked) => setRows((prev) => prev.map((r) => ({ ...r, examOnly: checked })));
 
   // ---- derived: dirty, validation, save payload ----
   const rollDupes = useMemo(() => {
-    if (!showRoll) return new Set();
+    if (!cols.roll) return new Set();
     const seen = new Map();
     const dup = new Set();
     rows.forEach((r) => {
@@ -205,7 +212,7 @@ export default function BulkEditClass() {
       else seen.set(v, r.uuid);
     });
     return dup;
-  }, [rows, showRoll]);
+  }, [rows, cols.roll]);
 
   const { items, editedRows, invalidCount } = useMemo(() => {
     let invalid = 0;
@@ -217,12 +224,16 @@ export default function BulkEditClass() {
       const item = { studentId: r.uuid };
       let has = false;
 
-      if (showRoll && r.roll.trim() !== o.roll) {
+      if (cols.roll && r.roll.trim() !== o.roll) {
         item.rollNumber = r.roll.trim() === '' ? null : parseInt(r.roll.trim(), 10);
         has = true;
       }
       if (cols.house && (r.houseId || '') !== (o.houseId || '')) {
         item.houseId = r.houseId || null;
+        has = true;
+      }
+      if (cols.examOnly && !!r.examOnly !== !!o.examOnly) {
+        item.examOnly = !!r.examOnly;
         has = true;
       }
       const contacts = {};
@@ -247,7 +258,7 @@ export default function BulkEditClass() {
       }
     });
     return { items: built, editedRows: changed, invalidCount: invalid + rollDupes.size };
-  }, [rows, orig, cols, rollDupes, showRoll]);
+  }, [rows, orig, cols, rollDupes]);
 
   const isDirty = (uuid, field) => {
     const o = orig[uuid] ? JSON.parse(orig[uuid]) : null;
@@ -256,6 +267,7 @@ export default function BulkEditClass() {
     if (!r) return false;
     if (field === 'roll') return r.roll.trim() !== o.roll;
     if (field === 'house') return (r.houseId || '') !== (o.houseId || '');
+    if (field === 'exam') return !!r.examOnly !== !!o.examOnly;
     const [rel, sub] = field.split('.');
     return r[rel][sub] !== o[rel][sub];
   };
@@ -267,11 +279,11 @@ export default function BulkEditClass() {
     setSaving(true);
     setError('');
     try {
-      const res = await studentService.bulkUpdateClass(
-        mode === 'examOnly'
-          ? { items }
-          : { classId: selectedClass.uuid, academicYearId, items },
-      );
+      const res = await studentService.bulkUpdateClass({
+        classId: selectedClass.uuid,
+        academicYearId,
+        items,
+      });
       const nameById = Object.fromEntries(rows.map((r) => [r.uuid, r.name]));
       const failures = (res.results || [])
         .filter((x) => !x.ok)
@@ -319,10 +331,9 @@ export default function BulkEditClass() {
           Students
         </Button>
         <Typography variant="h4" sx={{ flexShrink: 0 }}>
-          Bulk Edit
+          Bulk Edit Class
         </Typography>
-        {mode === 'class' && yearName && <Chip size="small" color="primary" variant="outlined" label={yearName} />}
-        {mode === 'examOnly' && <Chip size="small" color="secondary" variant="outlined" label="Exam-only students" />}
+        {yearName && <Chip size="small" color="primary" variant="outlined" label={yearName} />}
       </Box>
 
       {error && (
@@ -334,26 +345,15 @@ export default function BulkEditClass() {
       {/* Toolbar */}
       <Paper variant="outlined" sx={{ p: 1.5, mb: 2 }}>
         <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
-          <ToggleButtonGroup
-            size="small"
-            exclusive
-            value={mode}
-            onChange={(e, v) => v && setMode(v)}
-          >
-            <ToggleButton value="class">By class</ToggleButton>
-            <ToggleButton value="examOnly">Exam-only</ToggleButton>
-          </ToggleButtonGroup>
-          {mode === 'class' && (
-            <Autocomplete
-              options={classes}
-              getOptionLabel={(o) => o.name || ''}
-              value={selectedClass}
-              onChange={(e, v) => setSelectedClass(v)}
-              isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-              sx={{ width: 220 }}
-              renderInput={(p) => <TextField {...p} label="Class" size="small" />}
-            />
-          )}
+          <Autocomplete
+            options={classes}
+            getOptionLabel={(o) => o.name || ''}
+            value={selectedClass}
+            onChange={(e, v) => setSelectedClass(v)}
+            isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+            sx={{ width: 220 }}
+            renderInput={(p) => <TextField {...p} label="Class" size="small" />}
+          />
           <Typography variant="body2" color="text.secondary">
             {rows.length > 0 && `${rows.length} student${rows.length === 1 ? '' : 's'}`}
           </Typography>
@@ -370,13 +370,7 @@ export default function BulkEditClass() {
             <Typography variant="caption" sx={{ px: 2, py: 0.5, display: 'block', color: 'text.secondary' }}>
               FIELDS TO EDIT
             </Typography>
-            {[
-              ...(mode === 'class' ? [{ key: 'roll', label: 'Roll number' }] : []),
-              { key: 'house', label: 'House' },
-              { key: 'father', label: 'Father contact' },
-              { key: 'mother', label: 'Mother contact' },
-              { key: 'guardian', label: 'Guardian contact' },
-            ].map((c) => (
+            {COLUMN_OPTIONS.map((c) => (
               <MenuItem key={c.key} dense onClick={() => setCols((p) => ({ ...p, [c.key]: !p[c.key] }))}>
                 <FormControlLabel
                   sx={{ pointerEvents: 'none', m: 0 }}
@@ -414,18 +408,14 @@ export default function BulkEditClass() {
         </Alert>
       )}
 
-      {mode === 'class' && !selectedClass ? (
+      {!selectedClass ? (
         <Alert severity="info">Pick a class to begin. Students load in admission-date order.</Alert>
       ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
           <CircularProgress />
         </Box>
       ) : rows.length === 0 ? (
-        <Alert severity="info">
-          {mode === 'examOnly'
-            ? 'No exam-only students found. Mark a student exam-only from their profile first.'
-            : `No students found in this class for ${yearName || 'the selected year'}.`}
-        </Alert>
+        <Alert severity="info">No students found in this class for {yearName || 'the selected year'}.</Alert>
       ) : (
         <Paper variant="outlined">
           {/* Legend */}
@@ -460,9 +450,9 @@ export default function BulkEditClass() {
                   <TableCell sx={{ bgcolor: 'background.paper' }} />
                   <TableCell sx={{ bgcolor: 'background.paper' }} />
                   <TableCell sx={{ bgcolor: 'background.paper' }} />
-                  {showRoll && <TableCell sx={{ bgcolor: 'background.paper' }} />}
-                  {mode === 'examOnly' && <TableCell sx={{ bgcolor: 'background.paper' }} />}
+                  {cols.roll && <TableCell sx={{ bgcolor: 'background.paper' }} />}
                   {cols.house && <TableCell sx={{ bgcolor: 'background.paper' }} />}
+                  {cols.examOnly && <TableCell sx={{ bgcolor: 'background.paper' }} />}
                   {activeContacts.map((rel) => (
                     <TableCell
                       key={rel.key}
@@ -494,9 +484,23 @@ export default function BulkEditClass() {
                   <TableCell sx={{ width: 36 }}>#</TableCell>
                   <TableCell>Student</TableCell>
                   <TableCell>Admitted</TableCell>
-                  {showRoll && <TableCell align="center">Roll</TableCell>}
-                  {mode === 'examOnly' && <TableCell>Class</TableCell>}
+                  {cols.roll && <TableCell align="center">Roll</TableCell>}
                   {cols.house && <TableCell>House</TableCell>}
+                  {cols.examOnly && (
+                    <TableCell align="center">
+                      <Tooltip title="Tick students registered here only to sit exams">
+                        <Link
+                          component="button"
+                          type="button"
+                          underline="none"
+                          onClick={() => setAllExam(true)}
+                          sx={{ fontSize: 11, fontWeight: 700 }}
+                        >
+                          Exam only
+                        </Link>
+                      </Tooltip>
+                    </TableCell>
+                  )}
                   {activeContacts.map((rel) => [
                     <TableCell key={`${rel.key}-s`} sx={{ borderLeft: '2px solid', borderColor: 'divider' }}>
                       SMS no.
@@ -526,7 +530,7 @@ export default function BulkEditClass() {
                     </TableCell>
                     <TableCell sx={{ color: 'text.secondary' }}>{fmtDate(r.admissionDate)}</TableCell>
 
-                    {showRoll && (
+                    {cols.roll && (
                       <TableCell align="center" sx={cellSx(isDirty(r.uuid, 'roll'), rollDupes.has(r.roll.trim()) && r.roll.trim())}>
                         <TextField
                           variant="standard"
@@ -539,10 +543,6 @@ export default function BulkEditClass() {
                           FormHelperTextProps={{ sx: { m: 0, fontSize: 10, textAlign: 'center' } }}
                         />
                       </TableCell>
-                    )}
-
-                    {mode === 'examOnly' && (
-                      <TableCell sx={{ color: 'text.secondary' }}>{r.className || '—'}</TableCell>
                     )}
 
                     {cols.house && (
@@ -563,6 +563,17 @@ export default function BulkEditClass() {
                             </MenuItem>
                           ))}
                         </Select>
+                      </TableCell>
+                    )}
+
+                    {cols.examOnly && (
+                      <TableCell align="center" sx={cellSx(isDirty(r.uuid, 'exam'), false)}>
+                        <Checkbox
+                          size="small"
+                          checked={r.examOnly}
+                          onChange={(e) => editExam(r.uuid, e.target.checked)}
+                          sx={{ p: 0.25 }}
+                        />
                       </TableCell>
                     )}
 

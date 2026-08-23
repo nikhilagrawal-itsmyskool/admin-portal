@@ -215,23 +215,10 @@ export const studentService = {
     return response.data; // { students: [...] }
   },
 
-  // Cross-class roster of exam-only students (enrolled here but studying elsewhere).
-  // Same shape as the class roster, with className for context instead of roll.
-  getExamOnlyRoster: async (signal) => {
-    const response = await api.get('/students/exam-only-roster', { signal });
-    return response.data; // { students: [...] }
-  },
-
-  // Apply staged grid edits. items: [{ studentId, rollNumber?, houseId?, contacts? }]
+  // Apply staged grid edits. items: [{ studentId, rollNumber?, houseId?, examOnly?, contacts? }]
   // where contacts = { father?: { mobile?, whatsapp? }, mother?: {...}, guardian?: {...} }.
-  // Omit classId/academicYearId for student-mode (exam-only) — house + contacts only.
   bulkUpdateClass: async ({ classId, academicYearId, items }) => {
-    const payload = { items };
-    if (classId && academicYearId) {
-      payload.classId = classId;
-      payload.academicYearId = academicYearId;
-    }
-    const response = await api.post('/students/bulk-update', payload);
+    const response = await api.post('/students/bulk-update', { classId, academicYearId, items });
     return response.data; // { updated, failed, results: [...] }
   },
 
