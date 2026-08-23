@@ -204,7 +204,7 @@ const DayAccordion = memo(function DayAccordion({
       <AccordionDetails>
         {d.dailyTheme && (
           <Box sx={{ mb: 2, p: 1.25, bgcolor: '#eef4ff', border: '1px solid', borderColor: '#cfe0ff', borderRadius: 1 }}>
-            <Typography variant="overline" color="primary.main" sx={{ display: 'block', lineHeight: 1.4 }}>Thought of the day</Typography>
+            <Typography variant="overline" color="primary.main" sx={{ display: 'block', lineHeight: 1.4 }}>Theme of the day</Typography>
             <Typography variant="body2" sx={{ fontStyle: 'italic' }}>“{d.dailyTheme}”</Typography>
           </Box>
         )}

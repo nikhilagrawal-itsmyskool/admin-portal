@@ -113,7 +113,7 @@ export default function ResolvedRunSheet({ resolved, showThemes = true, showDesc
   if (!resolved) return null;
   const themeBlock = resolved.dailyTheme ? (
     <Box sx={{ mb: 1, p: 1.25, bgcolor: '#eef4ff', border: '1px solid', borderColor: '#cfe0ff', borderRadius: 1 }}>
-      <Typography variant="overline" color="primary.main" sx={{ display: 'block', lineHeight: 1.4 }}>Thought of the day</Typography>
+      <Typography variant="overline" color="primary.main" sx={{ display: 'block', lineHeight: 1.4 }}>Theme of the day</Typography>
       <Typography variant="body2" sx={{ fontStyle: 'italic' }}>“{resolved.dailyTheme}”</Typography>
     </Box>
   ) : null;
