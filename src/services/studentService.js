@@ -240,4 +240,17 @@ export const studentService = {
     const response = await api.post('/students/graduate', data);
     return response.data;
   },
+
+  // ---- Section move (intra-year, single student) ----
+  // Current enrolment + same-grade target sections (headcount + next free roll).
+  getMoveSectionOptions: async (studentId, signal) => {
+    const response = await api.get('/students/move-section', { params: { studentId }, signal });
+    return response.data; // { student, current, targets: [...] }
+  },
+
+  // { studentId, toClassId, autoRoll? , rollNumber? }
+  moveSection: async (data) => {
+    const response = await api.post('/students/move-section', data);
+    return response.data; // { done, fromClassName, toClassName, rollNumber, academicYearName }
+  },
 };

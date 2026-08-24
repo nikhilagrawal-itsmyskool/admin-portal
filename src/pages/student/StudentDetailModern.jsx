@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import {
   Edit as EditIcon, Delete as DeleteIcon, PhotoCamera as PhotoIcon, Add as AddIcon,
-  Star as StarIcon,
+  Star as StarIcon, SwapHoriz as MoveIcon,
 } from '@mui/icons-material';
 import StudentAttendancePanel from './StudentAttendancePanel';
 import StudentTimetableToday from './StudentTimetableToday';
@@ -76,7 +76,7 @@ export default function StudentDetailModern({ ctx }) {
     student, tcs = [], can, canManage, canViewContacts, canTransferView, canTransferManage,
     photoUrl, guardianPhotos = {}, openLightbox, pickGuardianPhoto, fileRef, handlePhotoPick,
     setGuardianDialog, setAddressDialog, setSiblingSearch, setDelGuardian, setDelAddress, setDelSibling, setTcDialog,
-    codeLabel, navigate, id,
+    setMoveSection, codeLabel, navigate, id,
   } = ctx;
 
   const [attn, setAttn] = useState(null); // { percent, present, absent }
@@ -173,7 +173,12 @@ export default function StudentDetailModern({ ctx }) {
       {/* DETAILS — width-filling card grid (no gutter) */}
       <Grid container spacing={2} sx={{ mt: 0 }}>
         <Grid item xs={12} sm={6} md={4}>
-          <SectionCard title="Class & placement">
+          <SectionCard
+            title="Class & placement"
+            action={canManage && student.status === 'active' && setMoveSection && (
+              <Button size="small" startIcon={<MoveIcon fontSize="small" />} onClick={() => setMoveSection(true)}>Move</Button>
+            )}
+          >
             <Info label="Class" value={student.currentClassName} />
             {student.currentStreamCode && <Info label="Stream" value={student.currentStreamName || student.currentStreamCode} />}
             <Info label="Roll #" value={student.currentRollNumber} />

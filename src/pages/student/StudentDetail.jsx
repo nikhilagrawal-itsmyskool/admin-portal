@@ -39,6 +39,7 @@ import {
   PhotoCamera as PhotoIcon,
   Add as AddIcon,
   Star as StarIcon,
+  SwapHoriz as MoveIcon,
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { transferService } from '../../services/transferService';
@@ -46,6 +47,7 @@ import StudentAttendancePanel from './StudentAttendancePanel';
 import StudentTimetableToday from './StudentTimetableToday';
 import StudentFeesPanel from './StudentFeesPanel';
 import StudentDetailModern, { ModernErrorBoundary } from './StudentDetailModern';
+import MoveSectionDialog from './MoveSectionDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
@@ -375,6 +377,7 @@ export default function StudentDetail() {
   const [siblingSearch, setSiblingSearch] = useState(false);
   const [delSibling, setDelSibling] = useState({ open: false, item: null });
   const [tcDialog, setTcDialog] = useState({ open: false, initial: null });
+  const [moveSection, setMoveSection] = useState(false);
 
   useEffect(() => {
     load();
@@ -594,6 +597,11 @@ export default function StudentDetail() {
             label={<Typography variant="body2" color="text.secondary">New look</Typography>}
           />
         )}
+        {canEdit && student.status === 'active' && (
+          <Button variant="outlined" startIcon={<MoveIcon />} onClick={() => setMoveSection(true)}>
+            Move section
+          </Button>
+        )}
         {canEdit && (
           <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/students/${id}/edit`)}>
             Edit
@@ -624,7 +632,7 @@ export default function StudentDetail() {
             student, tcs, can, canManage, canViewContacts, canTransferView, canTransferManage,
             photoUrl, guardianPhotos, openLightbox, pickGuardianPhoto, fileRef, handlePhotoPick,
             setGuardianDialog, setAddressDialog, setSiblingSearch, setDelGuardian, setDelAddress, setDelSibling, setTcDialog,
-            codeLabel, navigate, id,
+            setMoveSection, codeLabel, navigate, id,
           }} />
         </ModernErrorBoundary>
       ) : (
@@ -1118,6 +1126,14 @@ export default function StudentDetail() {
         initial={tcDialog.initial}
         onClose={() => setTcDialog({ open: false, initial: null })}
         onSave={saveTc}
+      />
+
+      <MoveSectionDialog
+        open={moveSection}
+        studentId={id}
+        studentName={student.name}
+        onClose={() => setMoveSection(false)}
+        onMoved={load}
       />
 
       <Dialog open={lightbox.open} onClose={() => setLightbox({ open: false, src: '', title: '' })} maxWidth="md">
