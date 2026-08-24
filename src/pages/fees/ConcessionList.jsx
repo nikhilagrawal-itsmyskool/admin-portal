@@ -37,7 +37,9 @@ export default function ConcessionList() {
 
   const [dlg, setDlg] = useState({ open: false, data: emptyC, id: null, saving: false });
   const [pickStu, setPickStu] = useState(false);
-  const [applyFrom, setApplyFrom] = useState(''); // effective_from for newly added students (blank = whole year)
+  const [cycles, setCycles] = useState([]); // ordered fee cycles for the add-student bounds
+  const [fromCycle, setFromCycle] = useState(''); // effective_from_cycle for newly added students (blank = whole year)
+  const [toCycle, setToCycle] = useState('');     // effective_to_cycle (blank = ongoing)
   const [del, setDel] = useState({ open: false, row: null, loading: false });
   const [rmStu, setRmStu] = useState({ open: false, studentId: null, name: '', loading: false });
   const [chg, setChg] = useState({ open: false, studentId: null, name: '' }); // mid-year change dialog
@@ -47,13 +49,15 @@ export default function ConcessionList() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const [c, h, lk, mc] = await Promise.all([
+      const [c, h, lk, mc, cyc] = await Promise.all([
         feesService.getConcessions(academicYearId),
         feesService.getHeads(academicYearId),
         feesService.getLookups().catch(() => ({ concessionTypes: [] })),
         feesService.getMultiConcession(academicYearId).catch(() => []),
+        feesService.getCycles(academicYearId).catch(() => []),
       ]);
       setList(c || []); setHeads(h || []); setTypes(lk.concessionTypes || []); setMulti(mc || []);
+      setCycles((cyc || []).slice().sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
       // count comes from the list query now (one call), not one roster fetch per template
       setCounts(Object.fromEntries((c || []).map((t) => [t.uuid, Number(t.studentCount) || 0])));
       if (c && c.length && !selected) selectTemplate(c[0]);
@@ -86,8 +90,8 @@ export default function ConcessionList() {
   const addStudent = async (student) => {
     setPickStu(false);
     try {
-      // effectiveFrom (blank = whole year); applies the discount only to cycles due on/after this date
-      await feesService.addConcessionStudents(selected.uuid, { studentIds: [student.uuid], effectiveFrom: applyFrom || null });
+      // cycle-bounded: from cycle (blank = whole year) → to cycle (blank = ongoing)
+      await feesService.addConcessionStudents(selected.uuid, { studentIds: [student.uuid], effectiveFromCycle: fromCycle || null, effectiveToCycle: toCycle || null });
       selectTemplate(selected); load();
     }
     catch (err) { setError(errMsg(err)); }
@@ -107,6 +111,7 @@ export default function ConcessionList() {
   const valueLabel = (c) => (c.valueType === 'percent' ? `${c.value}%` : inr(c.value));
   const headName = (id) => heads.find((h) => h.uuid === id)?.name || (id ? '—' : 'All');
   const multiByStudent = useMemo(() => Object.fromEntries((multi || []).map((m) => [m.studentId, m])), [multi]);
+  const cycleName = useMemo(() => Object.fromEntries((cycles || []).map((c) => [c.uuid, c.name])), [cycles]);
   const sameHeadCount = useMemo(() => (multi || []).filter((m) => m.sameHead).length, [multi]);
   const shownRoster = (onlyCurrent ? roster.filter((r) => r.enrolledThisYear) : roster)
     .slice()
@@ -176,12 +181,17 @@ export default function ConcessionList() {
               </Box>
               {selected && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Tooltip title="Discount applies only to cycles due on/after this date. Leave blank for the whole year; set an earlier date to backdate.">
-                    <TextField
-                      type="date" size="small" label="Apply from" value={applyFrom}
-                      onChange={(e) => setApplyFrom(e.target.value)}
-                      InputLabelProps={{ shrink: true }} sx={{ width: 160 }}
-                    />
+                  <Tooltip title="Apply the discount from this fee cycle onward. Leave blank for the whole year.">
+                    <TextField select size="small" label="From cycle" value={fromCycle} onChange={(e) => setFromCycle(e.target.value)} sx={{ width: 150 }}>
+                      <MenuItem value="">Whole year</MenuItem>
+                      {cycles.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
+                    </TextField>
+                  </Tooltip>
+                  <Tooltip title="Apply up to and including this cycle. Leave blank for ongoing (till year end).">
+                    <TextField select size="small" label="To cycle" value={toCycle} onChange={(e) => setToCycle(e.target.value)} sx={{ width: 150 }}>
+                      <MenuItem value="">Ongoing</MenuItem>
+                      {cycles.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
+                    </TextField>
                   </Tooltip>
                   <Button size="small" variant="contained" startIcon={<PersonAddIcon />} onClick={() => setPickStu(true)}>Add student</Button>
                 </Box>
@@ -221,6 +231,7 @@ export default function ConcessionList() {
                     )}
                     {r.effectiveFrom && <Tooltip title={`Applies to cycles due on/after ${fmtDate(r.effectiveFrom)}`}><Chip size="small" color="info" variant="outlined" label={`from ${fmtDate(r.effectiveFrom)}`} /></Tooltip>}
                     {r.cycleScope && <Tooltip title={`Only these cycles: ${r.cycleScope}`}><Chip size="small" color="info" variant="outlined" label={`${String(r.cycleScope).split(',').filter(Boolean).length} cycles`} /></Tooltip>}
+                    {(r.effectiveFromCycle || r.effectiveToCycle) && <Tooltip title="Cycle-bounded discount"><Chip size="small" color="info" variant="outlined" label={`${r.effectiveFromCycle ? (cycleName[r.effectiveFromCycle] || 'start') : 'start'} → ${r.effectiveToCycle ? (cycleName[r.effectiveToCycle] || 'end') : 'ongoing'}`} /></Tooltip>}
                     {!r.enrolledThisYear && <Chip size="small" color="warning" variant="outlined" label="not this year" />}
                     <Tooltip title="Change / stop this scheme from a cycle"><IconButton size="small" onClick={() => setChg({ open: true, studentId: r.studentId, name: r.studentName || '' })}><ChangeIcon fontSize="small" /></IconButton></Tooltip>
                     <IconButton size="small" color="error" onClick={() => setRmStu({ open: true, studentId: r.studentId, name: r.studentName || '', loading: false })}><DeleteIcon fontSize="small" /></IconButton>
