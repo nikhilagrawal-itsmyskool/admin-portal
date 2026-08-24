@@ -282,8 +282,10 @@ export default function StudentFeesPanel({ studentId, student }) {
             <ToggleButton value="transport" sx={{ textTransform: 'none', py: 0.25 }}>Transport</ToggleButton>
           </ToggleButtonGroup>
           {isCurrent && !isMobile && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
-          {canManage && (student?.status || 'active') === 'active' && (
-            <Button size="small" color="warning" onClick={() => setWd({ date: todayIso(), reason: '', busy: false })}>Mark withdrawn</Button>
+          {canManage && (student?.status || 'active') !== 'deleted' && (
+            <Button size="small" color="warning" onClick={() => setWd({ date: student?.withdrawalDate || todayIso(), reason: '', busy: false })}>
+              {student?.status === 'inactive' ? 'Set leaving date' : 'Mark withdrawn'}
+            </Button>
           )}
         </Box>
       </CardContent>
@@ -501,16 +503,18 @@ export default function StudentFeesPanel({ studentId, student }) {
       </Dialog>
 
       <Dialog open={!!wd} onClose={() => !wd?.busy && setWd(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Mark withdrawn — {student?.name || 'student'}</DialogTitle>
+        <DialogTitle>{student?.status === 'inactive' ? 'Set leaving date' : 'Mark withdrawn'} — {student?.name || 'student'}</DialogTitle>
         <DialogContent>
           {wd?.done ? (
             <Alert severity="success" sx={{ mt: 1 }}>
-              Marked withdrawn. {wd.done.cyclesVoided > 0 ? <>Capped <b>{wd.done.cyclesVoided}</b> unpaid cycle{wd.done.cyclesVoided === 1 ? '' : 's'} due after the leaving month ({inr(wd.done.amountVoided)} removed).</> : 'No unpaid post-departure cycles to cap.'}
+              {student?.status === 'inactive' ? 'Leaving date saved.' : 'Marked withdrawn.'} {wd.done.cyclesVoided > 0 ? <>Capped <b>{wd.done.cyclesVoided}</b> unpaid cycle{wd.done.cyclesVoided === 1 ? '' : 's'} due after the leaving month ({inr(wd.done.amountVoided)} removed).</> : 'No unpaid post-departure cycles to cap.'}
             </Alert>
           ) : (
             <>
               <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
-                Sets the student <b>inactive</b> and voids <b>unpaid</b> fee cycles due <b>after</b> the leaving month (paid cycles are never touched). This corrects phantom dues — it is not a full TC/withdrawal.
+                {student?.status === 'inactive'
+                  ? <>This student is already <b>inactive</b>. This records/updates their <b>leaving date</b> and voids <b>unpaid</b> fee cycles due <b>after</b> that month (paid cycles are never touched) — correcting phantom dues.</>
+                  : <>Sets the student <b>inactive</b> and voids <b>unpaid</b> fee cycles due <b>after</b> the leaving month (paid cycles are never touched). This corrects phantom dues — it is not a full TC/withdrawal.</>}
               </Typography>
               <TextField type="date" fullWidth size="small" label="Last attendance / leaving date" InputLabelProps={{ shrink: true }} value={wd?.date || ''} onChange={(e) => setWd((s) => ({ ...s, date: e.target.value }))} sx={{ mb: 1.5 }} />
               <TextField fullWidth size="small" label="Reason (optional)" value={wd?.reason || ''} onChange={(e) => setWd((s) => ({ ...s, reason: e.target.value }))} placeholder="e.g. relocated / TC issued" multiline minRows={2} />
@@ -522,7 +526,7 @@ export default function StudentFeesPanel({ studentId, student }) {
             ? <Button variant="contained" onClick={() => setWd(null)}>Done</Button>
             : <>
                 <Button onClick={() => setWd(null)} disabled={wd?.busy}>Cancel</Button>
-                <Button color="warning" variant="contained" onClick={doWithdraw} disabled={wd?.busy || !wd?.date}>{wd?.busy ? 'Working…' : 'Mark withdrawn'}</Button>
+                <Button color="warning" variant="contained" onClick={doWithdraw} disabled={wd?.busy || !wd?.date}>{wd?.busy ? 'Working…' : (student?.status === 'inactive' ? 'Save & cap dues' : 'Mark withdrawn')}</Button>
               </>}
         </DialogActions>
       </Dialog>
