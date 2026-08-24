@@ -6,10 +6,20 @@ import {
 import { feesService } from '../../services/feesService';
 import { inr, errMsg, FEE_COLORS } from './feesUi';
 
-const REASON_PRESETS = [
-  'Staff member left', 'Sibling graduated / left', 'EWS status changed',
-  'Correction of wrong concession', 'Other',
-];
+// Reason quick-picks, contextual to the change direction (stop / start / switch). Purely a
+// convenience — the free-text note still allows anything. "Correction…" and "Other" appear in all.
+const REASONS = {
+  stop: ['Staff member left', 'Sibling left / graduated', 'Sibling discount reassigned to another child',
+         'EWS status revoked / expired', 'Scholarship ended / not renewed',
+         'Concession withdrawn (management decision)', 'Correction of wrong concession', 'Other'],
+  start: ['Staff member joined', 'New sibling admitted', 'Sibling discount reassigned to another child',
+          'EWS status granted', 'RTE status change', 'Scholarship / merit awarded',
+          'Management-approved concession', 'Financial hardship / relief',
+          'Correction of wrong concession', 'Other'],
+  switch: ['Sibling discount reassigned to another child', 'Switched to a different concession scheme',
+           'Management-approved concession', 'Financial hardship / relief',
+           'Correction of wrong concession', 'Other'],
+};
 
 // Reusable mid-year "Change concession" dialog (preview-then-apply). Self-contained: on open it
 // loads the student's current schemes + the year's cycles/schemes. Used from the Student-360
@@ -53,6 +63,10 @@ export default function ChangeConcessionDialog({ open, studentId, studentName, a
   const closeScheme = currentSchemes.find((s) => s.name === form?.closeName);
   const openScheme = form?.toKey === '__stop__' ? null : allSchemes.find((s) => s.name === form?.toKey);
   const canPreview = form && form.fromCycleId && form.reason.trim() && (form.closeName || form.toKey !== '__stop__');
+  // reason quick-picks contextual to the change direction
+  const hasClose = !!form?.closeName;
+  const hasOpen = form?.toKey && form.toKey !== '__stop__';
+  const presets = REASONS[hasClose && !hasOpen ? 'stop' : (!hasClose && hasOpen ? 'start' : 'switch')];
 
   const payload = (dryRun) => ({
     studentId, academicYearId, fromCycleId: form.fromCycleId, reason: form.reason.trim(),
@@ -98,9 +112,9 @@ export default function ChangeConcessionDialog({ open, studentId, studentName, a
                 onChange={(e) => { setForm({ ...form, fromCycleId: e.target.value }); setPreview(null); }}>
                 {cycles.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
               </TextField>
-              <TextField select size="small" label="Reason (required)" value={REASON_PRESETS.includes(form.reason) ? form.reason : (form.reason ? 'Other' : '')}
+              <TextField select size="small" label="Reason (required)" value={presets.includes(form.reason) ? form.reason : (form.reason ? 'Other' : '')}
                 onChange={(e) => setForm({ ...form, reason: e.target.value === 'Other' ? '' : e.target.value })}>
-                {REASON_PRESETS.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+                {presets.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
               </TextField>
               <TextField size="small" label="Reason note" value={form.reason}
                 onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="e.g. Staff member left in October"
