@@ -34,6 +34,7 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [receipts, setReceipts] = useState(null); // lazy-loaded for the Receipts view
   const [transport, setTransport] = useState(null); // lazy-loaded for the Transport view
   const [wd, setWd] = useState(null); // withdraw dialog: null | { date, reason, busy, done }
+  const [waiveAll, setWaiveAll] = useState({ open: false, reason: '', confirm: '', busy: false, done: null }); // full write-off
   const [allYears, setAllYears] = useState(false); // receipts: show only the selected year (off) or every year (on)
   const [showCancelled, setShowCancelled] = useState(false); // cancelled receipts hidden by default
   const [cancelTarget, setCancelTarget] = useState(null); // receipt being cancelled
@@ -161,6 +162,18 @@ export default function StudentFeesPanel({ studentId, student }) {
     } catch (err) { setError(errMsg(err, 'Withdraw failed')); setWd((s) => ({ ...s, busy: false })); }
   };
 
+  // Write off the student's entire outstanding as a waiver (one ₹0 receipt, one reason).
+  const doWaiveAll = async () => {
+    setWaiveAll((s) => ({ ...s, busy: true }));
+    try {
+      const waivers = lines.filter((l) => Number(l.remaining) > 0).map((l) => ({ ledgerId: l.chargeId, amount: Number(l.remaining) }));
+      if (!waivers.length) { setWaiveAll({ open: false, reason: '', confirm: '', busy: false, done: null }); return; }
+      const res = await feesService.collect({ studentId: effStudentId, academicYearId: selYear, allocations: [], waivers, waiveReason: waiveAll.reason.trim() });
+      setWaiveAll((s) => ({ ...s, busy: false, done: res }));
+      setRefreshKey((k) => k + 1);
+    } catch (err) { setError(errMsg(err, 'Waive failed')); setWaiveAll((s) => ({ ...s, busy: false })); }
+  };
+
   const doCancel = async () => {
     if (!cancelTarget) return;
     setCancelBusy(true);
@@ -286,6 +299,9 @@ export default function StudentFeesPanel({ studentId, student }) {
             <Button size="small" color="warning" onClick={() => setWd({ date: student?.withdrawalDate || todayIso(), reason: '', busy: false })}>
               {student?.status === 'inactive' ? 'Set leaving date' : 'Mark withdrawn'}
             </Button>
+          )}
+          {canManage && isCurrent && !isMobile && tot.remaining > 0 && (
+            <Button size="small" color="error" variant="outlined" onClick={() => setWaiveAll({ open: true, reason: '', confirm: '', busy: false, done: null })}>Waive all</Button>
           )}
         </Box>
       </CardContent>
@@ -527,6 +543,33 @@ export default function StudentFeesPanel({ studentId, student }) {
             : <>
                 <Button onClick={() => setWd(null)} disabled={wd?.busy}>Cancel</Button>
                 <Button color="warning" variant="contained" onClick={doWithdraw} disabled={wd?.busy || !wd?.date}>{wd?.busy ? 'Working…' : (student?.status === 'inactive' ? 'Save & cap dues' : 'Mark withdrawn')}</Button>
+              </>}
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={waiveAll.open} onClose={() => !waiveAll.busy && setWaiveAll({ open: false, reason: '', confirm: '', busy: false, done: null })} maxWidth="xs" fullWidth>
+        <DialogTitle>Waive all outstanding — {student?.name || 'student'}</DialogTitle>
+        <DialogContent>
+          {waiveAll.done ? (
+            <Alert severity="success" sx={{ mt: 1 }}>
+              Waived <b>{inr(waiveAll.done.waiverTotal || tot.remaining)}</b> across all outstanding cycles.{waiveAll.done.receiptNo ? <> Receipt <b>{waiveAll.done.receiptNo}</b>.</> : null} Nothing outstanding now.
+            </Alert>
+          ) : (
+            <>
+              <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
+                Writes off this student&apos;s <b>entire outstanding</b> — <b>{inr(tot.remaining)}</b> across {lines.filter((l) => Number(l.remaining) > 0).length} charge{lines.filter((l) => Number(l.remaining) > 0).length === 1 ? '' : 's'} (all cycles, incl. upcoming) — as a <b>waiver</b>. Paid amounts are never touched. Posts a waiver entry per charge + a ₹0 receipt with your reason. This cannot be undone from here.
+              </Typography>
+              <TextField autoFocus fullWidth size="small" label="Reason (required)" value={waiveAll.reason} onChange={(e) => setWaiveAll((s) => ({ ...s, reason: e.target.value }))} placeholder="e.g. management-approved full fee waiver" multiline minRows={2} sx={{ mb: 1.5 }} />
+              <TextField fullWidth size="small" label={'Type "confirm" to waive all'} value={waiveAll.confirm} onChange={(e) => setWaiveAll((s) => ({ ...s, confirm: e.target.value }))} />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {waiveAll.done
+            ? <Button variant="contained" onClick={() => setWaiveAll({ open: false, reason: '', confirm: '', busy: false, done: null })}>Done</Button>
+            : <>
+                <Button onClick={() => setWaiveAll({ open: false, reason: '', confirm: '', busy: false, done: null })} disabled={waiveAll.busy}>Cancel</Button>
+                <Button color="error" variant="contained" onClick={doWaiveAll} disabled={waiveAll.busy || !waiveAll.reason.trim() || waiveAll.confirm.trim().toLowerCase() !== 'confirm'}>{waiveAll.busy ? 'Waiving…' : 'Waive all'}</Button>
               </>}
         </DialogActions>
       </Dialog>
