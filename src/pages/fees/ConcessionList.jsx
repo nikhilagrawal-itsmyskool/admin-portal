@@ -38,6 +38,7 @@ export default function ConcessionList() {
   const [pickStu, setPickStu] = useState(false);
   const [applyFrom, setApplyFrom] = useState(''); // effective_from for newly added students (blank = whole year)
   const [del, setDel] = useState({ open: false, row: null, loading: false });
+  const [rmStu, setRmStu] = useState({ open: false, studentId: null, name: '', loading: false });
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId]);
 
@@ -89,9 +90,10 @@ export default function ConcessionList() {
     }
     catch (err) { setError(errMsg(err)); }
   };
-  const removeStudent = async (studentId) => {
-    try { await feesService.removeConcessionStudent(selected.uuid, studentId); selectTemplate(selected); load(); }
-    catch (err) { setError(errMsg(err)); }
+  const doRemoveStudent = async () => {
+    setRmStu((s) => ({ ...s, loading: true }));
+    try { await feesService.removeConcessionStudent(selected.uuid, rmStu.studentId); setRmStu({ open: false, studentId: null, name: '', loading: false }); selectTemplate(selected); load(); }
+    catch (err) { setError(errMsg(err)); setRmStu((s) => ({ ...s, loading: false })); }
   };
 
   const doDelete = async () => {
@@ -218,7 +220,7 @@ export default function ConcessionList() {
                     {r.effectiveFrom && <Tooltip title={`Applies to cycles due on/after ${fmtDate(r.effectiveFrom)}`}><Chip size="small" color="info" variant="outlined" label={`from ${fmtDate(r.effectiveFrom)}`} /></Tooltip>}
                     {r.cycleScope && <Tooltip title={`Only these cycles: ${r.cycleScope}`}><Chip size="small" color="info" variant="outlined" label={`${String(r.cycleScope).split(',').filter(Boolean).length} cycles`} /></Tooltip>}
                     {!r.enrolledThisYear && <Chip size="small" color="warning" variant="outlined" label="not this year" />}
-                    <IconButton size="small" color="error" onClick={() => removeStudent(r.studentId)}><DeleteIcon fontSize="small" /></IconButton>
+                    <IconButton size="small" color="error" onClick={() => setRmStu({ open: true, studentId: r.studentId, name: r.studentName || '', loading: false })}><DeleteIcon fontSize="small" /></IconButton>
                   </Box>
                 </Box>
               ))}
@@ -290,7 +292,12 @@ export default function ConcessionList() {
       </Dialog>
 
       <StudentSearchDialog open={pickStu} onClose={() => setPickStu(false)} onSelect={addStudent} />
-      <ConfirmDialog open={del.open} title="Delete concession" message={`Delete "${del.row?.name}" and detach its students?`} onConfirm={doDelete} onCancel={() => setDel({ open: false, row: null, loading: false })} loading={del.loading} />
+      <ConfirmDialog open={del.open} title="Delete concession" requireText="confirm"
+        message={`Delete "${del.row?.name}" and detach all its students? Their discount is removed on every affected cycle, so their dues will rise. This cannot be undone.`}
+        confirmLabel="Delete concession" loadingLabel="Deleting…" onConfirm={doDelete} onCancel={() => setDel({ open: false, row: null, loading: false })} loading={del.loading} />
+      <ConfirmDialog open={rmStu.open} title="Remove from concession" requireText="confirm"
+        message={`Remove ${rmStu.name || 'this student'} from "${selected?.name}"? Their discount is voided and their dues rise by the concession amount. You can re-add them later.`}
+        confirmLabel="Remove" loadingLabel="Removing…" onConfirm={doRemoveStudent} onCancel={() => setRmStu({ open: false, studentId: null, name: '', loading: false })} loading={rmStu.loading} />
     </Box>
   );
 }

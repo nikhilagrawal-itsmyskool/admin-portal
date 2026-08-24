@@ -38,6 +38,7 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [showCancelled, setShowCancelled] = useState(false); // cancelled receipts hidden by default
   const [cancelTarget, setCancelTarget] = useState(null); // receipt being cancelled
   const [cancelReason, setCancelReason] = useState('');
+  const [cancelConfirm, setCancelConfirm] = useState(''); // type-to-confirm speed-bump
   const [cancelBusy, setCancelBusy] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // bump to reload after a cancel
   const canManage = useCan()(ACTIONS.FEE_MANAGE);
@@ -165,7 +166,7 @@ export default function StudentFeesPanel({ studentId, student }) {
     setCancelBusy(true);
     try {
       await feesService.cancelReceipt(cancelTarget.uuid, { reason: cancelReason.trim() || undefined });
-      setCancelTarget(null); setCancelReason('');
+      setCancelTarget(null); setCancelReason(''); setCancelConfirm('');
       setRefreshKey((k) => k + 1); // reloads ledger (charges re-open) + receipts (shows cancelled)
     } catch (err) { setError(errMsg(err, 'Failed to cancel receipt')); }
     finally { setCancelBusy(false); }
@@ -463,7 +464,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                           <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                           <TableCell align="right">
                             <ReceiptPrintButton receiptId={r.uuid} />
-                            {!cancelled && canManage && !isMobile && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}>Cancel</Button>}
+                            {!cancelled && canManage && !isMobile && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); setCancelConfirm(''); }}>Cancel</Button>}
                           </TableCell>
                         </TableRow>
                         );
@@ -490,11 +491,12 @@ export default function StudentFeesPanel({ studentId, student }) {
           <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
             This voids the receipt&apos;s payment ({inr(cancelTarget?.totalPaid)}). The charges it covered will re-open as <b>due</b> and the student&apos;s outstanding will rise by that amount. The receipt stays visible, marked cancelled. This cannot be undone from here.
           </Typography>
-          <TextField autoFocus fullWidth size="small" label="Reason" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="e.g. wrong student / duplicate / mode change" multiline minRows={2} />
+          <TextField autoFocus fullWidth size="small" label="Reason (required)" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="e.g. wrong student / duplicate / mode change" multiline minRows={2} sx={{ mb: 1.5 }} />
+          <TextField fullWidth size="small" label={'Type "confirm" to cancel this receipt'} value={cancelConfirm} onChange={(e) => setCancelConfirm(e.target.value)} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCancelTarget(null)} disabled={cancelBusy}>Keep</Button>
-          <Button color="error" variant="contained" onClick={doCancel} disabled={cancelBusy}>{cancelBusy ? 'Cancelling…' : 'Cancel receipt'}</Button>
+          <Button color="error" variant="contained" onClick={doCancel} disabled={cancelBusy || !cancelReason.trim() || cancelConfirm.trim().toLowerCase() !== 'confirm'}>{cancelBusy ? 'Cancelling…' : 'Cancel receipt'}</Button>
         </DialogActions>
       </Dialog>
 

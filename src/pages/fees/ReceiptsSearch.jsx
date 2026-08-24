@@ -37,6 +37,7 @@ export default function ReceiptsSearch() {
   const [error, setError] = useState('');
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [cancelConfirm, setCancelConfirm] = useState(''); // type-to-confirm speed-bump
   const [cancelBusy, setCancelBusy] = useState(false);
   const searchRef = useRef(null);
 
@@ -74,7 +75,7 @@ export default function ReceiptsSearch() {
   const doCancel = async () => {
     if (!cancelTarget) return;
     setCancelBusy(true);
-    try { await feesService.cancelReceipt(cancelTarget.uuid, { reason: cancelReason || undefined }); setCancelTarget(null); setCancelReason(''); load(); }
+    try { await feesService.cancelReceipt(cancelTarget.uuid, { reason: cancelReason.trim() || undefined }); setCancelTarget(null); setCancelReason(''); setCancelConfirm(''); load(); }
     catch (err) { setError(errMsg(err, 'Cancel failed')); }
     finally { setCancelBusy(false); }
   };
@@ -194,7 +195,7 @@ export default function ReceiptsSearch() {
                       <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                         <ReceiptPrintButton receiptId={r.uuid} variant="icon" />
-                        {!cancelled && !isMobile && <Tooltip title="Cancel receipt"><IconButton size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); }}><CancelIcon fontSize="small" /></IconButton></Tooltip>}
+                        {!cancelled && !isMobile && <Tooltip title="Cancel receipt"><IconButton size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); setCancelConfirm(''); }}><CancelIcon fontSize="small" /></IconButton></Tooltip>}
                       </TableCell>
                     </TableRow>
                   );
@@ -220,11 +221,12 @@ export default function ReceiptsSearch() {
           <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 2 }}>
             This reverses the receipt's ledger effect ({inr(cancelTarget?.totalPaid)}) and marks it cancelled. This cannot be undone from here.
           </Typography>
-          <TextField autoFocus fullWidth size="small" label="Reason (optional)" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+          <TextField autoFocus fullWidth size="small" label="Reason (required)" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} sx={{ mb: 1.5 }} />
+          <TextField fullWidth size="small" label={'Type "confirm" to cancel this receipt'} value={cancelConfirm} onChange={(e) => setCancelConfirm(e.target.value)} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCancelTarget(null)} disabled={cancelBusy}>Keep</Button>
-          <Button color="error" variant="contained" onClick={doCancel} disabled={cancelBusy} startIcon={cancelBusy ? <CircularProgress size={16} /> : <CancelIcon />}>Cancel receipt</Button>
+          <Button color="error" variant="contained" onClick={doCancel} disabled={cancelBusy || !cancelReason.trim() || cancelConfirm.trim().toLowerCase() !== 'confirm'} startIcon={cancelBusy ? <CircularProgress size={16} /> : <CancelIcon />}>Cancel receipt</Button>
         </DialogActions>
       </Dialog>
     </Box>
