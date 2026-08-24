@@ -6,7 +6,8 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, InputAdornment,
   FormControlLabel, Switch, ToggleButtonGroup, ToggleButton, Tooltip, Link,
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, SwapHoriz as ChangeIcon } from '@mui/icons-material';
+import ChangeConcessionDialog from './ChangeConcessionDialog';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
@@ -39,6 +40,7 @@ export default function ConcessionList() {
   const [applyFrom, setApplyFrom] = useState(''); // effective_from for newly added students (blank = whole year)
   const [del, setDel] = useState({ open: false, row: null, loading: false });
   const [rmStu, setRmStu] = useState({ open: false, studentId: null, name: '', loading: false });
+  const [chg, setChg] = useState({ open: false, studentId: null, name: '' }); // mid-year change dialog
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId]);
 
@@ -220,6 +222,7 @@ export default function ConcessionList() {
                     {r.effectiveFrom && <Tooltip title={`Applies to cycles due on/after ${fmtDate(r.effectiveFrom)}`}><Chip size="small" color="info" variant="outlined" label={`from ${fmtDate(r.effectiveFrom)}`} /></Tooltip>}
                     {r.cycleScope && <Tooltip title={`Only these cycles: ${r.cycleScope}`}><Chip size="small" color="info" variant="outlined" label={`${String(r.cycleScope).split(',').filter(Boolean).length} cycles`} /></Tooltip>}
                     {!r.enrolledThisYear && <Chip size="small" color="warning" variant="outlined" label="not this year" />}
+                    <Tooltip title="Change / stop this scheme from a cycle"><IconButton size="small" onClick={() => setChg({ open: true, studentId: r.studentId, name: r.studentName || '' })}><ChangeIcon fontSize="small" /></IconButton></Tooltip>
                     <IconButton size="small" color="error" onClick={() => setRmStu({ open: true, studentId: r.studentId, name: r.studentName || '', loading: false })}><DeleteIcon fontSize="small" /></IconButton>
                   </Box>
                 </Box>
@@ -298,6 +301,9 @@ export default function ConcessionList() {
       <ConfirmDialog open={rmStu.open} title="Remove from concession" requireText="confirm"
         message={`Remove ${rmStu.name || 'this student'} from "${selected?.name}"? Their discount is voided and their dues rise by the concession amount. You can re-add them later.`}
         confirmLabel="Remove" loadingLabel="Removing…" onConfirm={doRemoveStudent} onCancel={() => setRmStu({ open: false, studentId: null, name: '', loading: false })} loading={rmStu.loading} />
+      <ChangeConcessionDialog open={chg.open} studentId={chg.studentId} studentName={chg.name} academicYearId={academicYearId}
+        presetCloseName={selected?.name} onClose={() => setChg({ open: false, studentId: null, name: '' })}
+        onApplied={() => { setChg({ open: false, studentId: null, name: '' }); if (selected) selectTemplate(selected); load(); }} />
     </Box>
   );
 }
