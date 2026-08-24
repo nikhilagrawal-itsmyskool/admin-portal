@@ -100,16 +100,30 @@ export default function HolidaysTab({ canManage }) {
         </CardContent>
       </Card>
 
-      {/* Summary */}
+      {/* Summary — the school-closed total and how it breaks down. */}
       <Grid container spacing={1.5} sx={{ mb: 2 }}>
-        {[[totalNonTeaching, 'Non-teaching days'], [weeklyOffCount, 'Weekly offs'], [fullHols, 'Declared holidays'], [rhHols, 'Restricted (open)']].map(([n, l]) => (
-          <Grid item xs={6} sm={3} key={l}>
-            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, height: '100%' }}>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{n}</Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>{l}</Typography>
-            </Box>
-          </Grid>
-        ))}
+        <Grid item xs={12} sm={6}>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, height: '100%' }}>
+            <Stack direction="row" alignItems="baseline" spacing={1}>
+              <Typography sx={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{totalNonTeaching}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>School-closed days</Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              = {weeklyOffCount} weekly-offs + {fullHols} full holidays
+            </Typography>
+          </Box>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, height: '100%' }}>
+            <Stack direction="row" alignItems="baseline" spacing={1}>
+              <Typography sx={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{fullHols + rhHols}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Declared holidays</Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {fullHols} full (closed) · {rhHols} restricted (school open)
+            </Typography>
+          </Box>
+        </Grid>
       </Grid>
 
       {/* Declared holidays list */}

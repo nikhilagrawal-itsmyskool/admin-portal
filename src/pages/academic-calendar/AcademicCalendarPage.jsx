@@ -84,8 +84,9 @@ export default function AcademicCalendarPage() {
   }, [printing]);
 
   const selectedDay = selectedDate ? (daysByDate[selectedDate] || { date: selectedDate, weekday: '', isWeeklyOff: false, holiday: null, entries: [] }) : null;
-  // On mobile only Month + Holidays exist; fall back so the tab value always matches a rendered tab.
-  const effectiveTab = isMobile && (tab === 'import' || tab === 'types') ? 'month' : tab;
+  // Import + Manage columns are admin/god only (canManage already excludes teachers &
+  // mobile); fall back so the tab value always matches a rendered tab.
+  const effectiveTab = !canManage && (tab === 'import' || tab === 'types') ? 'month' : tab;
 
   return (
     <Box>
@@ -97,8 +98,8 @@ export default function AcademicCalendarPage() {
       <Tabs value={effectiveTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="month" label={isMobile ? 'Calendar' : 'Month view'} />
         <Tab value="holidays" label="Holidays" />
-        {!isMobile && <Tab value="import" label="Import from Excel" />}
-        {!isMobile && <Tab value="types" label="Manage columns" />}
+        {canManage && <Tab value="import" label="Import from Excel" />}
+        {canManage && <Tab value="types" label="Manage columns" />}
       </Tabs>
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
@@ -123,7 +124,7 @@ export default function AcademicCalendarPage() {
                   <Button size="small" startIcon={<TodayIcon />} onClick={goToday}>Today</Button>
                 </Stack>
                 <Box sx={{ flex: 1 }} />
-                <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => setPrinting(true)}>Print month</Button>
+                {canManage && <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => setPrinting(true)}>Print month</Button>}
                 <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
                   {LEGEND.map(([code, label]) => (
                     <Stack key={code} direction="row" spacing={0.5} alignItems="center">
