@@ -99,7 +99,16 @@ export default function ExaminationList() {
               No examinations yet for this academic year.
             </Typography>
           ) : (
-            <Table size="small">
+            <Table
+              size="small"
+              sx={{
+                '& thead th': {
+                  bgcolor: 'action.hover', fontWeight: 700, fontSize: 11.5,
+                  textTransform: 'uppercase', letterSpacing: 0.6, color: 'text.secondary',
+                  borderBottom: 2, borderColor: 'divider',
+                },
+              }}
+            >
               <TableHead>
                 <TableRow>
                   <TableCell>Name</TableCell>

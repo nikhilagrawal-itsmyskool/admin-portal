@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Box, Stack, Alert, CircularProgress, Button, TextField, MenuItem, Chip, Typography,
+  Box, Stack, Alert, CircularProgress, Button, TextField, MenuItem, Chip, Typography, Paper,
   Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Tooltip, IconButton, Snackbar,
 } from '@mui/material';
 import { Print as PrintIcon, GppGood as OverrideIcon, Undo as RevokeIcon } from '@mui/icons-material';
@@ -151,7 +151,17 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
       ) : !roster ? (
         <Typography color="text.secondary" sx={{ py: 3 }}>Select a class to see its admit-card roster.</Typography>
       ) : (
-        <Table size="small">
+        <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Table
+          size="small"
+          sx={{
+            '& thead th': {
+              bgcolor: 'action.hover', fontWeight: 700, fontSize: 11.5,
+              textTransform: 'uppercase', letterSpacing: 0.6, color: 'text.secondary',
+              borderBottom: 2, borderColor: 'divider',
+            },
+          }}
+        >
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
@@ -198,6 +208,7 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
             ))}
           </TableBody>
         </Table>
+        </Paper>
       )}
 
       <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast('')} message={toast} />
