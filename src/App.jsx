@@ -155,6 +155,7 @@ import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
 import AcademicCalendarPage from './pages/academic-calendar/AcademicCalendarPage';
 import ExaminationList from './pages/examination/ExaminationList';
 import ExamDetail from './pages/examination/ExamDetail';
+import VerifyAdmitCard from './pages/examination/VerifyAdmitCard';
 import AssemblyList from './pages/assembly/AssemblyList';
 import PlanBuilder from './pages/assembly/PlanBuilder';
 import SpecialBuilder from './pages/assembly/SpecialBuilder';
@@ -377,6 +378,7 @@ export default function App() {
         <Route path="homework/class-teachers" element={<HomeworkMappingPage />} />
         <Route path="academic-calendar" element={<AcademicCalendarPage />} />
         <Route path="examinations" element={<ExaminationList />} />
+        <Route path="examinations/verify/:id" element={<VerifyAdmitCard />} />
         <Route path="examinations/:id" element={<ExamDetail />} />
         <Route path="assembly" element={<AssemblyList />} />
         <Route path="assembly/day" element={<ScheduleDay />} />

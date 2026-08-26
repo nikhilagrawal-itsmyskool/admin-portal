@@ -10,6 +10,7 @@ import { examinationService } from '../../services/examinationService';
 import { employeeService } from '../../services/employeeService';
 import DatesheetGrid from './DatesheetGrid';
 import InvigilatorGrid from './InvigilatorGrid';
+import AdmitCardsTab from './AdmitCardsTab';
 
 const STATUS_COLOR = { draft: 'default', published: 'success', archived: 'warning' };
 
@@ -95,10 +96,12 @@ export default function ExamDetail() {
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="datesheet" label="Datesheet" />
         <Tab value="invigilators" label="Invigilators" />
+        <Tab value="admit" label="Admit Cards" />
       </Tabs>
 
       {tab === 'datesheet' && <DatesheetGrid examId={id} canManage={canManage} onChanged={load} />}
       {tab === 'invigilators' && <InvigilatorGrid examId={id} canManage={canManage} employees={employees} />}
+      {tab === 'admit' && <AdmitCardsTab examId={id} exam={exam} canManage={canManage} />}
     </Box>
   );
 }

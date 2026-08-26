@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Card, CardContent, Typography, Button, Alert, Divider, CircularProgress } from '@mui/material';
 import { CheckCircle as OkIcon, Cancel as CancelledIcon, HelpOutline as UnknownIcon, QrCodeScanner as ScanIcon, Replay as AgainIcon } from '@mui/icons-material';
 import jsQR from 'jsqr';
@@ -17,6 +18,7 @@ const extractUuid = (text) => {
 // Staff Scan & Verify (admin/god) — camera-scan a receipt QR (any type incl transport). Decodes with
 // jsQR (pure-JS). Video is always mounted (a hidden video can pause and starve the decoder).
 export default function ScanVerify() {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -35,6 +37,9 @@ export default function ScanVerify() {
 
   const onCode = useCallback(async (raw) => {
     stop();
+    // Admit-card QR (imsk:admit:<id>) → hand off to the examination verify page.
+    const admit = String(raw || '').match(/imsk:admit:([a-z0-9]{6,16})/i);
+    if (admit) { navigate(`/examinations/verify/${admit[1]}`); return; }
     const uuid = extractUuid(raw);
     if (!uuid) { setError(`Scanned "${String(raw).slice(0, 40)}" — not a receipt code.`); return; }
     setBusy(true); setError('');
