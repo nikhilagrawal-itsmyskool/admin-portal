@@ -87,6 +87,7 @@ import {
   Grading as GradingIcon,
   EmojiEvents as LeaderboardIcon,
   PhotoCamera as HomeworkIcon,
+  HistoryEdu as ExamIcon,
   Payments as FeesIcon,
   PointOfSale as CollectIcon,
   RequestQuote as StructureIcon,
@@ -357,6 +358,12 @@ const menuItems = [
     icon: CalendarIcon,
     path: '/academic-calendar',
     perm: 'academic-calendar.view',
+  },
+  {
+    title: 'Examinations',
+    icon: ExamIcon,
+    path: '/examinations',
+    perm: 'exam.view',
   },
   {
     title: 'Assembly',

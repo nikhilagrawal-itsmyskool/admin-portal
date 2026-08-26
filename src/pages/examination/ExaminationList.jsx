@@ -1,0 +1,173 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box, Typography, Card, CardContent, Stack, Button, Chip, Alert, CircularProgress,
+  Table, TableHead, TableRow, TableCell, TableBody, IconButton, Tooltip,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
+} from '@mui/material';
+import {
+  Add as AddIcon, Delete as DeleteIcon, Publish as PublishIcon,
+  Unpublished as UnpublishIcon, ChevronRight as OpenIcon,
+} from '@mui/icons-material';
+import { useAcademicYear } from '../../context/AcademicYearContext';
+import { useCan } from '../../permissions/can';
+import { examinationService } from '../../services/examinationService';
+
+const STATUS_COLOR = { draft: 'default', published: 'success', archived: 'warning' };
+
+export default function ExaminationList() {
+  const navigate = useNavigate();
+  const { academicYearId } = useAcademicYear();
+  const canManage = useCan()('exam.manage');
+
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [cardsPerPage, setCardsPerPage] = useState(4);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!academicYearId) return;
+    setLoading(true); setErr('');
+    try {
+      setExams(await examinationService.list({ academicYearId }));
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to load examinations');
+    } finally { setLoading(false); }
+  }, [academicYearId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const create = async () => {
+    if (!name.trim()) return;
+    setSaving(true); setErr('');
+    try {
+      const exam = await examinationService.create({ name: name.trim(), academicYearId, cardsPerPage });
+      setCreateOpen(false); setName(''); setCardsPerPage(4);
+      navigate(`/examinations/${exam.uuid}`);
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to create the exam');
+    } finally { setSaving(false); }
+  };
+
+  const togglePublish = async (exam) => {
+    setErr('');
+    try {
+      await examinationService.update(exam.uuid, { status: exam.status === 'published' ? 'draft' : 'published' });
+      load();
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to change status');
+    }
+  };
+
+  const remove = async (exam) => {
+    if (!window.confirm(`Delete "${exam.name}"? This removes its datesheet and invigilator assignments.`)) return;
+    setErr('');
+    try {
+      await examinationService.remove(exam.uuid);
+      load();
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to delete');
+    }
+  };
+
+  return (
+    <Box>
+      <Stack direction="row" alignItems="center" sx={{ mb: 0.5 }}>
+        <Typography variant="h4">Examinations</Typography>
+        <Box sx={{ flex: 1 }} />
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
+            New Exam
+          </Button>
+        )}
+      </Stack>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Build each exam's datesheet (grade × date) and assign invigilators. Admit cards, dues gating and digital signatures come next.
+      </Typography>
+
+      {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
+
+      <Card>
+        <CardContent>
+          {loading ? (
+            <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>
+          ) : exams.length === 0 ? (
+            <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+              No examinations yet for this academic year.
+            </Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="center">Papers</TableCell>
+                  <TableCell>Incharge</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {exams.map((e) => (
+                  <TableRow key={e.uuid} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/examinations/${e.uuid}`)}>
+                    <TableCell>{e.name}</TableCell>
+                    <TableCell>
+                      <Chip size="small" label={e.status} color={STATUS_COLOR[e.status] || 'default'} />
+                    </TableCell>
+                    <TableCell align="center">{e.paperCount ?? 0}</TableCell>
+                    <TableCell>{e.inchargeName || <span style={{ opacity: 0.5 }}>—</span>}</TableCell>
+                    <TableCell align="right" onClick={(ev) => ev.stopPropagation()}>
+                      {canManage && (
+                        <Tooltip title={e.status === 'published' ? 'Unpublish' : 'Publish'}>
+                          <IconButton size="small" onClick={() => togglePublish(e)}>
+                            {e.status === 'published' ? <UnpublishIcon fontSize="small" /> : <PublishIcon fontSize="small" />}
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {canManage && (
+                        <Tooltip title="Delete">
+                          <IconButton size="small" color="error" onClick={() => remove(e)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Open">
+                        <IconButton size="small" onClick={() => navigate(`/examinations/${e.uuid}`)}>
+                          <OpenIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>New Examination</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus fullWidth label="Name" placeholder="e.g. Half Yearly Examination"
+            value={name} onChange={(e) => setName(e.target.value)} sx={{ mt: 1, mb: 2 }}
+          />
+          <TextField
+            select fullWidth label="Admit cards per A4 page"
+            value={cardsPerPage} onChange={(e) => setCardsPerPage(Number(e.target.value))}
+            helperText="Default for printing; changeable later"
+          >
+            <MenuItem value={4}>4 per page</MenuItem>
+            <MenuItem value={3}>3 per page</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={create} disabled={saving || !name.trim()}>Create</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}

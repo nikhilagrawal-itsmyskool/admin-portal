@@ -48,6 +48,7 @@ export const ROLE_PERMISSIONS = {
     "homework.manage",
     "academic-calendar.view",
     "academic-calendar.manage",
+    "exam.*",
     "receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
   ],
   // Standard teaching staff: view-only across the modules they can reach.
@@ -82,6 +83,8 @@ export const ROLE_PERMISSIONS = {
   "transport-incharge": ["transport.*"],
   "syllabus-incharge": ["syllabus.*"],
   "assembly-incharge": ["assembly.*"],
+  // Exam incharge === admin, but scoped to the examination module.
+  "exam-incharge": ["exam.*"],
   // Route-scoped teacher: reach the bus-attendance screens and mark attendance,
   // but only for routes they are staffed on (accompanying teacher / helper /
   // route incharge). The route filtering is enforced in the attendance pages;

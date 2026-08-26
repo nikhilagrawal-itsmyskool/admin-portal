@@ -61,6 +61,8 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `homework.manage` | Override which teacher is the homework class-teacher for a class | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `academic-calendar.view` | See the Academic Calendar menu and read the year's entries & holidays | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `academic-calendar.manage` | Add/edit/delete calendar entries, holidays & columns, and import from Excel | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `exam.view` | See the Examinations menu and read exam schedules, datesheets & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `exam.manage` | Create/edit/delete/publish examinations, datesheet papers & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `assistant.use` | Use the voice/LLM student assistant (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._

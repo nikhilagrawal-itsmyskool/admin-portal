@@ -59,6 +59,8 @@ export const ACTIONS = {
   HOMEWORK_MANAGE: "homework.manage",
   ACADEMIC_CALENDAR_VIEW: "academic-calendar.view",
   ACADEMIC_CALENDAR_MANAGE: "academic-calendar.manage",
+  EXAM_VIEW: "exam.view",
+  EXAM_MANAGE: "exam.manage",
   // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
   ASSISTANT_USE: "assistant.use",
 };
@@ -284,6 +286,14 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.ACADEMIC_CALENDAR_MANAGE,
     description: "Add/edit/delete calendar entries, holidays & columns, and import from Excel",
+  },
+  {
+    action: ACTIONS.EXAM_VIEW,
+    description: "See the Examinations menu and read exam schedules, datesheets & invigilator assignments",
+  },
+  {
+    action: ACTIONS.EXAM_MANAGE,
+    description: "Create/edit/delete/publish examinations, datesheet papers & invigilator assignments",
   },
   {
     action: ACTIONS.ASSISTANT_USE,
