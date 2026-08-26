@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box, Stack, Alert, CircularProgress, Button, TextField, MenuItem, Chip, Typography, Paper,
   Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Tooltip, IconButton, Snackbar,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import { Print as PrintIcon, GppGood as OverrideIcon, Undo as RevokeIcon } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +25,7 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
+  const [pendingPrint, setPendingPrint] = useState(null); // { count, studentIds } awaiting "did it print?" confirm
 
   useEffect(() => {
     classService.getClasses({ academicYearId: exam.academicYearId })
@@ -97,21 +99,33 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
     win.document.write(buildAdmitCardsHtml(data, per));
     win.document.close();
 
+    // The browser can't tell us whether the user actually printed or hit Cancel
+    // (afterprint fires either way), so after the dialog closes we ASK — and only mark
+    // the cards "printed" (so they aren't reselected) if the user confirms.
     let done = false;
-    const finish = () => {
+    const askConfirm = () => {
       if (done) return; done = true;
       setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* gone */ } }, 500);
-      examinationService.recordPrint(examId, sectionId, {
-        cardsPerPage: per, studentCount: count, pageCount: Math.ceil(count / per), reason: 'normal',
-        studentIds: data.cards.map((c) => c.studentId),
-      }).then(() => {
-        setToast(`Sent ${count} admit card${count === 1 ? '' : 's'} to print · logged`);
-        if (sectionId) loadRoster(sectionId); // refresh so "printed" marks appear
-      }).catch(() => {});
+      setPendingPrint({ count, studentIds: data.cards.map((c) => c.studentId) });
     };
-    win.onafterprint = finish;
+    win.onafterprint = askConfirm;
     setTimeout(() => { win.focus(); win.print(); }, 350);
-    setTimeout(finish, 60000); // safety: some browsers never fire onafterprint
+    setTimeout(askConfirm, 60000); // safety: some browsers never fire onafterprint
+  };
+
+  // "Yes, printed" → log + stamp printed; "Not printed" (cancelled) → do nothing.
+  const confirmPrinted = async () => {
+    const pp = pendingPrint;
+    setPendingPrint(null);
+    if (!pp) return;
+    try {
+      await examinationService.recordPrint(examId, sectionId, {
+        cardsPerPage: per, studentCount: pp.count, pageCount: Math.ceil(pp.count / per), reason: 'normal',
+        studentIds: pp.studentIds,
+      });
+      setToast(`Marked ${pp.count} admit card${pp.count === 1 ? '' : 's'} printed`);
+      if (sectionId) loadRoster(sectionId);
+    } catch { /* best effort */ }
   };
 
   const blocked = roster?.students.filter((s) => !s.printable) || [];
@@ -229,6 +243,20 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
         </Table>
         </Paper>
       )}
+
+      <Dialog open={!!pendingPrint} onClose={() => setPendingPrint(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Did the cards print?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Mark {pendingPrint?.count} admit card{pendingPrint?.count === 1 ? '' : 's'} as printed so they aren't selected again?
+            Choose <b>Not printed</b> if you cancelled the print dialog.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingPrint(null)}>Not printed</Button>
+          <Button variant="contained" onClick={confirmPrinted}>Yes, mark printed</Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast('')} message={toast} />
     </Box>
