@@ -7,6 +7,7 @@ import { Print as PrintIcon, GppGood as OverrideIcon, Undo as RevokeIcon } from 
 import { useAuth } from '../../context/AuthContext';
 import { classService } from '../../services/classService';
 import { examinationService } from '../../services/examinationService';
+import { fmtDate } from '../../utils/date';
 import { buildAdmitCardsHtml } from './admitCardHtml';
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
@@ -35,7 +36,9 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
     try {
       const r = await examinationService.roster(examId, sid);
       setRoster(r);
-      setSelected(new Set(r.students.filter((s) => s.printable).map((s) => s.studentId)));
+      // Default-select printable students that haven't been printed yet, so already-
+      // printed cards aren't reselected. (Reprinting is a manual re-tick.)
+      setSelected(new Set(r.students.filter((s) => s.printable && !s.printedOn).map((s) => s.studentId)));
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load the class roster');
     } finally { setLoading(false); }
@@ -100,7 +103,11 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
       setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* gone */ } }, 500);
       examinationService.recordPrint(examId, sectionId, {
         cardsPerPage: per, studentCount: count, pageCount: Math.ceil(count / per), reason: 'normal',
-      }).then(() => setToast(`Sent ${count} admit card${count === 1 ? '' : 's'} to print · logged`)).catch(() => {});
+        studentIds: data.cards.map((c) => c.studentId),
+      }).then(() => {
+        setToast(`Sent ${count} admit card${count === 1 ? '' : 's'} to print · logged`);
+        if (sectionId) loadRoster(sectionId); // refresh so "printed" marks appear
+      }).catch(() => {});
     };
     win.onafterprint = finish;
     setTimeout(() => { win.focus(); win.print(); }, 350);
@@ -108,6 +115,8 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   };
 
   const blocked = roster?.students.filter((s) => !s.printable) || [];
+  const readyCount = roster?.students.filter((s) => s.printable).length || 0;
+  const printedCount = roster?.students.filter((s) => s.printedOn).length || 0;
 
   return (
     <Box>
@@ -140,9 +149,11 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
       </Stack>
 
       {roster && (
-        <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-          <Chip size="small" label={`Threshold — current ${rupee(roster.thresholds.current)} · prior ${rupee(roster.thresholds.prior)}`} />
+        <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: 'wrap' }} useFlexGap>
+          <Chip size="small" color="success" label={`${readyCount} clear`} />
           {blocked.length > 0 && <Chip size="small" color="error" label={`${blocked.length} blocked by dues`} />}
+          {printedCount > 0 && <Chip size="small" variant="outlined" color="info" label={`${printedCount} already printed`} />}
+          <Chip size="small" variant="outlined" label={`Threshold — current ${rupee(roster.thresholds.current)} · prior ${rupee(roster.thresholds.prior)}`} />
         </Stack>
       )}
 
@@ -177,6 +188,7 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
               <TableCell align="right">Current due</TableCell>
               <TableCell align="right">Prior due</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell>Printed</TableCell>
               {isGod && <TableCell align="right">Override</TableCell>}
             </TableRow>
           </TableHead>
@@ -194,6 +206,13 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
                   {s.overridden ? <Chip size="small" color="warning" label="override" />
                     : s.blocked ? <Chip size="small" color="error" label="blocked" />
                       : <Chip size="small" color="success" label="clear" />}
+                </TableCell>
+                <TableCell>
+                  {s.printedOn ? (
+                    <Tooltip title={`Printed ${s.printCount || 1}×`}>
+                      <Chip size="small" variant="outlined" color="info" label={fmtDate(s.printedOn)} />
+                    </Tooltip>
+                  ) : <span style={{ opacity: 0.4 }}>—</span>}
                 </TableCell>
                 {isGod && (
                   <TableCell align="right">
