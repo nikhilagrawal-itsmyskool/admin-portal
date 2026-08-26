@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Alert, CircularProgress, Stack, IconButton, Tooltip,
-  Table, TableHead, TableRow, TableCell, TableBody, TextField, Typography,
+  Table, TableHead, TableRow, TableCell, TableBody, TextField, Typography, Autocomplete, Chip,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
@@ -10,9 +10,11 @@ import { examinationService } from '../../services/examinationService';
 // holds a free-text subject (blank cell = no paper / "---"). Save replaces the full set.
 export default function DatesheetGrid({ examId, canManage, onChanged }) {
   const [grades, setGrades] = useState([]);
+  const [availableGrades, setAvailableGrades] = useState([]);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [gradesSaving, setGradesSaving] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const keyRef = useRef(1);
@@ -32,11 +34,23 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
     try {
       const grid = await examinationService.getGrid(examId);
       setGrades(grid.grades || []);
+      setAvailableGrades(grid.availableGrades || grid.grades || []);
       setRows(buildRows(grid));
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load the datesheet');
     } finally { setLoading(false); }
   }, [examId, buildRows]);
+
+  const updateGrades = async (nextGrades) => {
+    setGradesSaving(true); setErr('');
+    try {
+      await examinationService.update(examId, { grades: nextGrades });
+      await load();
+      onChanged?.();
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to update the exam grades');
+    } finally { setGradesSaving(false); }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -69,7 +83,7 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
 
   if (loading) return <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>;
 
-  if (!grades.length) {
+  if (!availableGrades.length) {
     return (
       <Alert severity="info">
         No graded sections found for this exam's academic year, so there are no grade columns to fill.
@@ -86,6 +100,28 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
       {hasDup && <Alert severity="warning" sx={{ mb: 2 }}>Two rows share a date — the last value per grade wins on save.</Alert>}
+
+      {canManage && (
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} sx={{ mb: 2 }}>
+          <Autocomplete
+            multiple size="small" sx={{ minWidth: 320, flex: 1 }} disabled={gradesSaving}
+            options={availableGrades.map((g) => g.grade)}
+            value={grades.map((g) => g.grade)}
+            onChange={(_, v) => updateGrades(v)}
+            renderTags={(value, getTagProps) => value.map((option, index) => (
+              <Chip size="small" label={option} {...getTagProps({ index })} key={option} />
+            ))}
+            renderInput={(p) => <TextField {...p} label="Grades in this exam" placeholder="Add / remove grades" />}
+          />
+          <Typography variant="caption" color="text.secondary">
+            Only these grades show as columns. Drop the ones this exam doesn't cover.
+          </Typography>
+        </Stack>
+      )}
+
+      {!grades.length && (
+        <Alert severity="info" sx={{ mb: 2 }}>Pick at least one grade above to start building the datesheet.</Alert>
+      )}
 
       <Box sx={{ overflowX: 'auto' }}>
         <Table size="small" sx={{ minWidth: 120 + grades.length * 160 }}>
