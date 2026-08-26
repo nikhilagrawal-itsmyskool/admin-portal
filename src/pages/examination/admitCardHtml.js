@@ -24,7 +24,17 @@ export function buildAdmitCardsHtml(data, cardsPerPage) {
 
   const headCols = papers.map((p) => `<th>${esc(fmt(p.examDate))}</th>`).join('');
   const subjCols = papers.map((p) => `<td>${esc(p.subjectLabel)}</td>`).join('');
-  const signCols = papers.map(() => '<td></td>').join('');
+
+  // Invigilator-sign row is per-student: a digitally-signed day shows the signature image
+  // (present) or "ABSENT"; unsigned days stay blank for a wet-ink signature.
+  const signCell = (p, c) => {
+    const sig = c.signatures ? c.signatures[p.examDate] : null;
+    if (sig && sig.signed) {
+      if (sig.status === 'present' && sig.signatureDataUri) return `<td><img class="sig" src="${sig.signatureDataUri}"></td>`;
+      if (sig.status === 'absent') return '<td class="absent">ABSENT</td>';
+    }
+    return '<td></td>';
+  };
 
   const card = (c) => `
     <div class="card">
@@ -43,7 +53,7 @@ export function buildAdmitCardsHtml(data, cardsPerPage) {
       <table>
         <tr><td class="rl">Date</td>${headCols}</tr>
         <tr><td class="rl">Subject</td>${subjCols}</tr>
-        <tr class="sign"><td class="rl">Invigilator sign</td>${signCols}</tr>
+        <tr class="sign"><td class="rl">Invigilator sign</td>${papers.map((p) => signCell(p, c)).join('')}</tr>
       </table>
       <div class="foot">
         <span>Examination Incharge</span>
@@ -76,6 +86,8 @@ export function buildAdmitCardsHtml(data, cardsPerPage) {
     th, td { border: 1px solid #000; padding: 2px 3px; text-align: center; height: 16px; }
     td.rl { font-weight: 700; text-align: left; white-space: nowrap; width: 64px; }
     tr.sign td { height: 30px; }
+    tr.sign img.sig { max-height: 26px; max-width: 96%; object-fit: contain; }
+    td.absent { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
     .foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding-top: 8px; font-size: 11px; }
     .stamp { text-align: center; }
     .stamp img { max-width: 90px; max-height: 46px; object-fit: contain; display: block; margin: 0 auto; }

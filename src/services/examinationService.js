@@ -47,4 +47,24 @@ export const examinationService = {
 
   // Staff QR verify → live admit-card view.
   verify: async (admitCardId) => (await api.get(`/examination/verify/${admitCardId}`)).data,
+
+  // ── Phase 3: invigilator PWA (/me) + signature ──────────────────────────────
+  getMySignature: async () => (await api.get('/examination/me/signature')).data,
+  saveMySignature: async (imageBase64, mimeType = 'image/png', fileName = 'signature.png') =>
+    (await api.put('/examination/me/signature', { imageBase64, mimeType, fileName })).data,
+  myInvigilations: async () => (await api.get('/examination/me/exam/invigilations')).data,
+  myRoster: async (examId, paperId, sectionId) =>
+    (await api.get(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}`)).data,
+  myMark: async (examId, paperId, sectionId, marks) =>
+    (await api.post(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}/mark`, { marks })).data,
+  mySign: async (examId, paperId, sectionId) =>
+    (await api.post(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}/sign`)).data,
+
+  // Admin/incharge sign-any (guarded exam.manage).
+  adminRoster: async (id, paperId, sectionId) =>
+    (await api.get(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}`)).data,
+  adminMark: async (id, paperId, sectionId, marks) =>
+    (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/mark`, { marks })).data,
+  adminSign: async (id, paperId, sectionId) =>
+    (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/sign`)).data,
 };

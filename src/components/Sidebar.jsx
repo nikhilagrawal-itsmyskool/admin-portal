@@ -88,6 +88,7 @@ import {
   EmojiEvents as LeaderboardIcon,
   PhotoCamera as HomeworkIcon,
   HistoryEdu as ExamIcon,
+  HowToReg as DutyIcon,
   Payments as FeesIcon,
   PointOfSale as CollectIcon,
   RequestQuote as StructureIcon,
@@ -360,10 +361,13 @@ const menuItems = [
     perm: 'academic-calendar.view',
   },
   {
+    // No parent perm: invigilators (teachers) see "My Duties"; admins also see "Exams".
     title: 'Examinations',
     icon: ExamIcon,
-    path: '/examinations',
-    perm: 'exam.view',
+    children: [
+      { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
+      { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
+    ],
   },
   {
     title: 'Assembly',
