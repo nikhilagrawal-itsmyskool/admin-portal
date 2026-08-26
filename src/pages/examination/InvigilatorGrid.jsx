@@ -8,6 +8,8 @@ import { examinationService } from '../../services/examinationService';
 import { fmtDate } from '../../utils/date';
 
 const cellKey = (date, sectionId) => `${date}|${sectionId}`;
+const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const dayOf = (d) => DOW[new Date(`${d}T00:00:00`).getDay()];
 
 // Per-(date, section) invigilator assignment. A cell is only assignable when the
 // section's grade has a paper that date. One employee on two sections the same date is
@@ -114,13 +116,16 @@ export default function InvigilatorGrid({ examId, canManage, employees }) {
                 Section
               </TableCell>
               {view.dates.map((d) => (
-                <TableCell key={d} sx={{ fontWeight: 700, minWidth: 190 }}>{fmtDate(d)}</TableCell>
+                <TableCell key={d} sx={{ fontWeight: 700, minWidth: 190, lineHeight: 1.25 }}>
+                  {fmtDate(d)}
+                  <Typography variant="caption" display="block" color="text.secondary" sx={{ fontWeight: 400 }}>{dayOf(d)}</Typography>
+                </TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {view.sections.map((s) => (
-              <TableRow key={s.classId}>
+              <TableRow key={s.classId} sx={{ '& td': { height: 60, py: 1 } }}>
                 <TableCell sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
                   {s.name}
                 </TableCell>

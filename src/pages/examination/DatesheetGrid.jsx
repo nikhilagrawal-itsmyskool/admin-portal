@@ -6,6 +6,9 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 
+const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const dayOf = (d) => (d ? DOW[new Date(`${d}T00:00:00`).getDay()] : '');
+
 // Editable grade × date datesheet. Rows are dates the office adds; each grade column
 // holds a free-text subject (blank cell = no paper / "---"). Save replaces the full set.
 export default function DatesheetGrid({ examId, canManage, onChanged }) {
@@ -124,10 +127,11 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
       )}
 
       <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small" sx={{ minWidth: 120 + grades.length * 160 }}>
+        <Table size="small" sx={{ minWidth: 260 + grades.length * 160 }}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700, minWidth: 160 }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 700, minWidth: 96 }}>Day</TableCell>
               {grades.map((g) => (
                 <TableCell key={g.grade} sx={{ fontWeight: 700, minWidth: 150 }}>{g.grade}</TableCell>
               ))}
@@ -136,7 +140,7 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
           </TableHead>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.key}>
+              <TableRow key={row.key} sx={{ verticalAlign: 'top' }}>
                 <TableCell>
                   {canManage ? (
                     <TextField
@@ -146,11 +150,14 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
                     />
                   ) : (row.date || '—')}
                 </TableCell>
+                <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', pt: canManage ? 1.75 : undefined }}>
+                  {dayOf(row.date)}
+                </TableCell>
                 {grades.map((g) => (
                   <TableCell key={g.grade}>
                     {canManage ? (
                       <TextField
-                        size="small" fullWidth placeholder="—"
+                        size="small" fullWidth multiline placeholder="—"
                         value={row.subjects[g.grade] || ''}
                         onChange={(e) => setSubject(row.key, g.grade, e.target.value)}
                       />
@@ -170,7 +177,7 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={grades.length + 2}>
+                <TableCell colSpan={grades.length + 3}>
                   <Typography color="text.secondary" sx={{ py: 1 }}>No dates yet. Add the first exam date.</Typography>
                 </TableCell>
               </TableRow>
