@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Box, Button, Alert, CircularProgress, Stack, Autocomplete, TextField,
+  Box, Button, Alert, CircularProgress, Stack, Autocomplete, TextField, Paper,
   Table, TableHead, TableRow, TableCell, TableBody, Typography,
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
@@ -108,17 +108,28 @@ export default function InvigilatorGrid({ examId, canManage, employees }) {
         </Alert>
       )}
 
-      <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small" sx={{ minWidth: 180 + view.dates.length * 200 }}>
+      <Paper variant="outlined" sx={{ overflowX: 'auto', borderRadius: 2 }}>
+        <Table
+          size="small"
+          sx={{
+            minWidth: 180 + view.dates.length * 200,
+            '& thead th': {
+              bgcolor: 'action.hover', fontWeight: 700, fontSize: 11.5,
+              textTransform: 'uppercase', letterSpacing: 0.6, color: 'text.secondary',
+              borderBottom: 2, borderColor: 'divider',
+            },
+            '& tbody tr:hover td': { bgcolor: 'action.hover' },
+          }}
+        >
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, minWidth: 160, position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
+              <TableCell sx={{ minWidth: 160, position: 'sticky', left: 0, bgcolor: 'action.hover !important', zIndex: 2 }}>
                 Section
               </TableCell>
               {view.dates.map((d) => (
-                <TableCell key={d} sx={{ fontWeight: 700, minWidth: 190, lineHeight: 1.25 }}>
+                <TableCell key={d} sx={{ minWidth: 190, lineHeight: 1.25 }}>
                   {fmtDate(d)}
-                  <Typography variant="caption" display="block" color="text.secondary" sx={{ fontWeight: 400 }}>{dayOf(d)}</Typography>
+                  <Typography variant="caption" display="block" color="primary.main" sx={{ fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>{dayOf(d)}</Typography>
                 </TableCell>
               ))}
             </TableRow>
@@ -155,7 +166,7 @@ export default function InvigilatorGrid({ examId, canManage, employees }) {
             ))}
           </TableBody>
         </Table>
-      </Box>
+      </Paper>
 
       {canManage && (
         <Stack direction="row" sx={{ mt: 2 }}>

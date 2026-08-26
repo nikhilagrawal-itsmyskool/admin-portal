@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Box, Button, Alert, CircularProgress, Stack, IconButton, Tooltip,
+  Box, Button, Alert, CircularProgress, Stack, IconButton, Tooltip, Paper,
   Table, TableHead, TableRow, TableCell, TableBody, TextField, Typography, Autocomplete, Chip,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
@@ -126,14 +126,25 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
         <Alert severity="info" sx={{ mb: 2 }}>Pick at least one grade above to start building the datesheet.</Alert>
       )}
 
-      <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small" sx={{ minWidth: 260 + grades.length * 160 }}>
+      <Paper variant="outlined" sx={{ overflowX: 'auto', borderRadius: 2 }}>
+        <Table
+          size="small" stickyHeader
+          sx={{
+            minWidth: 260 + grades.length * 160,
+            '& thead th': {
+              bgcolor: 'action.hover', fontWeight: 700, fontSize: 11.5,
+              textTransform: 'uppercase', letterSpacing: 0.6, color: 'text.secondary',
+              borderBottom: 2, borderColor: 'divider', whiteSpace: 'nowrap',
+            },
+            '& tbody tr:hover': { bgcolor: 'action.hover' },
+          }}
+        >
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, minWidth: 160 }}>Date</TableCell>
-              <TableCell sx={{ fontWeight: 700, minWidth: 96 }}>Day</TableCell>
+              <TableCell sx={{ minWidth: 150 }}>Date</TableCell>
+              <TableCell sx={{ minWidth: 90 }}>Day</TableCell>
               {grades.map((g) => (
-                <TableCell key={g.grade} sx={{ fontWeight: 700, minWidth: 150 }}>{g.grade}</TableCell>
+                <TableCell key={g.grade} sx={{ minWidth: 150, color: 'primary.main !important' }}>{g.grade}</TableCell>
               ))}
               {canManage && <TableCell />}
             </TableRow>
@@ -184,7 +195,7 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
             )}
           </TableBody>
         </Table>
-      </Box>
+      </Paper>
 
       {canManage && (
         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>

@@ -3,13 +3,11 @@ import {
   Box, Stack, Alert, CircularProgress, Button, TextField, MenuItem, Chip, Typography,
   Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Tooltip, IconButton, Snackbar,
 } from '@mui/material';
-import { Print as PrintIcon, Image as BrandingIcon, GppGood as OverrideIcon, Undo as RevokeIcon } from '@mui/icons-material';
+import { Print as PrintIcon, GppGood as OverrideIcon, Undo as RevokeIcon } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { classService } from '../../services/classService';
 import { examinationService } from '../../services/examinationService';
-import { fmtDate } from '../../utils/date';
-import AdmitCardPrintLayout from './AdmitCardPrintLayout';
-import BrandingDialog from './BrandingDialog';
+import { buildAdmitCardsHtml } from './admitCardHtml';
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
@@ -22,30 +20,14 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   const [roster, setRoster] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [per, setPer] = useState(exam.cardsPerPage || 4);
-  const [cycles, setCycles] = useState([]);
-  const [cutoff, setCutoff] = useState(exam.duesCutoffDate || '');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
-  const [printData, setPrintData] = useState(null);
-  const [brandingOpen, setBrandingOpen] = useState(false);
 
   useEffect(() => {
     classService.getClasses({ academicYearId: exam.academicYearId })
       .then(setSections).catch(() => setSections([]));
-    examinationService.feeCycles(examId).then(setCycles).catch(() => setCycles([]));
-  }, [exam.academicYearId, examId]);
-
-  // Change the dues cutoff (which cycle's dues must be clear) → persist + re-gate roster.
-  const changeCutoff = async (val) => {
-    setCutoff(val); setErr('');
-    try {
-      await examinationService.update(examId, { duesCutoffDate: val || null });
-      if (sectionId) loadRoster(sectionId);
-    } catch (e) {
-      setErr(e.response?.data?.error?.description || 'Failed to set the dues cutoff');
-    }
-  };
+  }, [exam.academicYearId]);
 
   const loadRoster = useCallback(async (sid) => {
     if (!sid) { setRoster(null); return; }
@@ -60,6 +42,10 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   }, [examId]);
 
   useEffect(() => { loadRoster(sectionId); }, [sectionId, loadRoster]);
+  // Re-gate the roster when the exam's dues settings change (edited in the header).
+  useEffect(() => {
+    if (sectionId) loadRoster(sectionId);
+  }, [exam.duesCutoffDate, exam.duesThresholdCurrent, exam.duesThresholdPrior]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const printableSelected = useMemo(() => {
     if (!roster) return [];
@@ -85,34 +71,41 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
     catch (e) { setErr(e.response?.data?.error?.description || 'Revoke failed (god only)'); }
   };
 
+  // Fetch the admit-card data, render it into a hidden iframe (self-contained HTML with
+  // logo/stamp/QR inlined), and print that — reliable across browsers. Logs the print.
   const startPrint = async () => {
     if (!printableSelected.length) return;
     setErr('');
+    let data;
     try {
-      const data = await examinationService.admitCards(examId, sectionId, printableSelected.map((s) => s.studentId));
-      setPrintData(data);
+      data = await examinationService.admitCards(examId, sectionId, printableSelected.map((s) => s.studentId));
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to prepare admit cards');
+      return;
     }
-  };
+    const count = data.cards.length;
+    if (!count) { setErr('No printable cards in this selection.'); return; }
 
-  // Mount the print sheet, fire the browser print, then log the print & unmount.
-  useEffect(() => {
-    if (!printData) return;
-    const count = printData.cards.length;
-    const after = async () => {
-      setPrintData(null);
-      try {
-        await examinationService.recordPrint(examId, sectionId, {
-          cardsPerPage: per, studentCount: count, pageCount: Math.ceil(count / per), reason: 'normal',
-        });
-        setToast(`Printed ${count} admit card${count === 1 ? '' : 's'} · logged`);
-      } catch { /* logging is best-effort */ }
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    document.body.appendChild(iframe);
+    const win = iframe.contentWindow;
+    win.document.open();
+    win.document.write(buildAdmitCardsHtml(data, per));
+    win.document.close();
+
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true;
+      setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* gone */ } }, 500);
+      examinationService.recordPrint(examId, sectionId, {
+        cardsPerPage: per, studentCount: count, pageCount: Math.ceil(count / per), reason: 'normal',
+      }).then(() => setToast(`Sent ${count} admit card${count === 1 ? '' : 's'} to print · logged`)).catch(() => {});
     };
-    window.addEventListener('afterprint', after, { once: true });
-    const t = setTimeout(() => window.print(), 120);
-    return () => { window.removeEventListener('afterprint', after); clearTimeout(t); };
-  }, [printData]); // eslint-disable-line react-hooks/exhaustive-deps
+    win.onafterprint = finish;
+    setTimeout(() => { win.focus(); win.print(); }, 350);
+    setTimeout(finish, 60000); // safety: some browsers never fire onafterprint
+  };
 
   const blocked = roster?.students.filter((s) => !s.printable) || [];
 
@@ -135,20 +128,7 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
           <MenuItem value={4}>4 per page</MenuItem>
           <MenuItem value={3}>3 per page</MenuItem>
         </TextField>
-        {canManage && (
-          <TextField
-            select size="small" label="Dues cleared till" sx={{ minWidth: 200 }}
-            value={cutoff} onChange={(e) => changeCutoff(e.target.value)}
-            helperText="Which cycle's dues to check"
-          >
-            <MenuItem value=""><em>Due now (this month)</em></MenuItem>
-            {cycles.filter((c) => c.dueDate).map((c) => (
-              <MenuItem key={c.uuid} value={c.dueDate}>{c.name} · due {fmtDate(c.dueDate)}</MenuItem>
-            ))}
-          </TextField>
-        )}
         <Box sx={{ flex: 1 }} />
-        <Button startIcon={<BrandingIcon />} onClick={() => setBrandingOpen(true)}>Branding</Button>
         {canManage && (
           <Button
             variant="contained" startIcon={<PrintIcon />} onClick={startPrint}
@@ -192,7 +172,7 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
           </TableHead>
           <TableBody>
             {roster.students.map((s) => (
-              <TableRow key={s.studentId} sx={{ bgcolor: s.printable ? undefined : 'error.light' }}>
+              <TableRow key={s.studentId} hover>
                 <TableCell padding="checkbox">
                   <Checkbox size="small" disabled={!s.printable} checked={selected.has(s.studentId)} onChange={() => toggle(s.studentId)} />
                 </TableCell>
@@ -220,8 +200,6 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
         </Table>
       )}
 
-      <BrandingDialog open={brandingOpen} onClose={() => setBrandingOpen(false)} />
-      {printData && <AdmitCardPrintLayout data={printData} cardsPerPage={per} />}
       <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast('')} message={toast} />
     </Box>
   );
