@@ -31,6 +31,8 @@ export const examinationService = {
   recordPrint: async (id, sectionId, body) =>
     (await api.post(`/examination/examinations/${id}/classes/${sectionId}/print`, body)).data,
   printLog: async (id) => (await api.get(`/examination/examinations/${id}/print-log`)).data,
+  // The year's fee cycles (id, name, dueDate) — for the "clear dues till …" picker.
+  feeCycles: async (id) => (await api.get(`/examination/examinations/${id}/fee-cycles`)).data,
 
   listOverrides: async (id) => (await api.get(`/examination/examinations/${id}/dues-overrides`)).data,
   createOverrides: async (id, studentIds, reason) =>

@@ -7,6 +7,7 @@ import { Print as PrintIcon, Image as BrandingIcon, GppGood as OverrideIcon, Und
 import { useAuth } from '../../context/AuthContext';
 import { classService } from '../../services/classService';
 import { examinationService } from '../../services/examinationService';
+import { fmtDate } from '../../utils/date';
 import AdmitCardPrintLayout from './AdmitCardPrintLayout';
 import BrandingDialog from './BrandingDialog';
 
@@ -21,6 +22,8 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   const [roster, setRoster] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [per, setPer] = useState(exam.cardsPerPage || 4);
+  const [cycles, setCycles] = useState([]);
+  const [cutoff, setCutoff] = useState(exam.duesCutoffDate || '');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
@@ -30,7 +33,19 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   useEffect(() => {
     classService.getClasses({ academicYearId: exam.academicYearId })
       .then(setSections).catch(() => setSections([]));
-  }, [exam.academicYearId]);
+    examinationService.feeCycles(examId).then(setCycles).catch(() => setCycles([]));
+  }, [exam.academicYearId, examId]);
+
+  // Change the dues cutoff (which cycle's dues must be clear) → persist + re-gate roster.
+  const changeCutoff = async (val) => {
+    setCutoff(val); setErr('');
+    try {
+      await examinationService.update(examId, { duesCutoffDate: val || null });
+      if (sectionId) loadRoster(sectionId);
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to set the dues cutoff');
+    }
+  };
 
   const loadRoster = useCallback(async (sid) => {
     if (!sid) { setRoster(null); return; }
@@ -116,10 +131,22 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
           <MenuItem value=""><em>Select a class</em></MenuItem>
           {sections.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}</MenuItem>)}
         </TextField>
-        <TextField select size="small" label="Cards per page" sx={{ minWidth: 150 }} value={per} onChange={(e) => setPer(Number(e.target.value))}>
+        <TextField select size="small" label="Cards per page" sx={{ minWidth: 130 }} value={per} onChange={(e) => setPer(Number(e.target.value))}>
           <MenuItem value={4}>4 per page</MenuItem>
           <MenuItem value={3}>3 per page</MenuItem>
         </TextField>
+        {canManage && (
+          <TextField
+            select size="small" label="Dues cleared till" sx={{ minWidth: 200 }}
+            value={cutoff} onChange={(e) => changeCutoff(e.target.value)}
+            helperText="Which cycle's dues to check"
+          >
+            <MenuItem value=""><em>Due now (this month)</em></MenuItem>
+            {cycles.filter((c) => c.dueDate).map((c) => (
+              <MenuItem key={c.uuid} value={c.dueDate}>{c.name} · due {fmtDate(c.dueDate)}</MenuItem>
+            ))}
+          </TextField>
+        )}
         <Box sx={{ flex: 1 }} />
         <Button startIcon={<BrandingIcon />} onClick={() => setBrandingOpen(true)}>Branding</Button>
         {canManage && (
