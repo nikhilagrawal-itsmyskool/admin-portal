@@ -36,9 +36,10 @@ import {
 // desktop-only. A tile shows on the mobile home + nav when the user's role grants its
 // `perm` (or it has none). `routes` lists every path the mobile route-guard permits.
 //
-// The home has three bands (`section`): "today" (the daily-touch tiles), then the module
-// groups "people" (People & Staff) and "stores" (Stores & Inventory) — the same grouping
-// the desktop sidebar uses. Features that share a `hub` key collapse into ONE tile that
+// The home bands (`section`, order/labels in MOBILE_SECTIONS): "office" (god-only),
+// "today" (shown as "Now" — daily-touch tiles), "mine" (personal/durable), "manage"
+// (module consoles), "people" (People & Staff), "stores" (Stores & Inventory), "tools".
+// Same module grouping the desktop sidebar uses. Features that share a `hub` key collapse into ONE tile that
 // opens a hub screen (/hub/:key); a hub with only one visible action for you links
 // straight to it (see buildMobileTiles). `color` is the tile's module accent (mirrors the
 // desktop dashboard); on a hub the color comes from MOBILE_HUBS. `derived` is an extra
@@ -70,7 +71,7 @@ export const MOBILE_FEATURES = [
   // view, so their Assembly tile links straight to it (no hub screen).
   // Read-only academic calendar (month view + holidays). No operations on mobile —
   // the page forces read-only and hides Import/Manage columns below the sm breakpoint.
-  { title: "Academic Calendar", icon: AcademicCalendarIcon, path: "/academic-calendar", perm: "academic-calendar.view", section: "today", color: "#3366ff", routes: ["/academic-calendar"] },
+  { title: "Academic Calendar", icon: AcademicCalendarIcon, path: "/academic-calendar", perm: "academic-calendar.view", section: "mine", color: "#3366ff", routes: ["/academic-calendar"] },
   { title: "Today's assembly", hubLabel: "Today's assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view", section: "today", hub: "assembly" },
   { title: "My Roster", hubLabel: "My Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
   { title: "My Checklist", hubLabel: "My Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
@@ -85,7 +86,7 @@ export const MOBILE_FEATURES = [
     routes: ["/transport/attendance/mark", "/transport/attendance/sessions"],
   },
   // My Homework — the class teacher posts the day's homework photos (pick class + date).
-  { title: "My Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.post", section: "today", color: "#d97706" },
+  { title: "Post Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.post", section: "today", color: "#d97706" },
   // Send Message — a daily action, pulled up out of the old "Office" hub.
   { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
 
@@ -93,7 +94,7 @@ export const MOBILE_FEATURES = [
   // Schedule + duties are open to all staff (no perm); management is exam.view only.
   { title: "Exam Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", color: "#5e35b1", routes: ["/exam/schedule"] },
   { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId"] },
-  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "today", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/verify/:id"] },
+  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/verify/:id"] },
 
   // ── People & Staff ───────────────────────────────────────────────────────────
   { title: "Students", hubLabel: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", hub: "people", routes: ["/students", "/students/:id"] },
@@ -126,7 +127,7 @@ export const MOBILE_FEATURES = [
 
   // ── Office — god only. The godpwa.* perms are granted to NO role, so only god ('*')
   // sees these; admins on a phone won't. Read-only checking on the go.
-  { title: "Syllabus Overview", icon: SyllabusIcon, path: "/syllabus/overview", perm: "godpwa.syllabus.overview", section: "office", color: "#8e24aa", routes: ["/syllabus/overview"] },
+  { title: "Syllabus Overview", icon: SyllabusIcon, path: "/syllabus/overview", perm: "godpwa.syllabus.overview", section: "manage", color: "#8e24aa", routes: ["/syllabus/overview"] },
   { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
   { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },
@@ -155,6 +156,7 @@ export const MOBILE_SECTIONS = [
   { key: "office", label: "Office" }, // god-only tiles (godpwa.*) — pinned to the top
   { key: "today", label: "Now" },
   { key: "mine", label: "Mine" },
+  { key: "manage", label: "Manage" }, // module consoles (Examinations; god-only Syllabus Overview)
   { key: "people", label: "People & Staff" },
   { key: "stores", label: "Stores & Inventory" },
   { key: "tools", label: "Tools" }, // Assistant (god) — pinned last
