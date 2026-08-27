@@ -93,7 +93,7 @@ export const MOBILE_FEATURES = [
   // Schedule + duties are open to all staff (no perm); management is exam.view only.
   { title: "Exam Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", color: "#5e35b1", routes: ["/exam/schedule"] },
   { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId"] },
-  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "today", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/verify/:id"] },
+  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "today", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/verify/:id"] },
 
   // ── People & Staff ───────────────────────────────────────────────────────────
   { title: "Students", hubLabel: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", hub: "people", routes: ["/students", "/students/:id"] },

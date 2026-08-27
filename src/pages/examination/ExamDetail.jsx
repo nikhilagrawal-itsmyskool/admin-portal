@@ -7,6 +7,7 @@ import {
 import { ArrowBack as BackIcon, Publish as PublishIcon, Unpublished as UnpublishIcon, Image as BrandingIcon } from '@mui/icons-material';
 import { useCan } from '../../permissions/can';
 import { useAuth } from '../../context/AuthContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { examinationService } from '../../services/examinationService';
 import { employeeService } from '../../services/employeeService';
 import { fmtDate } from '../../utils/date';
@@ -14,6 +15,7 @@ import DatesheetGrid from './DatesheetGrid';
 import InvigilatorGrid from './InvigilatorGrid';
 import AdmitCardsTab from './AdmitCardsTab';
 import BrandingDialog from './BrandingDialog';
+import ExamHome from './mobile/ExamHome';
 
 const STATUS_COLOR = { draft: 'default', published: 'success', archived: 'warning' };
 
@@ -23,6 +25,7 @@ export default function ExamDetail() {
   const canManage = useCan()('exam.manage');
   const { user } = useAuth();
   const isGod = (user?.roles || []).includes('god');
+  const isMobile = useIsMobile();
 
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,11 @@ export default function ExamDetail() {
 
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
   if (!exam) return <Alert severity="error">{err || 'Exam not found'}</Alert>;
+
+  // Phone: card hierarchy (exam home → its own sub-screens) instead of desktop tabs.
+  if (isMobile) {
+    return <ExamHome exam={exam} canManage={canManage} onPatch={patch} onBack={() => navigate('/examinations')} />;
+  }
 
   const inchargeValue = employees.find((e) => e.uuid === exam.inchargeEmployeeId) || null;
 

@@ -12,6 +12,11 @@ export const examinationService = {
   // Datesheet grid: { examId, status, grades:[{grade,seq}], dates:[iso], papers:[{grade,examDate,subjectLabel}] }
   getGrid: async (id) => (await api.get(`/examination/examinations/${id}/grid`)).data,
   savePapers: async (id, papers) => (await api.put(`/examination/examinations/${id}/papers`, { papers })).data,
+  // Targeted saves for the phone (one grade / one day, doesn't touch the rest).
+  savePapersForGrade: async (id, grade, papers) =>
+    (await api.put(`/examination/examinations/${id}/papers/${encodeURIComponent(grade)}`, { papers })).data,
+  saveInvigilatorsForDate: async (id, date, assignments) =>
+    (await api.put(`/examination/examinations/${id}/invigilators/date/${date}`, { assignments })).data,
 
   // Invigilators: { examId, dates:[iso], sections:[{classId,name,grade,seq}], gradesByDate, assignments, conflicts }
   getInvigilators: async (id) => (await api.get(`/examination/examinations/${id}/invigilators`)).data,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Card, CardContent, Stack, Button, Chip, Alert, CircularProgress,
+  Box, Typography, Card, CardContent, Stack, Button, Chip, Alert, CircularProgress, Paper,
   Table, TableHead, TableRow, TableCell, TableBody, IconButton, Tooltip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
 } from '@mui/material';
@@ -11,6 +11,7 @@ import {
 } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { examinationService } from '../../services/examinationService';
 
 const STATUS_COLOR = { draft: 'default', published: 'success', archived: 'warning' };
@@ -19,6 +20,7 @@ export default function ExaminationList() {
   const navigate = useNavigate();
   const { academicYearId } = useAcademicYear();
   const canManage = useCan()('exam.manage');
+  const isMobile = useIsMobile();
 
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -78,7 +80,7 @@ export default function ExaminationList() {
       <Stack direction="row" alignItems="center" sx={{ mb: 0.5 }}>
         <Typography variant="h4">Examinations</Typography>
         <Box sx={{ flex: 1 }} />
-        {canManage && (
+        {canManage && !isMobile && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
             New Exam
           </Button>
@@ -98,6 +100,24 @@ export default function ExaminationList() {
             <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
               No examinations yet for this academic year.
             </Typography>
+          ) : isMobile ? (
+            <Stack spacing={1}>
+              {exams.map((e) => (
+                <Paper key={e.uuid} variant="outlined"
+                  sx={{ p: 1.25, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+                  onClick={() => navigate(`/examinations/${e.uuid}`)}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700 }} noWrap>{e.name}</Typography>
+                    <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
+                      <Chip size="small" label={e.status} color={STATUS_COLOR[e.status] || 'default'} />
+                      {e.grades?.length ? <Chip size="small" variant="outlined" label={`${e.grades[0]}–${e.grades[e.grades.length - 1]}`} /> : null}
+                      <Chip size="small" variant="outlined" label={`${e.paperCount ?? 0} papers`} />
+                    </Stack>
+                  </Box>
+                  <OpenIcon color="disabled" />
+                </Paper>
+              ))}
+            </Stack>
           ) : (
             <Table
               size="small"
