@@ -51,6 +51,7 @@ import MoveSectionDialog from './MoveSectionDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import { useCan } from '../../permissions/can';
+import StudentExamCard from '../examination/StudentExamCard';
 import { ACTIONS } from '../../permissions/actions';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { maskContact } from '../../utils/mask';
@@ -980,6 +981,11 @@ export default function StudentDetail() {
 
           {/* 360° — Fees & Dues (admin/god only) */}
           {can('fee.view') && <StudentFeesPanel studentId={student.uuid} student={student} />}
+
+          {/* 360° — Examinations (admit-card dues / override) */}
+          {can('exam.view') && (
+            <Box sx={{ mt: 3 }}><StudentExamCard studentId={student.uuid} /></Box>
+          )}
 
           {/* Siblings */}
           <Card sx={{ mt: 3 }}>

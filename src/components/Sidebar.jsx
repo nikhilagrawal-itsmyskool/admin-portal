@@ -365,8 +365,9 @@ const menuItems = [
     title: 'Examinations',
     icon: ExamIcon,
     children: [
-      { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
+      { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
+      { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
     ],
   },
   {

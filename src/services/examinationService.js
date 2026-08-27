@@ -53,6 +53,11 @@ export const examinationService = {
   saveMySignature: async (imageBase64, mimeType = 'image/png', fileName = 'signature.png') =>
     (await api.put('/examination/me/signature', { imageBase64, mimeType, fileName })).data,
   myInvigilations: async () => (await api.get('/examination/me/exam/invigilations')).data,
+  // Read-only "Exam Schedule" (any staff): published exams + a datesheet grid.
+  mySchedule: async (params = {}) => (await api.get('/examination/me/exam/schedule', { params })).data,
+  myScheduleGrid: async (examId) => (await api.get(`/examination/me/exam/schedule/${examId}`)).data,
+  // Student 360 exam block (exam.view): dues/override/admit-card status per published exam.
+  studentExamStatus: async (studentId) => (await api.get(`/examination/examinations/student/${studentId}/status`)).data,
   myRoster: async (examId, paperId, sectionId) =>
     (await api.get(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}`)).data,
   myMark: async (examId, paperId, sectionId, marks) =>

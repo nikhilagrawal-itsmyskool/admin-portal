@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { Print as PrintIcon, GppGood as OverrideIcon, Undo as RevokeIcon } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { classService } from '../../services/classService';
 import { examinationService } from '../../services/examinationService';
 import { fmtDate } from '../../utils/date';
@@ -16,6 +17,7 @@ const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 export default function AdmitCardsTab({ examId, exam, canManage }) {
   const { user } = useAuth();
   const isGod = (user?.roles || []).includes('god');
+  const isMobile = useIsMobile();
 
   const [sections, setSections] = useState([]);
   const [sectionId, setSectionId] = useState('');
@@ -152,14 +154,16 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
           <MenuItem value={3}>3 per page</MenuItem>
         </TextField>
         <Box sx={{ flex: 1 }} />
-        {canManage && (
+        {canManage && (isMobile ? (
+          <Chip size="small" variant="outlined" label="Print from desktop" />
+        ) : (
           <Button
             variant="contained" startIcon={<PrintIcon />} onClick={startPrint}
             disabled={!printableSelected.length}
           >
             Print {printableSelected.length} card{printableSelected.length === 1 ? '' : 's'} · {pageCount} page{pageCount === 1 ? '' : 's'}
           </Button>
-        )}
+        ))}
       </Stack>
 
       {roster && (

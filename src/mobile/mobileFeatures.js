@@ -23,6 +23,9 @@ import {
   PhotoCamera as HomeworkIcon,
   RecordVoiceOver as AssistantIcon,
   Event as AcademicCalendarIcon,
+  HistoryEdu as ExamMgmtIcon,
+  HowToReg as DutyIcon,
+  EventNote as ScheduleIcon,
   Payments as FeesIcon,
   ReceiptLong as DuesIcon,
   Receipt as ReceiptIcon,
@@ -85,6 +88,12 @@ export const MOBILE_FEATURES = [
   { title: "My Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.post", section: "today", color: "#d97706" },
   // Send Message — a daily action, pulled up out of the old "Office" hub.
   { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
+
+  // ── Examinations ─────────────────────────────────────────────────────────────
+  // Schedule + duties are open to all staff (no perm); management is exam.view only.
+  { title: "Exam Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", color: "#5e35b1", routes: ["/exam/schedule"] },
+  { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId"] },
+  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "today", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/verify/:id"] },
 
   // ── People & Staff ───────────────────────────────────────────────────────────
   { title: "Students", hubLabel: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", hub: "people", routes: ["/students", "/students/:id"] },

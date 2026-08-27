@@ -158,6 +158,7 @@ import ExamDetail from './pages/examination/ExamDetail';
 import VerifyAdmitCard from './pages/examination/VerifyAdmitCard';
 import MyInvigilations from './pages/examination/MyInvigilations';
 import InvigilatorRoster from './pages/examination/InvigilatorRoster';
+import ExamSchedule from './pages/examination/ExamSchedule';
 import AssemblyList from './pages/assembly/AssemblyList';
 import PlanBuilder from './pages/assembly/PlanBuilder';
 import SpecialBuilder from './pages/assembly/SpecialBuilder';
@@ -385,6 +386,7 @@ export default function App() {
         <Route path="examinations/:id" element={<ExamDetail />} />
         <Route path="exam/my-invigilations" element={<MyInvigilations />} />
         <Route path="exam/roster/:examId/:paperId/:sectionId" element={<InvigilatorRoster mode="me" />} />
+        <Route path="exam/schedule" element={<ExamSchedule />} />
         <Route path="assembly" element={<AssemblyList />} />
         <Route path="assembly/day" element={<ScheduleDay />} />
         <Route path="assembly/week" element={<ScheduleWeek />} />
