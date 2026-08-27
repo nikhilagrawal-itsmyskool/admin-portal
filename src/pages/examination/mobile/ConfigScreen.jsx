@@ -57,7 +57,7 @@ export default function ConfigScreen() {
   return (
     <Box>
       <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>{exam.name}</Button>
+        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Back</Button>
       </Stack>
       <Typography variant="h6" sx={{ mb: 1.5 }}>Config</Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}

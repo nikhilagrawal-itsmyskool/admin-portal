@@ -72,7 +72,7 @@ export default function ExamDetail() {
   return (
     <Box>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/examinations')}>Exams</Button>
+        <Button startIcon={<BackIcon />} onClick={() => navigate('/examinations')}>Back</Button>
         <Typography variant="h5">{exam.name}</Typography>
         <Chip size="small" label={exam.status} color={STATUS_COLOR[exam.status] || 'default'} />
         <Box sx={{ flex: 1 }} />

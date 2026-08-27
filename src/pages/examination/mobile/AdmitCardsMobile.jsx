@@ -60,7 +60,7 @@ export default function AdmitCardsMobile() {
   return (
     <Box>
       <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>{exam?.name || 'Exam'}</Button>
+        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Back</Button>
         <Box sx={{ flex: 1 }} />
         <Chip size="small" variant="outlined" label="Print on desktop" />
       </Stack>

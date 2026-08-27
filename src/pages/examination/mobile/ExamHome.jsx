@@ -37,7 +37,7 @@ export default function ExamHome({ exam, canManage, onPatch, onBack }) {
   return (
     <Box>
       <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={onBack}>Exams</Button>
+        <Button startIcon={<BackIcon />} onClick={onBack}>Back</Button>
       </Stack>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Box>

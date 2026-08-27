@@ -93,7 +93,7 @@ export default function InvigilatorsMobile() {
   return (
     <Box>
       <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Exam</Button>
+        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Back</Button>
         <Box sx={{ flex: 1 }} />
         {view.dates.length > 0 && <Button size="small" startIcon={<SheetIcon />} onClick={() => setFull(true)}>Full sheet</Button>}
       </Stack>
