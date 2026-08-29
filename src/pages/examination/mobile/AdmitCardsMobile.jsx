@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
-  Box, Typography, Button, Stack, Chip, Alert, CircularProgress, Paper, TextField, MenuItem,
+  Box, Typography, Stack, Chip, Alert, CircularProgress, Paper, TextField, MenuItem, IconButton,
 } from '@mui/material';
-import { ArrowBack as BackIcon, GppGood as OverrideIcon, Undo as RevokeIcon } from '@mui/icons-material';
+import { GppGood as OverrideIcon, Undo as RevokeIcon } from '@mui/icons-material';
 import { useAuth } from '../../../context/AuthContext';
 import { classService } from '../../../services/classService';
 import { examinationService } from '../../../services/examinationService';
@@ -15,7 +15,6 @@ const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 // that's a desktop batch job; find a single student across classes with Ctrl+K.
 export default function AdmitCardsMobile() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const isGod = (user?.roles || []).includes('god');
 
@@ -59,12 +58,10 @@ export default function AdmitCardsMobile() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Back</Button>
-        <Box sx={{ flex: 1 }} />
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+        <Typography variant="h6" sx={{ flex: 1 }}>Admit Cards</Typography>
         <Chip size="small" variant="outlined" label="Print on desktop" />
       </Stack>
-      <Typography variant="h6" sx={{ mb: 1 }}>Admit Cards</Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
 
       <TextField select size="small" fullWidth label="Class" value={sectionId} onChange={(e) => setSectionId(e.target.value)} sx={{ mb: 1.5 }}>
@@ -94,17 +91,21 @@ export default function AdmitCardsMobile() {
                   {rupee(s.currentDue)} <span style={{ opacity: 0.6 }}>+ {rupee(s.priorDue)} prior</span>
                 </Typography>
               </Box>
-              <Stack alignItems="flex-end" spacing={0.5}>
+              <Stack alignItems="flex-end" spacing={0.5} sx={{ width: 104, flexShrink: 0 }}>
                 {s.overridden ? <Chip size="small" color="warning" label="override" />
                   : s.blocked ? <Chip size="small" color="error" label="blocked" />
                     : <Chip size="small" color="success" label="clear" />}
                 {s.printedOn && <Chip size="small" color="info" variant="outlined" label={`printed ${fmtDate(s.printedOn)}`} />}
               </Stack>
-              {isGod && (s.overridden ? (
-                <Button size="small" startIcon={<RevokeIcon />} onClick={() => revoke(s.studentId)}>Revoke</Button>
-              ) : s.blocked ? (
-                <Button size="small" color="warning" startIcon={<OverrideIcon />} onClick={() => override(s.studentId)}>Override</Button>
-              ) : null)}
+              {isGod && (
+                <Box sx={{ width: 36, flexShrink: 0, textAlign: 'right' }}>
+                  {s.overridden ? (
+                    <IconButton size="small" onClick={() => revoke(s.studentId)} aria-label="Revoke override"><RevokeIcon fontSize="small" /></IconButton>
+                  ) : s.blocked ? (
+                    <IconButton size="small" color="warning" onClick={() => override(s.studentId)} aria-label="Override dues block"><OverrideIcon fontSize="small" /></IconButton>
+                  ) : null}
+                </Box>
+              )}
             </Paper>
           ))}
         </Stack>

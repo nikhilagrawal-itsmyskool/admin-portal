@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -19,6 +19,7 @@ import {
   Person as PersonIcon,
   Menu as MenuIcon,
   Search as SearchIcon,
+  ArrowBack as BackIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useAcademicYear } from '../context/AcademicYearContext';
@@ -29,6 +30,7 @@ export default function Header({ onMenuClick, isDesktop }) {
   const { user, logout, schoolCode } = useAuth();
   const { years, academicYearId, setAcademicYearId } = useAcademicYear();
   const navigate = useNavigate();
+  const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
 
   const shortDisplayName = getShortDisplayName(user?.displayName) || user?.loginName;
@@ -66,16 +68,27 @@ export default function Header({ onMenuClick, isDesktop }) {
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {!isDesktop && (
+          {!isDesktop && (location.pathname !== '/' ? (
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={() => navigate(-1)}
+              aria-label="Back"
+              sx={{ color: '#222b45' }}
+            >
+              <BackIcon />
+            </IconButton>
+          ) : (
             <IconButton
               color="inherit"
               edge="start"
               onClick={onMenuClick}
+              aria-label="Menu"
               sx={{ color: '#222b45' }}
             >
               <MenuIcon />
             </IconButton>
-          )}
+          ))}
           <Typography variant="body2" sx={{ color: '#8f9bb3', textTransform: 'uppercase', letterSpacing: 1 }}>
             {schoolCode}
           </Typography>

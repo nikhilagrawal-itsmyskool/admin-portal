@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
-  Box, Typography, Button, Stack, TextField, MenuItem, Autocomplete, Alert, CircularProgress, Switch, Paper,
+  Box, Typography, Stack, TextField, MenuItem, Autocomplete, Alert, CircularProgress, Switch, Paper,
+  ToggleButton, ToggleButtonGroup, FormControlLabel,
 } from '@mui/material';
-import { ArrowBack as BackIcon } from '@mui/icons-material';
 import { useAuth } from '../../../context/AuthContext';
 import { examinationService } from '../../../services/examinationService';
 import { employeeService } from '../../../services/employeeService';
@@ -21,7 +21,6 @@ const Field = ({ label, children, hint }) => (
 // (god) / publish. Grade-set + exam creation stay on desktop.
 export default function ConfigScreen() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const isGod = (user?.roles || []).includes('god');
 
@@ -56,9 +55,6 @@ export default function ConfigScreen() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Back</Button>
-      </Stack>
       <Typography variant="h6" sx={{ mb: 1.5 }}>Config</Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
 
@@ -71,11 +67,18 @@ export default function ConfigScreen() {
             renderInput={(p) => <TextField {...p} placeholder="Pick a teacher" variant="standard" />}
           />
         </Field>
+        <Field label="Exam type">
+          <Stack sx={{ mt: 0.25 }}>
+            <FormControlLabel control={<Switch checked={exam.hasInvigilation !== false} onChange={(e) => patch({ hasInvigilation: e.target.checked })} />} label="Assign invigilators" />
+            <FormControlLabel control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />} label="Issue admit cards" />
+          </Stack>
+        </Field>
+        {(exam.hasAdmitCards !== false) && (<>
         <Field label="Cards per A4 page">
-          <TextField select size="small" fullWidth variant="standard" value={exam.cardsPerPage || 4} onChange={(e) => patch({ cardsPerPage: Number(e.target.value) })}>
-            <MenuItem value={4}>4 per page</MenuItem>
-            <MenuItem value={3}>3 per page</MenuItem>
-          </TextField>
+          <ToggleButtonGroup exclusive size="small" value={exam.cardsPerPage || 4} onChange={(_, v) => v && patch({ cardsPerPage: v })} sx={{ mt: 0.5 }}>
+            <ToggleButton value={4}>4 / page</ToggleButton>
+            <ToggleButton value={3}>3 / page</ToggleButton>
+          </ToggleButtonGroup>
         </Field>
         <Field label="Dues cleared till" hint="Which cycle's dues must be clear to print">
           <TextField select size="small" fullWidth variant="standard" value={exam.duesCutoffDate || ''} onChange={(e) => patch({ duesCutoffDate: e.target.value || null })}>
@@ -93,6 +96,7 @@ export default function ConfigScreen() {
               onBlur={isGod ? (e) => { const v = Number(e.target.value) || 0; if (v !== Number(exam.duesThresholdPrior || 0)) patch({ duesThresholdPrior: v }); } : undefined} />
           </Field>
         </Stack>
+        </>)}
         <Field label="Status">
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography sx={{ fontWeight: 600, color: exam.status === 'published' ? 'success.main' : 'text.secondary' }}>

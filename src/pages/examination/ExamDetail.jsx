@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Stack, Button, Chip, Alert, CircularProgress, Tabs, Tab,
-  TextField, MenuItem, Autocomplete,
+  TextField, MenuItem, Autocomplete, Switch, FormControlLabel,
 } from '@mui/material';
 import { ArrowBack as BackIcon, Publish as PublishIcon, Unpublished as UnpublishIcon, Image as BrandingIcon } from '@mui/icons-material';
 import { useCan } from '../../permissions/can';
@@ -68,6 +68,8 @@ export default function ExamDetail() {
   }
 
   const inchargeValue = employees.find((e) => e.uuid === exam.inchargeEmployeeId) || null;
+  // Keep the active tab valid when a feature is turned off.
+  const effectiveTab = (tab === 'invigilators' && !exam.hasInvigilation) || (tab === 'admit' && !exam.hasAdmitCards) ? 'datesheet' : tab;
 
   return (
     <Box>
@@ -97,53 +99,63 @@ export default function ExamDetail() {
             isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
             renderInput={(p) => <TextField {...p} label="Examination incharge" />}
           />
-          <TextField
-            select size="small" sx={{ minWidth: 150 }} label="Cards per A4 page"
-            value={exam.cardsPerPage || 4} onChange={(e) => patch({ cardsPerPage: Number(e.target.value) })}
-          >
-            <MenuItem value={4}>4 per page</MenuItem>
-            <MenuItem value={3}>3 per page</MenuItem>
-          </TextField>
-          <TextField
-            select size="small" sx={{ minWidth: 190 }} label="Dues cleared till"
-            value={exam.duesCutoffDate || ''} onChange={(e) => patch({ duesCutoffDate: e.target.value || null })}
-          >
-            <MenuItem value=""><em>Due now (this month)</em></MenuItem>
-            {cycles.filter((c) => c.dueDate).map((c) => (
-              <MenuItem key={c.uuid} value={c.dueDate}>{c.name} · due {fmtDate(c.dueDate)}</MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            key={`thrc-${exam.duesThresholdCurrent ?? 0}`}
-            size="small" type="number" sx={{ width: 165 }} label="Current-yr threshold ₹"
-            defaultValue={exam.duesThresholdCurrent ?? 0} disabled={!isGod}
-            helperText={isGod ? 'god only' : 'view-only'}
-            onBlur={isGod ? (e) => { const v = Number(e.target.value) || 0; if (v !== Number(exam.duesThresholdCurrent || 0)) patch({ duesThresholdCurrent: v }); } : undefined}
-          />
-          <TextField
-            key={`thrp-${exam.duesThresholdPrior ?? 0}`}
-            size="small" type="number" sx={{ width: 150 }} label="Prior-yr threshold ₹"
-            defaultValue={exam.duesThresholdPrior ?? 0} disabled={!isGod}
-            helperText={isGod ? 'god only' : 'view-only'}
-            onBlur={isGod ? (e) => { const v = Number(e.target.value) || 0; if (v !== Number(exam.duesThresholdPrior || 0)) patch({ duesThresholdPrior: v }); } : undefined}
-          />
-          <Button variant="outlined" startIcon={<BrandingIcon />} onClick={() => setBrandingOpen(true)} sx={{ alignSelf: 'flex-start', height: 40 }}>
-            Branding
-          </Button>
+          <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
+            control={<Switch checked={exam.hasInvigilation !== false} onChange={(e) => patch({ hasInvigilation: e.target.checked })} />}
+            label="Invigilation" />
+          <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
+            control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />}
+            label="Admit cards" />
+          {exam.hasAdmitCards && (
+            <>
+              <TextField
+                select size="small" sx={{ minWidth: 150 }} label="Cards per A4 page"
+                value={exam.cardsPerPage || 4} onChange={(e) => patch({ cardsPerPage: Number(e.target.value) })}
+              >
+                <MenuItem value={4}>4 per page</MenuItem>
+                <MenuItem value={3}>3 per page</MenuItem>
+              </TextField>
+              <TextField
+                select size="small" sx={{ minWidth: 190 }} label="Dues cleared till"
+                value={exam.duesCutoffDate || ''} onChange={(e) => patch({ duesCutoffDate: e.target.value || null })}
+              >
+                <MenuItem value=""><em>Due now (this month)</em></MenuItem>
+                {cycles.filter((c) => c.dueDate).map((c) => (
+                  <MenuItem key={c.uuid} value={c.dueDate}>{c.name} · due {fmtDate(c.dueDate)}</MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                key={`thrc-${exam.duesThresholdCurrent ?? 0}`}
+                size="small" type="number" sx={{ width: 165 }} label="Current-yr threshold ₹"
+                defaultValue={exam.duesThresholdCurrent ?? 0} disabled={!isGod}
+                helperText={isGod ? 'god only' : 'view-only'}
+                onBlur={isGod ? (e) => { const v = Number(e.target.value) || 0; if (v !== Number(exam.duesThresholdCurrent || 0)) patch({ duesThresholdCurrent: v }); } : undefined}
+              />
+              <TextField
+                key={`thrp-${exam.duesThresholdPrior ?? 0}`}
+                size="small" type="number" sx={{ width: 150 }} label="Prior-yr threshold ₹"
+                defaultValue={exam.duesThresholdPrior ?? 0} disabled={!isGod}
+                helperText={isGod ? 'god only' : 'view-only'}
+                onBlur={isGod ? (e) => { const v = Number(e.target.value) || 0; if (v !== Number(exam.duesThresholdPrior || 0)) patch({ duesThresholdPrior: v }); } : undefined}
+              />
+              <Button variant="outlined" startIcon={<BrandingIcon />} onClick={() => setBrandingOpen(true)} sx={{ alignSelf: 'flex-start', height: 40 }}>
+                Branding
+              </Button>
+            </>
+          )}
         </Stack>
       )}
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <Tabs value={effectiveTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="datesheet" label="Datesheet" />
-        <Tab value="invigilators" label="Invigilators" />
-        <Tab value="admit" label="Admit Cards" />
+        {exam.hasInvigilation && <Tab value="invigilators" label="Invigilators" />}
+        {exam.hasAdmitCards && <Tab value="admit" label="Admit Cards" />}
       </Tabs>
 
-      {tab === 'datesheet' && <DatesheetGrid examId={id} canManage={canManage} onChanged={load} />}
-      {tab === 'invigilators' && <InvigilatorGrid examId={id} canManage={canManage} employees={employees} />}
-      {tab === 'admit' && <AdmitCardsTab examId={id} exam={exam} canManage={canManage} />}
+      {effectiveTab === 'datesheet' && <DatesheetGrid examId={id} canManage={canManage} onChanged={load} />}
+      {effectiveTab === 'invigilators' && exam.hasInvigilation && <InvigilatorGrid examId={id} canManage={canManage} employees={employees} />}
+      {effectiveTab === 'admit' && exam.hasAdmitCards && <AdmitCardsTab examId={id} exam={exam} canManage={canManage} />}
 
       <BrandingDialog open={brandingOpen} onClose={() => setBrandingOpen(false)} />
     </Box>

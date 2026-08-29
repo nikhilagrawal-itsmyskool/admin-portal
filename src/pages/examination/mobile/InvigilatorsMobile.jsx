@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   Box, Typography, Button, Stack, Chip, Alert, CircularProgress, Paper, Avatar, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField,
   Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
-import { ArrowBack as BackIcon, GridOn as SheetIcon, Warning as WarnIcon } from '@mui/icons-material';
+import { GridOn as SheetIcon, Warning as WarnIcon } from '@mui/icons-material';
 import { useCan } from '../../../permissions/can';
 import { examinationService } from '../../../services/examinationService';
 import { employeeService } from '../../../services/employeeService';
@@ -18,7 +18,6 @@ const initials = (n) => (n || '').split(' ').filter(Boolean).slice(-2).map((x) =
 
 export default function InvigilatorsMobile() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const canManage = useCan()('exam.manage');
 
   const [view, setView] = useState(null);
@@ -92,9 +91,7 @@ export default function InvigilatorsMobile() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Back</Button>
-        <Box sx={{ flex: 1 }} />
+      <Stack direction="row" alignItems="center" justifyContent="flex-end" sx={{ mb: 1 }}>
         {view.dates.length > 0 && <Button size="small" startIcon={<SheetIcon />} onClick={() => setFull(true)}>Full sheet</Button>}
       </Stack>
       <Typography variant="h6" sx={{ mb: 1 }}>Invigilators</Typography>

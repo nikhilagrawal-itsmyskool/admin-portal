@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Stack, Button, Chip, Alert, CircularProgress, Paper,
   Table, TableHead, TableRow, TableCell, TableBody, IconButton, Tooltip,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Switch, FormControlLabel,
 } from '@mui/material';
 import {
   Add as AddIcon, Delete as DeleteIcon, Publish as PublishIcon,
@@ -28,6 +28,8 @@ export default function ExaminationList() {
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
   const [cardsPerPage, setCardsPerPage] = useState(4);
+  const [hasInvigilation, setHasInvigilation] = useState(true);
+  const [hasAdmitCards, setHasAdmitCards] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -46,8 +48,8 @@ export default function ExaminationList() {
     if (!name.trim()) return;
     setSaving(true); setErr('');
     try {
-      const exam = await examinationService.create({ name: name.trim(), academicYearId, cardsPerPage });
-      setCreateOpen(false); setName(''); setCardsPerPage(4);
+      const exam = await examinationService.create({ name: name.trim(), academicYearId, cardsPerPage, hasInvigilation, hasAdmitCards });
+      setCreateOpen(false); setName(''); setCardsPerPage(4); setHasInvigilation(true); setHasAdmitCards(true);
       navigate(`/examinations/${exam.uuid}`);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to create the exam');
@@ -183,14 +185,25 @@ export default function ExaminationList() {
             autoFocus fullWidth label="Name" placeholder="e.g. Half Yearly Examination"
             value={name} onChange={(e) => setName(e.target.value)} sx={{ mt: 1, mb: 2 }}
           />
-          <TextField
-            select fullWidth label="Admit cards per A4 page"
-            value={cardsPerPage} onChange={(e) => setCardsPerPage(Number(e.target.value))}
-            helperText="Default for printing; changeable later"
-          >
-            <MenuItem value={4}>4 per page</MenuItem>
-            <MenuItem value={3}>3 per page</MenuItem>
-          </TextField>
+          <FormControlLabel sx={{ display: 'block', ml: 0 }}
+            control={<Switch checked={hasInvigilation} onChange={(e) => setHasInvigilation(e.target.checked)} />}
+            label="Assign invigilators" />
+          <FormControlLabel sx={{ display: 'block', ml: 0, mb: 1 }}
+            control={<Switch checked={hasAdmitCards} onChange={(e) => setHasAdmitCards(e.target.checked)} />}
+            label="Issue admit cards" />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+            Turn both off for a datesheet-only exam (e.g. an oral test).
+          </Typography>
+          {hasAdmitCards && (
+            <TextField
+              select fullWidth label="Admit cards per A4 page"
+              value={cardsPerPage} onChange={(e) => setCardsPerPage(Number(e.target.value))}
+              helperText="Default for printing; changeable later"
+            >
+              <MenuItem value={4}>4 per page</MenuItem>
+              <MenuItem value={3}>3 per page</MenuItem>
+            </TextField>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCreateOpen(false)}>Cancel</Button>

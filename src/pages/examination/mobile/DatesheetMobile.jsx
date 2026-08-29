@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   Box, Typography, Button, Stack, Chip, Alert, CircularProgress, Paper, IconButton, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   ToggleButton, ToggleButtonGroup, Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
-import { ArrowBack as BackIcon, Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, GridOn as SheetIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useCan } from '../../../permissions/can';
 import { examinationService } from '../../../services/examinationService';
 import { fmtDate } from '../../../utils/date';
@@ -15,7 +15,6 @@ const dayOf = (d) => (d ? DOW[new Date(`${d}T00:00:00`).getDay()] : '');
 
 export default function DatesheetMobile() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const canManage = useCan()('exam.manage');
 
   const [grid, setGrid] = useState(null);
@@ -27,7 +26,6 @@ export default function DatesheetMobile() {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [edit, setEdit] = useState(null); // {key?, date, subject}
-  const [full, setFull] = useState(false);
   const keyRef = useRef(1);
 
   const rowsFor = useCallback((g, gr) => (gr?.papers || [])
@@ -79,16 +77,12 @@ export default function DatesheetMobile() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(`/examinations/${id}`)}>Back</Button>
-        <Box sx={{ flex: 1 }} />
-        {dates.length > 0 && <Button size="small" startIcon={<SheetIcon />} onClick={() => setFull(true)}>Full sheet</Button>}
-      </Stack>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.25 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.25, gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="h6">Datesheet</Typography>
         <ToggleButtonGroup exclusive size="small" value={view} onChange={(_, v) => v && setView(v)}>
-          <ToggleButton value="grade" sx={{ px: 1.5, py: 0.3 }}>By grade</ToggleButton>
-          <ToggleButton value="date" sx={{ px: 1.5, py: 0.3 }}>By date</ToggleButton>
+          <ToggleButton value="grade" sx={{ px: 1.25, py: 0.3 }}>By grade</ToggleButton>
+          <ToggleButton value="date" sx={{ px: 1.25, py: 0.3 }}>By date</ToggleButton>
+          <ToggleButton value="sheet" sx={{ px: 1.25, py: 0.3 }}>Full sheet</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
 
@@ -129,7 +123,7 @@ export default function DatesheetMobile() {
             )}
           </Stack>
         </>
-      ) : (
+      ) : view === 'date' ? (
         <Stack spacing={1}>
           {dates.map((d) => (
             <Paper key={d} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
@@ -148,6 +142,27 @@ export default function DatesheetMobile() {
             </Paper>
           ))}
         </Stack>
+      ) : (
+        <Paper variant="outlined" sx={{ borderRadius: 2, overflowX: 'auto' }}>
+          <Table size="small" sx={{ minWidth: 120 + grades.length * 110, '& th,& td': { whiteSpace: 'nowrap' } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                {grades.map((g) => <TableCell key={g.grade} sx={{ fontWeight: 700, color: 'primary.main' }}>{g.grade}</TableCell>)}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {dates.map((d) => (
+                <TableRow key={d}>
+                  <TableCell sx={{ fontWeight: 600 }}>{fmtDate(d)} · {dayOf(d)}</TableCell>
+                  {grades.map((g) => (
+                    <TableCell key={g.grade}>{grid.papers.find((p) => p.grade === g.grade && p.examDate === d)?.subjectLabel || '—'}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
       )}
 
       {/* Edit / add a paper */}
@@ -165,33 +180,6 @@ export default function DatesheetMobile() {
         </DialogActions>
       </Dialog>
 
-      {/* Full wide sheet (read-only) */}
-      <Dialog open={full} onClose={() => setFull(false)} maxWidth="lg" fullWidth>
-        <DialogTitle>Full datesheet</DialogTitle>
-        <DialogContent>
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 120 + grades.length * 110, '& th,& td': { whiteSpace: 'nowrap' } }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-                  {grades.map((g) => <TableCell key={g.grade} sx={{ fontWeight: 700, color: 'primary.main' }}>{g.grade}</TableCell>)}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {dates.map((d) => (
-                  <TableRow key={d}>
-                    <TableCell sx={{ fontWeight: 600 }}>{fmtDate(d)} · {dayOf(d)}</TableCell>
-                    {grades.map((g) => (
-                      <TableCell key={g.grade}>{grid.papers.find((p) => p.grade === g.grade && p.examDate === d)?.subjectLabel || '—'}</TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        </DialogContent>
-        <DialogActions><Button onClick={() => setFull(false)}>Close</Button></DialogActions>
-      </Dialog>
     </Box>
   );
 }

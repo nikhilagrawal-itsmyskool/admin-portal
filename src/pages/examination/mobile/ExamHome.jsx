@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Button, Stack, Chip, Paper, Switch, Alert,
+  Box, Typography, Stack, Chip, Paper, Switch, Alert,
 } from '@mui/material';
 import {
-  ArrowBack as BackIcon, Tune as ConfigIcon, GridOn as SheetIcon, HowToReg as InvigIcon, Badge as CardIcon,
+  Tune as ConfigIcon, GridOn as SheetIcon, HowToReg as InvigIcon, Badge as CardIcon,
   ChevronRight as ChevronIcon,
 } from '@mui/icons-material';
 import { examinationService } from '../../../services/examinationService';
@@ -12,13 +12,16 @@ import { examinationService } from '../../../services/examinationService';
 const gradeLabel = (g) => (!g || !g.length ? 'all grades' : g.length === 1 ? `grade ${g[0]}` : `grades ${g[0]}–${g[g.length - 1]}`);
 
 // The phone "home" for one exam: four screens as cards, each with a status line.
-export default function ExamHome({ exam, canManage, onPatch, onBack }) {
+export default function ExamHome({ exam, canManage, onPatch }) {
   const navigate = useNavigate();
   const [invig, setInvig] = useState(null);
+  const hasInvig = exam.hasInvigilation !== false;
+  const hasCards = exam.hasAdmitCards !== false;
 
   useEffect(() => {
+    if (!hasInvig) return;
     examinationService.getInvigilators(exam.uuid).then(setInvig).catch(() => setInvig(null));
-  }, [exam.uuid]);
+  }, [exam.uuid, hasInvig]);
 
   let invigLine = 'Assign per day';
   if (invig) {
@@ -28,17 +31,14 @@ export default function ExamHome({ exam, canManage, onPatch, onBack }) {
   }
 
   const cards = [
-    { icon: <ConfigIcon />, title: 'Config', sub: `Incharge: ${exam.inchargeName || '—'} · ${exam.cardsPerPage || 4}/page`, path: 'config' },
+    { icon: <ConfigIcon />, title: 'Config', sub: `Incharge: ${exam.inchargeName || '—'}${hasCards ? ` · ${exam.cardsPerPage || 4}/page` : ''}`, path: 'config' },
     { icon: <SheetIcon />, title: 'Datesheet', sub: `${exam.paperCount || 0} papers · ${gradeLabel(exam.grades)}`, path: 'datesheet' },
-    { icon: <InvigIcon />, title: 'Invigilators', sub: invigLine, path: 'invigilators' },
-    { icon: <CardIcon />, title: 'Admit Cards', sub: 'Review dues · override', path: 'admit-cards' },
+    ...(hasInvig ? [{ icon: <InvigIcon />, title: 'Invigilators', sub: invigLine, path: 'invigilators' }] : []),
+    ...(hasCards ? [{ icon: <CardIcon />, title: 'Admit Cards', sub: 'Review dues · override', path: 'admit-cards' }] : []),
   ];
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={onBack}>Back</Button>
-      </Stack>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Box>
           <Typography variant="h6" sx={{ lineHeight: 1.15 }}>{exam.name}</Typography>
