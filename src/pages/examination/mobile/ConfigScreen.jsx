@@ -73,6 +73,11 @@ export default function ConfigScreen() {
             <FormControlLabel control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />} label="Issue admit cards" />
           </Stack>
         </Field>
+        <Field label="Datesheet notes (one per line)" hint="Printed under the datesheet PDF; blank = standard notes">
+          <TextField key={`n${exam.uuid}`} multiline minRows={2} fullWidth variant="standard"
+            defaultValue={exam.datesheetNotes ?? ''}
+            onBlur={(e) => { if ((e.target.value || '') !== (exam.datesheetNotes || '')) patch({ datesheetNotes: e.target.value || null }); }} />
+        </Field>
         {(exam.hasAdmitCards !== false) && (<>
         <Field label="Cards per A4 page">
           <ToggleButtonGroup exclusive size="small" value={exam.cardsPerPage || 4} onChange={(_, v) => v && patch({ cardsPerPage: v })} sx={{ mt: 0.5 }}>

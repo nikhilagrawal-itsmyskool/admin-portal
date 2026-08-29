@@ -3,15 +3,16 @@ import {
   Box, Button, Alert, CircularProgress, Stack, IconButton, Tooltip, Paper,
   Table, TableHead, TableRow, TableCell, TableBody, TextField, Typography, Autocomplete, Chip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon, Print as PrintIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
+import { printDatesheet } from './datesheetHtml';
 
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const dayOf = (d) => (d ? DOW[new Date(`${d}T00:00:00`).getDay()] : '');
 
 // Editable grade × date datesheet. Rows are dates the office adds; each grade column
 // holds a free-text subject (blank cell = no paper / "---"). Save replaces the full set.
-export default function DatesheetGrid({ examId, canManage, onChanged }) {
+export default function DatesheetGrid({ examId, canManage, onChanged, exam }) {
   const [grades, setGrades] = useState([]);
   const [availableGrades, setAvailableGrades] = useState([]);
   const [rows, setRows] = useState([]);
@@ -84,6 +85,24 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
     } finally { setSaving(false); }
   };
 
+  // Print the SAVED datesheet as a PDF in the school's original format.
+  const printPdf = async () => {
+    setErr('');
+    try {
+      const [grid, brand] = await Promise.all([
+        examinationService.getGrid(examId),
+        examinationService.getBranding().catch(() => ({})),
+      ]);
+      printDatesheet({
+        examName: exam?.name, grades: grid.grades, dates: grid.dates, papers: grid.papers,
+        logoDataUri: brand?.logoDataUri,
+        notes: (exam?.datesheetNotes || '').split('\n').map((s) => s.trim()).filter(Boolean),
+      });
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to prepare the datesheet PDF');
+    }
+  };
+
   if (loading) return <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>;
 
   if (!availableGrades.length) {
@@ -100,6 +119,11 @@ export default function DatesheetGrid({ examId, canManage, onChanged }) {
 
   return (
     <Box>
+      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1.5 }}>
+        <Button variant="outlined" startIcon={<PrintIcon />} onClick={printPdf} disabled={!rows.length}>
+          Print datesheet
+        </Button>
+      </Stack>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
       {hasDup && <Alert severity="warning" sx={{ mb: 2 }}>Two rows share a date — the last value per grade wins on save.</Alert>}

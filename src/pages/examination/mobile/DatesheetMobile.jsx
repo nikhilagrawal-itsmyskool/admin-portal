@@ -5,9 +5,10 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   ToggleButton, ToggleButtonGroup, Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Print as PrintIcon } from '@mui/icons-material';
 import { useCan } from '../../../permissions/can';
 import { examinationService } from '../../../services/examinationService';
+import { printDatesheet } from '../datesheetHtml';
 import { fmtDate } from '../../../utils/date';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -71,6 +72,19 @@ export default function DatesheetMobile() {
     } finally { setSaving(false); }
   };
 
+  const printPdf = async () => {
+    if (!grid) return;
+    setErr('');
+    try {
+      const [exam, brand] = await Promise.all([examinationService.get(id), examinationService.getBranding().catch(() => ({}))]);
+      printDatesheet({
+        examName: exam.name, grades: grid.grades, dates: grid.dates, papers: grid.papers,
+        logoDataUri: brand?.logoDataUri,
+        notes: (exam.datesheetNotes || '').split('\n').map((s) => s.trim()).filter(Boolean),
+      });
+    } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to prepare the PDF'); }
+  };
+
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
   const grades = grid?.grades || [];
   const dates = grid?.dates || [];
@@ -79,11 +93,14 @@ export default function DatesheetMobile() {
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.25, gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="h6">Datesheet</Typography>
-        <ToggleButtonGroup exclusive size="small" value={view} onChange={(_, v) => v && setView(v)}>
-          <ToggleButton value="grade" sx={{ px: 1.25, py: 0.3 }}>By grade</ToggleButton>
-          <ToggleButton value="date" sx={{ px: 1.25, py: 0.3 }}>By date</ToggleButton>
-          <ToggleButton value="sheet" sx={{ px: 1.25, py: 0.3 }}>Full sheet</ToggleButton>
-        </ToggleButtonGroup>
+        <Stack direction="row" alignItems="center" gap={0.5}>
+          <IconButton size="small" onClick={printPdf} title="Print datesheet" disabled={!dates.length}><PrintIcon fontSize="small" /></IconButton>
+          <ToggleButtonGroup exclusive size="small" value={view} onChange={(_, v) => v && setView(v)}>
+            <ToggleButton value="grade" sx={{ px: 1.25, py: 0.3 }}>By grade</ToggleButton>
+            <ToggleButton value="date" sx={{ px: 1.25, py: 0.3 }}>By date</ToggleButton>
+            <ToggleButton value="sheet" sx={{ px: 1.25, py: 0.3 }}>Full sheet</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
       </Stack>
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
