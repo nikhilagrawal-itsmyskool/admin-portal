@@ -90,23 +90,28 @@ export default function ExamDetail() {
       </Stack>
 
       {canManage && (
-        <Stack direction="row" flexWrap="wrap" useFlexGap spacing={2} sx={{ mb: 2 }}>
-          <Autocomplete
-            sx={{ minWidth: 230 }} size="small"
-            options={employees} getOptionLabel={(o) => o.name || ''}
-            value={inchargeValue}
-            onChange={(_, v) => patch({ inchargeEmployeeId: v ? v.uuid : null })}
-            isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-            renderInput={(p) => <TextField {...p} label="Examination incharge" />}
-          />
-          <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
-            control={<Switch checked={exam.hasInvigilation !== false} onChange={(e) => patch({ hasInvigilation: e.target.checked })} />}
-            label="Invigilation" />
-          <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
-            control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />}
-            label="Admit cards" />
+        <>
+          {/* Line 1: incharge + feature toggles */}
+          <Stack direction="row" flexWrap="wrap" useFlexGap spacing={2} sx={{ mb: 2 }}>
+            <Autocomplete
+              sx={{ minWidth: 230 }} size="small"
+              options={employees} getOptionLabel={(o) => o.name || ''}
+              value={inchargeValue}
+              onChange={(_, v) => patch({ inchargeEmployeeId: v ? v.uuid : null })}
+              isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+              renderInput={(p) => <TextField {...p} label="Examination incharge" />}
+            />
+            <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
+              control={<Switch checked={exam.hasInvigilation !== false} onChange={(e) => patch({ hasInvigilation: e.target.checked })} />}
+              label="Invigilation" />
+            <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
+              control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />}
+              label="Admit cards" />
+          </Stack>
+
+          {/* Line 2: admit-card settings (cards per page, dues cutoff, thresholds) */}
           {exam.hasAdmitCards && (
-            <>
+            <Stack direction="row" flexWrap="wrap" useFlexGap spacing={2} sx={{ mb: 2 }}>
               <TextField
                 select size="small" sx={{ minWidth: 150 }} label="Cards per A4 page"
                 value={exam.cardsPerPage || 4} onChange={(e) => patch({ cardsPerPage: Number(e.target.value) })}
@@ -137,9 +142,9 @@ export default function ExamDetail() {
                 helperText={isGod ? 'god only' : 'view-only'}
                 onBlur={isGod ? (e) => { const v = Number(e.target.value) || 0; if (v !== Number(exam.duesThresholdPrior || 0)) patch({ duesThresholdPrior: v }); } : undefined}
               />
-            </>
+            </Stack>
           )}
-        </Stack>
+        </>
       )}
 
       {canManage && (
