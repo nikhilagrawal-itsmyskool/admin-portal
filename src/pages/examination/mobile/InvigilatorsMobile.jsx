@@ -3,9 +3,9 @@ import { useParams } from 'react-router-dom';
 import {
   Box, Typography, Button, Stack, Chip, Alert, CircularProgress, Paper, Avatar, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField,
-  Table, TableHead, TableRow, TableCell, TableBody,
+  ToggleButton, ToggleButtonGroup, Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
-import { GridOn as SheetIcon, Warning as WarnIcon } from '@mui/icons-material';
+import { Warning as WarnIcon } from '@mui/icons-material';
 import { useCan } from '../../../permissions/can';
 import { examinationService } from '../../../services/examinationService';
 import { employeeService } from '../../../services/employeeService';
@@ -29,7 +29,7 @@ export default function InvigilatorsMobile() {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [pick, setPick] = useState(null); // { sectionClassId, name }
-  const [full, setFull] = useState(false);
+  const [tab, setTab] = useState('assign'); // assign (per-day) | sheet (full wide sheet, inline)
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -91,15 +91,43 @@ export default function InvigilatorsMobile() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" justifyContent="flex-end" sx={{ mb: 1 }}>
-        {view.dates.length > 0 && <Button size="small" startIcon={<SheetIcon />} onClick={() => setFull(true)}>Full sheet</Button>}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1, gap: 1, flexWrap: 'wrap' }}>
+        <Typography variant="h6">Invigilators</Typography>
+        {view.dates.length > 0 && (
+          <ToggleButtonGroup exclusive size="small" value={tab} onChange={(_, v) => v && setTab(v)}>
+            <ToggleButton value="assign" sx={{ px: 1.25, py: 0.3 }}>Assign</ToggleButton>
+            <ToggleButton value="sheet" sx={{ px: 1.25, py: 0.3 }}>Full sheet</ToggleButton>
+          </ToggleButtonGroup>
+        )}
       </Stack>
-      <Typography variant="h6" sx={{ mb: 1 }}>Invigilators</Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
 
       {!view.dates.length ? (
         <Alert severity="info">Add the datesheet first — invigilators are assigned per exam day.</Alert>
+      ) : tab === 'sheet' ? (
+        <Paper variant="outlined" sx={{ borderRadius: 2, overflowX: 'auto' }}>
+          <Table size="small" sx={{ minWidth: 160 + view.dates.length * 120, '& th,& td': { whiteSpace: 'nowrap' } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Section</TableCell>
+                {view.dates.map((d) => <TableCell key={d} sx={{ fontWeight: 700 }}>{`${dayOf(d)} ${d.slice(8, 10)}`}</TableCell>)}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {view.sections.map((s) => (
+                <TableRow key={s.classId}>
+                  <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
+                  {view.dates.map((d) => {
+                    const assignable = (view.gradesByDate?.[d] || []).includes(s.grade);
+                    const e = map[key(d, s.classId)];
+                    return <TableCell key={d} sx={{ bgcolor: assignable ? undefined : 'action.hover' }}>{assignable ? (empById[e]?.name || '—') : ''}</TableCell>;
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
       ) : (
         <>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
@@ -161,35 +189,6 @@ export default function InvigilatorsMobile() {
         </DialogActions>
       </Dialog>
 
-      {/* Full wide sheet */}
-      <Dialog open={full} onClose={() => setFull(false)} maxWidth="lg" fullWidth>
-        <DialogTitle>All invigilators</DialogTitle>
-        <DialogContent>
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 160 + view.dates.length * 150, '& th,& td': { whiteSpace: 'nowrap' } }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Section</TableCell>
-                  {view.dates.map((d) => <TableCell key={d} sx={{ fontWeight: 700 }}>{fmtDate(d)}</TableCell>)}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {view.sections.map((s) => (
-                  <TableRow key={s.classId}>
-                    <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
-                    {view.dates.map((d) => {
-                      const assignable = (view.gradesByDate?.[d] || []).includes(s.grade);
-                      const e = map[key(d, s.classId)];
-                      return <TableCell key={d} sx={{ bgcolor: assignable ? undefined : 'action.hover' }}>{assignable ? (empById[e]?.name || '—') : ''}</TableCell>;
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        </DialogContent>
-        <DialogActions><Button onClick={() => setFull(false)}>Close</Button></DialogActions>
-      </Dialog>
     </Box>
   );
 }
