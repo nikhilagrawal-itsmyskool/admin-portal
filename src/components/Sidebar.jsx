@@ -89,6 +89,7 @@ import {
   PhotoCamera as HomeworkIcon,
   HistoryEdu as ExamIcon,
   HowToReg as DutyIcon,
+  Image as BrandingSidebarIcon,
   Payments as FeesIcon,
   PointOfSale as CollectIcon,
   RequestQuote as StructureIcon,
@@ -368,6 +369,7 @@ const menuItems = [
       { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
       { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
+      { title: 'Branding', icon: BrandingSidebarIcon, path: '/branding', perm: 'exam.manage' },
     ],
   },
   {

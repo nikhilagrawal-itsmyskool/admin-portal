@@ -105,13 +105,6 @@ export default function ExamDetail() {
           <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
             control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />}
             label="Admit cards" />
-          <TextField
-            key={`notes-${exam.uuid}`}
-            size="small" multiline minRows={1} maxRows={4} sx={{ minWidth: 280, flex: 1 }}
-            label="Datesheet notes (one per line)" defaultValue={exam.datesheetNotes ?? ''}
-            placeholder="Leave blank for the standard notes"
-            onBlur={(e) => { if ((e.target.value || '') !== (exam.datesheetNotes || '')) patch({ datesheetNotes: e.target.value || null }); }}
-          />
           {exam.hasAdmitCards && (
             <>
               <TextField
@@ -144,12 +137,19 @@ export default function ExamDetail() {
                 helperText={isGod ? 'god only' : 'view-only'}
                 onBlur={isGod ? (e) => { const v = Number(e.target.value) || 0; if (v !== Number(exam.duesThresholdPrior || 0)) patch({ duesThresholdPrior: v }); } : undefined}
               />
-              <Button variant="outlined" startIcon={<BrandingIcon />} onClick={() => setBrandingOpen(true)} sx={{ alignSelf: 'flex-start', height: 40 }}>
-                Branding
-              </Button>
             </>
           )}
         </Stack>
+      )}
+
+      {canManage && (
+        <TextField
+          key={`notes-${exam.uuid}`}
+          fullWidth size="small" multiline minRows={1} maxRows={4} sx={{ mb: 2 }}
+          label="Datesheet notes (one per line)" defaultValue={exam.datesheetNotes ?? ''}
+          placeholder="Leave blank for the standard notes"
+          onBlur={(e) => { if ((e.target.value || '') !== (exam.datesheetNotes || '')) patch({ datesheetNotes: e.target.value || null }); }}
+        />
       )}
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
@@ -163,8 +163,6 @@ export default function ExamDetail() {
       {effectiveTab === 'datesheet' && <DatesheetGrid examId={id} canManage={canManage} onChanged={load} exam={exam} />}
       {effectiveTab === 'invigilators' && exam.hasInvigilation && <InvigilatorGrid examId={id} canManage={canManage} employees={employees} />}
       {effectiveTab === 'admit' && exam.hasAdmitCards && <AdmitCardsTab examId={id} exam={exam} canManage={canManage} />}
-
-      <BrandingDialog open={brandingOpen} onClose={() => setBrandingOpen(false)} />
     </Box>
   );
 }

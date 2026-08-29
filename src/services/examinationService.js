@@ -49,6 +49,7 @@ export const examinationService = {
   getBranding: async () => (await api.get('/examination/branding')).data,
   setBranding: async (kind, imageBase64, mimeType, fileName) =>
     (await api.put(`/examination/branding/${kind}`, { imageBase64, mimeType, fileName })).data,
+  setBrandingText: async (body) => (await api.put('/examination/branding', body)).data,
 
   // Staff QR verify → live admit-card view.
   verify: async (admitCardId) => (await api.get(`/examination/verify/${admitCardId}`)).data,

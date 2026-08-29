@@ -18,6 +18,8 @@ export function buildAdmitCardsHtml(data, cardsPerPage) {
   const per = cardsPerPage === 3 ? 3 : 4;
   const cols = per === 4 ? 2 : 1;
   const { exam, section, branding, papers, cards } = data;
+  const schoolName = (branding && branding.schoolName) || 'Dr. B. P. Agrawal Shiksha Niketan';
+  const motto = (branding && branding.motto) || 'Chariot of Knowledge';
 
   const pages = [];
   for (let i = 0; i < cards.length; i += per) pages.push(cards.slice(i, i + per));
@@ -41,8 +43,8 @@ export function buildAdmitCardsHtml(data, cardsPerPage) {
       <div class="head">
         ${branding && branding.logoDataUri ? `<img class="logo" src="${branding.logoDataUri}">` : '<div class="logo"></div>'}
         <div class="htext">
-          <div class="school">Dr. B. P. Agrawal Shiksha Niketan</div>
-          <div class="tag">— Chariot of Knowledge —</div>
+          <div class="school">${esc(schoolName)}</div>
+          <div class="tag">— ${esc(motto)} —</div>
           <div class="exam">${esc(exam.name)} · ${esc(exam.academicYearName)}</div>
         </div>
         ${c.qrDataUri ? `<img class="qr" src="${c.qrDataUri}">` : '<div class="qr"></div>'}

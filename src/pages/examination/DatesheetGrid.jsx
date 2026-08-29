@@ -95,7 +95,7 @@ export default function DatesheetGrid({ examId, canManage, onChanged, exam }) {
       ]);
       printDatesheet({
         examName: exam?.name, grades: grid.grades, dates: grid.dates, papers: grid.papers,
-        logoDataUri: brand?.logoDataUri,
+        logoDataUri: brand?.logoDataUri, schoolName: brand?.schoolName, motto: brand?.motto, address: brand?.address,
         notes: (exam?.datesheetNotes || '').split('\n').map((s) => s.trim()).filter(Boolean),
       });
     } catch (e) {

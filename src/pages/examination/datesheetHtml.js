@@ -14,8 +14,15 @@ export const DEFAULT_DATESHEET_NOTES = [
   'Kindly prepare all the work done in the Book, N.B. and Revision work.',
 ];
 
+const DEF_SCHOOL = 'Dr. B. P. Agrawal Shiksha Niketan';
+const DEF_MOTTO = 'Chariot of Knowledge';
+const DEF_ADDR = 'Kalyankunj, Kanpur Road (Farrukhabad)';
+
 export function buildDatesheetHtml(data) {
   const { examName, grades = [], dates = [], papers = [], logoDataUri, notes } = data;
+  const schoolName = data.schoolName || DEF_SCHOOL;
+  const motto = data.motto || DEF_MOTTO;
+  const address = data.address || DEF_ADDR;
   const noteList = (notes && notes.length ? notes : DEFAULT_DATESHEET_NOTES);
   const range = dates.length ? `[ ${ddmmyyyy(dates[0])} to ${ddmmyyyy(dates[dates.length - 1])} ]` : '';
   const cell = (g, d) => papers.find((p) => p.grade === g.grade && p.examDate === d)?.subjectLabel;
@@ -60,9 +67,9 @@ export function buildDatesheetHtml(data) {
       <div class="head">
         ${logoDataUri ? `<img class="logo" src="${logoDataUri}">` : '<div class="logo"></div>'}
         <div class="txt">
-          <div class="school">Dr. B. P. Agrawal Shiksha Niketan</div>
-          <div class="tag">——— Chariot of Knowledge ———</div>
-          <div class="addr">Kalyankunj, Kanpur Road (Farrukhabad)</div>
+          <div class="school">${esc(schoolName)}</div>
+          <div class="tag">——— ${esc(motto)} ———</div>
+          <div class="addr">${esc(address)}</div>
         </div>
         ${logoDataUri ? '<div class="logo"></div>' : ''}
       </div>
