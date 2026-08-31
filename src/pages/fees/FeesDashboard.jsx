@@ -13,19 +13,23 @@ import { feesService } from '../../services/feesService';
 import { inr, inrShort, errMsg, fmtDate, openReceipt, PAYMENT_MODE_LABELS, FEE_COLORS } from './feesUi';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { todayIso } from '../../utils/date';
+import ReceiptDetailSheet from './ReceiptDetailSheet';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const iso = (d) => d.toISOString().slice(0, 10);
 const dayLabel = (d) => d.toLocaleDateString('en-IN', { weekday: 'short' });
 
 function Kpi({ label, value, sub, accent, subColor, onClick }) {
+  // shrink the value font as the string gets longer so a 6–7 digit amount never clips the card
+  const vlen = String(value ?? '').length;
+  const vFont = vlen > 10 ? 19 : vlen > 8 ? 22 : 26;
   return (
     <Card sx={{ height: '100%', ...(onClick ? { cursor: 'pointer', '&:hover': { boxShadow: 3 } } : {}) }} onClick={onClick}>
       <CardContent>
         <Typography sx={{ color: FEE_COLORS.muted, fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>
           {label}
         </Typography>
-        <Typography sx={{ fontSize: 26, fontWeight: 700, mt: 0.5, fontVariantNumeric: 'tabular-nums' }}>
+        <Typography sx={{ fontSize: vFont, fontWeight: 700, mt: 0.5, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
           {value}
         </Typography>
         {sub && <Typography sx={{ fontSize: 12, mt: 0.5, color: subColor || FEE_COLORS.muted }}>{sub}</Typography>}
@@ -45,6 +49,7 @@ export default function FeesDashboard() {
   const [trend, setTrend] = useState([]);
   const [modes, setModes] = useState([]);
   const [receipts, setReceipts] = useState([]);
+  const [detailId, setDetailId] = useState(null); // mobile: tap a receipt to view its breakdown in-app
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId]);
 
@@ -75,6 +80,10 @@ export default function FeesDashboard() {
   }
 
   const collectedToday = overview?.collectedToday ?? (modes.reduce((s, m) => s + Number(m.total || 0), 0));
+  // full precise figure (not abbreviated), but drop the ₹ once it's 6+ digits (≥1 lakh) so it fits the card
+  const collectedTodayStr = Math.abs(collectedToday) >= 1e5
+    ? Math.round(collectedToday).toLocaleString('en-IN')
+    : inr(collectedToday);
 
   return (
     <Box>
@@ -93,7 +102,7 @@ export default function FeesDashboard() {
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} md={2.4}><Kpi label="Collected today" value={inr(collectedToday)} accent={FEE_COLORS.primary} /></Grid>
+        <Grid item xs={6} md={2.4}><Kpi label="Collected today" value={collectedTodayStr} accent={FEE_COLORS.primary} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="This month" value={inrShort(overview?.collectedMonth)} accent={FEE_COLORS.success} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="Outstanding (due now)" value={inrShort(overview?.dueNow)} sub={overview ? `Full year ${inrShort(overview.outstanding)} · ${overview.duesStudents || 0} due` : '—'} subColor={FEE_COLORS.danger} accent={FEE_COLORS.danger} onClick={() => navigate('/fees/dues')} /></Grid>
         <Grid item xs={6} md={2.4}><Kpi label="Advance held" value={inrShort(overview?.advance)} sub={overview ? `${overview.advanceStudents || 0} students` : '—'} accent={FEE_COLORS.warning} /></Grid>
@@ -144,13 +153,13 @@ export default function FeesDashboard() {
             {receipts.length === 0 && <Typography sx={{ color: FEE_COLORS.muted, py: 3, textAlign: 'center' }}>No receipts yet.</Typography>}
             {receipts.map((r) => (
               <Box key={r.uuid} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setDetailId(r.uuid)}>
                   <Typography sx={{ fontWeight: 600, fontSize: 13.5 }} noWrap>
                     {r.payerName || '—'}<Typography component="span" variant="caption" color="text.secondary"> · {r.payerClassSnapshot || '—'}</Typography>
                   </Typography>
                   <Typography variant="caption" color="text.secondary">#{r.receiptNo || r.legacyReceiptNo} · {fmtDate(r.receiptDate)} · {PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}</Typography>
                 </Box>
-                <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{inr(r.totalPaid)}</Typography>
+                <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={() => setDetailId(r.uuid)}>{inr(r.totalPaid)}</Typography>
                 <IconButton size="small" title="Print" onClick={() => openReceipt(r.uuid)}><PrintIcon fontSize="small" /></IconButton>
               </Box>
             ))}
@@ -193,6 +202,8 @@ export default function FeesDashboard() {
         </Box>
         )}
       </Card>
+
+      <ReceiptDetailSheet receiptId={detailId} open={!!detailId} onClose={() => setDetailId(null)} />
     </Box>
   );
 }
