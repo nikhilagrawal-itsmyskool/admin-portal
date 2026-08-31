@@ -27,6 +27,8 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
+  const [schoolSummary, setSchoolSummary] = useState(null); // { clear, blocked, printed, total } across all classes
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [pendingPrint, setPendingPrint] = useState(null); // { count, studentIds } awaiting "did it print?" confirm
 
   useEffect(() => {
@@ -53,6 +55,34 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
   useEffect(() => {
     if (sectionId) loadRoster(sectionId);
   }, [exam.duesCutoffDate, exam.duesThresholdCurrent, exam.duesThresholdPrior]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // No class selected → tally clear/blocked across the WHOLE school by summing each class's
+  // roster (throttled parallel). Recomputed when the dues gate changes. Same gate as a class.
+  useEffect(() => {
+    if (sectionId || !sections.length) { setSchoolSummary(null); return; }
+    let alive = true;
+    (async () => {
+      setSummaryLoading(true); setSchoolSummary(null);
+      const agg = { clear: 0, blocked: 0, printed: 0, total: 0 };
+      const queue = [...sections];
+      const worker = async () => {
+        while (queue.length && alive) {
+          const c = queue.shift();
+          try {
+            const r = await examinationService.roster(examId, c.uuid);
+            const studs = r?.students || [];
+            agg.total += studs.length;
+            agg.clear += studs.filter((s) => s.printable).length;
+            agg.blocked += studs.filter((s) => !s.printable).length;
+            agg.printed += studs.filter((s) => s.printedOn).length;
+          } catch { /* skip a class that fails to load */ }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, queue.length) }, worker));
+      if (alive) { setSchoolSummary(agg); setSummaryLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, [sectionId, sections, examId, exam.duesCutoffDate, exam.duesThresholdCurrent, exam.duesThresholdPrior]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const printableSelected = useMemo(() => {
     if (!roster) return [];
@@ -165,6 +195,26 @@ export default function AdmitCardsTab({ examId, exam, canManage }) {
           </Button>
         ))}
       </Stack>
+
+      {/* School-wide tally when no class is picked */}
+      {!sectionId && (
+        <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: 'wrap', alignItems: 'center' }} useFlexGap>
+          <Chip size="small" variant="outlined" label="All classes" />
+          {summaryLoading ? (
+            <>
+              <CircularProgress size={15} />
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Tallying the whole school…</Typography>
+            </>
+          ) : schoolSummary ? (
+            <>
+              <Chip size="small" color="success" label={`${schoolSummary.clear} clear`} />
+              {schoolSummary.blocked > 0 && <Chip size="small" color="error" label={`${schoolSummary.blocked} blocked by dues`} />}
+              {schoolSummary.printed > 0 && <Chip size="small" variant="outlined" color="info" label={`${schoolSummary.printed} already printed`} />}
+              <Chip size="small" variant="outlined" label={`${schoolSummary.total} students`} />
+            </>
+          ) : null}
+        </Stack>
+      )}
 
       {roster && (
         <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: 'wrap' }} useFlexGap>

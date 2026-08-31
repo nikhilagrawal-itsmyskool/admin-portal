@@ -81,7 +81,9 @@ export function buildAdmitCardsHtml(data, cardsPerPage) {
     .school { font-size: 15px; font-weight: 700; }
     .tag { font-size: 10px; }
     .exam { font-size: 11px; font-weight: 600; }
-    .qr { width: 52px; height: 52px; }
+    /* Bigger + a white quiet-zone around the code so a phone camera can actually decode it
+       (52px with almost no margin was too small/tight to scan). Keep the modules crisp. */
+    .qr { width: 82px; height: 82px; background: #fff; padding: 5px; image-rendering: pixelated; flex: none; }
     .title { text-align: center; font-weight: 700; text-decoration: underline; font-size: 12px; margin: 3px 0; letter-spacing: 1px; }
     .meta { display: flex; justify-content: space-between; font-size: 12px; margin: 2px 0; }
     table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; }
