@@ -54,9 +54,7 @@ export default function ScanVerify() {
     if (!streamRef.current || !v) return;
     if (v.readyState >= 2 && v.videoWidth) {
       const c = canvasRef.current || (canvasRef.current = document.createElement('canvas'));
-      // Decode at full camera resolution (don't downscale to 1024) — small/dense QRs like the
-      // admit-card code need every pixel for jsQR to resolve the modules.
-      const W = Math.min(v.videoWidth, 1920), s = W / v.videoWidth, H = Math.round(v.videoHeight * s);
+      const W = Math.min(v.videoWidth, 1024), s = W / v.videoWidth, H = Math.round(v.videoHeight * s);
       c.width = W; c.height = H;
       const ctx = c.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(v, 0, 0, W, H);
@@ -75,7 +73,7 @@ export default function ScanVerify() {
     setError(''); setResult(null); setDbg('starting camera…'); framesRef.current = 0;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
       setScanning(true);
