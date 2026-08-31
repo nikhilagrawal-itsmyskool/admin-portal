@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
-import { Box, Typography, IconButton, Stack } from "@mui/material";
-import { ArrowBack as BackIcon } from "@mui/icons-material";
+import { Box, Typography } from "@mui/material";
 import { getHub, hubChildren } from "../mobile/mobileFeatures";
 import { useMobileVisibility } from "../mobile/useMobileVisibility";
 import TileGrid from "../mobile/TileGrid";
@@ -28,14 +27,10 @@ export default function HubPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <IconButton size="small" edge="start" onClick={() => navigate("/")} aria-label="Back">
-          <BackIcon />
-        </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          {hub.title}
-        </Typography>
-      </Stack>
+      {/* No back button here — the global header back (mobile) covers it. */}
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+        {hub.title}
+      </Typography>
       {kids.length === 0 ? (
         <Typography color="text.secondary">Nothing here for your role.</Typography>
       ) : (
