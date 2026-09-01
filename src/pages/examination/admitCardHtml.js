@@ -81,9 +81,10 @@ export function buildAdmitCardsHtml(data, cardsPerPage) {
     .school { font-size: 15px; font-weight: 700; }
     .tag { font-size: 10px; }
     .exam { font-size: 11px; font-weight: 600; }
-    /* Bigger + a white quiet-zone around the code so a phone camera can actually decode it
-       (52px with almost no margin was too small/tight to scan). Keep the modules crisp. */
-    .qr { width: 82px; height: 82px; background: #fff; padding: 5px; image-rendering: pixelated; flex: none; }
+    /* Measured: at 82px this printed ~13mm → 0.52mm/module, below the camera's ~0.6mm limit, so it
+       wouldn't scan. Enlarge so each module is ≥0.6mm even after the card's print-scaling. White
+       quiet-zone around it; keep modules crisp. */
+    .qr { width: 128px; height: 128px; background: #fff; padding: 6px; image-rendering: pixelated; flex: none; }
     .title { text-align: center; font-weight: 700; text-decoration: underline; font-size: 12px; margin: 3px 0; letter-spacing: 1px; }
     .meta { display: flex; justify-content: space-between; font-size: 12px; margin: 2px 0; }
     table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; }
