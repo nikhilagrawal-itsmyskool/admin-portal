@@ -74,6 +74,20 @@ export default function ModelPapers() {
   const hasStreams = streams.length > 0;
   const streamName = (code) => streams.find((s) => (s.code || '').toLowerCase() === (code || '').toLowerCase())?.name || code;
 
+  // Subjects are per-grade — the upload dialog must only offer subjects for the
+  // grade being uploaded, otherwise identical names (e.g. "Grammar" for II and
+  // III) are indistinguishable and a paper gets filed under the wrong grade's
+  // subject (invisible to the assigned teacher). Legacy null-grade subjects are
+  // kept as a fallback so nothing already in use disappears.
+  const dialogSubjects = useMemo(() => {
+    const g = (dialog?.grade || '').toLowerCase();
+    if (!g) return [];
+    return subjects.filter((s) => {
+      const sg = (s.grade || '').toLowerCase();
+      return sg === g || sg === '';
+    });
+  }, [subjects, dialog?.grade]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -176,13 +190,18 @@ export default function ModelPapers() {
   const onPickFile = (file) => {
     if (!file) { setDialog((d) => ({ ...d, file: null })); return; }
     const det = detectFromName(file.name, grades, exams);
-    setDialog((d) => ({
-      ...d,
-      file,
-      grade: det.grade || d.grade,
-      docType: det.docType || d.docType,
-      exam: det.exam || d.exam,
-    }));
+    setDialog((d) => {
+      const nextGrade = det.grade || d.grade;
+      return {
+        ...d,
+        file,
+        grade: nextGrade,
+        // Drop a stale subject if the file's grade moved us to a different grade.
+        subjectId: nextGrade !== d.grade ? '' : d.subjectId,
+        docType: det.docType || d.docType,
+        exam: det.exam || d.exam,
+      };
+    });
   };
 
   const submitUpload = async () => {
@@ -373,14 +392,18 @@ export default function ModelPapers() {
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={6} sm={hasStreams ? 3 : 4}>
               <TextField fullWidth select size="small" label="Grade" value={dialog?.grade || ''}
-                onChange={(e) => setDialog({ ...dialog, grade: e.target.value })}>
+                onChange={(e) => setDialog({ ...dialog, grade: e.target.value, subjectId: '' })}>
                 {grades.map((g) => <MenuItem key={g.grade} value={g.grade}>{g.grade}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={6} sm={hasStreams ? 5 : 8}>
               <TextField fullWidth select size="small" label="Subject" value={dialog?.subjectId || ''}
+                disabled={!dialog?.grade}
+                helperText={!dialog?.grade ? 'Pick a grade first' : undefined}
                 onChange={(e) => setDialog({ ...dialog, subjectId: e.target.value })}>
-                {subjects.map((s) => <MenuItem key={s.uuid} value={s.uuid}>{s.name}</MenuItem>)}
+                {dialogSubjects.map((s) => (
+                  <MenuItem key={s.uuid} value={s.uuid}>{s.name}{s.grade ? ` · ${s.grade}` : ''}</MenuItem>
+                ))}
               </TextField>
             </Grid>
             {hasStreams && (
