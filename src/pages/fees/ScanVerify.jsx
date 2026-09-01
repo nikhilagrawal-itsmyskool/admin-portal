@@ -21,6 +21,7 @@ export default function ScanVerify() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const cropRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
   const [scanning, setScanning] = useState(false);
@@ -59,7 +60,21 @@ export default function ScanVerify() {
       const ctx = c.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(v, 0, 0, W, H);
       const img = ctx.getImageData(0, 0, W, H);
-      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+      let code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+      if (!code) {
+        // Second pass: decode just the centre of the frame (the guide box) at native resolution.
+        // A dense QR (e.g. the fee receipt's long verify URL) has too few pixels-per-module in the
+        // whole 720p frame; cropping to where the code sits gives jsQR a much bigger code to read.
+        // Additive — the full-frame pass above is unchanged, so sparse codes still decode first-try.
+        const cw = Math.round(v.videoWidth * 0.7), ch = Math.round(v.videoHeight * 0.7);
+        const sx = Math.round((v.videoWidth - cw) / 2), sy = Math.round((v.videoHeight - ch) / 2);
+        const cc = cropRef.current || (cropRef.current = document.createElement('canvas'));
+        cc.width = cw; cc.height = ch;
+        const cctx = cc.getContext('2d', { willReadFrequently: true });
+        cctx.drawImage(v, sx, sy, cw, ch, 0, 0, cw, ch);
+        const cimg = cctx.getImageData(0, 0, cw, ch);
+        code = jsQR(cimg.data, cimg.width, cimg.height, { inversionAttempts: 'attemptBoth' });
+      }
       framesRef.current += 1;
       if (framesRef.current % 5 === 0) setDbg(`cam ${v.videoWidth}×${v.videoHeight} · frames ${framesRef.current}`);
       if (code && code.data) { onCode(code.data); return; }
