@@ -134,7 +134,7 @@ export default function InvigilatorRoster({ mode = 'me' }) {
         </CardContent>
       </Card>
 
-      <Stack direction="row" spacing={1} sx={{ mt: 2, position: 'sticky', bottom: 8 }}>
+      <Stack direction="row" spacing={1} sx={{ mt: 2, pb: 1 }}>
         <Button variant="outlined" onClick={saveMarks} disabled={busy}>Save attendance</Button>
         <Box sx={{ flex: 1 }} />
         <Button variant="contained" startIcon={<SignIcon />} onClick={sign} disabled={busy || !sig?.dataUri}>
