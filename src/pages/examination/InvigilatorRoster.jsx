@@ -81,7 +81,8 @@ export default function InvigilatorRoster({ mode = 'me' }) {
   return (
     <Box sx={{ maxWidth: 720, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate(back)}>Back</Button>
+        {/* PWA (me) relies on the global header back; desktop admin has no header back, so keep it there. */}
+        {mode === 'admin' && <Button startIcon={<BackIcon />} onClick={() => navigate(back)}>Back</Button>}
         <Box sx={{ flex: 1 }} />
         {roster.signed && <Chip size="small" color="success" label="signed" />}
       </Stack>
