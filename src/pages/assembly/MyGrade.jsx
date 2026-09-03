@@ -73,6 +73,8 @@ function EvaluatorGrade() {
   const gradeableDays = weekStart
     ? Array.from({ length: 6 }, (_, i) => addDays(weekStart, i)).filter((d) => d <= todayIso())
     : [];
+  // At least one score must be entered — an empty grade is rejected by the backend.
+  const hasAnyScore = rubric.metrics.some((m) => form.metrics[m.uuid] !== undefined && form.metrics[m.uuid] !== '');
 
   const save = async () => {
     setBusy('save'); setError(''); setMsg('');
@@ -129,8 +131,8 @@ function EvaluatorGrade() {
               <TextField size="small" label="Feedback" multiline minRows={2} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
 
               <Box>
-                <Button fullWidth variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save' || rubric.metrics.length === 0}>{myGrades[date] ? 'Update grade' : 'Save grade'}</Button>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>You can keep updating your marks until Sunday.</Typography>
+                <Button fullWidth variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save' || rubric.metrics.length === 0 || !hasAnyScore}>{myGrades[date] ? 'Update grade' : 'Save grade'}</Button>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>{hasAnyScore ? 'You can keep updating your marks until Sunday.' : 'Enter at least one score to save.'}</Typography>
               </Box>
             </Stack>
           </CardContent>

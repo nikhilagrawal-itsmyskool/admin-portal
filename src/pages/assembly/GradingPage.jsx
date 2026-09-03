@@ -332,7 +332,11 @@ export default function GradingPage() {
           <DictionPicker value={gradeForm?.diction || ''} onChange={(v) => setGradeForm({ ...gradeForm, diction: v })} />
           <TextField size="small" label="Feedback" multiline minRows={2} value={gradeForm?.feedback || ''} onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })} />
         </Stack></DialogContent>
-        <DialogActions><Button onClick={() => setGradeForm(null)}>Cancel</Button><Button variant="contained" startIcon={<SaveIcon />} onClick={saveGrade} disabled={busy === 'grade'}>Save grade</Button></DialogActions>
+        <DialogActions>
+          <Button onClick={() => setGradeForm(null)}>Cancel</Button>
+          <Button variant="contained" startIcon={<SaveIcon />} onClick={saveGrade}
+            disabled={busy === 'grade' || !rubric.metrics.some((m) => gradeForm?.metrics?.[m.uuid] !== undefined && gradeForm?.metrics?.[m.uuid] !== '')}>Save grade</Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );
