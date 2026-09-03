@@ -97,6 +97,8 @@ export const feesService = {
   getManagerSummary: async () => (await api.get('/fees/manager/summary')).data,
   getManagerDueStudents: async (academicYearId) => (await api.get('/fees/manager/due-students', { params: { academicYearId } })).data,
   getManagerDay: async (date) => (await api.get('/fees/manager/day', { params: date ? { date } : {} })).data,
+  getManagerSearch: async (q, signal) => (await api.get('/fees/manager/search', { params: { q }, signal })).data,
+  getManagerStudentDues: async (studentId) => (await api.get('/fees/manager/student-dues', { params: { studentId } })).data,
 
   // ---- Refunds ----
   getRefunds: async (params = {}) => (await api.get('/fees/refunds', { params })).data,

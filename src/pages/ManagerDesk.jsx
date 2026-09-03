@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, CircularProgress, Alert, Avatar,
-  IconButton, Divider, Button,
+  IconButton, Divider, Button, TextField, InputAdornment,
 } from '@mui/material';
 import {
   ChevronRight, ChevronLeft, ArrowBack, Payments as FeesIcon, DirectionsBus as BusIcon,
-  OpenInNew, Refresh,
+  OpenInNew, Refresh, Search as SearchIcon, Clear as ClearIcon,
 } from '@mui/icons-material';
 import { feesService } from '../services/feesService';
 import { inr, errMsg, PAYMENT_MODE_LABELS } from './fees/feesUi';
@@ -28,6 +28,7 @@ const gradeRank = (cls) => {
   return r ? 2 + r : 99;
 };
 const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+const stripTitle = (name) => String(name || '').replace(/^\s*(mr|mrs|ms|smt|shri|sri|dr|md)\.?\s*/i, '').trim();
 
 const C = { bg: '#f4f7fb', card: '#ffffff', ink: '#0f172a', muted: '#64748b', due: '#b91c1c', fees: '#0f766e', bus: '#b45309', line: '#e6ebf2' };
 
@@ -53,6 +54,46 @@ export default function ManagerDesk() {
   };
   const openDay = (filter) => { const d = todayIso(); setDayFilter(filter); setDayDate(d); loadDay(d); };
   const gotoDay = (d) => { setDayDate(d); loadDay(d); };
+
+  // Find a student → per-student dues
+  const [find, setFind] = useState(false);
+  const [q, setQ] = useState('');
+  const [dq, setDq] = useState('');
+  const [results, setResults] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const [picked, setPicked] = useState(null); // selected student row
+  const [studentDues, setStudentDues] = useState(null);
+  const [duesLoading, setDuesLoading] = useState(false);
+  const searchRef = useRef(null);
+  const abortRef = useRef(null);
+
+  useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 300); return () => clearTimeout(t); }, [q]);
+  useEffect(() => {
+    if (!find || picked) return;
+    if (dq.length < 1) { setResults(null); setSearching(false); return; }
+    if (abortRef.current) abortRef.current.abort();
+    const ac = new AbortController(); abortRef.current = ac;
+    setSearching(true);
+    feesService.getManagerSearch(dq, ac.signal)
+      .then((r) => { setResults(r || []); setSearching(false); })
+      .catch((e) => { if (e.name !== 'CanceledError' && e.code !== 'ERR_CANCELED') { setSearching(false); setResults([]); } });
+  }, [dq, find, picked]);
+
+  // Ctrl/⌘+K opens the search view (desktop bonus)
+  useEffect(() => {
+    const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setFind(true); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const pickStudent = (row) => {
+    setPicked(row); setStudentDues(null); setDuesLoading(true); setError('');
+    feesService.getManagerStudentDues(row.studentId)
+      .then(setStudentDues)
+      .catch((e) => setError(errMsg(e, 'Could not load dues')))
+      .finally(() => setDuesLoading(false));
+  };
+  const closeFind = () => { setFind(false); setPicked(null); setQ(''); setDq(''); setResults(null); };
 
   const loadSummary = () => {
     setLoading(true); setError('');
@@ -205,6 +246,116 @@ export default function ManagerDesk() {
     );
   }
 
+  // ── Student dues: consolidated + year by year ────────────────────────────────
+  if (picked) {
+    const st = studentDues?.student || picked;
+    const yrs = studentDues?.years || [];
+    return (
+      <Shell>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5 }}>
+          <IconButton onClick={() => setPicked(null)} sx={{ color: C.ink }}><ArrowBack /></IconButton>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.ink }}>Student dues</Typography>
+        </Box>
+        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+
+        <Card sx={{ borderRadius: 4, mb: 2 }}>
+          <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
+            <Avatar src={st.photoUrl || undefined} sx={{ width: 58, height: 58, bgcolor: '#dbe4f0', color: C.ink, fontWeight: 700, fontSize: 20 }}>{initials(st.name)}</Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: 19, fontWeight: 800, color: C.ink }} noWrap>{st.name}</Typography>
+              <Typography sx={{ fontSize: 13.5, color: C.muted }} noWrap>{st.className}{st.fatherName ? ` · S/o ${stripTitle(st.fatherName)}` : ''}</Typography>
+              {st.admissionNumber && <Typography sx={{ fontSize: 12, color: C.muted }}>{st.admissionNumber}</Typography>}
+            </Box>
+          </CardContent>
+        </Card>
+
+        {duesLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+        ) : yrs.length === 0 ? (
+          <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center', py: 3 }}>
+            <Typography sx={{ color: '#16a34a', fontWeight: 700, fontSize: 18 }}>All cleared 🎉</Typography>
+            <Typography sx={{ color: C.muted, fontSize: 13 }}>No dues in any year.</Typography>
+          </CardContent></Card>
+        ) : (
+          <>
+            <Card sx={{ borderRadius: 4, mb: 2, bgcolor: '#0f172a' }}>
+              <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 2 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 13, color: '#94a3b8', fontWeight: 700, letterSpacing: 0.5 }}>OWES NOW</Typography>
+                  <Typography sx={{ fontSize: 30, fontWeight: 800, color: '#fca5a5' }}>{inr(studentDues.owesNow)}</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>incl. upcoming</Typography>
+                  <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#e2e8f0' }}>{inr(studentDues.totalRemaining)}</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+            <Typography sx={{ fontSize: 13, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700, px: 0.5, mb: 1 }}>Year by year</Typography>
+            <Card sx={{ borderRadius: 4 }}>
+              {yrs.map((y, i) => (
+                <Box key={y.academicYearId}>
+                  {i > 0 && <Divider sx={{ borderColor: C.line }} />}
+                  <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5 }}>
+                    <Typography sx={{ flex: 1, fontSize: 17, fontWeight: 700, color: C.ink }}>{y.name}</Typography>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography sx={{ fontSize: 17, fontWeight: 800, color: C.due }}>{inr(y.dueNow)} <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>due now</span></Typography>
+                      {y.fullYear > y.dueNow + 0.5 && <Typography sx={{ fontSize: 12.5, color: C.muted }}>{inr(y.fullYear)} full year</Typography>}
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Card>
+          </>
+        )}
+      </Shell>
+    );
+  }
+
+  // ── Find a student ───────────────────────────────────────────────────────────
+  if (find) {
+    const rows = results || [];
+    return (
+      <Shell>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5 }}>
+          <IconButton onClick={closeFind} sx={{ color: C.ink }}><ArrowBack /></IconButton>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.ink }}>Find a student</Typography>
+        </Box>
+        <TextField
+          fullWidth autoFocus inputRef={searchRef} value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder="Type a student's name…" sx={{ mb: 2, bgcolor: '#fff', borderRadius: 2 }}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
+            endAdornment: q ? <InputAdornment position="end"><IconButton size="small" onClick={() => setQ('')}><ClearIcon /></IconButton></InputAdornment> : null,
+          }}
+        />
+        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+        {searching ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={26} /></Box>
+        ) : dq.length < 1 ? (
+          <Typography sx={{ textAlign: 'center', color: C.muted, py: 4 }}>Type a name to search.</Typography>
+        ) : rows.length === 0 ? (
+          <Typography sx={{ textAlign: 'center', color: C.muted, py: 4 }}>No student found for &ldquo;{dq}&rdquo;.</Typography>
+        ) : (
+          <Card sx={{ borderRadius: 3 }}>
+            {rows.map((r, i) => (
+              <Box key={r.studentId}>
+                {i > 0 && <Divider sx={{ borderColor: C.line }} />}
+                <Box onClick={() => pickStudent(r)} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1.25, cursor: 'pointer', '&:active': { bgcolor: '#f1f5f9' } }}>
+                  <Avatar src={r.photoUrl || undefined} sx={{ width: 46, height: 46, bgcolor: '#dbe4f0', color: C.ink, fontWeight: 700, fontSize: 15 }}>{initials(r.name)}</Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: C.ink }} noWrap>{r.name}</Typography>
+                    <Typography sx={{ fontSize: 13, color: C.muted }} noWrap>{r.className}{r.fatherName ? ` · S/o ${stripTitle(r.fatherName)}` : ''}</Typography>
+                  </Box>
+                  <ChevronRight sx={{ color: C.muted }} />
+                </Box>
+              </Box>
+            ))}
+          </Card>
+        )}
+      </Shell>
+    );
+  }
+
   // ── Landing: today + dues by year + grand total ──────────────────────────────
   const t = summary?.today || {};
   return (
@@ -215,6 +366,15 @@ export default function ManagerDesk() {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+
+      {/* Find a student (tap, or Ctrl+K) */}
+      <Card onClick={() => setFind(true)} sx={{ borderRadius: 3, mb: 2, cursor: 'pointer', '&:active': { bgcolor: '#eef2f7' } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 1.5 }}>
+          <SearchIcon sx={{ color: C.muted }} />
+          <Typography sx={{ flex: 1, fontSize: 16, color: C.muted }}>Find a student…</Typography>
+          <ChevronRight sx={{ color: C.muted }} />
+        </Box>
+      </Card>
 
       {/* Today — tap the total or a card to see the receipts (and step to any day) */}
       <Card sx={{ borderRadius: 4, mb: 2, bgcolor: C.card }}>
