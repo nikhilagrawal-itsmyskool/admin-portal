@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { ArrowBack as BackIcon, HowToReg as SignIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate } from '../../utils/date';
 import SignaturePad from './SignaturePad';
 
@@ -19,6 +20,7 @@ export default function RoomRoster({ mode = 'me' }) {
   const { examId, id, roomId, date } = useParams();
   const exam = examId || id;
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const svc = mode === 'admin'
     ? { roster: examinationService.adminRoomRoster, mark: examinationService.adminRoomMark, sign: examinationService.adminRoomSign }
@@ -86,7 +88,8 @@ export default function RoomRoster({ mode = 'me' }) {
   return (
     <Box sx={{ maxWidth: 720, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-        {mode === 'admin' && <Button startIcon={<BackIcon />} onClick={() => navigate(back)}>Back</Button>}
+        {/* In-page Back only on desktop (no global header back there); mobile uses the header arrow. */}
+        {!isMobile && <Button startIcon={<BackIcon />} onClick={() => navigate(back)}>Back</Button>}
         <Box sx={{ flex: 1 }} />
         {roster.signed && <Chip size="small" color="success" label="signed" />}
       </Stack>
