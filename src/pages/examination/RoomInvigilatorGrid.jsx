@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Button, Alert, CircularProgress, Stack, Autocomplete, TextField, Paper, IconButton, Tooltip,
-  Table, TableHead, TableRow, TableCell, TableBody, Typography,
+  Table, TableHead, TableRow, TableCell, TableBody, Typography, MenuItem,
 } from '@mui/material';
 import { Save as SaveIcon, HowToReg as RosterIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
@@ -23,6 +23,7 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [focusDate, setFocusDate] = useState(''); // '' = all days; else assign just that day's active rooms
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -106,6 +107,11 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
   if (!view.rooms.length) return <Alert severity="info">Set up the seating rooms first (Seating tab), then assign invigilators per room.</Alert>;
   if (!view.dates.length) return <Alert severity="info">Add the datesheet first — invigilators are assigned per exam date.</Alert>;
 
+  // Date focus: assignment usually happens a day before, so narrow to one day and show
+  // only the rooms actually used that day (the sections sitting then).
+  const shownDates = focusDate ? [focusDate] : view.dates;
+  const shownRooms = focusDate ? view.rooms.filter((rm) => activeSet.has(cellKey(focusDate, rm.uuid))) : view.rooms;
+
   return (
     <Box>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
@@ -114,15 +120,23 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
         <Alert severity="warning" sx={{ mb: 2 }}>A teacher is assigned to more than one room on the same day (highlighted). Allowed, but double-check.</Alert>
       )}
 
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+        <TextField select size="small" label="Focus a day" sx={{ minWidth: 220 }} value={focusDate} onChange={(e) => setFocusDate(e.target.value)}>
+          <MenuItem value=""><em>All days (full grid)</em></MenuItem>
+          {view.dates.map((d) => <MenuItem key={d} value={d}>{fmtDate(d)} · {dayOf(d)} · {(view.activeByDate?.[d] || []).length} rooms</MenuItem>)}
+        </TextField>
+        {focusDate && <Typography variant="caption" color="text.secondary">Showing only the {shownRooms.length} room(s) used on {fmtDate(focusDate)}.</Typography>}
+      </Stack>
+
       <Paper variant="outlined" sx={{ overflowX: 'auto', borderRadius: 2 }}>
         <Table size="small" sx={{
-          minWidth: 160 + view.dates.length * 220,
+          minWidth: 160 + shownDates.length * 220,
           '& thead th': { bgcolor: 'action.hover', fontWeight: 700, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: 0.6, color: 'text.secondary', borderBottom: 2, borderColor: 'divider' },
         }}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ minWidth: 140, position: 'sticky', left: 0, bgcolor: 'action.hover !important', zIndex: 2 }}>Room</TableCell>
-              {view.dates.map((d) => (
+              {shownDates.map((d) => (
                 <TableCell key={d} sx={{ minWidth: 210, lineHeight: 1.25 }}>
                   {fmtDate(d)}
                   <Typography variant="caption" display="block" color="primary.main" sx={{ fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>{dayOf(d)}</Typography>
@@ -131,10 +145,10 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {view.rooms.map((rm) => (
+            {shownRooms.map((rm) => (
               <TableRow key={rm.uuid} sx={{ '& td': { height: 58, py: 1 } }}>
                 <TableCell sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1, fontWeight: 600 }}>{rm.name}</TableCell>
-                {view.dates.map((d) => {
+                {shownDates.map((d) => {
                   if (!activeSet.has(cellKey(d, rm.uuid))) {
                     return <TableCell key={d} sx={{ bgcolor: 'action.hover' }}><span style={{ opacity: 0.3 }}>—</span></TableCell>;
                   }
@@ -170,7 +184,9 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
         <Stack direction="row" spacing={1} sx={{ mt: 2 }} alignItems="center">
           <Typography variant="caption" color="text.secondary">Grey cells = no section in that room sits that day.</Typography>
           <Box sx={{ flex: 1 }} />
-          <Button variant="contained" startIcon={<SaveIcon />} onClick={saveAll} disabled={saving}>Save invigilators</Button>
+          {focusDate
+            ? <Button variant="contained" startIcon={<SaveIcon />} onClick={() => saveDate(focusDate)} disabled={saving}>Save {fmtDate(focusDate)}</Button>
+            : <Button variant="contained" startIcon={<SaveIcon />} onClick={saveAll} disabled={saving}>Save invigilators</Button>}
         </Stack>
       )}
     </Box>

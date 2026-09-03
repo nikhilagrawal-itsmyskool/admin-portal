@@ -109,6 +109,15 @@ export default function RoomRoster({ mode = 'me' }) {
         </Alert>
       )}
 
+      {roster.roomImageDataUri && (
+        <Box
+          component="a" href={roster.roomImageDataUri} target="_blank" rel="noreferrer"
+          sx={{ display: 'block', mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}
+        >
+          <img src={roster.roomImageDataUri} alt="Room plan" style={{ display: 'block', width: '100%', maxHeight: 320, objectFit: 'contain', background: '#fff' }} />
+        </Box>
+      )}
+
       {!sig?.dataUri && (
         <Card sx={{ mb: 2 }}>
           <CardContent>

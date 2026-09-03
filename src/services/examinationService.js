@@ -102,6 +102,12 @@ export const examinationService = {
   adminRoomSign: async (id, roomId, date) =>
     (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/sign`)).data,
 
+  // Per-room plan image: { fileId, dataUri }
+  getRoomImage: async (id, roomId) => (await api.get(`/examination/examinations/${id}/rooms/${roomId}/image`)).data,
+  setRoomImage: async (id, roomId, imageBase64, mimeType, fileName) =>
+    (await api.put(`/examination/examinations/${id}/rooms/${roomId}/image`, { imageBase64, mimeType, fileName })).data,
+  deleteRoomImage: async (id, roomId) => (await api.delete(`/examination/examinations/${id}/rooms/${roomId}/image`)).data,
+
   // Seating-plan image (uploaded photo of the room plan): { fileId, dataUri }
   getSeatingImage: async (id) => (await api.get(`/examination/examinations/${id}/seating-image`)).data,
   setSeatingImage: async (id, imageBase64, mimeType, fileName) =>

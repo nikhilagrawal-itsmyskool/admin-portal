@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box, Button, Alert, CircularProgress, Stack, Paper, Typography, IconButton, Tooltip,
   Autocomplete, TextField, MenuItem, Divider, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon, Print as PrintIcon,
-  ContentCopy as CopyIcon, MeetingRoom as RoomIcon, PhotoCamera as PhotoIcon,
+  ContentCopy as CopyIcon, MeetingRoom as RoomIcon, PhotoCamera as PhotoIcon, Image as ImageIcon,
 } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { printSeatingPlan } from './seatingPlanHtml';
@@ -33,6 +34,8 @@ export default function SeatingTab({ examId, exam, canManage }) {
   const [newRoom, setNewRoom] = useState('');
   const [copyFrom, setCopyFrom] = useState('');
   const [planImg, setPlanImg] = useState(null); // { fileId, dataUri }
+  const [roomImgHas, setRoomImgHas] = useState({}); // roomId -> bool
+  const [viewImg, setViewImg] = useState(null); // { name, dataUri }
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -130,6 +133,33 @@ export default function SeatingTab({ examId, exam, canManage }) {
     finally { setBusy(false); }
   };
 
+  const hasRoomImg = (rm) => (roomImgHas[rm.uuid] !== undefined ? roomImgHas[rm.uuid] : rm.hasImage);
+
+  const uploadRoomImage = async (roomId, file) => {
+    if (!file) return;
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      const { base64, mimeType, fileName } = await readFile(file);
+      await examinationService.setRoomImage(examId, roomId, base64, mimeType, fileName);
+      setRoomImgHas((m) => ({ ...m, [roomId]: true })); setMsg('Room image uploaded.');
+    } catch (x) { setErr(x.response?.data?.error?.description || 'Failed to upload the room image'); }
+    finally { setBusy(false); }
+  };
+
+  const removeRoomImage = async (roomId) => {
+    setBusy(true); setErr('');
+    try { await examinationService.deleteRoomImage(examId, roomId); setRoomImgHas((m) => ({ ...m, [roomId]: false })); }
+    catch (x) { setErr(x.response?.data?.error?.description || 'Failed to remove the room image'); }
+    finally { setBusy(false); }
+  };
+
+  const viewRoomImage = async (rm) => {
+    setBusy(true); setErr('');
+    try { const img = await examinationService.getRoomImage(examId, rm.uuid); if (img?.dataUri) setViewImg({ name: rm.name, dataUri: img.dataUri }); }
+    catch (x) { setErr(x.response?.data?.error?.description || 'Failed to load the room image'); }
+    finally { setBusy(false); }
+  };
+
   const print = async () => {
     setErr('');
     try {
@@ -196,7 +226,19 @@ export default function SeatingTab({ examId, exam, canManage }) {
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
               <RoomIcon color="primary" fontSize="small" />
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Room {rm.name}</Typography>
+              {hasRoomImg(rm) && (
+                <Tooltip title="View room plan image"><Chip size="small" icon={<ImageIcon />} label="Plan" variant="outlined" onClick={() => viewRoomImage(rm)} /></Tooltip>
+              )}
               <Box sx={{ flex: 1 }} />
+              {canManage && (
+                <Button size="small" component="label" startIcon={<PhotoIcon />} disabled={busy}>
+                  {hasRoomImg(rm) ? 'Replace' : 'Image'}
+                  <input hidden type="file" accept="image/*" onChange={(e) => { uploadRoomImage(rm.uuid, e.target.files?.[0]); e.target.value = ''; }} />
+                </Button>
+              )}
+              {canManage && hasRoomImg(rm) && (
+                <Tooltip title="Remove room image"><IconButton size="small" onClick={() => removeRoomImage(rm.uuid)}><ImageIcon fontSize="small" color="disabled" /></IconButton></Tooltip>
+              )}
               {canManage && (
                 <Tooltip title="Delete room"><IconButton size="small" color="error" onClick={() => removeRoom(rm.uuid)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
               )}
@@ -243,6 +285,14 @@ export default function SeatingTab({ examId, exam, canManage }) {
           </Stack>
         </>
       )}
+
+      <Dialog open={!!viewImg} onClose={() => setViewImg(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Room {viewImg?.name} · plan</DialogTitle>
+        <DialogContent>
+          {viewImg?.dataUri && <img src={viewImg.dataUri} alt="Room plan" style={{ width: '100%', objectFit: 'contain', background: '#fff' }} />}
+        </DialogContent>
+        <DialogActions><Button onClick={() => setViewImg(null)}>Close</Button></DialogActions>
+      </Dialog>
     </Box>
   );
 }
