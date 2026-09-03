@@ -78,4 +78,42 @@ export const examinationService = {
     (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/mark`, { marks })).data,
   adminSign: async (id, paperId, sectionId) =>
     (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/sign`)).data,
+
+  // ── Phase 4: seating rooms ──────────────────────────────────────────────────
+  // Rooms: { examId, rooms:[{uuid,name,sortOrder,allocations:[{uuid,sectionClassId,sectionName,grade,rollFrom,rollTo}]}] }
+  getRooms: async (id) => (await api.get(`/examination/examinations/${id}/rooms`)).data,
+  saveRoom: async (id, body) => (await api.post(`/examination/examinations/${id}/rooms`, body)).data,
+  deleteRoom: async (id, roomId) => (await api.delete(`/examination/examinations/${id}/rooms/${roomId}`)).data,
+  saveRoomAllocations: async (id, roomId, allocations) =>
+    (await api.put(`/examination/examinations/${id}/rooms/${roomId}/allocations`, { allocations })).data,
+  copyRooms: async (id, sourceExamId) =>
+    (await api.post(`/examination/examinations/${id}/rooms/copy`, { sourceExamId })).data,
+
+  // Room invigilators: { examId, rooms, dates, gradesByDate, activeByDate, assignments:[{examDate,roomId,employeeId,employeeName}], conflicts }
+  getRoomInvigilators: async (id) => (await api.get(`/examination/examinations/${id}/room-invigilators`)).data,
+  saveRoomInvigilatorsForDate: async (id, date, assignments) =>
+    (await api.put(`/examination/examinations/${id}/room-invigilators/date/${date}`, { assignments })).data,
+
+  // Room roster: { room, examDate, rollNumbersAvailable, sections:[{sectionClassId,sectionName,grade,subjectLabel,rollFrom,rollTo,students:[{studentId,name,admissionNumber,rollNumber,paperId,status}]}], total, marked, signed, signedByName, signedAt }
+  adminRoomRoster: async (id, roomId, date) =>
+    (await api.get(`/examination/examinations/${id}/room-rosters/${roomId}/${date}`)).data,
+  adminRoomMark: async (id, roomId, date, marks) =>
+    (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/mark`, { marks })).data,
+  adminRoomSign: async (id, roomId, date) =>
+    (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/sign`)).data,
+
+  // Seating-plan image (uploaded photo of the room plan): { fileId, dataUri }
+  getSeatingImage: async (id) => (await api.get(`/examination/examinations/${id}/seating-image`)).data,
+  setSeatingImage: async (id, imageBase64, mimeType, fileName) =>
+    (await api.put(`/examination/examinations/${id}/seating-image`, { imageBase64, mimeType, fileName })).data,
+  deleteSeatingImage: async (id) => (await api.delete(`/examination/examinations/${id}/seating-image`)).data,
+
+  // /me room duties (PWA)
+  myRooms: async () => (await api.get('/examination/me/exam/rooms')).data,
+  myRoomRoster: async (examId, roomId, date) =>
+    (await api.get(`/examination/me/exam/rooms/${examId}/${roomId}/${date}`)).data,
+  myRoomMark: async (examId, roomId, date, marks) =>
+    (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/mark`, { marks })).data,
+  myRoomSign: async (examId, roomId, date) =>
+    (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/sign`)).data,
 };

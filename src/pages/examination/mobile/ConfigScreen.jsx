@@ -71,6 +71,7 @@ export default function ConfigScreen() {
           <Stack sx={{ mt: 0.25 }}>
             <FormControlLabel control={<Switch checked={exam.hasInvigilation !== false} onChange={(e) => patch({ hasInvigilation: e.target.checked })} />} label="Assign invigilators" />
             <FormControlLabel control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />} label="Issue admit cards" />
+            <FormControlLabel control={<Switch checked={exam.hasSeating === true} onChange={(e) => patch({ hasSeating: e.target.checked })} />} label="Seating rooms" />
           </Stack>
         </Field>
         <Field label="Datesheet notes (one per line)" hint="Printed under the datesheet PDF; blank = standard notes">

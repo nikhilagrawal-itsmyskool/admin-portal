@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import {
   Tune as ConfigIcon, GridOn as SheetIcon, HowToReg as InvigIcon, Badge as CardIcon,
-  ChevronRight as ChevronIcon,
+  ChevronRight as ChevronIcon, MeetingRoom as RoomIcon,
 } from '@mui/icons-material';
 import { examinationService } from '../../../services/examinationService';
 
@@ -17,23 +17,32 @@ export default function ExamHome({ exam, canManage, onPatch }) {
   const [invig, setInvig] = useState(null);
   const hasInvig = exam.hasInvigilation !== false;
   const hasCards = exam.hasAdmitCards !== false;
+  const hasSeating = exam.hasSeating === true;
 
   useEffect(() => {
     if (!hasInvig) return;
-    examinationService.getInvigilators(exam.uuid).then(setInvig).catch(() => setInvig(null));
-  }, [exam.uuid, hasInvig]);
+    const load = hasSeating ? examinationService.getRoomInvigilators : examinationService.getInvigilators;
+    load(exam.uuid).then(setInvig).catch(() => setInvig(null));
+  }, [exam.uuid, hasInvig, hasSeating]);
 
   let invigLine = 'Assign per day';
   if (invig) {
-    let total = 0;
-    (invig.dates || []).forEach((d) => { total += (invig.sections || []).filter((s) => (invig.gradesByDate?.[d] || []).includes(s.grade)).length; });
-    invigLine = `${(invig.assignments || []).length} of ${total} assigned`;
+    if (hasSeating) {
+      let total = 0;
+      (invig.dates || []).forEach((d) => { total += (invig.activeByDate?.[d] || []).length; });
+      invigLine = `${(invig.assignments || []).length} of ${total} rooms assigned`;
+    } else {
+      let total = 0;
+      (invig.dates || []).forEach((d) => { total += (invig.sections || []).filter((s) => (invig.gradesByDate?.[d] || []).includes(s.grade)).length; });
+      invigLine = `${(invig.assignments || []).length} of ${total} assigned`;
+    }
   }
 
   const cards = [
     { icon: <ConfigIcon />, title: 'Config', sub: `Incharge: ${exam.inchargeName || '—'}${hasCards ? ` · ${exam.cardsPerPage || 4}/page` : ''}`, path: 'config' },
     { icon: <SheetIcon />, title: 'Datesheet', sub: `${exam.paperCount || 0} papers · ${gradeLabel(exam.grades)}`, path: 'datesheet' },
-    ...(hasInvig ? [{ icon: <InvigIcon />, title: 'Invigilators', sub: invigLine, path: 'invigilators' }] : []),
+    ...(hasSeating ? [{ icon: <RoomIcon />, title: 'Seating', sub: 'Rooms & sections', path: 'seating' }] : []),
+    ...(hasInvig ? [{ icon: <InvigIcon />, title: 'Invigilators', sub: invigLine, path: hasSeating ? 'room-invigilators' : 'invigilators' }] : []),
     ...(hasCards ? [{ icon: <CardIcon />, title: 'Admit Cards', sub: 'Review dues · override', path: 'admit-cards' }] : []),
   ];
 

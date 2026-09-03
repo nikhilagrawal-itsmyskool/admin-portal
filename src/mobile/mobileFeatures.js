@@ -94,8 +94,8 @@ export const MOBILE_FEATURES = [
   // ── Examinations ─────────────────────────────────────────────────────────────
   // Schedule + duties are open to all staff (no perm); management is exam.view only.
   { title: "Exam Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", color: "#5e35b1", routes: ["/exam/schedule"] },
-  { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId"] },
-  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/verify/:id"] },
+  { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
+  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/seating", "/examinations/:id/invigilators", "/examinations/:id/room-invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/:id/room-roster/:roomId/:date", "/examinations/verify/:id"] },
   { title: "Branding", icon: BrandingTileIcon, path: "/branding", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/branding"] },
 
   // ── People & Staff ───────────────────────────────────────────────────────────

@@ -13,6 +13,8 @@ import { employeeService } from '../../services/employeeService';
 import { fmtDate } from '../../utils/date';
 import DatesheetGrid from './DatesheetGrid';
 import InvigilatorGrid from './InvigilatorGrid';
+import RoomInvigilatorGrid from './RoomInvigilatorGrid';
+import SeatingTab from './SeatingTab';
 import AdmitCardsTab from './AdmitCardsTab';
 import BrandingDialog from './BrandingDialog';
 import ExamHome from './mobile/ExamHome';
@@ -69,7 +71,7 @@ export default function ExamDetail() {
 
   const inchargeValue = employees.find((e) => e.uuid === exam.inchargeEmployeeId) || null;
   // Keep the active tab valid when a feature is turned off.
-  const effectiveTab = (tab === 'invigilators' && !exam.hasInvigilation) || (tab === 'admit' && !exam.hasAdmitCards) ? 'datesheet' : tab;
+  const effectiveTab = (tab === 'invigilators' && !exam.hasInvigilation) || (tab === 'admit' && !exam.hasAdmitCards) || (tab === 'seating' && !exam.hasSeating) ? 'datesheet' : tab;
 
   return (
     <Box>
@@ -107,6 +109,9 @@ export default function ExamDetail() {
             <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
               control={<Switch checked={exam.hasAdmitCards !== false} onChange={(e) => patch({ hasAdmitCards: e.target.checked })} />}
               label="Admit cards" />
+            <FormControlLabel sx={{ alignSelf: 'center', ml: 0 }}
+              control={<Switch checked={exam.hasSeating === true} onChange={(e) => patch({ hasSeating: e.target.checked })} />}
+              label="Seating rooms" />
           </Stack>
 
           {/* Line 2: admit-card settings (cards per page, dues cutoff, thresholds) */}
@@ -161,12 +166,18 @@ export default function ExamDetail() {
 
       <Tabs value={effectiveTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="datesheet" label="Datesheet" />
+        {exam.hasSeating && <Tab value="seating" label="Seating" />}
         {exam.hasInvigilation && <Tab value="invigilators" label="Invigilators" />}
         {exam.hasAdmitCards && <Tab value="admit" label="Admit Cards" />}
       </Tabs>
 
       {effectiveTab === 'datesheet' && <DatesheetGrid examId={id} canManage={canManage} onChanged={load} exam={exam} />}
-      {effectiveTab === 'invigilators' && exam.hasInvigilation && <InvigilatorGrid examId={id} canManage={canManage} employees={employees} />}
+      {effectiveTab === 'seating' && exam.hasSeating && <SeatingTab examId={id} exam={exam} canManage={canManage} />}
+      {effectiveTab === 'invigilators' && exam.hasInvigilation && (
+        exam.hasSeating
+          ? <RoomInvigilatorGrid examId={id} canManage={canManage} employees={employees} />
+          : <InvigilatorGrid examId={id} canManage={canManage} employees={employees} />
+      )}
       {effectiveTab === 'admit' && exam.hasAdmitCards && <AdmitCardsTab examId={id} exam={exam} canManage={canManage} />}
     </Box>
   );

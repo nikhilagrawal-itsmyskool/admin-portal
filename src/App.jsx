@@ -158,11 +158,14 @@ import ExamDetail from './pages/examination/ExamDetail';
 import VerifyAdmitCard from './pages/examination/VerifyAdmitCard';
 import MyInvigilations from './pages/examination/MyInvigilations';
 import InvigilatorRoster from './pages/examination/InvigilatorRoster';
+import RoomRoster from './pages/examination/RoomRoster';
 import ExamSchedule from './pages/examination/ExamSchedule';
 import BrandingPage from './pages/examination/BrandingPage';
 import ConfigScreen from './pages/examination/mobile/ConfigScreen';
 import DatesheetMobile from './pages/examination/mobile/DatesheetMobile';
 import InvigilatorsMobile from './pages/examination/mobile/InvigilatorsMobile';
+import RoomInvigilatorsMobile from './pages/examination/mobile/RoomInvigilatorsMobile';
+import SeatingMobile from './pages/examination/mobile/SeatingMobile';
 import AdmitCardsMobile from './pages/examination/mobile/AdmitCardsMobile';
 import AssemblyList from './pages/assembly/AssemblyList';
 import PlanBuilder from './pages/assembly/PlanBuilder';
@@ -388,13 +391,17 @@ export default function App() {
         <Route path="examinations" element={<ExaminationList />} />
         <Route path="examinations/verify/:id" element={<VerifyAdmitCard />} />
         <Route path="examinations/:id/roster/:paperId/:sectionId" element={<InvigilatorRoster mode="admin" />} />
+        <Route path="examinations/:id/room-roster/:roomId/:date" element={<RoomRoster mode="admin" />} />
         <Route path="examinations/:id/config" element={<ConfigScreen />} />
         <Route path="examinations/:id/datesheet" element={<DatesheetMobile />} />
+        <Route path="examinations/:id/seating" element={<SeatingMobile />} />
         <Route path="examinations/:id/invigilators" element={<InvigilatorsMobile />} />
+        <Route path="examinations/:id/room-invigilators" element={<RoomInvigilatorsMobile />} />
         <Route path="examinations/:id/admit-cards" element={<AdmitCardsMobile />} />
         <Route path="examinations/:id" element={<ExamDetail />} />
         <Route path="exam/my-invigilations" element={<MyInvigilations />} />
         <Route path="exam/roster/:examId/:paperId/:sectionId" element={<InvigilatorRoster mode="me" />} />
+        <Route path="exam/room-roster/:examId/:roomId/:date" element={<RoomRoster mode="me" />} />
         <Route path="exam/schedule" element={<ExamSchedule />} />
         <Route path="branding" element={<BrandingPage />} />
         <Route path="assembly" element={<AssemblyList />} />
