@@ -14,6 +14,14 @@ import { resolveMyGradingWeek, todayIso } from './myAssembly';
 
 const addDays = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 
+const EMPTY_FORM = { metrics: {}, penalties: new Set(), starPresenter: '', diction: '', feedback: '' };
+// Turn a saved GradeView back into the editable form shape.
+const formFromGrade = (g) => ({
+  metrics: Object.fromEntries((g.metrics || []).map((m) => [m.metricId, m.score])),
+  penalties: new Set(g.penalties || []),
+  starPresenter: g.starPresenter || '', diction: g.diction || '', feedback: g.feedback || '',
+});
+
 // Admin/god → the full grading page (rubric + evaluators + evaluator dropdown +
 // any wing/week/date); evaluator → today's self-grade (no dropdown, no future).
 export default function MyGrade() {
@@ -30,7 +38,8 @@ function EvaluatorGrade() {
   const [weekStart, setWeekStart] = useState('');
   const [rubric, setRubric] = useState({ metrics: [], penalties: [] });
   const [date, setDate] = useState('');
-  const [form, setForm] = useState({ metrics: {}, penalties: new Set(), starPresenter: '', diction: '', feedback: '' });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [myGrades, setMyGrades] = useState({}); // gradeDate -> saved GradeView (own only)
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -43,6 +52,8 @@ function EvaluatorGrade() {
       if (r.reason) { setReason(r.reason); return; }
       setWeekId(r.weekId); setWeekStart(r.weekStart);
       setRubric(await assemblyService.getRubric());
+      const mine = await assemblyService.myGetWeekGrades(r.weekId);
+      setMyGrades(Object.fromEntries((mine || []).map((g) => [g.gradeDate, g])));
       const today = todayIso();
       const days = Array.from({ length: 6 }, (_, i) => addDays(r.weekStart, i)).filter((d) => d <= today);
       setDate(days[days.length - 1] || r.weekStart);
@@ -50,6 +61,14 @@ function EvaluatorGrade() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Pre-fill the form from the marks already submitted for the selected day (own only);
+  // blank it when nothing's been graded for that day yet.
+  useEffect(() => {
+    if (!date) return;
+    const g = myGrades[date];
+    setForm(g ? formFromGrade(g) : EMPTY_FORM);
+  }, [date, myGrades]);
 
   const gradeableDays = weekStart
     ? Array.from({ length: 6 }, (_, i) => addDays(weekStart, i)).filter((d) => d <= todayIso())
@@ -67,7 +86,8 @@ function EvaluatorGrade() {
       };
       const g = await assemblyService.mySaveGrade(weekId, body);
       setMsg(`Saved — total ${g.total}`);
-      setForm({ metrics: {}, penalties: new Set(), starPresenter: '', diction: '', feedback: '' });
+      // Keep the submitted marks on screen (re-fill happens via the [date, myGrades] effect).
+      setMyGrades((prev) => ({ ...prev, [g.gradeDate]: g }));
     } catch (err) { setError(err.response?.data?.error?.description || 'Failed to save grade'); }
     finally { setBusy(''); }
   };
@@ -83,9 +103,12 @@ function EvaluatorGrade() {
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <TextField size="small" select label="Day" value={date} onChange={(e) => setDate(e.target.value)} sx={{ maxWidth: 220 }}>
-                {gradeableDays.map((d) => <MenuItem key={d} value={d}>{fmtDate(d)}{d === todayIso() ? ' (today)' : ''}</MenuItem>)}
-              </TextField>
+              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+                <TextField size="small" select label="Day" value={date} onChange={(e) => setDate(e.target.value)} sx={{ maxWidth: 220 }}>
+                  {gradeableDays.map((d) => <MenuItem key={d} value={d}>{fmtDate(d)}{d === todayIso() ? ' (today)' : ''}{myGrades[d] ? ' • graded' : ''}</MenuItem>)}
+                </TextField>
+                {myGrades[date] && <Chip size="small" color="success" variant="outlined" label={`Last saved — total ${myGrades[date].total}`} />}
+              </Stack>
               {rubric.metrics.length === 0 && <Alert severity="info">No rubric configured yet.</Alert>}
 
               <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Scores</Typography></Divider>
@@ -106,8 +129,8 @@ function EvaluatorGrade() {
               <TextField size="small" label="Feedback" multiline minRows={2} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
 
               <Box>
-                <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save' || rubric.metrics.length === 0}>Save grade</Button>
-                <Chip size="small" sx={{ ml: 2 }} variant="outlined" label="You can keep updating until Sunday" />
+                <Button fullWidth variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={busy === 'save' || rubric.metrics.length === 0}>{myGrades[date] ? 'Update grade' : 'Save grade'}</Button>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>You can keep updating your marks until Sunday.</Typography>
               </Box>
             </Stack>
           </CardContent>

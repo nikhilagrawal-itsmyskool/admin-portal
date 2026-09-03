@@ -127,5 +127,6 @@ export const assemblyService = {
   myWeekChecklist: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}/checklist`)).data,
   mySaveChecklist: async (weekId, ticks, scope, date) => (await api.put(`/assembly/me/assembly/weeks/${weekId}/checklist`, { ticks, scope, date })).data,
   mySignoffChecklist: async (weekId, note, scope, date) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/checklist/signoff`, { note, scope, date })).data,
+  myGetWeekGrades: async (weekId) => (await api.get(`/assembly/me/assembly/weeks/${weekId}/grades`)).data,
   mySaveGrade: async (weekId, data) => (await api.post(`/assembly/me/assembly/weeks/${weekId}/grades`, data)).data,
 };
