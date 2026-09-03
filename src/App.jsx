@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import VerifyReceipt from './pages/public/VerifyReceipt';
 import MainLayout from './layouts/MainLayout';
@@ -186,12 +186,21 @@ import MyGrade from './pages/assembly/MyGrade';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import HubPage from './pages/HubPage';
+import ManagerDesk from './pages/ManagerDesk';
 import { useIsMobile } from './hooks/useIsMobile';
+import { useAuth } from './context/AuthContext';
 
 // On small screens the app is restricted to the mobile feature set (see
 // src/mobile/mobileFeatures + the MainLayout guard); "/" shows the mobile home menu.
 function HomeScreen() {
-  return useIsMobile() ? <MobileHome /> : <Dashboard />;
+  const { user } = useAuth();
+  const mobile = useIsMobile();
+  const full = new URLSearchParams(useLocation().search).get('full') === '1';
+  // The locked "manager" role lands straight on the Collection Desk. `?full=1` is the escape
+  // hatch to the normal home (for a user who also holds broader roles — a plain manager sees
+  // an empty home there, which is the intended "just in case").
+  if ((user?.roles || []).includes('manager') && !full) return <ManagerDesk />;
+  return mobile ? <MobileHome /> : <Dashboard />;
 }
 
 export default function App() {

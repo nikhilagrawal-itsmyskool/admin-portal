@@ -12,6 +12,9 @@ export const ACTIONS = {
   FEE_VIEW: "fee.view",
   FEE_MANAGE: "fee.manage",
   FEE_COLLECT: "fee.collect",
+  // Read-only "Collection Desk" (simplified manager view). Under fee.* so admin/god inherit;
+  // the locked `manager` role gets ONLY this.
+  FEE_MANAGER_VIEW: "fee.manager.view",
   // Outside the fee.* namespace on purpose → fee incharges/clerks DON'T inherit it; only
   // the admin role (explicit grant) + god ('*'). Powers the Scan & Verify tile.
   RECEIPT_VERIFY: "receipt.verify",

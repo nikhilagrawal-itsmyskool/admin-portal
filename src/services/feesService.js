@@ -93,6 +93,10 @@ export const feesService = {
   collectAdhoc: async (data) => (await api.post('/fees/receipts/adhoc', data)).data,
   collectTransport: async (data) => (await api.post('/fees/receipts/transport', data)).data,
 
+  // ---- Manager "Collection Desk" (read-only) ----
+  getManagerSummary: async () => (await api.get('/fees/manager/summary')).data,
+  getManagerDueStudents: async (academicYearId) => (await api.get('/fees/manager/due-students', { params: { academicYearId } })).data,
+
   // ---- Refunds ----
   getRefunds: async (params = {}) => (await api.get('/fees/refunds', { params })).data,
   createRefund: async (data) => (await api.post('/fees/refunds', data)).data,

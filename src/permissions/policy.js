@@ -90,6 +90,8 @@ export const ROLE_PERMISSIONS = {
   // route incharge). The route filtering is enforced in the attendance pages;
   // finalize stays admin/god/transport-incharge only.
   "transport-attendance": ["transport.attendance.mark"],
+  // Collection-desk manager: a locked, read-only fee-collection view and nothing else.
+  manager: ["fee.manager.view"],
 };
 
 // Roles to show as columns in the generated permissions.md matrix.
