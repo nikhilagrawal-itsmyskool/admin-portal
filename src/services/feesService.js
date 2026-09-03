@@ -96,6 +96,7 @@ export const feesService = {
   // ---- Manager "Collection Desk" (read-only) ----
   getManagerSummary: async () => (await api.get('/fees/manager/summary')).data,
   getManagerDueStudents: async (academicYearId) => (await api.get('/fees/manager/due-students', { params: { academicYearId } })).data,
+  getManagerDay: async (date) => (await api.get('/fees/manager/day', { params: date ? { date } : {} })).data,
 
   // ---- Refunds ----
   getRefunds: async (params = {}) => (await api.get('/fees/refunds', { params })).data,

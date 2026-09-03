@@ -5,11 +5,16 @@ import {
   IconButton, Divider, Button,
 } from '@mui/material';
 import {
-  ChevronRight, ArrowBack, Payments as FeesIcon, DirectionsBus as BusIcon,
+  ChevronRight, ChevronLeft, ArrowBack, Payments as FeesIcon, DirectionsBus as BusIcon,
   OpenInNew, Refresh,
 } from '@mui/icons-material';
 import { feesService } from '../services/feesService';
-import { inr, errMsg } from './fees/feesUi';
+import { inr, errMsg, PAYMENT_MODE_LABELS } from './fees/feesUi';
+import { todayIso } from '../utils/date';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const stepDay = (iso, d) => new Date(new Date(`${iso}T00:00:00Z`).getTime() + d * DAY_MS).toISOString().slice(0, 10);
+const dayLabel = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 // Grade order for grouping the due list (Nursery → XII), so classes read top-to-bottom naturally.
 const ROMAN = { I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12 };
@@ -34,6 +39,20 @@ export default function ManagerDesk() {
   const [year, setYear] = useState(null); // { academicYearId, name, dueNow } when drilled in
   const [students, setStudents] = useState(null);
   const [studentsLoading, setStudentsLoading] = useState(false);
+  const [dayDate, setDayDate] = useState(null); // ISO date when the day/receipts view is open
+  const [dayFilter, setDayFilter] = useState('all'); // all | fees | transport
+  const [day, setDay] = useState(null);
+  const [dayLoading, setDayLoading] = useState(false);
+
+  const loadDay = (date) => {
+    setDayLoading(true); setDay(null); setError('');
+    feesService.getManagerDay(date)
+      .then(setDay)
+      .catch((e) => setError(errMsg(e, 'Could not load collection')))
+      .finally(() => setDayLoading(false));
+  };
+  const openDay = (filter) => { const d = todayIso(); setDayFilter(filter); setDayDate(d); loadDay(d); };
+  const gotoDay = (d) => { setDayDate(d); loadDay(d); };
 
   const loadSummary = () => {
     setLoading(true); setError('');
@@ -69,6 +88,74 @@ export default function ManagerDesk() {
   );
 
   if (loading) return <Shell><Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box></Shell>;
+
+  // ── Day view: a day's collection + the receipts behind it (any date) ──────────
+  if (dayDate) {
+    const today = todayIso();
+    const filtered = (day?.rows || []).filter((r) => dayFilter === 'all' || r.type === dayFilter);
+    const FilterPill = ({ id, label, amount }) => (
+      <Box onClick={() => setDayFilter(id)}
+        sx={{ flex: 1, textAlign: 'center', py: 1, borderRadius: 2, cursor: 'pointer',
+          bgcolor: dayFilter === id ? C.ink : '#eef2f7', color: dayFilter === id ? '#fff' : C.ink }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 700, opacity: dayFilter === id ? 0.8 : 0.6 }}>{label}</Typography>
+        <Typography sx={{ fontSize: 15, fontWeight: 800 }}>{inr(amount)}</Typography>
+      </Box>
+    );
+    return (
+      <Shell>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5 }}>
+          <IconButton onClick={() => setDayDate(null)} sx={{ color: C.ink }}><ArrowBack /></IconButton>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.ink }}>Collection</Typography>
+        </Box>
+        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+
+        <Card sx={{ borderRadius: 4, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 1 }}>
+            <IconButton onClick={() => gotoDay(stepDay(dayDate, -1))} sx={{ color: C.ink }}><ChevronLeft /></IconButton>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ fontSize: 17, fontWeight: 800, color: C.ink }}>{dayDate === today ? 'Today' : dayLabel(dayDate)}</Typography>
+              {dayDate === today
+                ? <Typography sx={{ fontSize: 12, color: C.muted }}>{dayLabel(dayDate)}</Typography>
+                : <Typography onClick={() => gotoDay(today)} sx={{ fontSize: 12, color: C.fees, cursor: 'pointer', fontWeight: 700 }}>Jump to today</Typography>}
+            </Box>
+            <IconButton disabled={dayDate >= today} onClick={() => gotoDay(stepDay(dayDate, 1))} sx={{ color: C.ink }}><ChevronRight /></IconButton>
+          </Box>
+          <Divider sx={{ borderColor: C.line }} />
+          <Box sx={{ textAlign: 'center', pt: 2, pb: 1 }}>
+            <Typography sx={{ fontSize: 36, fontWeight: 800, color: C.fees, lineHeight: 1.05 }}>{inr(day?.total || 0)}</Typography>
+            <Typography sx={{ fontSize: 13, color: C.muted }}>{day?.receipts || 0} receipt{(day?.receipts || 0) === 1 ? '' : 's'}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, px: 1.5, pb: 1.5 }}>
+            <FilterPill id="all" label="All" amount={day?.total || 0} />
+            <FilterPill id="fees" label="Fees" amount={day?.fees?.amount || 0} />
+            <FilterPill id="transport" label="Transport" amount={day?.transport?.amount || 0} />
+          </Box>
+        </Card>
+
+        {dayLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+        ) : filtered.length === 0 ? (
+          <Card sx={{ borderRadius: 3 }}><CardContent><Typography sx={{ textAlign: 'center', color: C.muted, py: 3 }}>No {dayFilter === 'all' ? '' : `${dayFilter} `}receipts on this day.</Typography></CardContent></Card>
+        ) : (
+          <Card sx={{ borderRadius: 3 }}>
+            {filtered.map((r, i) => (
+              <Box key={i}>
+                {i > 0 && <Divider sx={{ borderColor: C.line }} />}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 1.5, py: 1.25 }}>
+                  <Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: r.type === 'transport' ? C.bus : C.fees, flex: 'none' }} />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: C.ink }} noWrap>{r.payerName}</Typography>
+                    <Typography sx={{ fontSize: 12.5, color: C.muted }} noWrap>{r.className} · {PAYMENT_MODE_LABELS[r.paymentMode] || r.paymentMode || '—'}{r.time ? ` · ${r.time}` : ''}</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: 16, fontWeight: 800, color: C.ink, whiteSpace: 'nowrap' }}>{inr(r.amount)}</Typography>
+                </Box>
+              </Box>
+            ))}
+          </Card>
+        )}
+      </Shell>
+    );
+  }
 
   // ── Year drill-down: who owes, by class ──────────────────────────────────────
   if (year) {
@@ -129,22 +216,27 @@ export default function ManagerDesk() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
-      {/* Today */}
+      {/* Today — tap the total or a card to see the receipts (and step to any day) */}
       <Card sx={{ borderRadius: 4, mb: 2, bgcolor: C.card }}>
         <CardContent sx={{ py: 2.5 }}>
-          <Typography sx={{ fontSize: 13, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Collected today</Typography>
-          <Typography sx={{ fontSize: 40, fontWeight: 800, color: C.fees, lineHeight: 1.1, my: 0.5 }}>{inr(t.total || 0)}</Typography>
-          <Typography sx={{ fontSize: 13, color: C.muted, mb: 1.5 }}>{t.receipts || 0} receipt{(t.receipts || 0) === 1 ? '' : 's'} today</Typography>
+          <Box onClick={() => openDay('all')} sx={{ cursor: 'pointer' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: 13, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Collected today</Typography>
+              <Typography sx={{ fontSize: 12, color: C.fees, fontWeight: 700 }}>View receipts ›</Typography>
+            </Box>
+            <Typography sx={{ fontSize: 40, fontWeight: 800, color: C.fees, lineHeight: 1.1, my: 0.5 }}>{inr(t.total || 0)}</Typography>
+            <Typography sx={{ fontSize: 13, color: C.muted, mb: 1.5 }}>{t.receipts || 0} receipt{(t.receipts || 0) === 1 ? '' : 's'} today</Typography>
+          </Box>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <Box sx={{ flex: 1, bgcolor: '#f0fdfa', borderRadius: 2, p: 1.25 }}>
+            <Box onClick={() => openDay('fees')} sx={{ flex: 1, bgcolor: '#f0fdfa', borderRadius: 2, p: 1.25, cursor: 'pointer', '&:active': { bgcolor: '#dcfce7' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: C.fees }}><FeesIcon fontSize="small" /><Typography sx={{ fontSize: 13, fontWeight: 700 }}>Fees</Typography></Box>
               <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.ink }}>{inr(t.fees?.amount || 0)}</Typography>
-              <Typography sx={{ fontSize: 12, color: C.muted }}>{t.fees?.receipts || 0} receipts</Typography>
+              <Typography sx={{ fontSize: 12, color: C.muted }}>{t.fees?.receipts || 0} receipts ›</Typography>
             </Box>
-            <Box sx={{ flex: 1, bgcolor: '#fffbeb', borderRadius: 2, p: 1.25 }}>
+            <Box onClick={() => openDay('transport')} sx={{ flex: 1, bgcolor: '#fffbeb', borderRadius: 2, p: 1.25, cursor: 'pointer', '&:active': { bgcolor: '#fef3c7' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: C.bus }}><BusIcon fontSize="small" /><Typography sx={{ fontSize: 13, fontWeight: 700 }}>Transport</Typography></Box>
               <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.ink }}>{inr(t.transport?.amount || 0)}</Typography>
-              <Typography sx={{ fontSize: 12, color: C.muted }}>{t.transport?.receipts || 0} receipts</Typography>
+              <Typography sx={{ fontSize: 12, color: C.muted }}>{t.transport?.receipts || 0} receipts ›</Typography>
             </Box>
           </Box>
         </CardContent>
