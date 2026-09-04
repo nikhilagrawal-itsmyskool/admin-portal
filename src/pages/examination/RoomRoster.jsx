@@ -83,7 +83,7 @@ export default function RoomRoster({ mode = 'me' }) {
   const allStudents = (roster.sections || []).flatMap((s) => s.students);
   const present = allStudents.filter((s) => (statusMap[s.studentId] || 'present') === 'present').length;
   const absent = allStudents.length - present;
-  const back = mode === 'admin' ? `/examinations/${exam}` : '/exam/my-invigilations';
+  const back = mode === 'admin' ? `/examinations/${exam}?tab=invigilators` : '/exam/my-invigilations';
 
   return (
     <Box sx={{ maxWidth: 720, mx: 'auto' }}>

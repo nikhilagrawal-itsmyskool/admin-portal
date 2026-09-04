@@ -155,7 +155,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
 
   const viewRoomImage = async (rm) => {
     setBusy(true); setErr('');
-    try { const img = await examinationService.getRoomImage(examId, rm.uuid); if (img?.dataUri) setViewImg({ name: rm.name, dataUri: img.dataUri }); }
+    try { const img = await examinationService.getRoomImage(examId, rm.uuid); if (img?.dataUri) setViewImg({ title: `Room ${rm.name} · plan`, dataUri: img.dataUri }); }
     catch (x) { setErr(x.response?.data?.error?.description || 'Failed to load the room image'); }
     finally { setBusy(false); }
   };
@@ -195,12 +195,19 @@ export default function SeatingTab({ examId, exam, canManage }) {
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
 
-      {/* Uploaded seating-plan photo — a quick reference alongside the structured rooms. */}
+      {/* Uploaded seating-plan photo — collapsed to a chip; click it to open the image. */}
       <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, mb: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: planImg?.dataUri ? 1 : 0 }}>
+        <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
           <PhotoIcon fontSize="small" color="action" />
           <Typography variant="subtitle2">Seating plan image</Typography>
-          <Typography variant="caption" color="text.secondary">optional — a photo of the printed plan</Typography>
+          {planImg?.dataUri ? (
+            <Tooltip title="View the uploaded plan">
+              <Chip size="small" color="success" variant="outlined" icon={<ImageIcon />} label="Uploaded — view"
+                onClick={() => setViewImg({ title: 'Consolidated seating plan', dataUri: planImg.dataUri })} />
+            </Tooltip>
+          ) : (
+            <Typography variant="caption" color="text.secondary">optional — a photo of the printed plan</Typography>
+          )}
           <Box sx={{ flex: 1 }} />
           {canManage && (
             <Button size="small" component="label" startIcon={<PhotoIcon />} disabled={busy}>
@@ -210,14 +217,6 @@ export default function SeatingTab({ examId, exam, canManage }) {
           )}
           {canManage && planImg?.dataUri && <Button size="small" color="error" onClick={removeImage} disabled={busy}>Remove</Button>}
         </Stack>
-        {planImg?.dataUri && (
-          <Box
-            component="a" href={planImg.dataUri} target="_blank" rel="noreferrer"
-            sx={{ display: 'block', border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}
-          >
-            <img src={planImg.dataUri} alt="Seating plan" style={{ display: 'block', width: '100%', maxHeight: 520, objectFit: 'contain', background: '#fff' }} />
-          </Box>
-        )}
       </Paper>
 
       <Stack spacing={2}>
@@ -287,7 +286,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
       )}
 
       <Dialog open={!!viewImg} onClose={() => setViewImg(null)} maxWidth="md" fullWidth>
-        <DialogTitle>Room {viewImg?.name} · plan</DialogTitle>
+        <DialogTitle>{viewImg?.title}</DialogTitle>
         <DialogContent>
           {viewImg?.dataUri && <img src={viewImg.dataUri} alt="Room plan" style={{ width: '100%', objectFit: 'contain', background: '#fff' }} />}
         </DialogContent>

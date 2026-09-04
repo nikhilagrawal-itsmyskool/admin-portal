@@ -78,7 +78,7 @@ export default function InvigilatorRoster({ mode = 'me' }) {
 
   const present = roster.students.filter((s) => (statusMap[s.studentId] || 'present') === 'present').length;
   const absent = roster.students.length - present;
-  const back = mode === 'admin' ? `/examinations/${exam}` : '/exam/my-invigilations';
+  const back = mode === 'admin' ? `/examinations/${exam}?tab=invigilators` : '/exam/my-invigilations';
 
   return (
     <Box sx={{ maxWidth: 720, mx: 'auto' }}>

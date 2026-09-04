@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Stack, Button, Chip, Alert, CircularProgress, Tabs, Tab,
   TextField, MenuItem, Autocomplete, Switch, FormControlLabel,
@@ -29,10 +29,12 @@ export default function ExamDetail() {
   const isGod = (user?.roles || []).includes('god');
   const isMobile = useIsMobile();
 
+  const [searchParams] = useSearchParams();
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [tab, setTab] = useState('datesheet');
+  // Honour ?tab= so a Back from the roster can land straight on the Invigilators tab.
+  const [tab, setTab] = useState(searchParams.get('tab') || 'datesheet');
   const [employees, setEmployees] = useState([]);
   const [cycles, setCycles] = useState([]);
   const [brandingOpen, setBrandingOpen] = useState(false);
