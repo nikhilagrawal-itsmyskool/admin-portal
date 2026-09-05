@@ -222,7 +222,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
       <Stack spacing={2}>
         {rooms.map((rm) => (
           <Paper key={rm.uuid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
               <RoomIcon color="primary" fontSize="small" />
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Room {rm.name}</Typography>
               {hasRoomImg(rm) && (
@@ -244,20 +244,29 @@ export default function SeatingTab({ examId, exam, canManage }) {
             </Stack>
             <Stack spacing={1}>
               {(edits[rm.uuid] || []).map((a, idx) => (
-                <Stack key={idx} direction="row" spacing={1} alignItems="center">
+                // Stack vertically on phones (the row of section + two roll fields is wider than a
+                // phone screen, so on `xs` the fields fell off the edge and rooms looked empty).
+                <Stack
+                  key={idx} spacing={1}
+                  direction={{ xs: 'column', sm: 'row' }}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  sx={idx > 0 ? { pt: { xs: 1, sm: 0 }, borderTop: { xs: '1px dashed', sm: 'none' }, borderColor: 'divider' } : undefined}
+                >
                   <Autocomplete
-                    size="small" sx={{ flex: 1, minWidth: 180 }} disabled={!canManage}
+                    size="small" sx={{ flex: 1, minWidth: { sm: 180 } }} disabled={!canManage}
                     options={sections} getOptionLabel={(o) => o.name || ''}
                     value={a.sectionClassId ? (sectionById[a.sectionClassId] || null) : null}
                     onChange={(_, v) => setAlloc(rm.uuid, idx, 'sectionClassId', v ? v.classId : '')}
                     isOptionEqualToValue={(o, v) => o.classId === v.classId}
                     renderInput={(p) => <TextField {...p} placeholder="Section" />}
                   />
-                  <TextField size="small" type="number" sx={{ width: 100 }} label="Roll from" disabled={!canManage}
-                    value={a.rollFrom} onChange={(e) => setAlloc(rm.uuid, idx, 'rollFrom', e.target.value)} />
-                  <TextField size="small" type="number" sx={{ width: 100 }} label="Roll to" disabled={!canManage}
-                    value={a.rollTo} onChange={(e) => setAlloc(rm.uuid, idx, 'rollTo', e.target.value)} />
-                  {canManage && <IconButton size="small" color="error" onClick={() => removeAlloc(rm.uuid, idx)}><DeleteIcon fontSize="small" /></IconButton>}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <TextField size="small" type="number" sx={{ flex: { xs: 1, sm: 'none' }, width: { sm: 100 } }} label="Roll from" disabled={!canManage}
+                      value={a.rollFrom} onChange={(e) => setAlloc(rm.uuid, idx, 'rollFrom', e.target.value)} />
+                    <TextField size="small" type="number" sx={{ flex: { xs: 1, sm: 'none' }, width: { sm: 100 } }} label="Roll to" disabled={!canManage}
+                      value={a.rollTo} onChange={(e) => setAlloc(rm.uuid, idx, 'rollTo', e.target.value)} />
+                    {canManage && <IconButton size="small" color="error" onClick={() => removeAlloc(rm.uuid, idx)}><DeleteIcon fontSize="small" /></IconButton>}
+                  </Stack>
                 </Stack>
               ))}
               {!(edits[rm.uuid] || []).length && <Typography variant="caption" color="text.secondary">No sections in this room yet.</Typography>}
