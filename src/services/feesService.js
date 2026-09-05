@@ -60,6 +60,9 @@ export const feesService = {
   changeConcession: async (data) => (await api.post('/fees/concessions/change', data)).data,
   getConcessionTimeline: async (studentId, academicYearId) =>
     (await api.get(`/fees/students/${studentId}/concession-timeline`, { params: { academicYearId } })).data,
+  // School-wide concession change log (audit trail). from/to are inclusive YYYY-MM-DD (optional).
+  getConcessionAudit: async ({ academicYearId, from, to, limit } = {}) =>
+    (await api.get('/fees/concessions/audit', { params: { academicYearId, from, to, limit } })).data,
   getMultiConcession: async (academicYearId) => (await api.get('/fees/concessions/multi', { params: { academicYearId } })).data,
   addConcessionStudents: async (id, data) =>
     (await api.post(`/fees/concessions/${id}/students`, data)).data,

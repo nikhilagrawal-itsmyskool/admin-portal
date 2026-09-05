@@ -13,10 +13,37 @@ import { feesService } from '../../services/feesService';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { errMsg, inr, classRank, FEE_COLORS, CONCESSION_TYPE_LABELS, fmtDate } from './feesUi';
+import { fmtDateTime } from '../../utils/date';
 import { SwapVert as SortIcon } from '@mui/icons-material';
 
 const TYPE_COLOR = { sibling: 'primary', sibling_elder: 'primary', sibling_younger: 'primary', staff: 'warning', ews: 'success', other: 'default' };
 const emptyC = { name: '', type: 'sibling_younger', valueType: 'amount', value: '', feeHeadId: '' };
+
+// ---- Change-log (audit) rendering ----
+const ACTION_LABEL = {
+  scheme_created: 'Scheme created', scheme_updated: 'Scheme edited', scheme_deleted: 'Scheme deleted',
+  assignment_added: 'Added', assignment_removed: 'Removed', assignment_ended: 'Ended', assignment_changed: 'Changed',
+};
+const ACTION_COLOR = {
+  scheme_created: 'success', scheme_updated: 'info', scheme_deleted: 'error',
+  assignment_added: 'success', assignment_removed: 'error', assignment_ended: 'warning', assignment_changed: 'info',
+};
+const valFmt = (valueType, value) => (value == null || value === '' ? '' : valueType === 'percent' ? `${value}%` : inr(value));
+// One-line human detail for a change row (before → after distilled per action).
+function renderDetail(a) {
+  const af = a.after || {}, bf = a.before || {};
+  const scheme = a.schemeName || af.scheme || bf.scheme || 'scheme';
+  switch (a.action) {
+    case 'assignment_added': return `${scheme}${af.value != null ? ` · ${valFmt(af.valueType, af.value)}` : ''}`;
+    case 'assignment_removed': return `${scheme} removed`;
+    case 'assignment_ended': return `${scheme} ended${af.endedAtCycle ? ` at ${af.endedAtCycle}` : ''}`;
+    case 'scheme_created': return `created · ${valFmt(af.valueType, af.value)}`;
+    case 'scheme_deleted': return `deleted${af.affectedStudents != null ? ` · ${af.affectedStudents} student${af.affectedStudents === 1 ? '' : 's'}` : ''}`;
+    case 'scheme_updated':
+      return Object.keys(af).map((k) => `${k}: ${bf[k] ?? '—'} → ${af[k] ?? '—'}`).join(', ');
+    default: return '';
+  }
+}
 
 export default function ConcessionList() {
   const { academicYearId } = useAcademicYear();
@@ -35,6 +62,12 @@ export default function ConcessionList() {
   const [onlyCurrent, setOnlyCurrent] = useState(false);
   const [sortDir, setSortDir] = useState('asc'); // class order
 
+  // Changes tab (audit log)
+  const [audit, setAudit] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+
   const [dlg, setDlg] = useState({ open: false, data: emptyC, id: null, saving: false });
   const [pickStu, setPickStu] = useState(false);
   const [cycles, setCycles] = useState([]); // ordered fee cycles for the add-student bounds
@@ -45,6 +78,14 @@ export default function ConcessionList() {
   const [chg, setChg] = useState({ open: false, studentId: null, name: '' }); // mid-year change dialog
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId]);
+  useEffect(() => { if (view === 'changes') loadAudit(); /* eslint-disable-next-line */ }, [view, academicYearId]);
+
+  const loadAudit = async () => {
+    setAuditLoading(true); setError('');
+    try { setAudit(await feesService.getConcessionAudit({ academicYearId, from: from || undefined, to: to || undefined })); }
+    catch (err) { setError(errMsg(err, 'Failed to load changes')); }
+    finally { setAuditLoading(false); }
+  };
 
   const load = async () => {
     setLoading(true); setError('');
@@ -131,6 +172,7 @@ export default function ConcessionList() {
           <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
             <ToggleButton value="templates" sx={{ textTransform: 'none' }}>Templates</ToggleButton>
             <ToggleButton value="multi" sx={{ textTransform: 'none' }}>In multiple ({multi.length})</ToggleButton>
+            <ToggleButton value="changes" sx={{ textTransform: 'none' }}>Changes</ToggleButton>
           </ToggleButtonGroup>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDlg({ open: true, data: emptyC, id: null, saving: false })}>New concession</Button>
         </Box>
@@ -242,7 +284,7 @@ export default function ConcessionList() {
           </Card>
         </Grid>
       </Grid>
-      ) : (
+      ) : view === 'multi' ? (
         <Card>
           <CardContent sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
             <Typography sx={{ fontWeight: 700, fontSize: 15 }}>Students in more than one concession</Typography>
@@ -262,6 +304,48 @@ export default function ConcessionList() {
                     <TableCell><Link component="button" underline="hover" onClick={() => navigate(`/students/${m.studentId}`)} sx={{ textAlign: 'left' }}>{m.studentName || m.studentId}</Link></TableCell>
                     <TableCell>{(m.concessions || []).map((c, i) => <Chip key={i} size="small" variant="outlined" label={`${c.name}${c.valueType === 'percent' ? ` ${c.value}%` : ` ${inr(c.value)}`}`} sx={{ mr: 0.5, mb: 0.5 }} />)}</TableCell>
                     <TableCell align="center">{m.sameHead ? <Chip size="small" color="warning" label="same head" /> : m.headCount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: 15 }}>Concession changes</Typography>
+              <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>Every add, removal &amp; edit — newest first{academicYearId ? ' · this academic year' : ''}.</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <TextField type="date" size="small" label="From" InputLabelProps={{ shrink: true }} value={from} onChange={(e) => setFrom(e.target.value)} sx={{ width: 150 }} />
+              <TextField type="date" size="small" label="To" InputLabelProps={{ shrink: true }} value={to} onChange={(e) => setTo(e.target.value)} sx={{ width: 150 }} />
+              <Button size="small" variant="contained" onClick={loadAudit}>Apply</Button>
+              {(from || to) && <Button size="small" onClick={() => { setFrom(''); setTo(''); }}>Clear</Button>}
+            </Box>
+          </CardContent>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead><TableRow>
+                <TableCell>When</TableCell><TableCell>Change</TableCell><TableCell>Student / Scheme</TableCell><TableCell>Detail</TableCell><TableCell>Reason</TableCell><TableCell>By</TableCell>
+              </TableRow></TableHead>
+              <TableBody>
+                {auditLoading && <TableRow><TableCell colSpan={6} align="center" sx={{ py: 3 }}><CircularProgress size={22} /></TableCell></TableRow>}
+                {!auditLoading && audit.length === 0 && <TableRow><TableCell colSpan={6} align="center" sx={{ color: FEE_COLORS.muted, py: 3 }}>No concession changes in this range.</TableCell></TableRow>}
+                {!auditLoading && audit.map((a) => (
+                  <TableRow key={a.uuid} hover>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{fmtDateTime(a.createdAt)}</TableCell>
+                    <TableCell><Chip size="small" color={ACTION_COLOR[a.action] || 'default'} variant="outlined" label={ACTION_LABEL[a.action] || a.action} /></TableCell>
+                    <TableCell>
+                      {a.entity === 'assignment'
+                        ? (a.studentId
+                          ? <Link component="button" underline="hover" onClick={() => navigate(`/students/${a.studentId}`)} sx={{ textAlign: 'left' }}>{a.studentName || a.studentId}{a.className ? ` · ${a.className}` : ''}</Link>
+                          : <span>{a.studentName || '—'}</span>)
+                        : <span style={{ fontWeight: 600 }}>{a.schemeName || '—'}</span>}
+                    </TableCell>
+                    <TableCell>{renderDetail(a)}</TableCell>
+                    <TableCell sx={{ color: FEE_COLORS.muted, fontSize: 12, maxWidth: 220 }}>{a.changeReason && a.changeReason !== '[seeded]' ? a.changeReason : ''}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{a.actorName || '—'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
