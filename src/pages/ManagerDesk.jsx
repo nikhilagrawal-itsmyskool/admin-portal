@@ -29,8 +29,40 @@ const gradeRank = (cls) => {
 };
 const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const stripTitle = (name) => String(name || '').replace(/^\s*(mr|mrs|ms|smt|shri|sri|dr|md)\.?\s*/i, '').trim();
+// Gender-aware guardian line: son → S/o, daughter → D/o, unknown → C/o. Empty when no father on record.
+const guardianLine = (gender, father) => {
+  if (!father) return '';
+  const g = String(gender || '').trim().toUpperCase().charAt(0);
+  const pfx = g === 'F' ? 'D/o' : g === 'M' ? 'S/o' : 'C/o';
+  return `${pfx} ${stripTitle(father)}`;
+};
 
 const C = { bg: '#f4f7fb', card: '#ffffff', ink: '#0f172a', muted: '#64748b', due: '#b91c1c', fees: '#0f766e', bus: '#b45309', line: '#e6ebf2' };
+
+// Cash / Cheque / Online tally for a collection total — the manager counts the cash cell against the drawer.
+const ModeStrip = ({ modes }) => {
+  if (!modes) return null;
+  const cells = [
+    { key: 'cash', label: 'Cash', bg: '#ecfdf5', color: C.fees },
+    { key: 'cheque', label: 'Cheque / DD', bg: '#f8fafc', color: C.ink },
+    { key: 'online', label: 'Online', bg: '#f8fafc', color: C.ink },
+  ];
+  if (!cells.some((c) => Number(modes[c.key]?.amount || 0) > 0)) return null;
+  return (
+    <Box sx={{ display: 'flex', gap: 1 }}>
+      {cells.map((c) => {
+        const m = modes[c.key] || {};
+        return (
+          <Box key={c.key} sx={{ flex: 1, textAlign: 'center', bgcolor: c.bg, borderRadius: 2, py: 1, border: `1px solid ${C.line}` }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.4 }}>{c.label}</Typography>
+            <Typography sx={{ fontSize: 15.5, fontWeight: 800, color: c.color, lineHeight: 1.2 }}>{inr(m.amount || 0)}</Typography>
+            <Typography sx={{ fontSize: 11, color: C.muted }}>{Number(m.receipts || 0)} rcpt{Number(m.receipts || 0) === 1 ? '' : 's'}</Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
 
 export default function ManagerDesk() {
   const navigate = useNavigate();
@@ -171,6 +203,7 @@ export default function ManagerDesk() {
             <FilterPill id="fees" label="Fees" amount={day?.fees?.amount || 0} />
             <FilterPill id="transport" label="Transport" amount={day?.transport?.amount || 0} />
           </Box>
+          {day?.modes && <Box sx={{ px: 1.5, pb: 1.75 }}><ModeStrip modes={day.modes} /></Box>}
         </Card>
 
         {dayLoading ? (
@@ -232,7 +265,7 @@ export default function ManagerDesk() {
                       </Avatar>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontSize: 16, fontWeight: 700, color: C.ink }} noWrap>{s.name}</Typography>
-                        <Typography sx={{ fontSize: 13, color: C.muted }} noWrap>{s.fatherName ? `S/o ${s.fatherName}` : (s.admissionNumber || '')}</Typography>
+                        <Typography sx={{ fontSize: 13, color: C.muted }} noWrap>{guardianLine(s.gender, s.fatherName) || s.admissionNumber || ''}</Typography>
                       </Box>
                       <Typography sx={{ fontSize: 17, fontWeight: 800, color: C.due, whiteSpace: 'nowrap' }}>{inr(s.dueNow)}</Typography>
                     </Box>
@@ -263,7 +296,7 @@ export default function ManagerDesk() {
             <Avatar src={st.photoUrl || undefined} sx={{ width: 58, height: 58, bgcolor: '#dbe4f0', color: C.ink, fontWeight: 700, fontSize: 20 }}>{initials(st.name)}</Avatar>
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontSize: 19, fontWeight: 800, color: C.ink }} noWrap>{st.name}</Typography>
-              <Typography sx={{ fontSize: 13.5, color: C.muted }} noWrap>{st.className}{st.fatherName ? ` · S/o ${stripTitle(st.fatherName)}` : ''}</Typography>
+              <Typography sx={{ fontSize: 13.5, color: C.muted }} noWrap>{st.className}{guardianLine(st.gender, st.fatherName) ? ` · ${guardianLine(st.gender, st.fatherName)}` : ''}</Typography>
               {st.admissionNumber && <Typography sx={{ fontSize: 12, color: C.muted }}>{st.admissionNumber}</Typography>}
             </Box>
           </CardContent>
@@ -344,7 +377,7 @@ export default function ManagerDesk() {
                   <Avatar src={r.photoUrl || undefined} sx={{ width: 46, height: 46, bgcolor: '#dbe4f0', color: C.ink, fontWeight: 700, fontSize: 15 }}>{initials(r.name)}</Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontSize: 16, fontWeight: 700, color: C.ink }} noWrap>{r.name}</Typography>
-                    <Typography sx={{ fontSize: 13, color: C.muted }} noWrap>{r.className}{r.fatherName ? ` · S/o ${stripTitle(r.fatherName)}` : ''}</Typography>
+                    <Typography sx={{ fontSize: 13, color: C.muted }} noWrap>{r.className}{guardianLine(r.gender, r.fatherName) ? ` · ${guardianLine(r.gender, r.fatherName)}` : ''}</Typography>
                   </Box>
                   <ChevronRight sx={{ color: C.muted }} />
                 </Box>
@@ -399,6 +432,7 @@ export default function ManagerDesk() {
               <Typography sx={{ fontSize: 12, color: C.muted }}>{t.transport?.receipts || 0} receipts ›</Typography>
             </Box>
           </Box>
+          {t.modes && <Box sx={{ mt: 1.5 }}><ModeStrip modes={t.modes} /></Box>}
         </CardContent>
       </Card>
 
