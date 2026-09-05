@@ -136,10 +136,11 @@ export const MOBILE_FEATURES = [
   { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
   { title: "On Leave", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/day"] },
   { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
-  // Leave — self-service (all staff). Collapses into one "Leave" hub tile under Mine.
-  { title: "My Leave", hubLabel: "Requests", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/me"] },
-  { title: "My Attendance", hubLabel: "Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/me/attendance"] },
-  { title: "My Penalty", hubLabel: "Penalty", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/me/penalty"] },
+  // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
+  // notPerm hides it from an oversight user (god / leave.manage) who never applies.
+  { title: "My Leave", hubLabel: "Requests", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me"] },
+  { title: "My Attendance", hubLabel: "Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me/attendance"] },
+  { title: "My Penalty", hubLabel: "Penalty", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me/penalty"] },
   { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
   { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },
