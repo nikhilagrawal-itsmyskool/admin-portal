@@ -80,7 +80,7 @@ export default function DeductionReport() {
   const totalApplied = rows.reduce((s, r) => s + (r.appliedDeductionDays || 0), 0);
 
   return (
-    <Box sx={{ maxWidth: 940 }}>
+    <Box sx={{ maxWidth: 1200 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">Deduction Report</Typography>
         <Stack direction="row" spacing={1} alignItems="center">

@@ -20,7 +20,7 @@ export default function MyPenalty() {
   }, [month]);
 
   return (
-    <Box sx={{ maxWidth: 480 }}>
+    <Box sx={{ maxWidth: 560 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">My Penalty</Typography>
         <TextField type="month" size="small" value={month} onChange={(e) => setMonth(e.target.value)} InputLabelProps={{ shrink: true }} />

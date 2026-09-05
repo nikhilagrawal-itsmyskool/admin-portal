@@ -69,7 +69,7 @@ export default function BiometricImport() {
   };
 
   return (
-    <Box sx={{ maxWidth: 820 }}>
+    <Box sx={{ maxWidth: 900 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>Biometric Import</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 

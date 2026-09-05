@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Grid, TextField, MenuItem, Alert,
   Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Stack,
+  Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
 import { Add as AddIcon, AttachFile as AttachIcon } from '@mui/icons-material';
 import { leaveService } from '../../services/leaveService';
 import { APP_STATUS_COLOR, thisMonth } from './LeaveShared';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate, todayIso } from '../../utils/date';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
@@ -21,6 +23,7 @@ function readFileB64(file) {
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
 
 export default function MyLeave() {
+  const isMobile = useIsMobile();
   const [types, setTypes] = useState([]);
   const [summary, setSummary] = useState(null);
   const [apps, setApps] = useState([]);
@@ -94,7 +97,7 @@ export default function MyLeave() {
   const canCancel = (a) => a.status === 'pending' || (a.status === 'approved' && a.fromDate > todayIso());
 
   return (
-    <Box sx={{ maxWidth: 760 }}>
+    <Box sx={{ maxWidth: 1040 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">My Leave</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>Apply for leave</Button>
@@ -129,7 +132,7 @@ export default function MyLeave() {
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary', mb: 1 }}>My requests</Typography>
           {apps.length === 0 ? (
             <Alert severity="info">No leave requests yet. Use "Apply for leave" above.</Alert>
-          ) : (
+          ) : isMobile ? (
             <Stack spacing={1.25}>
               {apps.map((a) => (
                 <Card key={a.uuid} variant="outlined">
@@ -157,6 +160,39 @@ export default function MyLeave() {
                 </Card>
               ))}
             </Stack>
+          ) : (
+            <Card variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {['Type', 'Dates', 'Days', 'Reason', 'Status', ''].map((c, i) => (
+                      <TableCell key={c || i} align={i === 5 ? 'right' : 'left'} sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{c}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {apps.map((a) => (
+                    <TableRow key={a.uuid} hover>
+                      <TableCell sx={{ fontWeight: 600 }}>{a.leaveTypeName || a.leaveTypeCode}{a.hasAttachment ? ' 📎' : ''}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{dateRange(a.fromDate, a.toDate)}</TableCell>
+                      <TableCell>{a.workingDays || '—'}</TableCell>
+                      <TableCell sx={{ maxWidth: 320, color: 'text.secondary' }}>
+                        {a.reason || '—'}
+                        {a.status === 'rejected' && a.decisionNote && (
+                          <Typography component="span" sx={{ display: 'block', fontSize: 12, color: '#c42a56' }}>“{a.decisionNote}”</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell><Chip size="small" label={a.status} color={APP_STATUS_COLOR[a.status] || 'default'} sx={{ textTransform: 'capitalize', fontWeight: 700 }} /></TableCell>
+                      <TableCell align="right">
+                        {canCancel(a) && (
+                          <Button size="small" color="inherit" onClick={() => setCancelTarget(a)} sx={{ minWidth: 0, fontSize: 12 }}>Cancel</Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </>
       )}

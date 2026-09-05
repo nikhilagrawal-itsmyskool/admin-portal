@@ -75,7 +75,7 @@ export default function StaffAttendance() {
   };
 
   return (
-    <Box sx={{ maxWidth: 720 }}>
+    <Box sx={{ maxWidth: 1080 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>Staff Attendance</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 

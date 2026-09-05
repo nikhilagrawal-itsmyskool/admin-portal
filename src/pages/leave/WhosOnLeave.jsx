@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Alert, CircularProgress, Card, CardContent, Chip, Stack, Grid } from '@mui/material';
+import {
+  Box, Typography, TextField, Alert, CircularProgress, Card, CardContent, Chip, Stack, Grid,
+  Table, TableHead, TableRow, TableCell, TableBody,
+} from '@mui/material';
 import { leaveService } from '../../services/leaveService';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate, todayIso } from '../../utils/date';
 
 export default function WhosOnLeave() {
+  const isMobile = useIsMobile();
   const [date, setDate] = useState(todayIso());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +27,7 @@ export default function WhosOnLeave() {
   const onLeave = data?.onLeave || [];
 
   return (
-    <Box sx={{ maxWidth: 680 }}>
+    <Box sx={{ maxWidth: 980 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">Who's on Leave</Typography>
         <TextField type="date" size="small" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />
@@ -34,13 +39,13 @@ export default function WhosOnLeave() {
       ) : (
         <>
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
+            <Grid item xs={6} sm={3}>
               <Card variant="outlined"><CardContent sx={{ py: 1.5 }}>
                 <Typography sx={{ fontSize: 26, fontWeight: 800, color: '#3366ff', lineHeight: 1 }}>{onLeave.length}</Typography>
                 <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>On leave</Typography>
               </CardContent></Card>
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={6} sm={3}>
               <Card variant="outlined"><CardContent sx={{ py: 1.5 }}>
                 <Typography sx={{ fontSize: 26, fontWeight: 800, color: '#e5396b', lineHeight: 1 }}>{data?.unauthorizedCount || 0}</Typography>
                 <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>Unauth. absent</Typography>
@@ -51,7 +56,7 @@ export default function WhosOnLeave() {
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>{fmtDate(date)}</Typography>
           {onLeave.length === 0 ? (
             <Alert severity="info">No staff on leave on this date.</Alert>
-          ) : (
+          ) : isMobile ? (
             <Stack spacing={1}>
               {onLeave.map((r, i) => (
                 <Card key={`${r.employeeId}-${i}`} variant="outlined">
@@ -70,6 +75,28 @@ export default function WhosOnLeave() {
                 </Card>
               ))}
             </Stack>
+          ) : (
+            <Card variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {['Staff', 'Type', 'Status', 'Reason'].map((c) => (
+                      <TableCell key={c} sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{c}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {onLeave.map((r, i) => (
+                    <TableRow key={`${r.employeeId}-${i}`} hover>
+                      <TableCell sx={{ fontWeight: 700 }}>{r.employeeName || r.employeeId}</TableCell>
+                      <TableCell><Chip size="small" label={r.leaveTypeCode} color="primary" variant="outlined" sx={{ fontWeight: 700 }} /></TableCell>
+                      <TableCell><Chip size="small" label={r.status} color={r.status === 'approved' ? 'success' : 'warning'} sx={{ textTransform: 'capitalize' }} /></TableCell>
+                      <TableCell sx={{ color: 'text.secondary' }}>{r.reason || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </>
       )}

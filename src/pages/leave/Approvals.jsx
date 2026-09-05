@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Alert, Chip, CircularProgress, Stack,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
 import { Check as ApproveIcon, Close as RejectIcon, AttachFile as AttachIcon } from '@mui/icons-material';
 import { leaveService } from '../../services/leaveService';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate } from '../../utils/date';
 
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
 
 export default function Approvals() {
+  const isMobile = useIsMobile();
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,7 +75,7 @@ export default function Approvals() {
   };
 
   return (
-    <Box sx={{ maxWidth: 760 }}>
+    <Box sx={{ maxWidth: 1100 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>Leave Approvals</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
@@ -81,7 +84,7 @@ export default function Approvals() {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
       ) : apps.length === 0 ? (
         <Alert severity="success">No pending leave requests. All clear. 🎉</Alert>
-      ) : (
+      ) : isMobile ? (
         <Stack spacing={1.5}>
           {apps.map((a) => (
             <Card key={a.uuid} variant="outlined">
@@ -109,6 +112,40 @@ export default function Approvals() {
             </Card>
           ))}
         </Stack>
+      ) : (
+        <Card variant="outlined">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                {['Staff', 'Type', 'Dates', 'Days', 'Reason', 'Action'].map((c, i) => (
+                  <TableCell key={c} align={i === 5 ? 'right' : 'left'} sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{c}</TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {apps.map((a) => (
+                <TableRow key={a.uuid} hover>
+                  <TableCell sx={{ fontWeight: 700 }}>{a.employeeName || a.employeeId}</TableCell>
+                  <TableCell><Chip size="small" label={a.leaveTypeName || a.leaveTypeCode} color="primary" variant="outlined" sx={{ fontWeight: 700 }} /></TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>{dateRange(a.fromDate, a.toDate)}</TableCell>
+                  <TableCell>{a.workingDays || '—'}</TableCell>
+                  <TableCell sx={{ maxWidth: 300, color: 'text.secondary' }}>
+                    {a.reason || '—'}
+                    {a.hasAttachment && (
+                      <Button size="small" color="inherit" startIcon={<AttachIcon />} onClick={() => openDoc(a)} sx={{ ml: 0.5, minWidth: 0 }}>Doc</Button>
+                    )}
+                  </TableCell>
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <Button size="small" variant="contained" color="success" startIcon={<ApproveIcon />}
+                      onClick={() => approve(a)} disabled={busyId === a.uuid} sx={{ mr: 1 }}>Approve</Button>
+                    <Button size="small" variant="outlined" color="error" startIcon={<RejectIcon />}
+                      onClick={() => { setRejectTarget(a); setNote(''); }} disabled={busyId === a.uuid}>Reject</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 2 }}>

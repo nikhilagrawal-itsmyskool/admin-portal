@@ -20,7 +20,7 @@ export default function MyAttendance() {
   }, [month]);
 
   return (
-    <Box sx={{ maxWidth: 620 }}>
+    <Box sx={{ maxWidth: 1080 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">My Attendance</Typography>
         <TextField type="month" size="small" value={month} onChange={(e) => setMonth(e.target.value)} InputLabelProps={{ shrink: true }} />
