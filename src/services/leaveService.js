@@ -29,6 +29,8 @@ export const leaveService = {
   // ── Oversight: attendance ─────────────────────────────────────────────────────
   markAttendance: async (data) => (await api.post('/leave/attendance/mark', data)).data,
   importBiometric: async (data) => (await api.post('/leave/attendance/import', data)).data,
+  importTimewatch: async (fileText, fileName, autoMapByName = true) =>
+    (await api.post('/leave/attendance/import-timewatch', { fileText, fileName, autoMapByName })).data,
   listMap: async () => (await api.get('/leave/attendance/map')).data,
   mapEnroll: async (enrollCode, employeeId) => (await api.post('/leave/attendance/map', { enrollCode, employeeId })).data,
   employeeAttendance: async (id, month) => (await api.get(`/leave/employees/${id}/attendance`, { params: { month } })).data,

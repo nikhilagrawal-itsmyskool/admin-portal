@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Alert, Card, CardContent, Grid, TextField, Button, Chip, Stack,
-  FormControlLabel, Checkbox, Autocomplete, Divider, CircularProgress,
+  Box, Typography, Alert, Card, CardContent, Grid, Button, Chip, Stack, Divider,
+  Autocomplete, TextField, CircularProgress,
 } from '@mui/material';
 import { UploadFile as UploadIcon } from '@mui/icons-material';
 import { leaveService } from '../../services/leaveService';
 import { employeeService } from '../../services/employeeService';
-import { todayIso } from '../../utils/date';
 
-function readFileB64(file) {
+function readText(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => resolve(String(r.result).split(',')[1]);
+    r.onload = () => resolve(String(r.result));
     r.onerror = reject;
-    r.readAsDataURL(file);
+    r.readAsText(file);
   });
 }
 
 export default function BiometricImport() {
   const [file, setFile] = useState(null);
-  const [mapping, setMapping] = useState({ codeHeader: 'Code', dateHeader: 'Date', inHeader: 'In', outHeader: 'Out', statusHeader: '' });
-  const [coverageFrom, setCoverageFrom] = useState('');
-  const [coverageTo, setCoverageTo] = useState(todayIso());
-  const [inferAbsent, setInferAbsent] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -48,15 +43,11 @@ export default function BiometricImport() {
   };
 
   const doImport = async () => {
-    if (!file) { setError('Choose a file'); return; }
-    if (!mapping.codeHeader || !mapping.dateHeader) { setError('Code and Date column headers are required'); return; }
-    if (!coverageFrom || !coverageTo) { setError('Coverage period is required'); return; }
-    setBusy(true); setError(''); setResult(null);
+    if (!file) { setError('Choose the TimeWatch report file first'); return; }
+    setBusy(true); setError('');
     try {
-      const base64Data = await readFileB64(file);
-      const res = await leaveService.importBiometric({
-        fileName: file.name, base64Data, mapping, coverageFrom, coverageTo, inferAbsent,
-      });
+      const text = await readText(file);
+      const res = await leaveService.importTimewatch(text, file.name);
       setResult(res);
       loadMap();
     } catch (err) {
@@ -70,7 +61,7 @@ export default function BiometricImport() {
     if (!employee) return;
     try {
       await leaveService.mapEnroll(code, employee.uuid);
-      setResult((r) => ({ ...r, unmatchedCodes: (r.unmatchedCodes || []).filter((c) => c !== code) }));
+      setResult((r) => ({ ...r, unmatched: (r.unmatched || []).filter((u) => u.code !== code) }));
       loadMap();
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to map');
@@ -85,31 +76,21 @@ export default function BiometricImport() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2 }}>
-            Upload the device's Excel export and tell us which columns hold the enrollment code, date and punch times.
-            Within the coverage period, mapped staff with no punch on a working day are marked absent.
+            Upload the TimeWatch <b>Monthly Performance</b> report (the <code>.txt</code> file exported from the
+            biometric software). The month and every day's status come straight from the report — staff are
+            matched to the device codes automatically by name; map any leftovers below, then import again.
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={7}>
               <Button component="label" variant="outlined" startIcon={<UploadIcon />} fullWidth>
-                {file ? file.name : 'Choose Excel file'}
-                <input hidden type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                {file ? file.name : 'Choose TimeWatch report (.txt)'}
+                <input hidden type="file" accept=".txt,text/plain" onChange={(e) => { setFile(e.target.files?.[0] || null); setResult(null); }} />
               </Button>
             </Grid>
-            <Grid item xs={6} md={4}><TextField type="date" size="small" fullWidth label="Coverage from" value={coverageFrom} onChange={(e) => setCoverageFrom(e.target.value)} InputLabelProps={{ shrink: true }} /></Grid>
-            <Grid item xs={6} md={4}><TextField type="date" size="small" fullWidth label="Coverage to" value={coverageTo} onChange={(e) => setCoverageTo(e.target.value)} InputLabelProps={{ shrink: true }} /></Grid>
-
-            <Grid item xs={6} md={2.4}><TextField size="small" fullWidth label="Code column" value={mapping.codeHeader} onChange={(e) => setMapping((m) => ({ ...m, codeHeader: e.target.value }))} /></Grid>
-            <Grid item xs={6} md={2.4}><TextField size="small" fullWidth label="Date column" value={mapping.dateHeader} onChange={(e) => setMapping((m) => ({ ...m, dateHeader: e.target.value }))} /></Grid>
-            <Grid item xs={6} md={2.4}><TextField size="small" fullWidth label="In column" value={mapping.inHeader} onChange={(e) => setMapping((m) => ({ ...m, inHeader: e.target.value }))} /></Grid>
-            <Grid item xs={6} md={2.4}><TextField size="small" fullWidth label="Out column" value={mapping.outHeader} onChange={(e) => setMapping((m) => ({ ...m, outHeader: e.target.value }))} /></Grid>
-            <Grid item xs={6} md={2.4}><TextField size="small" fullWidth label="Status column (opt.)" value={mapping.statusHeader} onChange={(e) => setMapping((m) => ({ ...m, statusHeader: e.target.value }))} /></Grid>
-
-            <Grid item xs={12}>
-              <FormControlLabel control={<Checkbox checked={inferAbsent} onChange={(e) => setInferAbsent(e.target.checked)} />}
-                label="Mark non-punching staff absent within the coverage period" />
-            </Grid>
-            <Grid item xs={12}>
-              <Button variant="contained" onClick={doImport} disabled={busy}>{busy ? 'Importing…' : 'Import'}</Button>
+            <Grid item xs={12} sm={5}>
+              <Button variant="contained" onClick={doImport} disabled={busy || !file} fullWidth>
+                {busy ? 'Importing…' : (result ? 'Import again' : 'Import')}
+              </Button>
             </Grid>
           </Grid>
         </CardContent>
@@ -119,33 +100,41 @@ export default function BiometricImport() {
         <Card sx={{ mb: 3 }} variant="outlined">
           <CardContent>
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1, mb: 1 }}>
-              <Chip color="success" label={`${result.matchedRows} rows matched`} />
-              <Chip label={`${result.daysCreated} days written`} />
-              {result.unmatchedCodes?.length > 0 && <Chip color="warning" label={`${result.unmatchedCodes.length} unmatched codes`} />}
-              {result.suspectDates?.length > 0 && <Chip color="warning" label={`${result.suspectDates.length} device-down days`} />}
+              {result.period?.from && <Chip color="primary" variant="outlined" label={`${result.period.from} → ${result.period.to}`} />}
+              <Chip color="success" label={`${result.totalEmployees - (result.unmatched?.length || 0)} matched`} />
+              {result.autoMapped?.length > 0 && <Chip label={`${result.autoMapped.length} auto-mapped by name`} />}
+              <Chip label={`${result.daysWritten} day rows written`} />
+              {result.unmatched?.length > 0 && <Chip color="warning" label={`${result.unmatched.length} unmatched`} />}
             </Stack>
-            {result.suspectDates?.length > 0 && (
-              <Alert severity="warning" sx={{ mb: 1 }}>Too few punches on {result.suspectDates.join(', ')} — those days are held as "device down", not marked absent.</Alert>
+            {result.unknownStatuses?.length > 0 && (
+              <Alert severity="warning" sx={{ mb: 1 }}>Unrecognised status codes were skipped: {result.unknownStatuses.join(', ')}. Tell me and I'll map them.</Alert>
             )}
-            {result.unmatchedCodes?.length > 0 && (
+
+            {result.unmatched?.length > 0 ? (
               <>
                 <Divider sx={{ my: 1.5 }} />
-                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1 }}>Map unmatched codes to staff</Typography>
-                <Stack spacing={1}>
-                  {result.unmatchedCodes.map((code) => (
-                    <Box key={code} sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <Chip label={code} sx={{ fontFamily: 'monospace' }} />
+                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.5 }}>Map the remaining device codes to staff</Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
+                  The device name is shown — pick the matching employee, then press <b>Import again</b> to bring their attendance in.
+                </Typography>
+                <Stack spacing={1.25}>
+                  {result.unmatched.map((u) => (
+                    <Box key={u.code} sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <Chip label={`#${u.code}`} sx={{ fontFamily: 'monospace' }} />
+                      <Typography sx={{ fontSize: 13, fontWeight: 600, minWidth: 150 }}>{u.name}</Typography>
                       <Autocomplete
                         sx={{ minWidth: 240, flex: 1 }} options={empOptions}
                         getOptionLabel={(o) => o.name || ''} isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
                         onInputChange={(_, v) => searchEmp(v)}
-                        onChange={(_, v) => mapCode(code, v)}
-                        renderInput={(params) => <TextField {...params} size="small" label="Assign to…" />}
+                        onChange={(_, v) => mapCode(u.code, v)}
+                        renderInput={(params) => <TextField {...params} size="small" label="Assign to employee…" />}
                       />
                     </Box>
                   ))}
                 </Stack>
               </>
+            ) : (
+              <Alert severity="success">All device codes are mapped — attendance for {result.period?.from?.slice(0, 7)} is in.</Alert>
             )}
           </CardContent>
         </Card>
@@ -153,11 +142,11 @@ export default function BiometricImport() {
 
       <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary', mb: 1 }}>Enrollment map</Typography>
       {loadingMap ? <CircularProgress size={22} /> : existingMap.length === 0 ? (
-        <Alert severity="info">No enrollment codes mapped yet. Import a file and map the unmatched codes above.</Alert>
+        <Alert severity="info">No device codes mapped yet. Import a report — most map automatically by name.</Alert>
       ) : (
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
           {existingMap.map((m) => (
-            <Chip key={m.enrollCode} label={`${m.enrollCode} → ${m.employeeName || m.employeeId}`} variant="outlined" />
+            <Chip key={m.enrollCode} label={`#${m.enrollCode} → ${m.employeeName || m.employeeId}`} variant="outlined" />
           ))}
         </Stack>
       )}
