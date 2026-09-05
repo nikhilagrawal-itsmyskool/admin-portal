@@ -31,6 +31,8 @@ import {
   ReceiptLong as DuesIcon,
   Receipt as ReceiptIcon,
   QrCodeScanner as ScanIcon,
+  EventBusy as LeaveIcon,
+  HowToReg as LeaveApprovalIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -129,7 +131,15 @@ export const MOBILE_FEATURES = [
 
   // ── Office — god only. The godpwa.* perms are granted to NO role, so only god ('*')
   // sees these; admins on a phone won't. Read-only checking on the go.
-  { title: "Syllabus Overview", icon: SyllabusIcon, path: "/syllabus/overview", perm: "godpwa.syllabus.overview", section: "manage", color: "#8e24aa", routes: ["/syllabus/overview"] },
+  { title: "Syllabus Overview", icon: SyllabusIcon, path: "/syllabus/overview", perm: "godpwa.syllabus.overview", section: "office", color: "#8e24aa", routes: ["/syllabus/overview"] },
+  // Leave — Director oversight (leave.manage = god only for now). Read/act on the go.
+  { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
+  { title: "On Leave", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/day"] },
+  { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
+  // Leave — self-service (all staff). Collapses into one "Leave" hub tile under Mine.
+  { title: "My Leave", hubLabel: "Requests", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/me"] },
+  { title: "My Attendance", hubLabel: "Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/me/attendance"] },
+  { title: "My Penalty", hubLabel: "Penalty", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/me/penalty"] },
   { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
   { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },
@@ -151,11 +161,12 @@ export const MOBILE_HUBS = {
   sports: { title: "Sports", icon: SportsIcon, color: "#0095ff" },
   supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
   fees: { title: "Fees", icon: FeesIcon, color: "#00897b" },
+  leave: { title: "Leave", icon: LeaveIcon, color: "#3d5afe" },
 };
 
 // The home bands, in display order (mirrors the desktop groups; "Today" is mobile-first).
 export const MOBILE_SECTIONS = [
-  { key: "office", label: "Office" }, // god-only tiles (godpwa.*) — pinned to the top
+  { key: "office", label: "Operations" }, // god-only oversight tiles (godpwa.* / leave.manage) — pinned to the top
   { key: "today", label: "Now" },
   { key: "mine", label: "Mine" },
   { key: "manage", label: "Manage" }, // module consoles (Examinations; god-only Syllabus Overview)

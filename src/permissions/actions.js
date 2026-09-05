@@ -66,6 +66,12 @@ export const ACTIONS = {
   EXAM_MANAGE: "exam.manage",
   // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
   ASSISTANT_USE: "assistant.use",
+  // Staff leave. `apply` = self-service (own leave/attendance/penalty), granted to
+  // teacher + admin. `manage` = oversight (approve, staff records, config, biometric
+  // import, deduction report) — GOD ONLY for now (god's '*' covers it; grant to admin
+  // here + in policy.js to let office admins in later).
+  LEAVE_APPLY: "leave.apply",
+  LEAVE_MANAGE: "leave.manage",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -301,5 +307,13 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.ASSISTANT_USE,
     description: "Use the voice/LLM student assistant (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_APPLY,
+    description: "Apply for your own leave and see your own attendance & penalty (teacher/office/admin)",
+  },
+  {
+    action: ACTIONS.LEAVE_MANAGE,
+    description: "Approve/reject leave, view any staff member's records, set policy, import biometric attendance & run the deduction report (god-only for now)",
   },
 ];

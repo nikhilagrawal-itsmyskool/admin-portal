@@ -183,6 +183,15 @@ import LeaderboardPage from './pages/assembly/LeaderboardPage';
 import MyRoster from './pages/assembly/MyRoster';
 import MyChecklist from './pages/assembly/MyChecklist';
 import MyGrade from './pages/assembly/MyGrade';
+import MyLeave from './pages/leave/MyLeave';
+import LeaveMyAttendance from './pages/leave/MyAttendance';
+import MyPenalty from './pages/leave/MyPenalty';
+import LeaveApprovals from './pages/leave/Approvals';
+import StaffAttendance from './pages/leave/StaffAttendance';
+import WhosOnLeave from './pages/leave/WhosOnLeave';
+import LeaveTypes from './pages/leave/LeaveTypes';
+import BiometricImport from './pages/leave/BiometricImport';
+import DeductionReport from './pages/leave/DeductionReport';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import HubPage from './pages/HubPage';
@@ -429,6 +438,15 @@ export default function App() {
         <Route path="assembly/my-grade" element={<MyGrade />} />
         <Route path="assembly/plans/:id" element={<PlanBuilder />} />
         <Route path="assembly/specials/:id" element={<SpecialBuilder />} />
+        <Route path="leave/me" element={<MyLeave />} />
+        <Route path="leave/me/attendance" element={<LeaveMyAttendance />} />
+        <Route path="leave/me/penalty" element={<MyPenalty />} />
+        <Route path="leave/approvals" element={<LeaveApprovals />} />
+        <Route path="leave/staff" element={<StaffAttendance />} />
+        <Route path="leave/day" element={<WhosOnLeave />} />
+        <Route path="leave/types" element={<LeaveTypes />} />
+        <Route path="leave/import" element={<BiometricImport />} />
+        <Route path="leave/deductions" element={<DeductionReport />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

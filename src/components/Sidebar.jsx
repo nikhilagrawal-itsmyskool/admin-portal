@@ -98,6 +98,8 @@ import {
   ReceiptLong as DuesIcon,
   Receipt as ReceiptIcon,
   SchoolOutlined as ExamOnlyIcon,
+  EventBusy as LeaveNavIcon,
+  UploadFile as BioImportIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -396,6 +398,25 @@ const menuItems = [
       { title: 'Grading', icon: GradingIcon, path: '/assembly/grading', perm: 'assembly.manage' },
       { title: 'Leaderboard', icon: LeaderboardIcon, path: '/assembly/leaderboard', perm: 'assembly.manage' },
       { title: 'Settings', icon: AsmSettingsIcon, path: '/assembly/settings', perm: 'assembly.manage' },
+    ],
+  },
+  {
+    // No parent perm: staff (leave.apply) see the "My *" children; the Director
+    // (leave.manage) sees the oversight children instead. notPerm hides the personal
+    // screens from an oversight user — the Syllabus "My Plans" pattern. Oversight is
+    // god-only for now (leave.manage is granted to no role, so god's '*' covers it).
+    title: 'Leave',
+    icon: LeaveNavIcon,
+    children: [
+      { title: 'My Attendance', icon: AttendanceIcon, path: '/leave/me/attendance', perm: 'leave.apply', notPerm: 'leave.manage' },
+      { title: 'Apply / My Requests', icon: MarkIcon, path: '/leave/me', perm: 'leave.apply', notPerm: 'leave.manage' },
+      { title: 'My Penalty', icon: WaiverIcon, path: '/leave/me/penalty', perm: 'leave.apply', notPerm: 'leave.manage' },
+      { title: 'Approvals', icon: DutyIcon, path: '/leave/approvals', perm: 'leave.manage' },
+      { title: 'Staff Attendance', icon: PeopleIcon, path: '/leave/staff', perm: 'leave.manage' },
+      { title: "Who's on Leave", icon: CalendarIcon, path: '/leave/day', perm: 'leave.manage' },
+      { title: 'Types & Policy', icon: AsmSettingsIcon, path: '/leave/types', perm: 'leave.manage' },
+      { title: 'Biometric Import', icon: BioImportIcon, path: '/leave/import', perm: 'leave.manage' },
+      { title: 'Deduction Report', icon: StructureIcon, path: '/leave/deductions', perm: 'leave.manage' },
     ],
   },
 ];

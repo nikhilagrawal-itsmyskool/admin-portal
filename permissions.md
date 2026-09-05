@@ -64,5 +64,7 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `exam.view` | See the Examinations menu and read exam schedules, datesheets & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `exam.manage` | Create/edit/delete/publish examinations, datesheet papers & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `assistant.use` | Use the voice/LLM student assistant (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `leave.apply` | Apply for your own leave and see your own attendance & penalty (teacher/office/admin) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `leave.manage` | Approve/reject leave, view any staff member's records, set policy, import biometric attendance & run the deduction report (god-only for now) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._
