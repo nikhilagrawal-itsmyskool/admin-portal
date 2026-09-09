@@ -21,6 +21,8 @@ export const activityCalendarService = {
   // Holidays
   listHolidays: async (params) => (await api.get('/academic-calendar/holidays', { params })).data,
   setHoliday: async (body) => (await api.post('/academic-calendar/holidays', body)).data,
+  // Declare a closure over a date range -> { written:[dates], skipped:[weekly-off dates] }
+  closeRange: async (body) => (await api.post('/academic-calendar/holidays/close-range', body)).data,
   deleteHoliday: async (id) => (await api.delete(`/academic-calendar/holidays/${id}`)).data,
 
   // Settings (weekly-off) + non-teaching resolver

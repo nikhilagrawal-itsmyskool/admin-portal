@@ -4,10 +4,11 @@ import {
   Table, TableHead, TableRow, TableCell, TableBody, Chip, FormGroup, FormControlLabel, Checkbox,
   CircularProgress, Tooltip, Grid,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, EventBusy as EventBusyIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { activityCalendarService } from '../../services/activityCalendarService';
 import { fmtDateDow } from '../../utils/date';
+import DeclareClosureDialog from './DeclareClosureDialog';
 
 const WEEKDAYS = [
   { n: 0, label: 'Sunday' }, { n: 1, label: 'Monday' }, { n: 2, label: 'Tuesday' },
@@ -37,6 +38,7 @@ export default function HolidaysTab({ canManage }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [form, setForm] = useState({ date: '', name: '', kind: 'full' });
+  const [closureOpen, setClosureOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!academicYearId || !range) return;
@@ -129,7 +131,14 @@ export default function HolidaysTab({ canManage }) {
       {/* Declared holidays list */}
       <Card>
         <CardContent>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Declared holidays <Typography component="span" variant="body2" color="text.secondary">({ayName})</Typography></Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Declared holidays <Typography component="span" variant="body2" color="text.secondary">({ayName})</Typography></Typography>
+            {canManage && (
+              <Button size="small" variant="outlined" color="error" startIcon={<EventBusyIcon />} onClick={() => setClosureOpen(true)}>
+                Declare closure
+              </Button>
+            )}
+          </Stack>
 
           {canManage && (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }} alignItems={{ sm: 'center' }}>
@@ -172,6 +181,14 @@ export default function HolidaysTab({ canManage }) {
           )}
         </CardContent>
       </Card>
+
+      <DeclareClosureDialog
+        open={closureOpen}
+        onClose={() => setClosureOpen(false)}
+        weeklyOff={weeklyOff}
+        academicYearId={academicYearId}
+        onDone={load}
+      />
     </Box>
   );
 }
