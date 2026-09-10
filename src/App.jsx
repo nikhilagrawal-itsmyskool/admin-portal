@@ -192,6 +192,9 @@ import WhosOnLeave from './pages/leave/WhosOnLeave';
 import LeaveTypes from './pages/leave/LeaveTypes';
 import BiometricImport from './pages/leave/BiometricImport';
 import DeductionReport from './pages/leave/DeductionReport';
+import StaffDocuments from './pages/documents/StaffDocuments';
+import MyDocuments from './pages/documents/MyDocuments';
+import MyDocument from './pages/documents/MyDocument';
 import Profile from './pages/Profile';
 import MobileHome from './pages/MobileHome';
 import HubPage from './pages/HubPage';
@@ -447,6 +450,9 @@ export default function App() {
         <Route path="leave/types" element={<LeaveTypes />} />
         <Route path="leave/import" element={<BiometricImport />} />
         <Route path="leave/deductions" element={<DeductionReport />} />
+        <Route path="documents" element={<StaffDocuments />} />
+        <Route path="me/documents" element={<MyDocuments />} />
+        <Route path="me/documents/:id" element={<MyDocument />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

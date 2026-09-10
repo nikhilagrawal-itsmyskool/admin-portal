@@ -51,6 +51,7 @@ export const ROLE_PERMISSIONS = {
     "exam.*",
     "receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
     "leave.apply", // Self-service leave only; oversight (leave.manage) is god-only for now
+    "documents.sign", // Read & sign own documents; authoring (documents.manage) is god-only
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   // No transport access by default — bus attendance needs the `transport-attendance`
@@ -67,6 +68,7 @@ export const ROLE_PERMISSIONS = {
     "assembly.view", // Read the assembly plan for their wing
     "academic-calendar.view", // Read the school's academic calendar
     "leave.apply", // Apply for own leave; see own attendance & penalty
+    "documents.sign", // Read & sign the staff policies shared with them
   ],
   // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
   // can cover for an absent colleague) and to POST their class's daily homework photos.

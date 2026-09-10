@@ -33,6 +33,7 @@ import {
   QrCodeScanner as ScanIcon,
   EventBusy as LeaveIcon,
   HowToReg as LeaveApprovalIcon,
+  Description as DocumentIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -141,6 +142,12 @@ export const MOBILE_FEATURES = [
   { title: "My Leave", hubLabel: "Requests", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me"] },
   { title: "My Attendance", hubLabel: "Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me/attendance"] },
   { title: "My Penalty", hubLabel: "Penalty", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me/penalty"] },
+  // Staff documents — self-service (read & sign own policies). Hidden from the managing
+  // user (god) who reads compliance via the office tile below instead.
+  { title: "My Documents", icon: DocumentIcon, path: "/me/documents", perm: "documents.sign", notPerm: "documents.manage", section: "mine", color: "#3f51b5", routes: ["/me/documents", "/me/documents/:id"] },
+  // Staff documents — god view: read any policy + who-has-signed compliance (read-only on
+  // mobile; authoring is desktop-only, enforced inside the page).
+  { title: "Staff Documents", icon: DocumentIcon, path: "/documents", perm: "documents.manage", section: "office", color: "#3f51b5", routes: ["/documents"] },
   { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
   { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },

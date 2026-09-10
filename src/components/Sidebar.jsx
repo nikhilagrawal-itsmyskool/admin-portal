@@ -419,6 +419,17 @@ const menuItems = [
       { title: 'Deduction Report', icon: StructureIcon, path: '/leave/deductions', perm: 'leave.manage' },
     ],
   },
+  {
+    // Staff document handbook. Everyone with documents.sign gets "My Documents"; authoring
+    // (documents.manage) is god-only, so only god sees "Manage Documents". notPerm hides the
+    // self-service item from the managing user (same pattern as Leave / Syllabus My Plans).
+    title: 'Staff Documents',
+    icon: TemplateIcon,
+    children: [
+      { title: 'My Documents', icon: AssignmentIcon, path: '/me/documents', perm: 'documents.sign', notPerm: 'documents.manage' },
+      { title: 'Manage Documents', icon: TemplateIcon, path: '/documents', perm: 'documents.manage' },
+    ],
+  },
 ];
 
 export default function Sidebar({ open, onClose, isDesktop }) {
