@@ -6,7 +6,9 @@ import api from '../config/api';
 export const leaveService = {
   // ── Config + types ──────────────────────────────────────────────────────────
   getConfig: async () => (await api.get('/leave/config')).data,
+  updateConfig: async (data) => (await api.put('/leave/config', data)).data,
   getTypes: async () => (await api.get('/leave/types')).data,
+  updateType: async (code, data) => (await api.put(`/leave/types/${code}`, data)).data,
 
   // ── Self-service (/me) ────────────────────────────────────────────────────────
   myTypes: async () => (await api.get('/leave/me/types')).data,

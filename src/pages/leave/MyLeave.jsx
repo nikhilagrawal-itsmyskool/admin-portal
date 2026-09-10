@@ -113,18 +113,31 @@ export default function MyLeave() {
           {summary && (
             <Card sx={{ mb: 3 }}>
               <CardContent>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                  Casual leave · {summary.month}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mt: 0.5 }}>
-                  <Typography sx={{ fontSize: 34, fontWeight: 800, lineHeight: 1 }}>
-                    {summary.clRemaining}<Typography component="span" sx={{ fontSize: 15, color: 'text.secondary', fontWeight: 600 }}> / {summary.clPerMonth} left</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    Leave balance{summary.academicYearStart ? ` · ${summary.academicYearStart.slice(0, 4)}–${summary.academicYearEnd.slice(2, 4)}` : ''}
                   </Typography>
                   <Stack direction="row" spacing={1}>
                     <Chip size="small" label={`${summary.pending} pending`} color="warning" variant="outlined" />
                     <Chip size="small" label={`${summary.approved} approved`} color="success" variant="outlined" />
                   </Stack>
                 </Box>
+                <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', gap: 2.5 }}>
+                  {(summary.quotas || []).map((q) => (
+                    <Box key={q.code}>
+                      <Typography sx={{ fontSize: 30, fontWeight: 800, lineHeight: 1, color: q.remaining === 0 ? '#e5396b' : '#222b45', fontVariantNumeric: 'tabular-nums' }}>
+                        {q.remaining}<Typography component="span" sx={{ fontSize: 14, color: 'text.secondary', fontWeight: 600 }}> / {q.quota}</Typography>
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{q.name} left</Typography>
+                    </Box>
+                  ))}
+                  {(!summary.quotas || summary.quotas.length === 0) && (
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>No quota-limited leave types configured.</Typography>
+                  )}
+                </Stack>
+                <Typography sx={{ fontSize: 11, color: 'text.disabled', mt: 1.5 }}>
+                  Allocations are per academic year and lapse on 31 March.
+                </Typography>
               </CardContent>
             </Card>
           )}
