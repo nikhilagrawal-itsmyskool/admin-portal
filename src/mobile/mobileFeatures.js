@@ -142,8 +142,8 @@ export const MOBILE_FEATURES = [
   { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
   { title: "On Leave", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/day"] },
   { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
-  // Feedback dashboard — reviewer oversight (feedback.review = god only for now).
-  { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "office", color: "#0097a7", routes: ["/feedback"] },
+  // Feedback dashboard — reviewer oversight (feedback.review = god only for now); Manage band.
+  { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "manage", color: "#0097a7", routes: ["/feedback"] },
   // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
   // notPerm hides it from an oversight user (god / leave.manage) who never applies.
   { title: "My Leave", hubLabel: "Requests", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me"] },
@@ -154,7 +154,7 @@ export const MOBILE_FEATURES = [
   { title: "My Documents", icon: DocumentIcon, path: "/me/documents", perm: "documents.sign", notPerm: "documents.manage", section: "mine", color: "#3f51b5", routes: ["/me/documents", "/me/documents/:id"] },
   // Staff documents — god view: read any policy + who-has-signed compliance (read-only on
   // mobile; authoring is desktop-only, enforced inside the page).
-  { title: "Staff Documents", icon: DocumentIcon, path: "/documents", perm: "documents.manage", section: "office", color: "#3f51b5", routes: ["/documents"] },
+  { title: "Staff Documents", icon: DocumentIcon, path: "/documents", perm: "documents.manage", section: "manage", color: "#3f51b5", routes: ["/documents", "/documents/:id"] },
   { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
   { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },

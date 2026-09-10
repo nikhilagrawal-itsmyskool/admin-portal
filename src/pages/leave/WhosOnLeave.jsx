@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, TextField, Alert, CircularProgress, Card, Chip, Stack } from '@mui/material';
 import { leaveService } from '../../services/leaveService';
 import { thisMonth } from './LeaveShared';
@@ -23,6 +23,7 @@ export default function WhosOnLeave() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const today = todayIso();
+  const todayRef = useRef(null);
 
   const [y, m] = month.split('-').map(Number);
   const first = `${month}-01`;
@@ -38,6 +39,13 @@ export default function WhosOnLeave() {
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [month]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Open scrolled to the current day (when this month contains today) so back/forward is natural.
+  useEffect(() => {
+    if (loading) return undefined;
+    const t = setTimeout(() => todayRef.current?.scrollIntoView({ block: 'center' }), 60);
+    return () => clearTimeout(t);
+  }, [loading, month]);
 
   // date -> [{ name, code, status }]
   const byDate = {};
@@ -80,6 +88,7 @@ export default function WhosOnLeave() {
               return (
                 <Box
                   key={date}
+                  ref={isToday ? todayRef : undefined}
                   sx={{
                     display: 'flex', gap: 1.5, px: 1.5, py: 1, borderBottom: '1px solid #eef2f8',
                     bgcolor: isToday ? '#eaf0ff' : 'transparent',

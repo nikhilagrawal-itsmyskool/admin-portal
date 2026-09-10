@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Alert, CircularProgress, Chip, Stack,
   Table, TableHead, TableRow, TableCell, TableBody, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
-  ToggleButtonGroup, ToggleButton, FormControlLabel, Switch, Divider, Snackbar, IconButton, Autocomplete,
+  ToggleButtonGroup, ToggleButton, FormControlLabel, Switch, Snackbar, IconButton, Autocomplete,
 } from '@mui/material';
 import {
-  Add as AddIcon, Edit as EditIcon, Groups as WhoIcon, NotificationsActive as RemindIcon,
-  Archive as ArchiveIcon, Close as CloseIcon, Visibility as ViewIcon,
+  Add as AddIcon, Edit as EditIcon, NotificationsActive as RemindIcon,
+  Archive as ArchiveIcon, ChevronRight as ChevronIcon,
 } from '@mui/icons-material';
 import { documentService } from '../../services/documentService';
 import { employeeService } from '../../services/employeeService';
@@ -22,8 +23,11 @@ const blankForm = {
   signModes: 'both', requiresAck: true, bodyHtml: '', status: 'published', bumpVersion: false, exemptRoles: [],
 };
 
+// Staff document handbook — manage list. Reading a document + who-signed is a full in-app
+// screen (DocumentDetail at /documents/:id), not a popup. Authoring stays a dialog (desktop).
 export default function StaffDocuments() {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,9 +36,6 @@ export default function StaffDocuments() {
   const [form, setForm] = useState(null);       // editor dialog
   const [allRoles, setAllRoles] = useState([]); // role names, for the exempt-roles picker
   const [busy, setBusy] = useState(false);
-  const [whoDoc, setWhoDoc] = useState(null);    // who-signed dialog target
-  const [acks, setAcks] = useState(null);
-  const [readDoc, setReadDoc] = useState(null);  // read-policy dialog
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -86,39 +87,21 @@ export default function StaffDocuments() {
     } finally { setBusy(false); }
   };
 
-  const openWho = async (d) => {
-    setWhoDoc(d); setAcks(null);
-    try { setAcks(await documentService.acks(d.uuid)); }
-    catch (err) { setError(err.response?.data?.error?.description || 'Could not load signatures'); }
-  };
-
-  const remind = async (d) => {
+  const remind = async (d, e) => {
+    if (e) e.stopPropagation();
     try { const r = await documentService.remind(d.uuid); setToast(`Reminder sent to ${r.notified} staff`); }
     catch (err) { setError(err.response?.data?.error?.description || 'Could not send reminder'); }
   };
 
-  const archive = async (d) => {
+  const archive = async (d, e) => {
+    if (e) e.stopPropagation();
     if (!window.confirm(`Archive "${d.title}"? Staff will no longer see it.`)) return;
     try { await documentService.archive(d.uuid); setToast('Archived'); load(); }
     catch (err) { setError(err.response?.data?.error?.description || 'Could not archive'); }
   };
 
-  const viewArtifact = async (row) => {
-    const which = row.hasSignedPage ? 'page' : 'signature';
-    try {
-      const art = await documentService.ackArtifact(row.ackId, which);
-      if (art?.dataUri) {
-        const w = window.open('', '_blank');
-        if (w) w.document.write(`<title>${row.employeeName}</title><iframe src="${art.dataUri}" style="border:0;position:fixed;inset:0;width:100%;height:100%"></iframe>`);
-      }
-    } catch (err) { setError(err.response?.data?.error?.description || 'Could not open'); }
-  };
-
-  const openRead = async (d) => {
-    setReadDoc({ ...d, bodyHtml: null });
-    try { setReadDoc(await documentService.get(d.uuid)); }
-    catch (err) { setError(err.response?.data?.error?.description || 'Could not open document'); }
-  };
+  const open = (d) => navigate(`/documents/${d.uuid}`);
+  const editFrom = (d, e) => { if (e) e.stopPropagation(); openEdit(d); };
 
   const pct = (d) => (d.requiredCount ? Math.round((d.signedCount / d.requiredCount) * 100) : 0);
   const statusChip = (d) => d.status === 'published'
@@ -132,7 +115,7 @@ export default function StaffDocuments() {
         {!isMobile && <Button variant="contained" startIcon={<AddIcon />} onClick={openNew}>New document</Button>}
       </Box>
       {isMobile && (
-        <Alert severity="info" sx={{ mb: 2 }}>Read policies and track who has signed. Creating and editing is done on the desktop portal.</Alert>
+        <Alert severity="info" sx={{ mb: 2 }}>Tap a document to read it and see who has signed. Creating and editing is done on the desktop portal.</Alert>
       )}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
@@ -141,36 +124,37 @@ export default function StaffDocuments() {
       ) : docs.length === 0 ? (
         <Alert severity="info">No documents yet.{!isMobile && ' Use "New document" to add one.'}</Alert>
       ) : isMobile ? (
-        // Mobile: read-only compliance cards
+        // Mobile: tappable compliance cards → in-app detail screen
         <Stack spacing={1.25}>
           {docs.map((d) => (
-            <Card key={d.uuid} variant="outlined">
+            <Card key={d.uuid} variant="outlined" sx={{ cursor: 'pointer', '&:hover': { borderColor: '#3366ff' } }} onClick={() => open(d)}>
               <CardContent sx={{ py: 1.75, '&:last-child': { pb: 1.75 } }}>
-                <Typography sx={{ fontWeight: 700, fontSize: 14.5, color: '#222b45' }}>{d.title}</Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>
-                  {d.effectiveFrom ? `Effective ${fmtDate(d.effectiveFrom)} · ` : ''}v{d.version}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14.5, color: '#222b45' }}>{d.title}</Typography>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                      {d.effectiveFrom ? `Effective ${fmtDate(d.effectiveFrom)} · ` : ''}v{d.version}
+                    </Typography>
+                  </Box>
+                  <ChevronIcon sx={{ color: '#c3cad9' }} />
+                </Box>
                 {d.requiresAck && (
-                  <>
+                  <Box sx={{ mt: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                       <Typography sx={{ fontSize: 12.5, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{d.signedCount} / {d.requiredCount} signed</Typography>
                       {d.signedCount >= d.requiredCount && d.requiredCount > 0
                         ? <Chip size="small" label="Complete" sx={{ bgcolor: '#e5f8f2', color: '#00916e', fontWeight: 700 }} />
                         : <Chip size="small" label={`${d.requiredCount - d.signedCount} pending`} sx={{ bgcolor: '#fff5e0', color: '#8a6400', fontWeight: 700 }} />}
                     </Box>
-                    <LinearProgress variant="determinate" value={pct(d)} sx={{ height: 7, borderRadius: 6, mb: 1 }} />
-                  </>
+                    <LinearProgress variant="determinate" value={pct(d)} sx={{ height: 7, borderRadius: 6 }} />
+                  </Box>
                 )}
-                <Stack direction="row" spacing={1}>
-                  <Button size="small" onClick={() => openRead(d)}>Read policy</Button>
-                  {d.requiresAck && <Button size="small" onClick={() => openWho(d)}>Who's pending</Button>}
-                </Stack>
               </CardContent>
             </Card>
           ))}
         </Stack>
       ) : (
-        // Desktop: full manage table
+        // Desktop: manage table — click a row to open the detail screen
         <Card variant="outlined">
           <Table size="small">
             <TableHead>
@@ -182,9 +166,9 @@ export default function StaffDocuments() {
             </TableHead>
             <TableBody>
               {docs.map((d) => (
-                <TableRow key={d.uuid} hover>
+                <TableRow key={d.uuid} hover sx={{ cursor: 'pointer' }} onClick={() => open(d)}>
                   <TableCell>
-                    <Typography sx={{ fontWeight: 700, color: '#222b45', fontSize: 13.5 }}>{d.title}</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#274bdb', fontSize: 13.5 }}>{d.title}</Typography>
                     <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{d.effectiveFrom ? `Effective ${fmtDate(d.effectiveFrom)}` : 'No effective date'}</Typography>
                   </TableCell>
                   <TableCell><Chip size="small" label={d.category} sx={{ bgcolor: '#eef1f7', color: '#5b6684', textTransform: 'capitalize' }} /></TableCell>
@@ -200,10 +184,9 @@ export default function StaffDocuments() {
                   <TableCell>{statusChip(d)}</TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                      <IconButton size="small" title="Edit" onClick={() => openEdit(d)}><EditIcon fontSize="small" /></IconButton>
-                      {d.requiresAck && <IconButton size="small" title="Who signed" onClick={() => openWho(d)}><WhoIcon fontSize="small" /></IconButton>}
-                      {d.requiresAck && <IconButton size="small" title="Remind pending" onClick={() => remind(d)}><RemindIcon fontSize="small" /></IconButton>}
-                      <IconButton size="small" title="Archive" onClick={() => archive(d)}><ArchiveIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" title="Edit" onClick={(e) => editFrom(d, e)}><EditIcon fontSize="small" /></IconButton>
+                      {d.requiresAck && <IconButton size="small" title="Remind pending" onClick={(e) => remind(d, e)}><RemindIcon fontSize="small" /></IconButton>}
+                      <IconButton size="small" title="Archive" onClick={(e) => archive(d, e)}><ArchiveIcon fontSize="small" /></IconButton>
                     </Stack>
                   </TableCell>
                 </TableRow>
@@ -288,66 +271,6 @@ export default function StaffDocuments() {
             {form?.uuid ? (form?.bumpVersion ? 'Publish new version' : 'Save') : 'Create'}
           </Button>
         </DialogActions>
-      </Dialog>
-
-      {/* Who-signed dialog */}
-      <Dialog open={!!whoDoc} onClose={() => setWhoDoc(null)} fullWidth maxWidth="md">
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>Who signed — {whoDoc?.title}</span>
-          <IconButton onClick={() => setWhoDoc(null)}><CloseIcon /></IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {!acks ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box> : (
-            <>
-              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                <Chip label={`${acks.signedCount} signed`} sx={{ bgcolor: '#e5f8f2', color: '#00916e', fontWeight: 700 }} />
-                <Chip label={`${acks.pendingCount} pending`} sx={{ bgcolor: '#fff5e0', color: '#8a6400', fontWeight: 700 }} />
-                <Box sx={{ flex: 1 }} />
-                {acks.pendingCount > 0 && <Button size="small" variant="outlined" startIcon={<RemindIcon />} onClick={() => remind(whoDoc)}>Remind pending</Button>}
-              </Stack>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-                <Box>
-                  <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary', mb: 1 }}>Signed</Typography>
-                  <Stack spacing={0.5}>
-                    {acks.signed.map((r) => (
-                      <Box key={r.ackId} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.75, borderBottom: '1px solid #eef2f8' }}>
-                        <Box>
-                          <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#222b45' }}>{r.employeeName}</Typography>
-                          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{r.method === 'upload' ? 'Uploaded page' : 'Digital'} · {fmtDate(r.acknowledgedAt)}</Typography>
-                        </Box>
-                        {(r.hasSignature || r.hasSignedPage) && <IconButton size="small" title="View signature" onClick={() => viewArtifact(r)}><ViewIcon fontSize="small" /></IconButton>}
-                      </Box>
-                    ))}
-                    {acks.signed.length === 0 && <Typography sx={{ fontSize: 12.5, color: 'text.disabled' }}>Nobody yet.</Typography>}
-                  </Stack>
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary', mb: 1 }}>Pending</Typography>
-                  <Stack spacing={0.5}>
-                    {acks.pending.map((r) => (
-                      <Box key={r.employeeId} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.75, borderBottom: '1px solid #eef2f8' }}>
-                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#222b45' }}>{r.employeeName}</Typography>
-                        <Chip size="small" label="not signed" sx={{ bgcolor: '#fff5e0', color: '#8a6400' }} />
-                      </Box>
-                    ))}
-                    {acks.pending.length === 0 && <Typography sx={{ fontSize: 12.5, color: '#00916e' }}>Everyone has signed. 🎉</Typography>}
-                  </Stack>
-                </Box>
-              </Box>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Read-policy dialog */}
-      <Dialog open={!!readDoc} onClose={() => setReadDoc(null)} fullWidth maxWidth="md">
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>{readDoc?.title}</span>
-          <IconButton onClick={() => setReadDoc(null)}><CloseIcon /></IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {readDoc?.bodyHtml == null ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box> : <DocumentBody html={readDoc.bodyHtml} />}
-        </DialogContent>
       </Dialog>
 
       <Snackbar open={!!toast} autoHideDuration={2800} onClose={() => setToast('')} message={toast} />

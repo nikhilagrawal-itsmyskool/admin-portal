@@ -44,6 +44,7 @@ export default function LeaveTypes() {
   const openEdit = (t) => setEditType({
     code: t.code, name: t.name, annualQuota: num(t.annualQuota),
     attachmentOverDays: num(t.attachmentOverDays), requiresAttachment: !!t.requiresAttachment, paid: t.paid,
+    showInBalance: t.showInBalance !== false,
   });
 
   const saveType = async () => {
@@ -53,6 +54,7 @@ export default function LeaveTypes() {
         annualQuota: editType.annualQuota === '' ? null : Number(editType.annualQuota),
         attachmentOverDays: editType.attachmentOverDays === '' ? null : Number(editType.attachmentOverDays),
         requiresAttachment: editType.requiresAttachment,
+        showInBalance: editType.showInBalance,
         paid: editType.paid,
       });
       setEditType(null); setToast('Leave type updated'); load();
@@ -115,7 +117,7 @@ export default function LeaveTypes() {
                       <Box>
                         <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{t.name} <Typography component="span" sx={{ color: 'text.disabled', fontWeight: 600 }}>({t.code})</Typography></Typography>
                         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                          Quota {quotaLabel(t)} · Cert {certLabel(t)}
+                          Quota {quotaLabel(t)} · Cert {certLabel(t)}{t.showInBalance === false ? ' · not in balance' : ''}
                         </Typography>
                       </Box>
                       <Stack direction="row" spacing={0.75} alignItems="center">
@@ -140,7 +142,10 @@ export default function LeaveTypes() {
                 <TableBody>
                   {types.map((t) => (
                     <TableRow key={t.code} hover>
-                      <TableCell sx={{ fontWeight: 700 }}>{t.name}</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>
+                        {t.name}
+                        {t.showInBalance === false && <Chip size="small" label="not in balance" sx={{ ml: 1, height: 18, fontSize: 10, bgcolor: '#eef1f7', color: '#5b6684' }} />}
+                      </TableCell>
                       <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{t.code}</TableCell>
                       <TableCell sx={{ fontVariantNumeric: 'tabular-nums' }}>{quotaLabel(t)}</TableCell>
                       <TableCell><Chip size="small" label={PAID_LABEL[t.paid] || t.paid} color={PAID_COLOR[t.paid] || 'default'} variant="outlined" /></TableCell>
@@ -179,6 +184,10 @@ export default function LeaveTypes() {
               <FormControlLabel
                 control={<Switch checked={editType.requiresAttachment} onChange={(e) => setEditType((f) => ({ ...f, requiresAttachment: e.target.checked }))} />}
                 label="Always require a document (ignored when a day-threshold is set)"
+              />
+              <FormControlLabel
+                control={<Switch checked={editType.showInBalance} onChange={(e) => setEditType((f) => ({ ...f, showInBalance: e.target.checked }))} />}
+                label="Show as a balance card in the staff app (off = selectable but not advertised)"
               />
             </Stack>
           )}

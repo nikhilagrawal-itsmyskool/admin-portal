@@ -196,6 +196,7 @@ import RecordFeedback from './pages/feedback/RecordFeedback';
 import MyFeedback from './pages/feedback/MyFeedback';
 import FeedbackDashboard from './pages/feedback/FeedbackDashboard';
 import StaffDocuments from './pages/documents/StaffDocuments';
+import DocumentDetail from './pages/documents/DocumentDetail';
 import MyDocuments from './pages/documents/MyDocuments';
 import MyDocument from './pages/documents/MyDocument';
 import Profile from './pages/Profile';
@@ -457,6 +458,7 @@ export default function App() {
         <Route path="feedback/record" element={<RecordFeedback />} />
         <Route path="feedback/me" element={<MyFeedback />} />
         <Route path="documents" element={<StaffDocuments />} />
+        <Route path="documents/:id" element={<DocumentDetail />} />
         <Route path="me/documents" element={<MyDocuments />} />
         <Route path="me/documents/:id" element={<MyDocument />} />
         <Route path="profile" element={<Profile />} />
