@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, CircularProgress, Stack,
-  ToggleButton, ToggleButtonGroup, TextField, MenuItem, Table, TableHead, TableRow, TableCell, TableBody,
+  TextField, MenuItem, Autocomplete, Table, TableHead, TableRow, TableCell, TableBody,
   Dialog, DialogTitle, DialogContent, DialogActions, Divider,
 } from '@mui/material';
+import { Search as SearchIcon } from '@mui/icons-material';
 import { feedbackService, FEEDBACK_STATUS_COLOR, FEEDBACK_STATUS_LABEL } from '../../services/feedbackService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate, fmtDateTime } from '../../utils/date';
 
-const STATUS_TABS = [
-  { key: 'open', label: 'Open' },
+const STATUS_OPTIONS = [
+  { key: 'open', label: 'Open (not completed)' },
   { key: 'assigned', label: 'Awaiting teacher' },
   { key: 'responded', label: 'Awaiting review' },
+  { key: 'reopened', label: 'Reopened' },
   { key: 'completed', label: 'Completed' },
   { key: '', label: 'All' },
 ];
@@ -26,9 +28,14 @@ export default function FeedbackDashboard() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Applied filters (drive the list fetch).
   const [status, setStatus] = useState('open');
   const [assignedTo, setAssignedTo] = useState('');
   const [sort, setSort] = useState('oldest');
+  // Search-form (draft) filters — applied to the above on Search.
+  const [fStatus, setFStatus] = useState('open');
+  const [fTeacher, setFTeacher] = useState(''); // employeeId
+  const [fSort, setFSort] = useState('oldest');
 
   const [detail, setDetail] = useState(null); // full feedback + audit
   const [reviewNote, setReviewNote] = useState('');
@@ -56,6 +63,14 @@ export default function FeedbackDashboard() {
   }, [status, assignedTo, sort, academicYearId]);
 
   useEffect(() => { loadList(); }, [loadList]);
+
+  const doSearch = () => { setStatus(fStatus); setAssignedTo(fTeacher); setSort(fSort); };
+  const doReset = () => {
+    setFStatus('open'); setFTeacher(''); setFSort('oldest');
+    setStatus('open'); setAssignedTo(''); setSort('oldest');
+  };
+  const teacherOptions = summary?.byTeacher || [];
+  const selectedTeacher = teacherOptions.find((t) => t.employeeId === fTeacher) || null;
 
   const openDetail = async (id) => {
     setError('');
@@ -121,7 +136,7 @@ export default function FeedbackDashboard() {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  {['Teacher', 'Open', 'Awaiting review', 'Completed', 'Total', ''].map((c, i) => (
+                  {['Teacher', 'Open', 'Awaiting review', 'Completed', 'Total'].map((c, i) => (
                     <TableCell key={c || i} align={i === 0 ? 'left' : 'center'} sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{c}</TableCell>
                   ))}
                 </TableRow>
@@ -134,11 +149,6 @@ export default function FeedbackDashboard() {
                     <TableCell align="center">{t.responded}</TableCell>
                     <TableCell align="center">{t.completed}</TableCell>
                     <TableCell align="center">{t.total}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" onClick={() => setAssignedTo(assignedTo === t.employeeId ? '' : t.employeeId)}>
-                        {assignedTo === t.employeeId ? 'Clear' : 'Filter'}
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -147,19 +157,41 @@ export default function FeedbackDashboard() {
         </Card>
       )}
 
-      {/* Filters */}
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-        <ToggleButtonGroup size="small" exclusive value={status} onChange={(e, v) => v !== null && setStatus(v)} sx={{ flexWrap: 'wrap' }}>
-          {STATUS_TABS.map((t) => <ToggleButton key={t.key} value={t.key}>{t.label}</ToggleButton>)}
-        </ToggleButtonGroup>
-        <TextField select size="small" label="Sort" value={sort} onChange={(e) => setSort(e.target.value)} sx={{ minWidth: 150 }}>
-          <MenuItem value="oldest">Oldest first</MenuItem>
-          <MenuItem value="newest">Newest first</MenuItem>
-        </TextField>
-        {assignedTo && summary && (
-          <Chip label={`Teacher: ${summary.byTeacher.find((t) => t.employeeId === assignedTo)?.employeeName || '—'}`} onDelete={() => setAssignedTo('')} />
-        )}
-      </Stack>
+      {/* Search form */}
+      <Card variant="outlined" sx={{ mb: 2 }}>
+        <CardContent sx={{ py: 1.5 }}>
+          <Grid container spacing={1.5} alignItems="center">
+            <Grid item xs={12} sm={4}>
+              <TextField select fullWidth size="small" label="Status" value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
+                {STATUS_OPTIONS.map((o) => <MenuItem key={o.key} value={o.key}>{o.label}</MenuItem>)}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Autocomplete
+                size="small"
+                options={teacherOptions}
+                value={selectedTeacher}
+                getOptionLabel={(o) => o.employeeName || '—'}
+                isOptionEqualToValue={(o, v) => o.employeeId === v.employeeId}
+                onChange={(e, v) => setFTeacher(v?.employeeId || '')}
+                renderInput={(params) => <TextField {...params} label="Teacher" placeholder="All teachers" />}
+              />
+            </Grid>
+            <Grid item xs={7} sm={2}>
+              <TextField select fullWidth size="small" label="Sort" value={fSort} onChange={(e) => setFSort(e.target.value)}>
+                <MenuItem value="oldest">Oldest first</MenuItem>
+                <MenuItem value="newest">Newest first</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={5} sm={2}>
+              <Stack direction="row" spacing={1}>
+                <Button fullWidth variant="contained" startIcon={<SearchIcon />} onClick={doSearch}>Search</Button>
+                <Button onClick={doReset}>Reset</Button>
+              </Stack>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       {/* List */}
       {loading ? (
