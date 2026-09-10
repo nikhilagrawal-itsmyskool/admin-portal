@@ -6,11 +6,23 @@ import {
 } from '@mui/material';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { fmtDate } from '../../utils/date';
+import { fmtDate, todayIso } from '../../utils/date';
 
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DOW_S = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const dayOf = (d, short) => (d ? (short ? DOW_S : DOW)[new Date(`${d}T00:00:00`).getDay()] : '');
+
+// Default the dropdown to the exam that's running today (start ≤ today ≤ end); failing that
+// the nearest upcoming one; failing that the most recent (the list is already created-desc).
+const pickDefaultExam = (list) => {
+  const today = todayIso();
+  const ongoing = list.find((e) => e.startDate && e.endDate && e.startDate <= today && today <= e.endDate);
+  if (ongoing) return ongoing.uuid;
+  const upcoming = list
+    .filter((e) => e.startDate && e.startDate >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+  return (upcoming || list[0]).uuid;
+};
 
 // Read-only exam datesheet, open to every staff member (the schedule of published exams).
 // Desktop shows the full grid; phones default to a date-wise card list (day + papers),
@@ -28,7 +40,7 @@ export default function ExamSchedule() {
 
   useEffect(() => {
     examinationService.mySchedule()
-      .then((e) => { setExams(e); if (e.length) setExamId(e[0].uuid); })
+      .then((e) => { setExams(e); if (e.length) setExamId(pickDefaultExam(e)); })
       .catch((x) => setErr(x.response?.data?.error?.description || 'Failed to load exams'))
       .finally(() => setLoading(false));
   }, []);
