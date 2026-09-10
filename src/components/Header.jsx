@@ -23,6 +23,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useAcademicYear } from '../context/AcademicYearContext';
+import NotificationBell from './NotificationBell';
 import { DRAWER_WIDTH } from './Sidebar';
 import { getShortDisplayName, getFirstNameInitial } from '../utils/userDisplay';
 
@@ -139,6 +140,7 @@ export default function Header({ onMenuClick, isDesktop }) {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <NotificationBell />
           <Typography variant="body2" sx={{ color: '#222b45' }}>
             {shortDisplayName}
           </Typography>
