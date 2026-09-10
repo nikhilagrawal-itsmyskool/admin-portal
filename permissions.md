@@ -66,5 +66,9 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `assistant.use` | Use the voice/LLM student assistant (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `leave.apply` | Apply for your own leave and see your own attendance & penalty (teacher/office/admin) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `leave.manage` | Approve/reject leave, view any staff member's records, set policy, import biometric attendance & run the deduction report (god-only for now) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `feedback.view` | Read the feedback category lookup (needed to record a home-visit feedback) | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `feedback.record` | Record a home-visit feedback for a student and assign it to a teacher (teachers) | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `feedback.respond` | See feedback assigned to you and add your response comment (teachers, own items only) | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `feedback.review` | Open the feedback dashboard, see the teacher-wise breakup, and complete/reopen feedback (education director; god-only for now) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._

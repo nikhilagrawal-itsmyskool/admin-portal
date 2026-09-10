@@ -69,6 +69,11 @@ export const ROLE_PERMISSIONS = {
     "academic-calendar.view", // Read the school's academic calendar
     "leave.apply", // Apply for own leave; see own attendance & penalty
     "documents.sign", // Read & sign the staff policies shared with them
+    // Feedback/complaints: any teacher may record + assign, and respond to items
+    // assigned to them. Reviewing/completing (feedback.review) is god-only.
+    "feedback.view",
+    "feedback.record",
+    "feedback.respond",
   ],
   // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
   // can cover for an absent colleague) and to POST their class's daily homework photos.

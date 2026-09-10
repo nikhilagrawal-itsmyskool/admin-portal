@@ -192,6 +192,9 @@ import WhosOnLeave from './pages/leave/WhosOnLeave';
 import LeaveTypes from './pages/leave/LeaveTypes';
 import BiometricImport from './pages/leave/BiometricImport';
 import DeductionReport from './pages/leave/DeductionReport';
+import RecordFeedback from './pages/feedback/RecordFeedback';
+import MyFeedback from './pages/feedback/MyFeedback';
+import FeedbackDashboard from './pages/feedback/FeedbackDashboard';
 import StaffDocuments from './pages/documents/StaffDocuments';
 import MyDocuments from './pages/documents/MyDocuments';
 import MyDocument from './pages/documents/MyDocument';
@@ -450,6 +453,9 @@ export default function App() {
         <Route path="leave/types" element={<LeaveTypes />} />
         <Route path="leave/import" element={<BiometricImport />} />
         <Route path="leave/deductions" element={<DeductionReport />} />
+        <Route path="feedback" element={<FeedbackDashboard />} />
+        <Route path="feedback/record" element={<RecordFeedback />} />
+        <Route path="feedback/me" element={<MyFeedback />} />
         <Route path="documents" element={<StaffDocuments />} />
         <Route path="me/documents" element={<MyDocuments />} />
         <Route path="me/documents/:id" element={<MyDocument />} />

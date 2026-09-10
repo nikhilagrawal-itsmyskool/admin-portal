@@ -72,6 +72,15 @@ export const ACTIONS = {
   // here + in policy.js to let office admins in later).
   LEAVE_APPLY: "leave.apply",
   LEAVE_MANAGE: "leave.manage",
+  // Home-visit feedback / complaints. view = read category lookup (teachers, to record);
+  // record = log + assign to a teacher (teachers); respond = the assigned teacher's reply
+  // (teachers, own items only); review = director dashboard + complete/reopen. `review` is
+  // deliberately OUTSIDE any namespace admin inherits, so it is god-only until a real
+  // `education-director` role is introduced (grant it feedback.review then).
+  FEEDBACK_VIEW: "feedback.view",
+  FEEDBACK_RECORD: "feedback.record",
+  FEEDBACK_RESPOND: "feedback.respond",
+  FEEDBACK_REVIEW: "feedback.review",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -315,5 +324,21 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.LEAVE_MANAGE,
     description: "Approve/reject leave, view any staff member's records, set policy, import biometric attendance & run the deduction report (god-only for now)",
+  },
+  {
+    action: ACTIONS.FEEDBACK_VIEW,
+    description: "Read the feedback category lookup (needed to record a home-visit feedback)",
+  },
+  {
+    action: ACTIONS.FEEDBACK_RECORD,
+    description: "Record a home-visit feedback for a student and assign it to a teacher (teachers)",
+  },
+  {
+    action: ACTIONS.FEEDBACK_RESPOND,
+    description: "See feedback assigned to you and add your response comment (teachers, own items only)",
+  },
+  {
+    action: ACTIONS.FEEDBACK_REVIEW,
+    description: "Open the feedback dashboard, see the teacher-wise breakup, and complete/reopen feedback (education director; god-only for now)",
   },
 ];

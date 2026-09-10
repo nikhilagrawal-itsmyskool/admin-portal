@@ -34,6 +34,7 @@ import {
   EventBusy as LeaveIcon,
   HowToReg as LeaveApprovalIcon,
   Description as DocumentIcon,
+  Feedback as FeedbackIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -93,6 +94,10 @@ export const MOBILE_FEATURES = [
   { title: "Post Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.post", section: "today", color: "#d97706" },
   // Send Message — a daily action, pulled up out of the old "Office" hub.
   { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
+  // Feedback — a teacher records a home-visit feedback (today) and acts on ones assigned
+  // to them (mine). The reviewer's dashboard is an office tile (feedback.review = god).
+  { title: "Record Feedback", icon: FeedbackIcon, path: "/feedback/record", perm: "feedback.record", section: "today", color: "#0097a7" },
+  { title: "My Feedback", icon: FeedbackIcon, path: "/feedback/me", perm: "feedback.respond", notPerm: "feedback.review", section: "mine", color: "#0097a7" },
 
   // ── Examinations ─────────────────────────────────────────────────────────────
   // Schedule + duties are open to all staff (no perm); management is exam.view only.
@@ -137,6 +142,8 @@ export const MOBILE_FEATURES = [
   { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
   { title: "On Leave", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/day"] },
   { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
+  // Feedback dashboard — reviewer oversight (feedback.review = god only for now).
+  { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "office", color: "#0097a7", routes: ["/feedback"] },
   // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
   // notPerm hides it from an oversight user (god / leave.manage) who never applies.
   { title: "My Leave", hubLabel: "Requests", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me"] },

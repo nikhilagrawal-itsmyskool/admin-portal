@@ -99,6 +99,7 @@ import {
   Receipt as ReceiptIcon,
   SchoolOutlined as ExamOnlyIcon,
   EventBusy as LeaveNavIcon,
+  Feedback as FeedbackNavIcon,
   UploadFile as BioImportIcon,
 } from '@mui/icons-material';
 
@@ -417,6 +418,19 @@ const menuItems = [
       { title: 'Types & Policy', icon: AsmSettingsIcon, path: '/leave/types', perm: 'leave.manage' },
       { title: 'Biometric Import', icon: BioImportIcon, path: '/leave/import', perm: 'leave.manage' },
       { title: 'Deduction Report', icon: StructureIcon, path: '/leave/deductions', perm: 'leave.manage' },
+    ],
+  },
+  {
+    // Home-visit feedback / complaints. No parent perm: teachers (feedback.record /
+    // feedback.respond) see Record + My Feedback; the reviewer (feedback.review = god for
+    // now) sees the Dashboard. notPerm hides the teacher self-service item from the
+    // reviewer (same pattern as Leave). Admin has no feedback.* so the menu is hidden.
+    title: 'Feedback',
+    icon: FeedbackNavIcon,
+    children: [
+      { title: 'Record Feedback', icon: MarkIcon, path: '/feedback/record', perm: 'feedback.record' },
+      { title: 'My Feedback', icon: AttendanceIcon, path: '/feedback/me', perm: 'feedback.respond', notPerm: 'feedback.review' },
+      { title: 'Dashboard', icon: DutyIcon, path: '/feedback', perm: 'feedback.review' },
     ],
   },
   {
