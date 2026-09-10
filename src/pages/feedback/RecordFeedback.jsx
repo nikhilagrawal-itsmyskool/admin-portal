@@ -64,9 +64,10 @@ export default function RecordFeedback() {
     }
     setBusy(true); setError(''); setSuccess('');
     let saved = 0;
+    const createdIds = [];
     try {
       for (const b of blocks) {
-        await feedbackService.record({
+        const res = await feedbackService.record({
           studentId: student.uuid,
           classId: student.classId || student.class_id || undefined,
           academicYearId: academicYearId || undefined,
@@ -75,8 +76,12 @@ export default function RecordFeedback() {
           feedbackText: b.feedbackText.trim(),
           assignedTo: b.teacher.uuid,
         });
+        if (res?.uuid) createdIds.push(res.uuid);
         saved += 1;
       }
+      // One in-app notification per assigned teacher for this whole visit. Best-effort:
+      // a notify failure must not fail the record that already succeeded.
+      try { await feedbackService.notifyVisit(createdIds); } catch { /* notify is best-effort */ }
       setSuccess(`${saved} feedback${saved === 1 ? '' : 's'} recorded for ${student.name}.`);
       reset();
       if (topRef.current) topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });

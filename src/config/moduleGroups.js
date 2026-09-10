@@ -3,7 +3,7 @@
 // and Dashboard.jsx `modules`. Items are ordered alphabetically within each group.
 // (The mobile menu uses its own model in src/mobile/mobileFeatures.js — not this.)
 export const MODULE_GROUPS = [
-  { key: 'people', label: 'People & Staff', titles: ['Assistant', 'Employees', 'Hiring', 'Staff Documents', 'Students', 'Transfer Certs'] },
+  { key: 'people', label: 'People & Staff', titles: ['Assistant', 'Employees', 'Hiring', 'Students', 'Transfer Certs'] },
   { key: 'academics', label: 'Academics', titles: ['Academic Calendar', 'Assembly', 'Examinations', 'Homework', 'Library', 'Syllabus', 'Timetable'] },
   { key: 'operations', label: 'Operations', titles: ['Attendance', 'Communication', 'Feedback', 'Fees', 'Fines', 'Leave', 'Transport'] },
   { key: 'stores', label: 'Stores & Inventory', titles: ['Assets', 'Laboratory', 'Medical', 'Shop', 'Sports', 'Supplies', 'Uniform'] },

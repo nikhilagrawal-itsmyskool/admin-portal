@@ -109,7 +109,7 @@ export default function MyDocument() {
 
   const canDigital = doc.signModes === 'digital' || doc.signModes === 'both';
   const canUpload = doc.signModes === 'upload' || doc.signModes === 'both';
-  const showForm = doc.requiresAck && (!doc.signed || resigning);
+  const showForm = doc.signatureRequiredForMe && (!doc.signed || resigning);
 
   return (
     <Box sx={{ maxWidth: 860, mx: 'auto', pb: 6 }}>
@@ -138,8 +138,12 @@ export default function MyDocument() {
         </CardContent>
       </Card>
 
-      {!doc.requiresAck && (
-        <Alert severity="info">This is a reference document — no signature needed.</Alert>
+      {!doc.signatureRequiredForMe && !doc.signed && (
+        <Alert severity="info">
+          {doc.exemptForMe
+            ? 'Your role is not required to sign this document — it is here for your reference.'
+            : 'This is a reference document — no signature needed.'}
+        </Alert>
       )}
 
       {/* Sign block — the declaration continues straight from the document */}
@@ -162,8 +166,9 @@ export default function MyDocument() {
 
             <Stack spacing={1.5} sx={{ mb: 2, maxWidth: 460 }}>
               <TextField label="Name" size="small" value={name} onChange={(e) => setName(e.target.value)} required />
-              <TextField label="Designation" size="small" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+              <TextField label="Designation (optional)" size="small" value={designation} onChange={(e) => setDesignation(e.target.value)} />
               <TextField label="Employee ID (optional)" size="small" value={empId} onChange={(e) => setEmpId(e.target.value)} />
+              <Typography sx={{ fontSize: 11.5, color: 'text.disabled', mt: -0.5 }}>Only your name is required. Designation and Employee ID are optional.</Typography>
             </Stack>
 
             {method === 'digital' && canDigital && (

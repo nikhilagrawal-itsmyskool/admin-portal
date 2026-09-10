@@ -9,6 +9,9 @@ export const feedbackService = {
 
   // ── Record (teacher) ──────────────────────────────────────────────────────────
   record: async (data) => (await api.post('/feedback', data)).data,
+  // One in-app notification per teacher for the whole visit (called once after the
+  // record loop). Best-effort on the caller's side.
+  notifyVisit: async (feedbackIds) => (await api.post('/feedback/notify-visit', { feedbackIds })).data,
 
   // ── Teacher PWA (/me) ─────────────────────────────────────────────────────────
   mine: async (params = {}) => (await api.get('/feedback/me', { params })).data,

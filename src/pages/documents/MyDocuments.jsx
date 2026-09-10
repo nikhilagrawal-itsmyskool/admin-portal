@@ -23,12 +23,14 @@ export default function MyDocuments() {
   }, []);
 
   const statusChip = (d) => {
-    if (!d.requiresAck) return <Chip size="small" label="Read only" sx={{ bgcolor: '#eef1f7', color: '#5b6684', fontWeight: 700 }} />;
+    if (!d.signatureRequiredForMe) {
+      return <Chip size="small" label={d.exemptForMe ? 'No signature needed' : 'Read only'} sx={{ bgcolor: '#eef1f7', color: '#5b6684', fontWeight: 700 }} />;
+    }
     if (d.signed) return <Chip size="small" label={`Signed · ${fmtDate(d.ack?.acknowledgedAt)}`} sx={{ bgcolor: '#e5f8f2', color: '#00916e', fontWeight: 700 }} />;
     return <Chip size="small" label="Signature required" sx={{ bgcolor: '#fff5e0', color: '#8a6400', fontWeight: 700 }} />;
   };
 
-  const pending = docs.filter((d) => d.requiresAck && !d.signed).length;
+  const pending = docs.filter((d) => d.signatureRequiredForMe && !d.signed).length;
 
   return (
     <Box sx={{ maxWidth: 760 }}>

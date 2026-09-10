@@ -1,36 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, TextField, Alert, CircularProgress, Card, CardContent, Chip, Stack, Grid,
-  Table, TableHead, TableRow, TableCell, TableBody,
-} from '@mui/material';
+import { Box, Typography, TextField, Alert, CircularProgress, Card, Chip, Stack } from '@mui/material';
 import { leaveService } from '../../services/leaveService';
-import { useIsMobile } from '../../hooks/useIsMobile';
-import { fmtDate, todayIso } from '../../utils/date';
+import { thisMonth } from './LeaveShared';
+import { todayIso } from '../../utils/date';
+
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const pad = (n) => String(n).padStart(2, '0');
+
+// Every date (YYYY-MM-DD) in [from,to] inclusive, both within the same month.
+function eachDate(from, to) {
+  const out = [];
+  const s = new Date(`${from}T00:00:00Z`);
+  const e = new Date(`${to}T00:00:00Z`);
+  const cur = new Date(s.getTime());
+  while (cur.getTime() <= e.getTime()) { out.push(cur.toISOString().slice(0, 10)); cur.setUTCDate(cur.getUTCDate() + 1); }
+  return out;
+}
 
 export default function WhosOnLeave() {
-  const isMobile = useIsMobile();
-  const [date, setDate] = useState(todayIso());
-  const [data, setData] = useState(null);
+  const [month, setMonth] = useState(thisMonth());
+  const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const today = todayIso();
+
+  const [y, m] = month.split('-').map(Number);
+  const first = `${month}-01`;
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const last = `${month}-${pad(lastDay)}`;
 
   useEffect(() => {
     let alive = true;
     setLoading(true); setError('');
-    leaveService.dayView(date)
-      .then((d) => { if (alive) setData(d); })
+    leaveService.listApplications({ from: first, to: last })
+      .then((list) => { if (alive) setApps((list || []).filter((a) => a.status === 'approved' || a.status === 'pending')); })
       .catch((err) => { if (alive) setError(err.response?.data?.error?.description || 'Failed to load'); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [date]);
+  }, [month]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onLeave = data?.onLeave || [];
+  // date -> [{ name, code, status }]
+  const byDate = {};
+  for (const a of apps) {
+    const lo = a.fromDate < first ? first : a.fromDate;
+    const hi = a.toDate > last ? last : a.toDate;
+    for (const d of eachDate(lo, hi)) {
+      (byDate[d] = byDate[d] || []).push({ name: a.employeeName || a.employeeId, code: a.leaveTypeCode, status: a.status });
+    }
+  }
+
+  const approvedCount = apps.filter((a) => a.status === 'approved').length;
+  const pendingCount = apps.filter((a) => a.status === 'pending').length;
+  const days = Array.from({ length: lastDay }, (_, i) => `${month}-${pad(i + 1)}`);
 
   return (
-    <Box sx={{ maxWidth: 980 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+    <Box sx={{ maxWidth: 880 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h4">Who's on Leave</Typography>
-        <TextField type="date" size="small" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+        <TextField type="month" size="small" value={month} onChange={(e) => setMonth(e.target.value)} InputLabelProps={{ shrink: true }} />
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
@@ -38,66 +65,59 @@ export default function WhosOnLeave() {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
       ) : (
         <>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={6} sm={3}>
-              <Card variant="outlined"><CardContent sx={{ py: 1.5 }}>
-                <Typography sx={{ fontSize: 26, fontWeight: 800, color: '#3366ff', lineHeight: 1 }}>{onLeave.length}</Typography>
-                <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>On leave</Typography>
-              </CardContent></Card>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Card variant="outlined"><CardContent sx={{ py: 1.5 }}>
-                <Typography sx={{ fontSize: 26, fontWeight: 800, color: '#e5396b', lineHeight: 1 }}>{data?.unauthorizedCount || 0}</Typography>
-                <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>Unauth. absent</Typography>
-              </CardContent></Card>
-            </Grid>
-          </Grid>
+          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+            <Chip label={`${approvedCount} approved`} sx={{ bgcolor: '#e5f8f2', color: '#00916e', fontWeight: 700 }} />
+            <Chip label={`${pendingCount} pending`} sx={{ bgcolor: '#fff5e0', color: '#8a6400', fontWeight: 700 }} />
+          </Stack>
 
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>{fmtDate(date)}</Typography>
-          {onLeave.length === 0 ? (
-            <Alert severity="info">No staff on leave on this date.</Alert>
-          ) : isMobile ? (
-            <Stack spacing={1}>
-              {onLeave.map((r, i) => (
-                <Card key={`${r.employeeId}-${i}`} variant="outlined">
-                  <CardContent sx={{ py: 1.25, '&:last-child': { pb: 1.25 } }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{r.employeeName || r.employeeId}</Typography>
-                        {r.reason && <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{r.reason}</Typography>}
-                      </Box>
-                      <Stack direction="row" spacing={0.75}>
-                        <Chip size="small" label={r.leaveTypeCode} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
-                        <Chip size="small" label={r.status} color={r.status === 'approved' ? 'success' : 'warning'} sx={{ textTransform: 'capitalize' }} />
-                      </Stack>
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          ) : (
-            <Card variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    {['Staff', 'Type', 'Status', 'Reason'].map((c) => (
-                      <TableCell key={c} sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{c}</TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {onLeave.map((r, i) => (
-                    <TableRow key={`${r.employeeId}-${i}`} hover>
-                      <TableCell sx={{ fontWeight: 700 }}>{r.employeeName || r.employeeId}</TableCell>
-                      <TableCell><Chip size="small" label={r.leaveTypeCode} color="primary" variant="outlined" sx={{ fontWeight: 700 }} /></TableCell>
-                      <TableCell><Chip size="small" label={r.status} color={r.status === 'approved' ? 'success' : 'warning'} sx={{ textTransform: 'capitalize' }} /></TableCell>
-                      <TableCell sx={{ color: 'text.secondary' }}>{r.reason || '—'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
+          <Card variant="outlined">
+            {days.map((date) => {
+              const list = byDate[date] || [];
+              const dd = date.slice(8, 10);
+              const dow = DOW[new Date(`${date}T00:00:00Z`).getUTCDay()];
+              const isToday = date === today;
+              const isSunday = dow === 'Sun';
+              return (
+                <Box
+                  key={date}
+                  sx={{
+                    display: 'flex', gap: 1.5, px: 1.5, py: 1, borderBottom: '1px solid #eef2f8',
+                    bgcolor: isToday ? '#eaf0ff' : 'transparent',
+                    borderLeft: isToday ? '3px solid #3366ff' : '3px solid transparent',
+                  }}
+                >
+                  <Box sx={{ width: 42, flex: '0 0 auto', textAlign: 'center' }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 800, lineHeight: 1, color: isToday ? '#274bdb' : (isSunday ? '#c3cad9' : '#2e3a59'), fontVariantNumeric: 'tabular-nums' }}>{dd}</Typography>
+                    <Typography sx={{ fontSize: 10, color: 'text.disabled', textTransform: 'uppercase' }}>{dow}</Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}>
+                    {isToday && <Chip size="small" label="Today" sx={{ height: 20, bgcolor: '#3366ff', color: '#fff', fontWeight: 700, fontSize: 10.5 }} />}
+                    {list.length === 0 ? (
+                      <Typography sx={{ fontSize: 12.5, color: 'text.disabled' }}>—</Typography>
+                    ) : (
+                      list.map((p, i) => (
+                        <Chip
+                          key={`${date}-${i}`} size="small"
+                          label={<span><b>{p.name}</b>{p.code ? ` · ${p.code}` : ''}</span>}
+                          variant="outlined"
+                          sx={{
+                            fontSize: 12,
+                            borderColor: p.status === 'approved' ? '#00b887' : '#f0c14b',
+                            color: p.status === 'approved' ? '#00916e' : '#8a6400',
+                            bgcolor: p.status === 'approved' ? '#f2fcf9' : '#fffaf0',
+                          }}
+                          title={p.status}
+                        />
+                      ))
+                    )}
+                  </Box>
+                </Box>
+              );
+            })}
+          </Card>
+          <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 1.5 }}>
+            Green = approved, amber = pending. One row per day; today is highlighted.
+          </Typography>
         </>
       )}
     </Box>

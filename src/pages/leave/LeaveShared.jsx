@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Card, CardContent, Chip, Stack } from '@mui/material';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { fmtMonth } from '../../utils/date';
 
 // Shared status vocabulary + read-only views used by both the teacher (/me) and the
 // god (drill-down) leave screens, so both render attendance & penalty identically.
@@ -180,7 +181,7 @@ export function PenaltyCard({ summary }) {
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#222b45' }}>
-            Deduction — {summary.month}
+            Deduction — {fmtMonth(summary.month)}
           </Typography>
           <Chip
             size="small"

@@ -3,13 +3,14 @@ import {
   Box, Typography, Button, Card, CardContent, Alert, CircularProgress, Chip, Stack,
   Table, TableHead, TableRow, TableCell, TableBody, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
-  ToggleButtonGroup, ToggleButton, FormControlLabel, Switch, Divider, Snackbar, IconButton,
+  ToggleButtonGroup, ToggleButton, FormControlLabel, Switch, Divider, Snackbar, IconButton, Autocomplete,
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Groups as WhoIcon, NotificationsActive as RemindIcon,
   Archive as ArchiveIcon, Close as CloseIcon, Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { documentService } from '../../services/documentService';
+import { employeeService } from '../../services/employeeService';
 import DocumentBody from './DocumentBody';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate } from '../../utils/date';
@@ -18,7 +19,7 @@ const SIGN_LABEL = { digital: 'Digital only', upload: 'Upload only', both: 'Digi
 const CATEGORIES = ['policy', 'handbook', 'form', 'notice'];
 const blankForm = {
   uuid: null, title: '', code: '', category: 'policy', summary: '', effectiveFrom: '',
-  signModes: 'both', requiresAck: true, bodyHtml: '', status: 'published', bumpVersion: false,
+  signModes: 'both', requiresAck: true, bodyHtml: '', status: 'published', bumpVersion: false, exemptRoles: [],
 };
 
 export default function StaffDocuments() {
@@ -29,6 +30,7 @@ export default function StaffDocuments() {
   const [toast, setToast] = useState('');
 
   const [form, setForm] = useState(null);       // editor dialog
+  const [allRoles, setAllRoles] = useState([]); // role names, for the exempt-roles picker
   const [busy, setBusy] = useState(false);
   const [whoDoc, setWhoDoc] = useState(null);    // who-signed dialog target
   const [acks, setAcks] = useState(null);
@@ -41,6 +43,14 @@ export default function StaffDocuments() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    employeeService.listRoles()
+      .then((r) => {
+        const list = Array.isArray(r) ? r : (r?.roles || r?.data || []);
+        setAllRoles(list.map((x) => (typeof x === 'string' ? x : x.name)).filter(Boolean));
+      })
+      .catch(() => { /* roles optional for the picker */ });
+  }, []);
 
   const openNew = () => setForm({ ...blankForm });
   const openEdit = async (d) => {
@@ -51,7 +61,7 @@ export default function StaffDocuments() {
         uuid: full.uuid, title: full.title, code: full.code, category: full.category || 'policy',
         summary: full.summary || '', effectiveFrom: (full.effectiveFrom || '').slice(0, 10),
         signModes: full.signModes, requiresAck: full.requiresAck, bodyHtml: full.bodyHtml || '',
-        status: full.status, bumpVersion: false,
+        status: full.status, bumpVersion: false, exemptRoles: full.exemptRoles || [],
       });
     } catch (err) { setError(err.response?.data?.error?.description || 'Could not open document'); }
   };
@@ -64,7 +74,7 @@ export default function StaffDocuments() {
         title: form.title.trim(), code: form.code.trim(), category: form.category,
         summary: form.summary.trim() || undefined, effectiveFrom: form.effectiveFrom || undefined,
         signModes: form.signModes, requiresAck: form.requiresAck, bodyHtml: form.bodyHtml,
-        status: form.status,
+        status: form.status, exemptRoles: form.requiresAck ? (form.exemptRoles || []) : [],
       };
       if (form.uuid) await documentService.update(form.uuid, { ...payload, bumpVersion: form.bumpVersion });
       else await documentService.create(payload);
@@ -236,6 +246,16 @@ export default function StaffDocuments() {
                 control={<Switch checked={form.requiresAck} onChange={(e) => setForm((f) => ({ ...f, requiresAck: e.target.checked }))} />}
                 label="Requires signature (staff must read & sign)"
               />
+              {form.requiresAck && (
+                <Autocomplete
+                  multiple options={allRoles} value={form.exemptRoles || []}
+                  onChange={(_, v) => setForm((f) => ({ ...f, exemptRoles: v }))}
+                  renderInput={(params) => (
+                    <TextField {...params} size="small" label="Roles exempt from signing (optional)"
+                      helperText="Staff with these roles still see the document under My Documents, but are not required to sign it." />
+                  )}
+                />
+              )}
               <TextField
                 label="Document body (HTML)" value={form.bodyHtml} onChange={(e) => setForm((f) => ({ ...f, bodyHtml: e.target.value }))}
                 multiline minRows={8} size="small"

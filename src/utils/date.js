@@ -45,6 +45,17 @@ export function fmtDateLong(v) {
   return `${String(d.getUTCDate()).padStart(2, '0')}-${MON[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
 }
 
+// "Sep 2026" from a YYYY-MM month string (or any parseable date).
+export function fmtMonth(v) {
+  if (typeof v === 'string' && /^\d{4}-\d{2}$/.test(v)) {
+    const [y, m] = v.split('-').map(Number);
+    return `${MON[m - 1]} ${y}`;
+  }
+  const d = parse(v);
+  if (!d) return v ? String(v) : '';
+  return `${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
 // "Mon 13-04-2026" — for day-of-week-significant labels (rosters, daily checklists).
 export function fmtDateDow(v) {
   const d = parse(v);

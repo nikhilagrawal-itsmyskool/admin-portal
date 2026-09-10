@@ -306,8 +306,14 @@ const menuItems = [
   {
     title: 'Employees',
     icon: PeopleIcon,
-    path: '/employees',
     perm: 'employee.view',
+    children: [
+      { title: 'All Employees', icon: PeopleIcon, path: '/employees', perm: 'employee.view' },
+      // Staff document handbook lives under Employees. Managing (documents.manage) is god-only;
+      // everyone else with documents.sign gets their personal "My Documents".
+      { title: 'Documents', icon: TemplateIcon, path: '/documents', perm: 'documents.manage' },
+      { title: 'My Documents', icon: AssignmentIcon, path: '/me/documents', perm: 'documents.sign', notPerm: 'documents.manage' },
+    ],
   },
   {
     title: 'Hiring',
@@ -431,17 +437,6 @@ const menuItems = [
       { title: 'Record Feedback', icon: MarkIcon, path: '/feedback/record', perm: 'feedback.record' },
       { title: 'My Feedback', icon: AttendanceIcon, path: '/feedback/me', perm: 'feedback.respond', notPerm: 'feedback.review' },
       { title: 'Dashboard', icon: DutyIcon, path: '/feedback', perm: 'feedback.review' },
-    ],
-  },
-  {
-    // Staff document handbook. Everyone with documents.sign gets "My Documents"; authoring
-    // (documents.manage) is god-only, so only god sees "Manage Documents". notPerm hides the
-    // self-service item from the managing user (same pattern as Leave / Syllabus My Plans).
-    title: 'Staff Documents',
-    icon: TemplateIcon,
-    children: [
-      { title: 'My Documents', icon: AssignmentIcon, path: '/me/documents', perm: 'documents.sign', notPerm: 'documents.manage' },
-      { title: 'Manage Documents', icon: TemplateIcon, path: '/documents', perm: 'documents.manage' },
     ],
   },
 ];
