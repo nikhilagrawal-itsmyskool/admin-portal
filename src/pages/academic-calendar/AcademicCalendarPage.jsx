@@ -144,14 +144,16 @@ export default function AcademicCalendarPage() {
               {loading ? (
                 <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>
               ) : (
-                <MonthGrid year={year} month={month} daysByDate={daysByDate} today={today} onSelect={setSelectedDate} expand />
+                <Box sx={{ height: { xs: 'calc(100vh - 300px)', md: 'calc(100vh - 290px)' }, minHeight: 360 }}>
+                  <MonthGrid year={year} month={month} daysByDate={daysByDate} today={today} onSelect={setSelectedDate} />
+                </Box>
               )}
             </CardContent>
           </Card>
           <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1.5 }}>
             {canManage
-              ? 'Every day shows its full detail. Click any day to edit its line items, add entries under any column, or mark it a holiday. Sundays are the weekly off.'
-              : 'Every day shows its full detail. Click a day to see more.'}
+              ? 'Click any day to edit its line items, add entries under any column, or mark it a holiday. Sundays are the weekly off.'
+              : 'Tap any day to see its full details. Busy days scroll inside the cell.'}
           </Typography>
         </>
       )}

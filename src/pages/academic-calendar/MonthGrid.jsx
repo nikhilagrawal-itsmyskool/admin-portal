@@ -4,39 +4,20 @@ import { monthGridSun, WEEKDAY_HEADS, CHIP_CODES, typeMeta, typeAbbr } from './c
 
 const MAX_CHIPS = 3; // entries shown per cell before "+N more" (keeps cells scroll-free)
 
-// Count the "lines" a day's content occupies (theme ~2 lines + one line per chip). Used
-// in `expand` mode to size every cell to the busiest day so the grid stays aligned.
-function dayUnits(d) {
-  const entries = d?.entries || [];
-  const hasTheme = entries.some((e) => e.typeCode === 'theme');
-  const chipCount = entries.filter((e) => e.typeCode !== 'theme' && CHIP_CODES.includes(e.typeCode)).length;
-  return (hasTheme ? 2 : 0) + chipCount;
-}
-
 // The month grid. `daysByDate` maps yyyy-mm-dd -> CalendarDay ({ weekday, isWeeklyOff,
 // holiday, entries }). Cells are clickable (except padding days from adjacent months).
-// `expand` (desktop) makes every cell the same height, sized to the busiest day, so all
-// entries are visible without clicking; default (mobile picker) fits the viewport.
-export default function MonthGrid({ year, month, daysByDate, today, onSelect, expand = false }) {
+export default function MonthGrid({ year, month, daysByDate, today, onSelect }) {
   const weeks = monthGridSun(year, month);
-  // Uniform row height for expand mode: tallest day drives every cell.
-  const maxUnits = expand
-    ? Math.max(1, ...weeks.flat().filter((c) => c.inMonth).map((c) => dayUnits(daysByDate[c.date])))
-    : 0;
-  const rowPx = Math.max(104, 40 + maxUnits * 22 + 8); // date row + lines + padding
-  const rowsTemplate = expand
-    ? `repeat(${weeks.length}, ${rowPx}px)`
-    : `repeat(${weeks.length}, minmax(0, 1fr))`;
   return (
     // Fills the height its parent gives it; rows share that height equally, so the
     // whole month is visible on any monitor. A busy day scrolls inside its own cell.
-    <Box sx={{ height: expand ? 'auto' : '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75, mb: 0.75, flex: '0 0 auto' }}>
         {WEEKDAY_HEADS.map((h) => (
           <Typography key={h} variant="caption" align="center" sx={{ fontWeight: 700, letterSpacing: 0.6, color: 'text.disabled', textTransform: 'uppercase' }}>{h}</Typography>
         ))}
       </Box>
-      <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: rowsTemplate, gap: 0.75 }}>
+      <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))`, gap: 0.75 }}>
         {weeks.flat().map((cell) => {
           if (!cell.inMonth) return <Box key={cell.date} sx={{ borderRadius: 1.5, bgcolor: 'action.hover', opacity: 0.5 }} />;
           const d = daysByDate[cell.date];
@@ -51,7 +32,7 @@ export default function MonthGrid({ year, month, daysByDate, today, onSelect, ex
           return (
             <Box key={cell.date} onClick={() => onSelect(cell.date)}
               sx={{
-                minHeight: 0, p: 0.75, borderRadius: 1.5, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 0.4, overflow: expand ? 'visible' : 'hidden',
+                minHeight: 0, p: 0.75, borderRadius: 1.5, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 0.4, overflow: 'hidden',
                 bgcolor: hol ? '#fff7f6' : (isSun ? '#fbfcfe' : 'background.paper'),
                 border: '1px solid', borderColor: hol ? '#f6cfca' : 'divider',
                 outline: isToday ? '2px solid' : 'none', outlineColor: 'primary.main', outlineOffset: '-2px',
@@ -66,11 +47,11 @@ export default function MonthGrid({ year, month, daysByDate, today, onSelect, ex
               </Box>
               {/* Clamped (never scrolls): theme + a few tagged entries + "+N more".
                   Full detail is one tap away in the day view / drawer. */}
-              <Box sx={{ flex: '1 1 auto', minHeight: 0, overflow: expand ? 'visible' : 'hidden', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
+              <Box sx={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
                 {theme && (
                   <Typography sx={{ fontSize: 11, fontStyle: 'italic', color: '#41506b', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: '0 0 auto' }}>{theme.value}</Typography>
                 )}
-                {(expand ? chips : chips.slice(0, MAX_CHIPS)).map((e) => {
+                {chips.slice(0, MAX_CHIPS).map((e) => {
                   const m = typeMeta(e.typeCode);
                   return (
                     <Box key={e.uuid} title={`${e.typeName}: ${e.value}`}
@@ -80,7 +61,7 @@ export default function MonthGrid({ year, month, daysByDate, today, onSelect, ex
                     </Box>
                   );
                 })}
-                {!expand && chips.length > MAX_CHIPS && (
+                {chips.length > MAX_CHIPS && (
                   <Typography sx={{ fontSize: 10, fontWeight: 600, color: 'text.secondary', flex: '0 0 auto' }}>+{chips.length - MAX_CHIPS} more</Typography>
                 )}
               </Box>
