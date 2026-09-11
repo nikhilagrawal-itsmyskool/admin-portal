@@ -123,7 +123,8 @@ export default function AcademicCalendarPage() {
         <>
           <Card>
             <CardContent>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }} sx={{ mb: 2 }}>
+              {/* Row 1: month nav / agenda title + the Grid|List toggle */}
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1.5, flexWrap: 'wrap', rowGap: 1 }}>
                 {viewMode === 'grid' ? (
                   <Stack direction="row" spacing={1} alignItems="center">
                     <IconButton size="small" onClick={() => step(-1)}><PrevIcon /></IconButton>
@@ -132,26 +133,29 @@ export default function AcademicCalendarPage() {
                     <Button size="small" startIcon={<TodayIcon />} onClick={goToday}>Today</Button>
                   </Stack>
                 ) : (
-                  <Typography variant="h6" sx={{ minWidth: 170 }}>Agenda <Typography component="span" variant="body2" color="text.secondary">{ayName}</Typography></Typography>
+                  <Typography variant="h6">Agenda <Typography component="span" variant="body2" color="text.secondary">{ayName}</Typography></Typography>
                 )}
+                <Box sx={{ flex: 1 }} />
                 <ToggleButtonGroup size="small" exclusive value={viewMode} onChange={(_, v) => v && setViewMode(v)}>
                   <ToggleButton value="grid" aria-label="Grid view"><GridIcon fontSize="small" sx={{ mr: 0.5 }} />Grid</ToggleButton>
                   <ToggleButton value="list" aria-label="List view"><ListIcon fontSize="small" sx={{ mr: 0.5 }} />List</ToggleButton>
                 </ToggleButtonGroup>
-                <Box sx={{ flex: 1 }} />
-                {canManage && viewMode === 'grid' && <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => setPrinting(true)}>Print month</Button>}
-                <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
-                  {LEGEND.map(([code, label]) => (
-                    <Stack key={code} direction="row" spacing={0.5} alignItems="center">
-                      <Box component="span" sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.3, px: 0.5, borderRadius: 0.5, color: typeMeta(code).color, bgcolor: typeMeta(code).bg }}>{typeAbbr(code)}</Box>
-                      <Typography variant="caption" color="text.secondary">{label}</Typography>
-                    </Stack>
-                  ))}
-                  <Stack direction="row" spacing={0.5} alignItems="center">
-                    <Box sx={{ width: 9, height: 9, borderRadius: '2px', bgcolor: 'error.main' }} />
-                    <Typography variant="caption" color="text.secondary">Holiday</Typography>
+              </Stack>
+
+              {/* Row 2: legend + print */}
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2, flexWrap: 'wrap', rowGap: 1 }}>
+                {LEGEND.map(([code, label]) => (
+                  <Stack key={code} direction="row" spacing={0.5} alignItems="center">
+                    <Box component="span" sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.3, px: 0.5, borderRadius: 0.5, color: typeMeta(code).color, bgcolor: typeMeta(code).bg }}>{typeAbbr(code)}</Box>
+                    <Typography variant="caption" color="text.secondary">{label}</Typography>
                   </Stack>
+                ))}
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <Box sx={{ width: 9, height: 9, borderRadius: '2px', bgcolor: 'error.main' }} />
+                  <Typography variant="caption" color="text.secondary">Holiday</Typography>
                 </Stack>
+                <Box sx={{ flex: 1 }} />
+                {canManage && viewMode === 'grid' && <Button size="small" variant="outlined" startIcon={<PrintIcon />} onClick={() => setPrinting(true)}>Print month</Button>}
               </Stack>
 
               {viewMode === 'list' ? (
