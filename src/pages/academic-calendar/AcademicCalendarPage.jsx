@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, IconButton, Button, Tabs, Tab, Alert, CircularProgress,
+  ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon, ChevronRight as NextIcon, Print as PrintIcon, Today as TodayIcon,
+  CalendarViewMonth as GridIcon, ViewAgenda as ListIcon,
 } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
@@ -12,6 +14,7 @@ import { activityCalendarService } from '../../services/activityCalendarService'
 import { todayIso } from '../../utils/date';
 import { monthLabel, typeMeta, typeAbbr } from './calendarUtils';
 import MonthGrid from './MonthGrid';
+import AgendaView from './AgendaView';
 import DayEditorDrawer from './DayEditorDrawer';
 import ColumnsTab from './ColumnsTab';
 import HolidaysTab from './HolidaysTab';
@@ -26,13 +29,15 @@ const LEGEND = [
 ];
 
 export default function AcademicCalendarPage() {
-  const { academicYearId } = useAcademicYear();
+  const { academicYearId, years } = useAcademicYear();
+  const ayName = years?.find((y) => y.uuid === academicYearId)?.name || '';
   const isMobile = useIsMobile();
   // PWA (small screen) is strictly read-only — no operations for anyone, incl. admins.
   const canManage = useCan()('academic-calendar.manage') && !isMobile;
   const today = todayIso();
 
   const [tab, setTab] = useState('month');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list' (desktop month tab)
   const [year, setYear] = useState(Number(today.slice(0, 4)));
   const [month, setMonth] = useState(Number(today.slice(5, 7)));
   const [types, setTypes] = useState([]);
@@ -119,14 +124,22 @@ export default function AcademicCalendarPage() {
           <Card>
             <CardContent>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }} sx={{ mb: 2 }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <IconButton size="small" onClick={() => step(-1)}><PrevIcon /></IconButton>
-                  <Typography variant="h6" sx={{ minWidth: 170, textAlign: 'center' }}>{monthLabel(year, month)}</Typography>
-                  <IconButton size="small" onClick={() => step(1)}><NextIcon /></IconButton>
-                  <Button size="small" startIcon={<TodayIcon />} onClick={goToday}>Today</Button>
-                </Stack>
+                {viewMode === 'grid' ? (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <IconButton size="small" onClick={() => step(-1)}><PrevIcon /></IconButton>
+                    <Typography variant="h6" sx={{ minWidth: 170, textAlign: 'center' }}>{monthLabel(year, month)}</Typography>
+                    <IconButton size="small" onClick={() => step(1)}><NextIcon /></IconButton>
+                    <Button size="small" startIcon={<TodayIcon />} onClick={goToday}>Today</Button>
+                  </Stack>
+                ) : (
+                  <Typography variant="h6" sx={{ minWidth: 170 }}>Agenda <Typography component="span" variant="body2" color="text.secondary">{ayName}</Typography></Typography>
+                )}
+                <ToggleButtonGroup size="small" exclusive value={viewMode} onChange={(_, v) => v && setViewMode(v)}>
+                  <ToggleButton value="grid" aria-label="Grid view"><GridIcon fontSize="small" sx={{ mr: 0.5 }} />Grid</ToggleButton>
+                  <ToggleButton value="list" aria-label="List view"><ListIcon fontSize="small" sx={{ mr: 0.5 }} />List</ToggleButton>
+                </ToggleButtonGroup>
                 <Box sx={{ flex: 1 }} />
-                {canManage && <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => setPrinting(true)}>Print month</Button>}
+                {canManage && viewMode === 'grid' && <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => setPrinting(true)}>Print month</Button>}
                 <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
                   {LEGEND.map(([code, label]) => (
                     <Stack key={code} direction="row" spacing={0.5} alignItems="center">
@@ -141,7 +154,9 @@ export default function AcademicCalendarPage() {
                 </Stack>
               </Stack>
 
-              {loading ? (
+              {viewMode === 'list' ? (
+                <AgendaView academicYearId={academicYearId} ayName={ayName} types={types} today={today} canManage={canManage} onSelectDate={setSelectedDate} />
+              ) : loading ? (
                 <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>
               ) : (
                 <Box sx={{ height: { xs: 'calc(100vh - 300px)', md: 'calc(100vh - 290px)' }, minHeight: 360 }}>
@@ -151,9 +166,11 @@ export default function AcademicCalendarPage() {
             </CardContent>
           </Card>
           <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1.5 }}>
-            {canManage
-              ? 'Click any day to edit its line items, add entries under any column, or mark it a holiday. Sundays are the weekly off.'
-              : 'Tap any day to see its full details. Busy days scroll inside the cell.'}
+            {viewMode === 'list'
+              ? 'Every day with something scheduled, in order — scroll up for past, down for future. Opens at today.'
+              : canManage
+                ? 'Click any day to edit its line items, add entries under any column, or mark it a holiday. Sundays are the weekly off.'
+                : 'Tap any day to see its full details. Busy days scroll inside the cell.'}
           </Typography>
         </>
       )}
