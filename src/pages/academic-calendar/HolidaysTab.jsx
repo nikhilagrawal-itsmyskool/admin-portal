@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, EventBusy as EventBusyIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { activityCalendarService } from '../../services/activityCalendarService';
 import { fmtDateDow } from '../../utils/date';
 import DeclareClosureDialog from './DeclareClosureDialog';
@@ -28,6 +29,7 @@ function ayRange(name) {
 // choice (stored on the academic year). Both feed attendance & the 360 view.
 export default function HolidaysTab({ canManage }) {
   const { academicYearId, years } = useAcademicYear();
+  const isMobile = useIsMobile();
   const ayName = years.find((y) => y.uuid === academicYearId)?.name || '';
   const range = ayRange(ayName);
 
@@ -81,6 +83,9 @@ export default function HolidaysTab({ canManage }) {
   const rhHols = holidays.filter((h) => h.kind === 'restricted').length;
   const weeklyOffCount = nonTeaching.filter((d) => d.kind === 'weekly_off').length;
   const totalNonTeaching = nonTeaching.length;
+  const weeklyOffLabel = weeklyOff.length
+    ? [...weeklyOff].sort((a, b) => a - b).map((n) => WEEKDAYS.find((d) => d.n === n)?.label).filter(Boolean).join(', ')
+    : 'None';
 
   if (!range) return <Alert severity="info">Select an academic year to manage holidays.</Alert>;
 
@@ -92,13 +97,17 @@ export default function HolidaysTab({ canManage }) {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Weekly off</Typography>
-          <FormGroup row>
-            {WEEKDAYS.map((d) => (
-              <FormControlLabel key={d.n}
-                control={<Checkbox size="small" checked={weeklyOff.includes(d.n)} disabled={!canManage || busy} onChange={() => toggleWeekday(d.n)} />}
-                label={d.label} />
-            ))}
-          </FormGroup>
+          {canManage ? (
+            <FormGroup row>
+              {WEEKDAYS.map((d) => (
+                <FormControlLabel key={d.n}
+                  control={<Checkbox size="small" checked={weeklyOff.includes(d.n)} disabled={busy} onChange={() => toggleWeekday(d.n)} />}
+                  label={d.label} />
+              ))}
+            </FormGroup>
+          ) : (
+            <Typography variant="body1">{weeklyOffLabel}</Typography>
+          )}
         </CardContent>
       </Card>
 
@@ -156,6 +165,18 @@ export default function HolidaysTab({ canManage }) {
             <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress /></Box>
           ) : holidays.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No declared holidays yet. (Weekly-offs above are separate.)</Typography>
+          ) : isMobile ? (
+            <Stack spacing={1}>
+              {holidays.map((h) => (
+                <Box key={h.uuid} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{h.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">{fmtDateDow(h.holidayDate)}</Typography>
+                  </Box>
+                  <Chip size="small" label={h.kind === 'full' ? 'Closed' : 'Open · RH'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" sx={{ flexShrink: 0 }} />
+                </Box>
+              ))}
+            </Stack>
           ) : (
             <Box sx={{ overflowX: 'auto' }}>
               <Table size="small">

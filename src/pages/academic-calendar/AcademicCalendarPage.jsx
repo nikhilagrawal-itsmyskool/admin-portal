@@ -90,10 +90,12 @@ export default function AcademicCalendarPage() {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 0.5 }}>Academic Calendar</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Plan the year's festivals, important days, remembrances, thoughts and academic milestones — the daily thought feeds the morning assembly, and holidays flow into attendance.
-      </Typography>
+      <Typography variant="h4" sx={{ mb: isMobile ? 2 : 0.5 }}>Academic Calendar</Typography>
+      {!isMobile && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Plan the year's festivals, important days, remembrances, thoughts and academic milestones — the daily thought feeds the morning assembly, and holidays flow into attendance.
+        </Typography>
+      )}
 
       <Tabs value={effectiveTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="month" label={isMobile ? 'Calendar' : 'Month view'} />
