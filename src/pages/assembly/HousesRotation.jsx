@@ -14,6 +14,17 @@ import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useCan } from '../../permissions/can';
 
 const arrayFrom = (r, ...keys) => (Array.isArray(r) ? r : keys.map((k) => r?.[k]).find(Array.isArray) || []);
+
+// Readable text colour for a house-colour background: dark ink on light colours
+// (e.g. yellow), white on dark colours. Non-hex values fall back to dark ink.
+const readableOn = (bg) => {
+  if (typeof bg !== 'string') return '#fff';
+  let h = bg.trim().replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length !== 6 || /[^0-9a-f]/i.test(h)) return '#1a1a1a';
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 >= 150 ? '#1a1a1a' : '#fff';
+};
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
 const addWeeks = (s, n) => { const x = new Date(`${s}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n * 7); return iso(x); };
@@ -147,7 +158,7 @@ export default function HousesRotation() {
     finally { setSavingStaff(false); }
   };
 
-  const houseChip = (h) => <Chip size="small" label={h.name} sx={h.color ? { bgcolor: h.color, color: '#fff' } : undefined} variant={h.color ? 'filled' : 'outlined'} />;
+  const houseChip = (h) => <Chip size="small" label={h.name} sx={h.color ? { bgcolor: h.color, color: readableOn(h.color), fontWeight: 600 } : undefined} variant={h.color ? 'filled' : 'outlined'} />;
 
   return (
     <Box>
