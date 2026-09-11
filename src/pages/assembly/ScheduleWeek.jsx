@@ -19,7 +19,6 @@ export default function ScheduleWeek() {
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [noteOpen, setNoteOpen] = useState(true);
   const [showContent, setShowContent] = useState(true); // the per-day content text
   const [showDescriptions, setShowDescriptions] = useState(false); // the "— Invocation & Prayer" labels
   const [focusedDate, setFocusedDate] = useState(null); // when set, one day fills the page
@@ -60,11 +59,6 @@ export default function ScheduleWeek() {
     <Box>
       <Typography variant="h4" sx={{ mb: 2 }}>Assembly — This Week</Typography>
 
-      {noteOpen && (
-        <Alert severity="info" sx={{ mb: 2 }} onClose={() => setNoteOpen(false)}>
-          Holidays aren't reflected yet — assembly is shown for every working weekday the plan runs.
-        </Alert>
-      )}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Card sx={{ mb: 3 }}>

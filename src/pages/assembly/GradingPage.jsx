@@ -14,6 +14,7 @@ import { useCan } from '../../permissions/can';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { fmtDate, fmtDateDow } from '../../utils/date';
 import ReferenceDocCard from './ReferenceDocCard';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
@@ -38,6 +39,7 @@ function EmployeePicker({ label, value, onChange }) {
 export default function GradingPage() {
   const can = useCan();
   const canManage = can('assembly.manage');
+  const isMobile = useIsMobile(); // PWA hides the rubric reference (metrics/penalties/doc), keeps grade entry
   const { academicYearId } = useAcademicYear();
 
   const [rubric, setRubric] = useState({ metrics: [], penalties: [], config: {} });
@@ -167,7 +169,8 @@ export default function GradingPage() {
       />
 
       <Grid container spacing={3}>
-        {/* Rubric */}
+        {/* Rubric — reference only; hidden on the PWA to keep the phone lean */}
+        {!isMobile && (<>
         <Grid item xs={12} md={6}>
           <Card><CardContent>
             <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
@@ -214,6 +217,7 @@ export default function GradingPage() {
             </Stack>
           </CardContent></Card>
         </Grid>
+        </>)}
 
         {/* Evaluators */}
         <Grid item xs={12}>

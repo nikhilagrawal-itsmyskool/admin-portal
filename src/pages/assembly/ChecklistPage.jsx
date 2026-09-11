@@ -12,6 +12,7 @@ import { useCan } from '../../permissions/can';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { fmtDateDow } from '../../utils/date';
 import ReferenceDocCard from './ReferenceDocCard';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const mondayOf = (d) => { const x = new Date(d); const dow = x.getUTCDay(); x.setUTCDate(x.getUTCDate() + (dow === 0 ? -6 : 1 - dow)); return iso(x); };
@@ -21,6 +22,7 @@ const key = (itemId, date) => `${itemId}|${date || ''}`;
 export default function ChecklistPage() {
   const can = useCan();
   const canManage = can('assembly.manage');
+  const isMobile = useIsMobile(); // PWA hides the item config + doc, keeps the tickable list
   const { academicYearId } = useAcademicYear();
 
   const [items, setItems] = useState([]);
@@ -163,7 +165,8 @@ export default function ChecklistPage() {
         canManage={canManage}
       />
 
-      {/* Config */}
+      {/* Config — item management; hidden on the PWA to keep the phone lean */}
+      {!isMobile && (
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
@@ -194,6 +197,7 @@ export default function ChecklistPage() {
           </Table>
         </CardContent>
       </Card>
+      )}
 
       {/* Per-week ticking */}
       <Card>

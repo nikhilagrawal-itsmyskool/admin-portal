@@ -7,6 +7,7 @@ import {
 } from '@mui/icons-material';
 import { assemblyService } from '../../services/assemblyService';
 import { fmtDate } from '../../utils/date';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const ACCEPT = '.doc,.docx,.pdf,.xlsx,.xls,.odt,.txt';
 
@@ -34,6 +35,7 @@ function fmtSize(n) {
 // ('plan' | 'checklist' | 'grading'). Upload/replace, download, delete. Self-contained:
 // fetches the school's docs and shows the one for `kind`.
 export default function ReferenceDocCard({ kind, title, hint, canManage }) {
+  const isMobile = useIsMobile();
   const [doc, setDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -88,6 +90,9 @@ export default function ReferenceDocCard({ kind, title, hint, canManage }) {
     catch (err) { setError(err.response?.data?.error?.description || 'Delete failed'); }
     finally { setBusy(false); }
   };
+
+  // On the PWA the source reference document is noise — hide it for all roles.
+  if (isMobile) return null;
 
   return (
     <Card sx={{ mb: 2 }}>

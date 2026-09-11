@@ -121,8 +121,10 @@ export default function ResolvedRunSheet({ resolved, showThemes = true, showDesc
     return (
       <Box sx={{ py: 1 }}>
         {themeBlock}
-        <Typography variant="body2" color="text.secondary">No assembly</Typography>
-        <Typography variant="caption" color="text.secondary">({resolved.weekday})</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {resolved.holidayName ? `No assembly — ${resolved.holidayName}` : 'No assembly'}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">({resolved.weekday}{resolved.holidayName ? ' · holiday' : ''})</Typography>
       </Box>
     );
   }

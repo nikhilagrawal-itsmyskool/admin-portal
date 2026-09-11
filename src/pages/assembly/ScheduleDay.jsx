@@ -18,7 +18,6 @@ export default function ScheduleDay() {
   const [resolved, setResolved] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [noteOpen, setNoteOpen] = useState(true);
   const [showContent, setShowContent] = useState(true); // the per-day content text
   const [showDescriptions, setShowDescriptions] = useState(false); // the "— …" labels
   const today = todayISO();
@@ -50,11 +49,6 @@ export default function ScheduleDay() {
     <Box sx={{ maxWidth: 640, mx: 'auto' }}>
       <Typography variant="h4" sx={{ mb: 2 }}>Assembly</Typography>
 
-      {noteOpen && (
-        <Alert severity="info" sx={{ mb: 2 }} onClose={() => setNoteOpen(false)}>
-          Holidays aren't reflected yet — a working weekday still shows its regular assembly.
-        </Alert>
-      )}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Card sx={{ mb: 2 }}>

@@ -304,7 +304,11 @@ export default function PlanBuilder() {
           {preview && (
             <Box sx={{ mt: 2 }}>
               {!preview.held ? (
-                <Alert severity="info">No assembly is held on this date ({preview.weekday}).</Alert>
+                <Alert severity="info">
+                  {preview.holidayName
+                    ? `No assembly — ${preview.holidayName} (holiday) on this date.`
+                    : `No assembly is held on this date (${preview.weekday}).`}
+                </Alert>
               ) : (
                 <>
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>

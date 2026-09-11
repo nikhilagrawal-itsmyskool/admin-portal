@@ -57,7 +57,6 @@ test('assembly happy path: plans list, create plan, add block, themes', async ({
   // --- Schedule: This Week renders (wing selector + day columns) ---
   await page.goto('/assembly/week');
   await expect(page.getByRole('heading', { name: 'Assembly — This Week' })).toBeVisible({ timeout: 15000 });
-  await expect(page.getByText(/Holidays aren't reflected yet/i)).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Wing' })).toBeVisible();
 
   // --- Schedule: Calendar renders (month grid + specials note) ---

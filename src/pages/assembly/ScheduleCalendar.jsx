@@ -78,7 +78,7 @@ export default function ScheduleCalendar() {
 
       {noteOpen && (
         <Alert severity="info" sx={{ mb: 2 }} onClose={() => setNoteOpen(false)}>
-          Badged days have a special assembly. Holidays aren't marked yet — a working weekday still shows its regular assembly.
+          Badged days have a special assembly. Full holidays show as “No assembly”.
         </Alert>
       )}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
