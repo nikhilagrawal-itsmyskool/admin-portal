@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Button, Stack, Chip, Alert, CircularProgress, Paper, Avatar,
+  Box, Typography, Button, Stack, Chip, Alert, CircularProgress, Paper, Avatar, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField,
 } from '@mui/material';
 import { Warning as WarnIcon, HowToReg as RosterIcon, CheckCircle as DoneIcon, Lock as LockIcon } from '@mui/icons-material';
@@ -94,10 +94,25 @@ export default function RoomInvigilatorsMobile() {
     finally { setSaving(false); }
   };
 
+  const saveRelievers = async (ids) => {
+    setSaving(true); setErr(''); setMsg('');
+    try { applyView(await examinationService.saveRelieversForDate(id, date, ids)); setMsg('Relievers saved.'); }
+    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save relievers'); await load(); }
+    finally { setSaving(false); }
+  };
+
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
   if (!view) return <Alert severity="error">{err || 'Not found'}</Alert>;
   if (!view.rooms.length) return <Alert severity="info">Set up the seating rooms first, then assign invigilators.</Alert>;
   if (!view.dates.length) return <Alert severity="info">Add the datesheet first.</Alert>;
+
+  const relievers = view.relieversByDate?.[date] || [];
+  const relieverIds = new Set(relievers.map((r) => r.employeeId));
+  const assignedForDay = new Set(activeRooms.map((rid) => map[key(date, rid)]).filter(Boolean));
+  const relieverValue = relievers.map((r) => empById[r.employeeId] || { uuid: r.employeeId, name: r.employeeName });
+  const relieverOptions = (employees || []).filter((e) => !assignedForDay.has(e.uuid));
+  const freeTeachers = (employees || []).filter((e) => !assignedForDay.has(e.uuid) && !relieverIds.has(e.uuid));
+  const dayLocked = !isGod && datePassed;
 
   return (
     <Box>
@@ -150,6 +165,31 @@ export default function RoomInvigilatorsMobile() {
           {saving ? 'Saving…' : 'Tap a room to assign — changes save automatically. A ✓ means its roster is submitted (and locked).'}
         </Typography>
       )}
+
+      <Paper variant="outlined" sx={{ mt: 2, p: 1.5, borderRadius: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Relievers</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          Break-cover pool for the day — not tied to a room, and they don't sign.
+        </Typography>
+        <Autocomplete
+          multiple size="small" options={relieverOptions} getOptionLabel={(o) => o.name || ''}
+          value={relieverValue} disabled={!canManage || saving || dayLocked}
+          onChange={(_, v) => saveRelievers(v.map((x) => x.uuid))}
+          isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+          renderInput={(p) => <TextField {...p} placeholder={relieverValue.length ? '' : 'Add relievers…'} />}
+        />
+        <Divider sx={{ my: 1.5 }} />
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+          Free today ({freeTeachers.length}){canManage && !dayLocked ? ' — tap to add' : ''}:
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          {freeTeachers.map((e) => (
+            <Chip key={e.uuid} size="small" variant="outlined" label={e.name}
+              onClick={canManage && !dayLocked ? () => saveRelievers([...relieverIds, e.uuid]) : undefined} />
+          ))}
+          {!freeTeachers.length && <Typography variant="caption" color="text.secondary">Everyone is assigned or relieving.</Typography>}
+        </Box>
+      </Paper>
 
       <Dialog open={!!pick} onClose={() => setPick(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Invigilator · Room {pick?.name}</DialogTitle>

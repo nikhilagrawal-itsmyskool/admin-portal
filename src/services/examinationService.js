@@ -94,6 +94,10 @@ export const examinationService = {
   saveRoomInvigilatorsForDate: async (id, date, assignments) =>
     (await api.put(`/examination/examinations/${id}/room-invigilators/date/${date}`, { assignments })).data,
 
+  // Day-level reliever pool (break cover). Returns the refreshed room-invigilator view.
+  saveRelieversForDate: async (id, date, employeeIds) =>
+    (await api.put(`/examination/examinations/${id}/relievers/date/${date}`, { employeeIds })).data,
+
   // Room roster: { room, examDate, rollNumbersAvailable, sections:[{sectionClassId,sectionName,grade,subjectLabel,rollFrom,rollTo,students:[{studentId,name,admissionNumber,rollNumber,paperId,status}]}], total, marked, signed, signedByName, signedAt }
   adminRoomRoster: async (id, roomId, date) =>
     (await api.get(`/examination/examinations/${id}/room-rosters/${roomId}/${date}`)).data,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Button, Alert, CircularProgress, Stack, Autocomplete, TextField, Paper, IconButton, Tooltip,
-  Table, TableHead, TableRow, TableCell, TableBody, Typography, MenuItem,
+  Table, TableHead, TableRow, TableCell, TableBody, Typography, MenuItem, Chip, Divider,
 } from '@mui/material';
 import { HowToReg as RosterIcon, CheckCircle as DoneIcon, Lock as LockIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
@@ -107,6 +107,13 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
     } finally { setSaving(false); }
   };
 
+  const saveRelievers = async (ids) => {
+    setSaving(true); setErr(''); setMsg('');
+    try { setView(await examinationService.saveRelieversForDate(examId, focusDate, ids)); setMsg('Relievers saved.'); }
+    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save relievers'); await load(); }
+    finally { setSaving(false); }
+  };
+
   if (loading) return <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>;
   if (!view) return <Alert severity="error">{err || 'Failed to load'}</Alert>;
   if (!view.rooms.length) return <Alert severity="info">Set up the seating rooms first (Seating tab), then assign invigilators per room.</Alert>;
@@ -122,6 +129,15 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
     const active = view.activeByDate?.[d] || [];
     return { signed: active.filter((rid) => submittedSet.has(cellKey(d, rid))).length, total: active.length };
   };
+
+  // Relievers + free teachers for the focused day (the panel only shows when a day is focused).
+  const relievers = focusDate ? (view.relieversByDate?.[focusDate] || []) : [];
+  const relieverIds = new Set(relievers.map((r) => r.employeeId));
+  const assignedForDay = new Set((focusDate ? (view.activeByDate?.[focusDate] || []) : []).map((rid) => map[cellKey(focusDate, rid)]).filter(Boolean));
+  const relieverValue = relievers.map((r) => empById[r.employeeId] || { uuid: r.employeeId, name: r.employeeName });
+  const relieverOptions = (employees || []).filter((e) => !assignedForDay.has(e.uuid));
+  const freeTeachers = (employees || []).filter((e) => !assignedForDay.has(e.uuid) && !relieverIds.has(e.uuid));
+  const dayLocked = !isGod && focusDate && focusDate < todayIso();
 
   return (
     <Box>
@@ -203,6 +219,33 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
           </TableBody>
         </Table>
       </Paper>
+
+      {focusDate && (
+        <Paper variant="outlined" sx={{ mt: 2, p: 2, borderRadius: 2 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Relievers · {fmtDate(focusDate)}</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            A day pool that covers invigilators' breaks — they aren't tied to a room and don't sign anything.
+          </Typography>
+          <Autocomplete
+            multiple size="small" options={relieverOptions} getOptionLabel={(o) => o.name || ''}
+            value={relieverValue} disabled={!canManage || saving || dayLocked}
+            onChange={(_, v) => saveRelievers(v.map((x) => x.uuid))}
+            isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+            renderInput={(p) => <TextField {...p} placeholder={relieverValue.length ? '' : 'Add relievers…'} />}
+          />
+          <Divider sx={{ my: 1.5 }} />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+            Free that day ({freeTeachers.length}) — not on a room or in the pool{canManage && !dayLocked ? '; tap to add as a reliever' : ''}:
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {freeTeachers.map((e) => (
+              <Chip key={e.uuid} size="small" variant="outlined" label={e.name}
+                onClick={canManage && !dayLocked ? () => saveRelievers([...relieverIds, e.uuid]) : undefined} />
+            ))}
+            {!freeTeachers.length && <Typography variant="caption" color="text.secondary">Everyone is assigned or relieving.</Typography>}
+          </Box>
+        </Paper>
+      )}
 
       {canManage && (
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} alignItems="center">
