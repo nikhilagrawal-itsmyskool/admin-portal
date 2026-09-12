@@ -10,6 +10,7 @@ import { feedbackService, FEEDBACK_STATUS_COLOR, FEEDBACK_STATUS_LABEL } from '.
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate } from '../../utils/date';
+import StudentAvatar from '../../components/common/StudentAvatar';
 
 const STATUS_OPTIONS = [
   { key: 'open', label: 'Open' },
@@ -232,11 +233,14 @@ export default function FeedbackDashboard() {
             <Card key={f.uuid} variant="outlined" onClick={() => navigate(`/feedback/t/${f.uuid}`)} sx={{ cursor: 'pointer' }}>
               <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{f.studentName}{f.className ? ` · ${f.className}` : ''}</Typography>
-                    <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-                      {f.categoryName || 'Feedback'}{f.visitDate ? ` · ${fmtDate(f.visitDate)}` : ''} · {f.assignedToName || '—'}
-                    </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, minWidth: 0 }}>
+                    <StudentAvatar studentId={f.studentId} name={f.studentName} size={40} />
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{f.studentName}{f.className ? ` · ${f.className}` : ''}</Typography>
+                      <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
+                        {f.categoryName || 'Feedback'}{f.visitDate ? ` · ${fmtDate(f.visitDate)}` : ''} · {f.assignedToName || '—'}
+                      </Typography>
+                    </Box>
                   </Box>
                   <Chip size="small" label={FEEDBACK_STATUS_LABEL[f.status] || f.status} color={FEEDBACK_STATUS_COLOR[f.status] || 'default'} sx={{ fontWeight: 700 }} />
                 </Box>
@@ -261,7 +265,12 @@ export default function FeedbackDashboard() {
               {items.map((f) => (
                 <TableRow key={f.uuid} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/feedback/t/${f.uuid}`)}>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>{f.visitDate ? fmtDate(f.visitDate) : '—'}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{f.studentName}{f.className ? <Typography component="span" sx={{ color: 'text.disabled', fontWeight: 400 }}> · {f.className}</Typography> : null}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <StudentAvatar studentId={f.studentId} name={f.studentName} size={30} />
+                      <span style={{ fontWeight: 600 }}>{f.studentName}{f.className ? <Typography component="span" sx={{ color: 'text.disabled', fontWeight: 400 }}> · {f.className}</Typography> : null}</span>
+                    </Box>
+                  </TableCell>
                   <TableCell>{f.categoryName || '—'}</TableCell>
                   <TableCell>{f.assignedToName || '—'}{f.awaitingDirector ? <Chip size="small" variant="outlined" color="primary" label="me" sx={{ ml: 0.5, height: 18, fontSize: 10 }} /> : null}</TableCell>
                   <TableCell><Chip size="small" label={FEEDBACK_STATUS_LABEL[f.status] || f.status} color={FEEDBACK_STATUS_COLOR[f.status] || 'default'} sx={{ fontWeight: 700 }} /></TableCell>

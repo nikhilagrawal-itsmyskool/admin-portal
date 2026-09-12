@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { feedbackService, FEEDBACK_STATUS_COLOR, FEEDBACK_STATUS_LABEL } from '../../services/feedbackService';
 import { fmtDate } from '../../utils/date';
+import StudentAvatar from '../../components/common/StudentAvatar';
 
 const TABS = [
   { key: 'act', label: 'To act' },
@@ -57,6 +58,7 @@ export default function MyFeedback() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
                   <Box sx={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
                     {f.unread && <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#3366ff', flexShrink: 0 }} />}
+                    <StudentAvatar studentId={f.studentId} name={f.studentName} size={40} />
                     <Box sx={{ minWidth: 0 }}>
                       <Typography sx={{ fontWeight: f.unread ? 800 : 700, fontSize: 14 }}>
                         {f.studentName || 'Student'}{f.className ? ` · ${f.className}` : ''}

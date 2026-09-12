@@ -18,6 +18,7 @@ import { useCan } from '../../permissions/can';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate, fmtDateTime } from '../../utils/date';
 import EmployeeSearchDialog from '../../components/common/EmployeeSearchDialog';
+import StudentAvatar from '../../components/common/StudentAvatar';
 
 const initials = (name) => (name || '?').split(' ').filter(Boolean).slice(0, 2).map((s) => s[0]).join('').toUpperCase();
 
@@ -153,14 +154,17 @@ export default function FeedbackThread() {
       <Card variant="outlined" sx={{ mb: 2 }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 800, fontSize: 17 }}>
-                {thread.studentName || 'Student'}{thread.className ? ` · ${thread.className}` : ''}
-              </Typography>
-              <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-                {thread.categoryName || 'Feedback'}{thread.visitDate ? ` · visit ${fmtDate(thread.visitDate)}` : ''}
-                {thread.admissionNumber ? ` · Adm #${thread.admissionNumber}` : ''}
-              </Typography>
+            <Box sx={{ display: 'flex', gap: 1.25, minWidth: 0 }}>
+              <StudentAvatar studentId={thread.studentId} name={thread.studentName} size={44} />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: 17 }}>
+                  {thread.studentName || 'Student'}{thread.className ? ` · ${thread.className}` : ''}
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
+                  {thread.categoryName || 'Feedback'}{thread.visitDate ? ` · visit ${fmtDate(thread.visitDate)}` : ''}
+                  {thread.admissionNumber ? ` · Adm #${thread.admissionNumber}` : ''}
+                </Typography>
+              </Box>
             </Box>
             <Stack alignItems="flex-end" spacing={0.5}>
               <Chip size="small" label={FEEDBACK_STATUS_LABEL[thread.status] || thread.status}
