@@ -15,6 +15,7 @@ import {
 } from '../../services/feedbackService';
 import { useAuth } from '../../context/AuthContext';
 import { useCan } from '../../permissions/can';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate, fmtDateTime } from '../../utils/date';
 import EmployeeSearchDialog from '../../components/common/EmployeeSearchDialog';
 
@@ -25,6 +26,7 @@ export default function FeedbackThread() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const can = useCan();
+  const isMobile = useIsMobile();
   const isReviewer = can('feedback.review');
   const api = isReviewer
     ? { get: feedbackService.getById, comment: feedbackService.comment, assign: feedbackService.assign, seen: feedbackService.seen, attachment: feedbackService.attachment }
@@ -133,7 +135,7 @@ export default function FeedbackThread() {
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
   if (!thread) return (
     <Box sx={{ maxWidth: 760 }}>
-      <Button startIcon={<BackIcon />} onClick={() => navigate(-1)} sx={{ mb: 2 }}>Back</Button>
+      {!isMobile && <Button startIcon={<BackIcon />} onClick={() => navigate(-1)} sx={{ mb: 2 }}>Back</Button>}
       <Alert severity="error">{error || 'Feedback not found'}</Alert>
     </Box>
   );
@@ -143,9 +145,9 @@ export default function FeedbackThread() {
 
   return (
     <Box sx={{ maxWidth: 760, pb: 2 }}>
-      <Button startIcon={<BackIcon />} onClick={() => navigate(-1)} sx={{ mb: 1.5 }}>Back</Button>
+      {!isMobile && <Button startIcon={<BackIcon />} onClick={() => navigate(-1)} sx={{ mb: 1.5 }}>Back</Button>}
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {error &&<Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       {/* Pinned header */}
       <Card variant="outlined" sx={{ mb: 2 }}>
