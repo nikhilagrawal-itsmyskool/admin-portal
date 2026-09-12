@@ -31,7 +31,9 @@ export const monthGridSun = (year, month) => {
     weeks.push(week);
     if (cur.getUTCMonth() !== month - 1 && cur.getUTCDate() > 7) break; // stop once past the month
   }
-  return weeks;
+  // Drop any trailing all-padding week (a month that fits in 4-5 rows must not render a
+  // 6th empty row — it also leaked into the printed sheet).
+  return weeks.filter((w) => w.some((c) => c.inMonth));
 };
 
 export const WEEKDAY_HEADS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
