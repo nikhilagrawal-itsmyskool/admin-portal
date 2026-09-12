@@ -140,9 +140,9 @@ export const MOBILE_FEATURES = [
   { title: "Syllabus Overview", icon: SyllabusIcon, path: "/syllabus/overview", perm: "godpwa.syllabus.overview", section: "office", color: "#8e24aa", routes: ["/syllabus/overview"] },
   // Leave — Director oversight (leave.manage = god only for now). Read/act on the go.
   { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
-  // Leave Calendar — the month view of who's on leave, visible to ALL staff so they can
-  // plan a leave (reuses the existing /leave/day page; no notPerm so god sees it too).
-  { title: "Leave Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.apply", section: "mine", color: "#3d5afe", routes: ["/leave/day"] },
+  // Leave Calendar — month view of who's on leave, inside the Leave hub with the other
+  // leave options so staff can plan before applying (no notPerm so god sees it too).
+  { title: "Leave Calendar", hubLabel: "Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/day"] },
   { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
   // Feedback dashboard — reviewer oversight (feedback.review = god only for now); Manage band.
   { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "manage", color: "#0097a7", routes: ["/feedback", "/feedback/t/:id"] },
