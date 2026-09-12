@@ -5,8 +5,9 @@ import {
 } from '@mui/material';
 import {
   Search as SearchIcon, PersonSearch as TeacherIcon, Add as AddIcon, DeleteOutline as DeleteIcon,
+  AttachFile as AttachIcon, InsertDriveFile as FileIcon,
 } from '@mui/icons-material';
-import { feedbackService } from '../../services/feedbackService';
+import { feedbackService, filesToAttachments, ATTACH_ACCEPT, ATTACH_MAX_BYTES } from '../../services/feedbackService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { todayIso } from '../../utils/date';
 import StudentSearchDialog from '../../components/common/StudentSearchDialog';
@@ -14,7 +15,7 @@ import EmployeeSearchDialog from '../../components/common/EmployeeSearchDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 let BLOCK_KEY = 0;
-const emptyBlock = () => ({ _k: ++BLOCK_KEY, categoryId: '', feedbackText: '', teacher: null });
+const emptyBlock = () => ({ _k: ++BLOCK_KEY, categoryId: '', feedbackText: '', teacher: null, files: [] });
 
 export default function RecordFeedback() {
   const { academicYearId } = useAcademicYear();
@@ -49,6 +50,13 @@ export default function RecordFeedback() {
   const patchBlock = (k, patch) => setBlocks((bs) => bs.map((b) => (b._k === k ? { ...b, ...patch } : b)));
   const addBlock = () => setBlocks((bs) => [...bs, emptyBlock()]);
   const removeBlock = (k) => setBlocks((bs) => (bs.length > 1 ? bs.filter((b) => b._k !== k) : bs));
+  const addFiles = (k, list) => {
+    const picked = Array.from(list || []);
+    if (picked.some((f) => f.size > ATTACH_MAX_BYTES)) setError('Some files were skipped — max 8 MB each.');
+    const ok = picked.filter((f) => f.size <= ATTACH_MAX_BYTES);
+    setBlocks((bs) => bs.map((b) => (b._k === k ? { ...b, files: [...b.files, ...ok] } : b)));
+  };
+  const removeFile = (k, idx) => setBlocks((bs) => bs.map((b) => (b._k === k ? { ...b, files: b.files.filter((_, i) => i !== idx) } : b)));
 
   const reset = () => { setStudent(null); setVisitDate(todayIso()); setBlocks([emptyBlock()]); setConfirmClear(false); };
 
@@ -64,10 +72,9 @@ export default function RecordFeedback() {
     }
     setBusy(true); setError(''); setSuccess('');
     let saved = 0;
-    const createdIds = [];
     try {
       for (const b of blocks) {
-        const res = await feedbackService.record({
+        await feedbackService.record({
           studentId: student.uuid,
           classId: student.classId || student.class_id || undefined,
           academicYearId: academicYearId || undefined,
@@ -75,13 +82,11 @@ export default function RecordFeedback() {
           categoryId: b.categoryId,
           feedbackText: b.feedbackText.trim(),
           assignedTo: b.teacher.uuid,
+          attachments: b.files.length ? await filesToAttachments(b.files) : undefined,
         });
-        if (res?.uuid) createdIds.push(res.uuid);
         saved += 1;
       }
-      // One in-app notification per assigned teacher for this whole visit. Best-effort:
-      // a notify failure must not fail the record that already succeeded.
-      try { await feedbackService.notifyVisit(createdIds); } catch { /* notify is best-effort */ }
+      // Recording notifies the assigned teacher in-app (server-side, per ticket).
       setSuccess(`${saved} feedback${saved === 1 ? '' : 's'} recorded for ${student.name}.`);
       reset();
       if (topRef.current) topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -163,6 +168,20 @@ export default function RecordFeedback() {
                       <TextField fullWidth size="small" label="Feedback" multiline minRows={3} value={b.feedbackText}
                         onChange={(e) => patchBlock(b._k, { feedbackText: e.target.value })}
                         placeholder="What did the family share? What needs follow-up?" />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Button component="label" size="small" startIcon={<AttachIcon />}>
+                        Attach evidence
+                        <input hidden type="file" multiple accept={ATTACH_ACCEPT}
+                          onChange={(e) => { addFiles(b._k, e.target.files); e.target.value = ''; }} />
+                      </Button>
+                      {b.files.length > 0 && (
+                        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                          {b.files.map((f, i) => (
+                            <Chip key={i} icon={<FileIcon />} label={f.name} size="small" onDelete={() => removeFile(b._k, i)} />
+                          ))}
+                        </Stack>
+                      )}
                     </Grid>
                   </Grid>
                 </CardContent>

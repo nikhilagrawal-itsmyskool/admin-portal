@@ -79,7 +79,11 @@ export default function NotificationBell() {
       setUnread((u) => Math.max(0, u - 1));
       notificationService.markRead(n.uuid).catch(() => load());
     }
-    const to = routeFor(n.key);
+    // Prefer a deep-link to the specific entity (e.g. a feedback ticket thread); fall back
+    // to the key-prefix route.
+    const to = (n.entityType === 'feedback' && n.entityId)
+      ? `/feedback/t/${n.entityId}`
+      : routeFor(n.key);
     if (to) navigate(to);
   };
 

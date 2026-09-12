@@ -195,6 +195,7 @@ import DeductionReport from './pages/leave/DeductionReport';
 import RecordFeedback from './pages/feedback/RecordFeedback';
 import MyFeedback from './pages/feedback/MyFeedback';
 import FeedbackDashboard from './pages/feedback/FeedbackDashboard';
+import FeedbackThread from './pages/feedback/FeedbackThread';
 import StaffDocuments from './pages/documents/StaffDocuments';
 import DocumentDetail from './pages/documents/DocumentDetail';
 import MyDocuments from './pages/documents/MyDocuments';
@@ -457,6 +458,7 @@ export default function App() {
         <Route path="feedback" element={<FeedbackDashboard />} />
         <Route path="feedback/record" element={<RecordFeedback />} />
         <Route path="feedback/me" element={<MyFeedback />} />
+        <Route path="feedback/t/:id" element={<FeedbackThread />} />
         <Route path="documents" element={<StaffDocuments />} />
         <Route path="documents/:id" element={<DocumentDetail />} />
         <Route path="me/documents" element={<MyDocuments />} />
