@@ -22,7 +22,10 @@ export const leaveService = {
   // ── Oversight: applications + decisions ───────────────────────────────────────
   listApplications: async (params = {}) => (await api.get('/leave/applications', { params })).data,
   getApplication: async (id) => (await api.get(`/leave/applications/${id}`)).data,
-  approve: async (id) => (await api.post(`/leave/applications/${id}/approve`)).data,
+  // Approve. The daily cap / annual quota are soft: without override the API may return
+  // { needsConfirmation, warnings }; call again with override + a reason to approve anyway.
+  approve: async (id, override = false, overrideReason = undefined) =>
+    (await api.post(`/leave/applications/${id}/approve`, { override, overrideReason })).data,
   reject: async (id, note) => (await api.post(`/leave/applications/${id}/reject`, { note })).data,
   getAudit: async (id) => (await api.get(`/leave/applications/${id}/audit`)).data,
   getAttachment: async (id) => (await api.get(`/leave/applications/${id}/attachment`)).data,

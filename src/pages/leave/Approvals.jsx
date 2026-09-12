@@ -20,6 +20,8 @@ export default function Approvals() {
   const [busyId, setBusyId] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [note, setNote] = useState('');
+  const [overrideTarget, setOverrideTarget] = useState(null); // { app, warnings }
+  const [overrideReason, setOverrideReason] = useState('');
 
   const load = async () => {
     setLoading(true); setError('');
@@ -36,9 +38,30 @@ export default function Approvals() {
   const approve = async (a) => {
     setBusyId(a.uuid); setError(''); setSuccess('');
     try {
-      await leaveService.approve(a.uuid);
-      setSuccess(`Approved ${a.employeeName || 'request'}`);
+      const res = await leaveService.approve(a.uuid);
+      if (res?.needsConfirmation) {
+        // Soft threshold hit (daily cap / balance) — ask the approver to confirm an override.
+        setOverrideTarget({ app: a, warnings: res.warnings || [] });
+        setOverrideReason('');
+      } else {
+        setSuccess(`Approved ${a.employeeName || 'request'}`);
+        setApps((prev) => prev.filter((x) => x.uuid !== a.uuid));
+      }
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Could not approve');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doOverride = async () => {
+    const a = overrideTarget.app;
+    setBusyId(a.uuid); setError(''); setSuccess('');
+    try {
+      await leaveService.approve(a.uuid, true, overrideReason.trim() || undefined);
+      setSuccess(`Approved ${a.employeeName || 'request'} (exception)`);
       setApps((prev) => prev.filter((x) => x.uuid !== a.uuid));
+      setOverrideTarget(null); setOverrideReason('');
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Could not approve');
     } finally {
@@ -149,8 +172,34 @@ export default function Approvals() {
       )}
 
       <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 2 }}>
-        The daily cap (“max 2 casual leaves a day”) and monthly quota are enforced on approve — you'll get a message if a limit is hit.
+        The daily cap (“max 2 casual leaves a day”) and the annual balance are checked on approve. They don't block you — if one is hit you'll be asked to confirm an exception, and the leave still counts against the teacher's balance.
       </Typography>
+
+      {/* Soft-threshold override: confirm approving past the daily cap / balance */}
+      <Dialog open={Boolean(overrideTarget)} onClose={() => setOverrideTarget(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Approve as an exception?</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Approving {overrideTarget?.app?.employeeName || 'this request'} crosses a policy limit:
+          </Alert>
+          <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
+            {(overrideTarget?.warnings || []).map((w, i) => (
+              <Typography key={i} component="li" sx={{ fontSize: 13.5, color: '#c42a56', mb: 0.5 }}>{w}</Typography>
+            ))}
+          </Box>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mb: 1 }}>
+            You can approve it anyway for exceptional cases. The leave will still be counted against the teacher's balance.
+          </Typography>
+          <TextField fullWidth margin="dense" label="Reason for the exception (recorded in the audit)"
+            multiline minRows={2} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOverrideTarget(null)}>Cancel</Button>
+          <Button variant="contained" color="warning" onClick={doOverride} disabled={busyId === overrideTarget?.app?.uuid}>
+            Approve anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={Boolean(rejectTarget)} onClose={() => setRejectTarget(null)} fullWidth maxWidth="sm">
         <DialogTitle>Reject {rejectTarget?.employeeName || 'request'}</DialogTitle>

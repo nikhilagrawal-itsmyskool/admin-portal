@@ -67,10 +67,13 @@ export default function MyLeave() {
         const base64Data = await readFileB64(file);
         payload.attachment = { fileName: file.name, mimeType: file.type, base64Data };
       }
-      await leaveService.apply(payload);
+      const res = await leaveService.apply(payload);
       setOpen(false); setFile(null);
       setForm({ leaveTypeCode: '', fromDate: todayIso(), toDate: todayIso(), reason: '' });
-      setSuccess('Leave request submitted');
+      // Over-balance requests are still submitted (the Director may approve as an exception).
+      setSuccess(res?.warnings?.length
+        ? `Request submitted. Note: ${res.warnings.join(' ')}`
+        : 'Leave request submitted');
       load();
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to submit');
