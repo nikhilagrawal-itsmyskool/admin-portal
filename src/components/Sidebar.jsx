@@ -420,7 +420,7 @@ const menuItems = [
       { title: 'My Penalty', icon: WaiverIcon, path: '/leave/me/penalty', perm: 'leave.apply', notPerm: 'leave.manage' },
       { title: 'Approvals', icon: DutyIcon, path: '/leave/approvals', perm: 'leave.manage' },
       { title: 'Staff Attendance', icon: PeopleIcon, path: '/leave/staff', perm: 'leave.manage' },
-      { title: "Who's on Leave", icon: CalendarIcon, path: '/leave/day', perm: 'leave.manage' },
+      { title: 'Leave Calendar', icon: CalendarIcon, path: '/leave/day', perm: 'leave.apply' },
       { title: 'Types & Policy', icon: AsmSettingsIcon, path: '/leave/types', perm: 'leave.manage' },
       { title: 'Biometric Import', icon: BioImportIcon, path: '/leave/import', perm: 'leave.manage' },
       { title: 'Deduction Report', icon: StructureIcon, path: '/leave/deductions', perm: 'leave.manage' },

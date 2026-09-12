@@ -64,7 +64,7 @@ export default function WhosOnLeave() {
   return (
     <Box sx={{ maxWidth: 880 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-        <Typography variant="h4">Who's on Leave</Typography>
+        <Typography variant="h4">Leave Calendar</Typography>
         <TextField type="month" size="small" value={month} onChange={(e) => setMonth(e.target.value)} InputLabelProps={{ shrink: true }} />
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
