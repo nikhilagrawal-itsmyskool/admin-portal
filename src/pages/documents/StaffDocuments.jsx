@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, NotificationsActive as RemindIcon,
-  Archive as ArchiveIcon, ChevronRight as ChevronIcon,
+  Archive as ArchiveIcon, ChevronRight as ChevronIcon, Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { documentService } from '../../services/documentService';
 import { employeeService } from '../../services/employeeService';
@@ -184,6 +184,7 @@ export default function StaffDocuments() {
                   <TableCell>{statusChip(d)}</TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      <IconButton size="small" title="Open" color="primary" onClick={(e) => { e.stopPropagation(); open(d); }}><ViewIcon fontSize="small" /></IconButton>
                       <IconButton size="small" title="Edit" onClick={(e) => editFrom(d, e)}><EditIcon fontSize="small" /></IconButton>
                       {d.requiresAck && <IconButton size="small" title="Remind pending" onClick={(e) => remind(d, e)}><RemindIcon fontSize="small" /></IconButton>}
                       <IconButton size="small" title="Archive" onClick={(e) => archive(d, e)}><ArchiveIcon fontSize="small" /></IconButton>
