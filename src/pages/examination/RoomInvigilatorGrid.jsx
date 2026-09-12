@@ -4,8 +4,9 @@ import {
   Box, Button, Alert, CircularProgress, Stack, Autocomplete, TextField, Paper, IconButton, Tooltip,
   Table, TableHead, TableRow, TableCell, TableBody, Typography, MenuItem,
 } from '@mui/material';
-import { Save as SaveIcon, HowToReg as RosterIcon } from '@mui/icons-material';
+import { HowToReg as RosterIcon, CheckCircle as DoneIcon, Lock as LockIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
+import { useAuth } from '../../context/AuthContext';
 import { fmtDate } from '../../utils/date';
 
 const cellKey = (date, roomId) => `${date}|${roomId}`;
@@ -17,6 +18,8 @@ const dayOf = (d) => DOW[new Date(`${d}T00:00:00`).getDay()];
 // from any active cell to mark attendance + sign the room for that day.
 export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isGod = (user?.roles || []).includes('god');
   const [view, setView] = useState(null);
   const [map, setMap] = useState({}); // cellKey -> employeeId
   const [loading, setLoading] = useState(true);
@@ -47,6 +50,14 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
     return s;
   }, [view]);
 
+  // Submitted (signed) room-days — the completion board. A submitted cell is ticked and its
+  // invigilator is locked (except for god).
+  const submittedSet = useMemo(() => {
+    const s = new Set();
+    if (view) for (const x of (view.submitted || [])) s.add(cellKey(x.examDate, x.roomId));
+    return s;
+  }, [view]);
+
   const conflictCells = useMemo(() => {
     const set = new Set();
     if (!view) return set;
@@ -61,44 +72,29 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
     return set;
   }, [view, map]);
 
-  const setCell = (date, roomId, empId) => setMap((m) => {
-    const next = { ...m };
+  // Assign/clear a cell and auto-save that day at once — no Save button, so the grid never
+  // shows a stale "unsaved" state. A submitted room is locked (god excepted). On failure we
+  // reload to the server's truth.
+  const onAssign = async (date, roomId, empId) => {
+    if (submittedSet.has(cellKey(date, roomId)) && !isGod) return;
+    const next = { ...map };
     if (empId) next[cellKey(date, roomId)] = empId; else delete next[cellKey(date, roomId)];
-    return next;
-  });
-
-  const saveDate = async (date) => {
+    setMap(next);
     setSaving(true); setErr(''); setMsg('');
     try {
       const assignments = view.rooms
         .filter((rm) => activeSet.has(cellKey(date, rm.uuid)))
-        .map((rm) => ({ roomId: rm.uuid, employeeId: map[cellKey(date, rm.uuid)] }))
+        .map((rm) => ({ roomId: rm.uuid, employeeId: next[cellKey(date, rm.uuid)] }))
         .filter((a) => a.employeeId);
       const v = await examinationService.saveRoomInvigilatorsForDate(examId, date, assignments);
       setView(v);
       const m = {};
       for (const a of v.assignments || []) m[cellKey(a.examDate, a.roomId)] = a.employeeId;
       setMap(m);
-      setMsg(`Saved ${fmtDate(date)}.`);
+      setMsg('Saved.');
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save');
-    } finally { setSaving(false); }
-  };
-
-  const saveAll = async () => {
-    setSaving(true); setErr(''); setMsg('');
-    try {
-      for (const d of view.dates) {
-        const assignments = view.rooms
-          .filter((rm) => activeSet.has(cellKey(d, rm.uuid)))
-          .map((rm) => ({ roomId: rm.uuid, employeeId: map[cellKey(d, rm.uuid)] }))
-          .filter((a) => a.employeeId);
-        await examinationService.saveRoomInvigilatorsForDate(examId, d, assignments);
-      }
       await load();
-      setMsg('All invigilators saved.');
-    } catch (e) {
-      setErr(e.response?.data?.error?.description || 'Failed to save');
     } finally { setSaving(false); }
   };
 
@@ -111,6 +107,12 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
   // only the rooms actually used that day (the sections sitting then).
   const shownDates = focusDate ? [focusDate] : view.dates;
   const shownRooms = focusDate ? view.rooms.filter((rm) => activeSet.has(cellKey(focusDate, rm.uuid))) : view.rooms;
+
+  // Per-day completion: how many of the active rooms have a submitted roster.
+  const dayTally = (d) => {
+    const active = view.activeByDate?.[d] || [];
+    return { signed: active.filter((rid) => submittedSet.has(cellKey(d, rid))).length, total: active.length };
+  };
 
   return (
     <Box>
@@ -136,12 +138,18 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
           <TableHead>
             <TableRow>
               <TableCell sx={{ minWidth: 140, position: 'sticky', left: 0, bgcolor: 'action.hover !important', zIndex: 2 }}>Room</TableCell>
-              {shownDates.map((d) => (
-                <TableCell key={d} sx={{ minWidth: 210, lineHeight: 1.25 }}>
-                  {fmtDate(d)}
-                  <Typography variant="caption" display="block" color="primary.main" sx={{ fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>{dayOf(d)}</Typography>
-                </TableCell>
-              ))}
+              {shownDates.map((d) => {
+                const t = dayTally(d);
+                return (
+                  <TableCell key={d} sx={{ minWidth: 210, lineHeight: 1.25 }}>
+                    {fmtDate(d)}
+                    <Typography variant="caption" display="block" color="primary.main" sx={{ fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>{dayOf(d)}</Typography>
+                    <Typography variant="caption" display="block" sx={{ textTransform: 'none', letterSpacing: 0, fontWeight: 600, color: t.total && t.signed === t.total ? 'success.main' : 'text.secondary' }}>
+                      {t.signed}/{t.total} signed
+                    </Typography>
+                  </TableCell>
+                );
+              })}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -154,17 +162,24 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
                   }
                   const empId = map[cellKey(d, rm.uuid)] || null;
                   const conflict = conflictCells.has(cellKey(d, rm.uuid));
+                  const submitted = submittedSet.has(cellKey(d, rm.uuid));
+                  const locked = submitted && !isGod;
                   return (
                     <TableCell key={d} sx={{ bgcolor: conflict ? 'warning.light' : undefined }}>
                       <Stack direction="row" spacing={0.5} alignItems="center">
                         <Autocomplete
                           size="small" sx={{ flex: 1 }} options={employees || []} getOptionLabel={(o) => o.name || ''}
                           value={empId ? (empById[empId] || null) : null}
-                          disabled={!canManage}
-                          onChange={(_, v) => setCell(d, rm.uuid, v ? v.uuid : null)}
+                          disabled={!canManage || saving || locked}
+                          onChange={(_, v) => onAssign(d, rm.uuid, v ? v.uuid : null)}
                           isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
                           renderInput={(p) => <TextField {...p} placeholder="Assign…" />}
                         />
+                        {submitted && (
+                          <Tooltip title={locked ? 'Roster submitted — reassignment locked (god only)' : 'Roster submitted'}>
+                            {locked ? <LockIcon fontSize="small" color="disabled" /> : <DoneIcon fontSize="small" color="success" />}
+                          </Tooltip>
+                        )}
                         <Tooltip title="Open room roster (mark + sign)">
                           <IconButton size="small" onClick={() => navigate(`/examinations/${examId}/room-roster/${rm.uuid}/${d}`)}>
                             <RosterIcon fontSize="small" />
@@ -181,12 +196,12 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
       </Paper>
 
       {canManage && (
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }} alignItems="center">
-          <Typography variant="caption" color="text.secondary">Grey cells = no section in that room sits that day.</Typography>
+        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} alignItems="center">
+          <Typography variant="caption" color="text.secondary">
+            Grey = no section sits that day. Changes save automatically; a ✓ means that room's roster is submitted (and locked).
+          </Typography>
           <Box sx={{ flex: 1 }} />
-          {focusDate
-            ? <Button variant="contained" startIcon={<SaveIcon />} onClick={() => saveDate(focusDate)} disabled={saving}>Save {fmtDate(focusDate)}</Button>
-            : <Button variant="contained" startIcon={<SaveIcon />} onClick={saveAll} disabled={saving}>Save invigilators</Button>}
+          {saving && <><CircularProgress size={14} /><Typography variant="caption" color="text.secondary">Saving…</Typography></>}
         </Stack>
       )}
     </Box>
