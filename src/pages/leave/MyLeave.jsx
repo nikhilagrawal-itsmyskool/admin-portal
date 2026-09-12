@@ -22,6 +22,13 @@ function readFileB64(file) {
 
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
 
+const HALF_LABEL = { first_half: '½ day (1st half)', second_half: '½ day (2nd half)' };
+function daysLabel(a) {
+  if (a.dayPortion === 'first_half' || a.dayPortion === 'second_half') return HALF_LABEL[a.dayPortion];
+  if (a.workingDays == null) return '—';
+  return `${a.workingDays} day${a.workingDays === 1 ? '' : 's'}`;
+}
+
 export default function MyLeave() {
   const isMobile = useIsMobile();
   const [types, setTypes] = useState([]);
@@ -32,7 +39,7 @@ export default function MyLeave() {
   const [success, setSuccess] = useState('');
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ leaveTypeCode: '', fromDate: todayIso(), toDate: todayIso(), reason: '' });
+  const [form, setForm] = useState({ leaveTypeCode: '', fromDate: todayIso(), toDate: todayIso(), reason: '', dayPortion: 'full' });
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
@@ -62,14 +69,15 @@ export default function MyLeave() {
     if (!form.leaveTypeCode) { setError('Choose a leave type'); return; }
     setBusy(true); setError(''); setSuccess('');
     try {
-      const payload = { ...form, reason: form.reason.trim() || undefined };
+      const singleDay = form.fromDate === form.toDate;
+      const payload = { ...form, dayPortion: singleDay ? form.dayPortion : 'full', reason: form.reason.trim() || undefined };
       if (file) {
         const base64Data = await readFileB64(file);
         payload.attachment = { fileName: file.name, mimeType: file.type, base64Data };
       }
       const res = await leaveService.apply(payload);
       setOpen(false); setFile(null);
-      setForm({ leaveTypeCode: '', fromDate: todayIso(), toDate: todayIso(), reason: '' });
+      setForm({ leaveTypeCode: '', fromDate: todayIso(), toDate: todayIso(), reason: '', dayPortion: 'full' });
       // Over-balance requests are still submitted (the Director may approve as an exception).
       setSuccess(res?.warnings?.length
         ? `Request submitted. Note: ${res.warnings.join(' ')}`
@@ -157,7 +165,7 @@ export default function MyLeave() {
                       <Box sx={{ minWidth: 0 }}>
                         <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{a.leaveTypeName || a.leaveTypeCode}</Typography>
                         <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-                          {dateRange(a.fromDate, a.toDate)}{a.workingDays ? ` · ${a.workingDays} day${a.workingDays === 1 ? '' : 's'}` : ''}
+                          {dateRange(a.fromDate, a.toDate)} · {daysLabel(a)}
                           {a.hasAttachment ? ' · 📎' : ''}
                         </Typography>
                         {a.reason && <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{a.reason}</Typography>}
@@ -191,7 +199,7 @@ export default function MyLeave() {
                     <TableRow key={a.uuid} hover>
                       <TableCell sx={{ fontWeight: 600 }}>{a.leaveTypeName || a.leaveTypeCode}{a.hasAttachment ? ' 📎' : ''}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{dateRange(a.fromDate, a.toDate)}</TableCell>
-                      <TableCell>{a.workingDays || '—'}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{daysLabel(a)}</TableCell>
                       <TableCell sx={{ maxWidth: 320, color: 'text.secondary' }}>
                         {a.reason || '—'}
                         {a.status === 'rejected' && a.decisionNote && (
@@ -232,6 +240,17 @@ export default function MyLeave() {
               <TextField fullWidth type="date" size="small" label="To" value={form.toDate}
                 onChange={(e) => setForm((f) => ({ ...f, toDate: e.target.value }))} InputLabelProps={{ shrink: true }} />
             </Grid>
+            {form.fromDate === form.toDate && (
+              <Grid item xs={12}>
+                <TextField select fullWidth size="small" label="Duration" value={form.dayPortion}
+                  onChange={(e) => setForm((f) => ({ ...f, dayPortion: e.target.value }))}
+                  helperText="Half-day is available on a single day only.">
+                  <MenuItem value="full">Full day</MenuItem>
+                  <MenuItem value="first_half">Half day — first half (morning)</MenuItem>
+                  <MenuItem value="second_half">Half day — second half (afternoon)</MenuItem>
+                </TextField>
+              </Grid>
+            )}
             <Grid item xs={12}>
               <TextField fullWidth size="small" label="Reason" multiline minRows={2} value={form.reason}
                 onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />

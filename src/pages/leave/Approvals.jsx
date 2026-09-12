@@ -10,6 +10,12 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate } from '../../utils/date';
 
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
+const HALF_LABEL = { first_half: '½ day (1st half)', second_half: '½ day (2nd half)' };
+const daysLabel = (a) => (
+  a.dayPortion === 'first_half' || a.dayPortion === 'second_half'
+    ? HALF_LABEL[a.dayPortion]
+    : (a.workingDays == null ? '—' : `${a.workingDays} day${a.workingDays === 1 ? '' : 's'}`)
+);
 
 export default function Approvals() {
   const isMobile = useIsMobile();
@@ -116,7 +122,7 @@ export default function Approvals() {
                   <Box sx={{ minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: 14.5 }}>{a.employeeName || a.employeeId}</Typography>
                     <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-                      {dateRange(a.fromDate, a.toDate)}{a.workingDays ? ` · ${a.workingDays} day${a.workingDays === 1 ? '' : 's'}` : ''}
+                      {dateRange(a.fromDate, a.toDate)} · {daysLabel(a)}
                     </Typography>
                     {a.reason && <Typography sx={{ fontSize: 12.5, color: 'text.disabled', mt: 0.25 }}>{a.reason}</Typography>}
                   </Box>
@@ -151,7 +157,7 @@ export default function Approvals() {
                   <TableCell sx={{ fontWeight: 700 }}>{a.employeeName || a.employeeId}</TableCell>
                   <TableCell><Chip size="small" label={a.leaveTypeName || a.leaveTypeCode} color="primary" variant="outlined" sx={{ fontWeight: 700 }} /></TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>{dateRange(a.fromDate, a.toDate)}</TableCell>
-                  <TableCell>{a.workingDays || '—'}</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>{daysLabel(a)}</TableCell>
                   <TableCell sx={{ maxWidth: 300, color: 'text.secondary' }}>
                     {a.reason || '—'}
                     {a.hasAttachment && (

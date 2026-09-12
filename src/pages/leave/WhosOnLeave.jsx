@@ -53,7 +53,8 @@ export default function WhosOnLeave() {
     const lo = a.fromDate < first ? first : a.fromDate;
     const hi = a.toDate > last ? last : a.toDate;
     for (const d of eachDate(lo, hi)) {
-      (byDate[d] = byDate[d] || []).push({ name: a.employeeName || a.employeeId, code: a.leaveTypeCode, status: a.status });
+      const half = a.dayPortion === 'first_half' || a.dayPortion === 'second_half';
+      (byDate[d] = byDate[d] || []).push({ name: a.employeeName || a.employeeId, code: a.leaveTypeCode, status: a.status, half });
     }
   }
 
@@ -107,7 +108,7 @@ export default function WhosOnLeave() {
                       list.map((p, i) => (
                         <Chip
                           key={`${date}-${i}`} size="small"
-                          label={<span><b>{p.name}</b>{p.code ? ` · ${p.code}` : ''}</span>}
+                          label={<span><b>{p.name}</b>{p.code ? ` · ${p.code}` : ''}{p.half ? ' · ½' : ''}</span>}
                           variant="outlined"
                           sx={{
                             fontSize: 12,
