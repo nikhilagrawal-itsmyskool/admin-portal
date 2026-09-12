@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, CircularProgress, Stack,
   TextField, MenuItem, Autocomplete, Table, TableHead, TableRow, TableCell, TableBody,
+  Accordion, AccordionSummary, AccordionDetails,
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import { Search as SearchIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { feedbackService, FEEDBACK_STATUS_COLOR, FEEDBACK_STATUS_LABEL } from '../../services/feedbackService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -98,6 +99,12 @@ export default function FeedbackDashboard() {
   const teacherOptions = summary?.byTeacher || [];
   const selectedTeacher = teacherOptions.find((t) => t.employeeId === fTeacher) || null;
   const s = summary?.byStatus;
+  const activeFilterLabel = [
+    (STATUS_OPTIONS.find((o) => o.key === status) || {}).label || 'All',
+    owner ? (OWNER_OPTIONS.find((o) => o.key === owner) || {}).label : null,
+    assignedTo ? ((teacherOptions.find((t) => t.employeeId === assignedTo) || {}).employeeName || 'teacher') : null,
+    categoryId ? (categories.find((c) => c.uuid === categoryId) || {}).name : null,
+  ].filter(Boolean).join(' · ');
 
   return (
     <Box sx={{ maxWidth: 1100 }}>
@@ -116,11 +123,16 @@ export default function FeedbackDashboard() {
         </Grid>
       )}
 
-      {/* Teacher-wise breakup */}
+      {/* Teacher-wise breakup — collapsed by default so it doesn't push the list down */}
       {summary && summary.byTeacher.length > 0 && (
-        <Card variant="outlined" sx={{ mb: 2 }}>
-          <CardContent sx={{ py: 1.5 }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 1 }}>BY TEACHER</Typography>
+        <Accordion variant="outlined" disableGutters sx={{ mb: 2, '&:before': { display: 'none' } }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.secondary' }}>
+              BY TEACHER · {summary.byTeacher.length} teacher{summary.byTeacher.length === 1 ? '' : 's'}
+              {assignedTo ? ' · filtered' : ''}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
             {isMobile ? (
               <Stack spacing={1}>
                 {summary.byTeacher.map((t) => (
@@ -156,8 +168,8 @@ export default function FeedbackDashboard() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </AccordionDetails>
+        </Accordion>
       )}
 
       {/* Filters */}
@@ -205,6 +217,11 @@ export default function FeedbackDashboard() {
       </Card>
 
       {/* List */}
+      {!loading && (
+        <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mb: 1 }}>
+          Showing <b>{items.length}</b>{activeFilterLabel ? ` · ${activeFilterLabel}` : ''}
+        </Typography>
+      )}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
       ) : items.length === 0 ? (
