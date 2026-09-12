@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, IconButton, Button, Tabs, Tab, Alert, CircularProgress,
-  ToggleButton, ToggleButtonGroup,
+  ToggleButton, ToggleButtonGroup, Fab,
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon, ChevronRight as NextIcon, Print as PrintIcon, Today as TodayIcon,
@@ -176,6 +176,14 @@ export default function AcademicCalendarPage() {
                 ? 'Click any day to edit its line items, add entries under any column, or mark it a holiday. Sundays are the weekly off.'
                 : 'Tap any day to see its full details. Busy days scroll inside the cell.'}
           </Typography>
+          {/* List view lands deep in the year (at today), so keep a way back to the grid
+              on screen without scrolling to the top toggle. */}
+          {viewMode === 'list' && (
+            <Fab variant="extended" size="medium" color="primary" onClick={() => setViewMode('grid')}
+              sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: (t) => t.zIndex.speedDial }}>
+              <GridIcon sx={{ mr: 1 }} /> Grid view
+            </Fab>
+          )}
         </>
       )}
 
