@@ -3,7 +3,7 @@ import { Box, Button, Stack, Typography } from '@mui/material';
 
 // Draw-on-canvas signature pad (finger / mouse via Pointer Events). Calls onSave with the
 // raw base64 PNG (no data: prefix). Self-contained; used on the invigilator PWA.
-export default function SignaturePad({ onSave, saving, height = 170, label = 'Sign in the box below' }) {
+export default function SignaturePad({ onSave, saving, height = 170, label = 'Sign in the box below', actionLabel = 'Save signature' }) {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const drawing = useRef(false);
@@ -63,7 +63,7 @@ export default function SignaturePad({ onSave, saving, height = 170, label = 'Si
         <Button size="small" onClick={clear} disabled={saving}>Clear</Button>
         <Box sx={{ flex: 1 }} />
         <Button size="small" variant="contained" onClick={save} disabled={empty || saving}>
-          {saving ? 'Saving…' : 'Save signature'}
+          {saving ? 'Saving…' : actionLabel}
         </Button>
       </Stack>
     </Box>

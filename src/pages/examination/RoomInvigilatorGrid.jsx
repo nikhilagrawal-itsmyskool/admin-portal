@@ -7,11 +7,19 @@ import {
 import { HowToReg as RosterIcon, CheckCircle as DoneIcon, Lock as LockIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { useAuth } from '../../context/AuthContext';
-import { fmtDate } from '../../utils/date';
+import { fmtDate, todayIso } from '../../utils/date';
 
 const cellKey = (date, roomId) => `${date}|${roomId}`;
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const dayOf = (d) => DOW[new Date(`${d}T00:00:00`).getDay()];
+
+// Default the "Focus a day" to today's exam day, else the next upcoming, else the most recent.
+const pickDefaultDate = (dates) => {
+  if (!dates?.length) return '';
+  const today = todayIso();
+  if (dates.includes(today)) return today;
+  return dates.filter((d) => d >= today).sort()[0] || dates[dates.length - 1];
+};
 
 // Per-(room, date) invigilator assignment for a seating-room exam. A cell is assignable
 // only when the room is active that date (a section in it has a paper). Open the roster
@@ -33,6 +41,7 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
     try {
       const v = await examinationService.getRoomInvigilators(examId);
       setView(v);
+      setFocusDate((cur) => cur || pickDefaultDate(v.dates));
       const m = {};
       for (const a of v.assignments || []) m[cellKey(a.examDate, a.roomId)] = a.employeeId;
       setMap(m);
@@ -163,7 +172,7 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
                   const empId = map[cellKey(d, rm.uuid)] || null;
                   const conflict = conflictCells.has(cellKey(d, rm.uuid));
                   const submitted = submittedSet.has(cellKey(d, rm.uuid));
-                  const locked = submitted && !isGod;
+                  const locked = (submitted || d < todayIso()) && !isGod;
                   return (
                     <TableCell key={d} sx={{ bgcolor: conflict ? 'warning.light' : undefined }}>
                       <Stack direction="row" spacing={0.5} alignItems="center">

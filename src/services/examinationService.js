@@ -68,16 +68,16 @@ export const examinationService = {
     (await api.get(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}`)).data,
   myMark: async (examId, paperId, sectionId, marks) =>
     (await api.post(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}/mark`, { marks })).data,
-  mySign: async (examId, paperId, sectionId) =>
-    (await api.post(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}/sign`)).data,
+  mySign: async (examId, paperId, sectionId, signatureBase64) =>
+    (await api.post(`/examination/me/exam/rosters/${examId}/${paperId}/${sectionId}/sign`, { signatureBase64 })).data,
 
   // Admin/incharge sign-any (guarded exam.manage).
   adminRoster: async (id, paperId, sectionId) =>
     (await api.get(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}`)).data,
   adminMark: async (id, paperId, sectionId, marks) =>
     (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/mark`, { marks })).data,
-  adminSign: async (id, paperId, sectionId) =>
-    (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/sign`)).data,
+  adminSign: async (id, paperId, sectionId, signatureBase64) =>
+    (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/sign`, { signatureBase64 })).data,
 
   // ── Phase 4: seating rooms ──────────────────────────────────────────────────
   // Rooms: { examId, rooms:[{uuid,name,sortOrder,allocations:[{uuid,sectionClassId,sectionName,grade,rollFrom,rollTo}]}] }
@@ -99,8 +99,8 @@ export const examinationService = {
     (await api.get(`/examination/examinations/${id}/room-rosters/${roomId}/${date}`)).data,
   adminRoomMark: async (id, roomId, date, marks) =>
     (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/mark`, { marks })).data,
-  adminRoomSign: async (id, roomId, date) =>
-    (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/sign`)).data,
+  adminRoomSign: async (id, roomId, date, signatureBase64) =>
+    (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/sign`, { signatureBase64 })).data,
 
   // Per-room plan image: { fileId, dataUri }
   getRoomImage: async (id, roomId) => (await api.get(`/examination/examinations/${id}/rooms/${roomId}/image`)).data,
@@ -120,6 +120,6 @@ export const examinationService = {
     (await api.get(`/examination/me/exam/rooms/${examId}/${roomId}/${date}`)).data,
   myRoomMark: async (examId, roomId, date, marks) =>
     (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/mark`, { marks })).data,
-  myRoomSign: async (examId, roomId, date) =>
-    (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/sign`)).data,
+  myRoomSign: async (examId, roomId, date, signatureBase64) =>
+    (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/sign`, { signatureBase64 })).data,
 };

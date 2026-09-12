@@ -31,7 +31,6 @@ export default function RoomRoster({ mode = 'me' }) {
   const [editing, setEditing] = useState(false);
   const [roster, setRoster] = useState(null);
   const [statusMap, setStatusMap] = useState({});
-  const [sig, setSig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -40,8 +39,8 @@ export default function RoomRoster({ mode = 'me' }) {
   const load = useCallback(async () => {
     setLoading(true); setErr('');
     try {
-      const [r, s] = await Promise.all([svc.roster(exam, roomId, date), examinationService.getMySignature()]);
-      setRoster(r); setSig(s); setEditing(false);
+      const r = await svc.roster(exam, roomId, date);
+      setRoster(r); setEditing(false);
       const m = {};
       (r.sections || []).forEach((sec) => sec.students.forEach((st) => { m[st.studentId] = st.status || 'present'; }));
       setStatusMap(m);
@@ -57,27 +56,22 @@ export default function RoomRoster({ mode = 'me' }) {
 
   const saveMarks = async () => {
     setBusy(true); setErr(''); setMsg('');
-    try { setRoster(await svc.mark(exam, roomId, date, marksPayload())); setMsg('Attendance saved.'); }
+    try { setRoster(await svc.mark(exam, roomId, date, marksPayload())); setMsg('Draft saved.'); }
     catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save attendance'); }
     finally { setBusy(false); }
   };
 
-  const sign = async () => {
+  // Submit with a FRESH signature drawn at submit time (a new signature every day; nothing
+  // stored). Materialise marks first, then sign with the drawn PNG.
+  const submit = async (signatureBase64) => {
     setBusy(true); setErr(''); setMsg('');
     try {
       await svc.mark(exam, roomId, date, marksPayload()); // materialise present/absent for everyone
-      setRoster(await svc.sign(exam, roomId, date)); setEditing(false);
+      setRoster(await svc.sign(exam, roomId, date, signatureBase64)); setEditing(false);
       setMsg('Room submitted — your signature will print on these cards.');
     } catch (e) {
-      setErr(e.response?.data?.error?.description || 'Failed to sign the room');
+      setErr(e.response?.data?.error?.description || 'Failed to submit the room');
     } finally { setBusy(false); }
-  };
-
-  const saveSig = async (b64) => {
-    setBusy(true); setErr('');
-    try { setSig(await examinationService.saveMySignature(b64)); }
-    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save signature'); }
-    finally { setBusy(false); }
   };
 
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
@@ -133,7 +127,7 @@ export default function RoomRoster({ mode = 'me' }) {
       )}
       {!canEditNow && (
         <Alert severity="info" icon={<LockIcon fontSize="inherit" />} sx={{ mb: 2 }}>
-          This exam day has passed and is locked. Ask an exam manager (god) to make changes.
+          This exam day has passed and is locked.
         </Alert>
       )}
 
@@ -144,15 +138,6 @@ export default function RoomRoster({ mode = 'me' }) {
         >
           <img src={roster.roomImageDataUri} alt="Room plan" style={{ display: 'block', width: '100%', maxHeight: 320, objectFit: 'contain', background: '#fff' }} />
         </Box>
-      )}
-
-      {editMode && !sig?.dataUri && (
-        <Card sx={{ mb: 2 }}>
-          <CardContent>
-            <Alert severity="warning" sx={{ mb: 1 }}>Add your signature to submit this room — it stamps onto the admit cards.</Alert>
-            <SignaturePad onSave={saveSig} saving={busy} />
-          </CardContent>
-        </Card>
       )}
 
       {(roster.sections || []).map((sec) => (
@@ -198,13 +183,20 @@ export default function RoomRoster({ mode = 'me' }) {
       {!allStudents.length && <Alert severity="info">No students sit in this room on this day.</Alert>}
 
       {allStudents.length > 0 && editMode && (
-        <Stack direction="row" spacing={1} sx={{ mt: 2, pb: 1 }}>
-          <Button variant="outlined" onClick={saveMarks} disabled={busy}>Save draft</Button>
-          <Box sx={{ flex: 1 }} />
-          <Button variant="contained" startIcon={<SignIcon />} onClick={sign} disabled={busy || !sig?.dataUri}>
-            {roster.signed ? 'Re-submit & sign' : 'Submit & sign'}
-          </Button>
-        </Stack>
+        <>
+          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+            <Button variant="outlined" onClick={saveMarks} disabled={busy}>Save draft</Button>
+          </Stack>
+          <Card sx={{ mt: 2, mb: 1 }}>
+            <CardContent>
+              <SignaturePad
+                onSave={submit} saving={busy}
+                label="Sign below to submit (a fresh signature is required each day)"
+                actionLabel={roster.signed ? 'Re-submit & sign' : 'Submit & sign'}
+              />
+            </CardContent>
+          </Card>
+        </>
       )}
     </Box>
   );
