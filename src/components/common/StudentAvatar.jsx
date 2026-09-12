@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Avatar } from '@mui/material';
 import { studentService } from '../../services/studentService';
 
-// Session cache: studentId -> Promise<dataUri|null>. Dedupes in-flight requests and
-// avoids refetching a student's photo across rows / list <-> thread navigation.
-const cache = new Map();
+// Lazily loads a student's photo (thumb, falling back to original) via the existing
+// students photo API and renders it as an Avatar (initials while loading / if none).
+// Results are cached per studentId for the session and in-flight requests are deduped,
+// so the same student appearing in many rows — or across the list and the thread —
+// only fetches once.
+const cache = new Map(); // studentId -> Promise<string|null> (data URI or null)
 
 function loadPhoto(studentId) {
   if (cache.has(studentId)) return cache.get(studentId);
   const p = (async () => {
-    for (const variant of ['thumb', undefined]) { // prefer the small thumb, fall back to original
+    for (const variant of ['thumb', undefined]) {
       try {
         const res = await studentService.getPhoto('student', studentId, variant);
         if (res?.data) return `data:${res.mimeType || 'image/jpeg'};base64,${res.data}`;
@@ -21,8 +24,6 @@ function loadPhoto(studentId) {
   return p;
 }
 
-// Student photo with an initials fallback. Lazily fetches the thumbnail from the existing
-// student photo API (no new backend surface).
 export default function StudentAvatar({ studentId, name, size = 36 }) {
   const [src, setSrc] = useState(null);
   useEffect(() => {
@@ -32,8 +33,8 @@ export default function StudentAvatar({ studentId, name, size = 36 }) {
     return () => { alive = false; };
   }, [studentId]);
   return (
-    <Avatar src={src || undefined} sx={{ width: size, height: size, fontSize: size * 0.42, bgcolor: '#e0e0e0', color: '#555' }}>
-      {(name || '?').trim()[0]?.toUpperCase()}
+    <Avatar src={src || undefined} sx={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}>
+      {(name || '?')[0]?.toUpperCase()}
     </Avatar>
   );
 }
