@@ -168,11 +168,21 @@ export default function RoomRoster({ mode = 'me' }) {
 
       {roster.isAv && editMode && (
         <Autocomplete
-          sx={{ mb: 1.5 }} size="small" options={studentOpts} getOptionLabel={(o) => `${o.name}${o.admissionNumber ? ` · ${o.admissionNumber}` : ''}`}
+          sx={{ mb: 1.5 }} size="small" options={studentOpts}
+          getOptionLabel={(o) => `${o.name}${o.className ? ` · ${o.className}` : ''}`}
           filterOptions={(x) => x} value={null} blurOnSelect clearOnBlur disabled={busy}
           onInputChange={(_, v) => searchStudents(v)}
           onChange={(_, v) => { if (v) avStudent(v.uuid, 'add'); setStudentOpts([]); }}
           isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+          renderOption={(props, o) => {
+            const { key, ...rest } = props;
+            return (
+              <Box component="li" key={o.uuid} {...rest} sx={{ display: 'block !important' }}>
+                <Typography variant="body2">{o.name}{o.className ? ` · ${o.className}` : ''}</Typography>
+                {o.admissionNumber && <Typography variant="caption" color="text.secondary">{o.admissionNumber}</Typography>}
+              </Box>
+            );
+          }}
           renderInput={(p) => <TextField {...p} label="Add a student to the AV room" placeholder="Search by name…" />}
         />
       )}
@@ -212,7 +222,7 @@ export default function RoomRoster({ mode = 'me' }) {
                     <ListItemText
                       primary={s.name}
                       secondary={roster.isAv
-                        ? (s.className || s.admissionNumber || null)
+                        ? ([s.className, s.admissionNumber].filter(Boolean).join(' · ') || null)
                         : ([s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ') || null)}
                     />
                   </ListItem>
