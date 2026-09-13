@@ -109,7 +109,8 @@ export default function RoomRoster({ mode = 'me' }) {
 
   // God may edit any time; teacher/admin only until the exam day passes. A submitted roster
   // shows read-only (with an Edit affordance) until re-opened.
-  const isGod = mode === 'admin' && (user?.roles || []).includes('god');
+  // god OR exam-incharge may edit a locked/submitted roster (corrections) via the admin screen.
+  const isGod = mode === 'admin' && (user?.roles || []).some((r) => r === 'god' || r === 'exam-incharge');
   const canEditNow = isGod || !roster.locked;
   const editMode = canEditNow && (!roster.signed || editing);
   const readOnly = !editMode;

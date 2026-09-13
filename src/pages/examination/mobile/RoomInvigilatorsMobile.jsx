@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Button, Stack, Chip, Alert, CircularProgress, Paper, Avatar, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField,
@@ -33,11 +33,14 @@ export default function RoomInvigilatorsMobile() {
   const navigate = useNavigate();
   const canManage = useCan()('exam.manage');
   const { user } = useAuth();
-  const isGod = (user?.roles || []).includes('god');
+  const isGod = (user?.roles || []).some((r) => r === 'god' || r === 'exam-incharge');
 
+  // Keep the selected day in the URL so returning from a roster (Back) lands on the SAME day,
+  // not the default — otherwise the grid reset to another date and risked a wrong-day edit.
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState(null);
   const [employees, setEmployees] = useState([]);
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(searchParams.get('date') || '');
   const [map, setMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,6 +65,8 @@ export default function RoomInvigilatorsMobile() {
   }, [id]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { employeeService.searchEmployees({}).then(setEmployees).catch(() => setEmployees([])); }, []);
+  // Mirror the selected day into the URL (replace, so it doesn't stack history) — restored on Back.
+  useEffect(() => { if (date && searchParams.get('date') !== date) setSearchParams({ date }, { replace: true }); }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const empById = useMemo(() => Object.fromEntries((employees || []).map((e) => [e.uuid, e])), [employees]);
   const roomById = useMemo(() => Object.fromEntries((view?.rooms || []).map((r) => [r.uuid, r])), [view]);

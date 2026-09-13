@@ -27,7 +27,7 @@ const pickDefaultDate = (dates) => {
 export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isGod = (user?.roles || []).includes('god');
+  const isGod = (user?.roles || []).some((r) => r === 'god' || r === 'exam-incharge');
   const [view, setView] = useState(null);
   const [map, setMap] = useState({}); // cellKey -> employeeId
   const [loading, setLoading] = useState(true);
