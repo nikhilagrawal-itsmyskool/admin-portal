@@ -75,6 +75,30 @@ export default function StudentExamCard({ studentId }) {
                 <Tooltip title="Allow print despite dues"><Button size="small" color="warning" startIcon={<OverrideIcon />} onClick={() => override(r.examId)}>Override</Button></Tooltip>
               ) : null)}
             </Stack>
+
+            {(r.papers || []).length > 0 && (
+              <Box sx={{ mt: 0.75, pl: { sm: 1 } }}>
+                {r.papers.map((p, j) => (
+                  <Stack key={j} direction="row" spacing={1} alignItems="center" sx={{ py: 0.25 }}>
+                    <Typography variant="caption" sx={{ minWidth: 62, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(p.examDate)}</Typography>
+                    <Typography variant="caption" sx={{ flex: 1, minWidth: 80 }} noWrap>{p.subjectLabel}</Typography>
+                    {!p.finalized
+                      ? <Chip size="small" variant="outlined" label="pending" />
+                      : p.status === 'absent'
+                        ? <Chip size="small" color="error" variant="outlined" label="Absent" />
+                        : <Chip size="small" color="success" variant="outlined" label="Present" />}
+                    {p.finalized && p.invigilatorName && (
+                      <Typography variant="caption" color="text.secondary" noWrap>✓ {p.invigilatorName}</Typography>
+                    )}
+                    {p.correctedByName && (
+                      <Tooltip title={`Corrected by ${p.correctedByName}${p.correctedAt ? ' on ' + fmtDate(p.correctedAt) : ''} — the original invigilator's signature is retained`}>
+                        <Chip size="small" color="warning" variant="outlined" label="corrected" />
+                      </Tooltip>
+                    )}
+                  </Stack>
+                ))}
+              </Box>
+            )}
           </React.Fragment>
         ))}
       </CardContent>

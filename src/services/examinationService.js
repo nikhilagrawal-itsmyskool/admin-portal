@@ -105,6 +105,9 @@ export const examinationService = {
     (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/mark`, { marks })).data,
   adminRoomSign: async (id, roomId, date, signatureBase64) =>
     (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/sign`, { signatureBase64 })).data,
+  // AV room: add/remove a student for a date (action 'add' | 'remove'). Returns the AV roster.
+  adminAvStudent: async (id, roomId, date, studentId, action) =>
+    (await api.post(`/examination/examinations/${id}/room-rosters/${roomId}/${date}/av-students`, { studentId, action })).data,
 
   // Per-room plan image: { fileId, dataUri }
   getRoomImage: async (id, roomId) => (await api.get(`/examination/examinations/${id}/rooms/${roomId}/image`)).data,
@@ -126,4 +129,6 @@ export const examinationService = {
     (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/mark`, { marks })).data,
   myRoomSign: async (examId, roomId, date, signatureBase64) =>
     (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/sign`, { signatureBase64 })).data,
+  myAvStudent: async (examId, roomId, date, studentId, action) =>
+    (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/av-students`, { studentId, action })).data,
 };

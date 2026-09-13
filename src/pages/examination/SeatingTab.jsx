@@ -166,7 +166,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
       const brand = await examinationService.getBranding().catch(() => ({}));
       printSeatingPlan({
         examName: exam?.name, inchargeName: exam?.inchargeName,
-        rooms: rooms.map((rm) => ({ name: rm.name, allocations: (rm.allocations || []).map((a) => ({ label: a.sectionName, rollFrom: a.rollFrom, rollTo: a.rollTo })) })),
+        rooms: rooms.filter((rm) => rm.kind !== 'av').map((rm) => ({ name: rm.name, allocations: (rm.allocations || []).map((a) => ({ label: a.sectionName, rollFrom: a.rollFrom, rollTo: a.rollTo })) })),
         logoDataUri: brand?.logoDataUri, stampDataUri: brand?.stampDataUri,
         schoolName: brand?.schoolName, motto: brand?.motto, address: brand?.address,
       });
@@ -175,11 +175,15 @@ export default function SeatingTab({ examId, exam, canManage }) {
 
   if (loading) return <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box>;
 
+  // The AV room (kind='av') is a holding room with no section allocations — it's managed from
+  // its roster (invigilator grid), not here, so it's excluded from the seating cards.
+  const seatingRooms = rooms.filter((rm) => rm.kind !== 'av');
+
   return (
     <Box>
       <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1} alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1, minWidth: 200 }}>
-          {rooms.length} room{rooms.length === 1 ? '' : 's'} · each seats a mix of sections by roll range.
+          {seatingRooms.length} room{seatingRooms.length === 1 ? '' : 's'} · each seats a mix of sections by roll range. An AV Room is available every exam day (manage its students from the Invigilators tab → open its roster).
         </Typography>
         {canManage && otherExams.length > 0 && (
           <Stack direction="row" spacing={1} alignItems="center">
@@ -189,7 +193,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
             <Button size="small" startIcon={<CopyIcon />} onClick={doCopy} disabled={!copyFrom || busy}>Copy</Button>
           </Stack>
         )}
-        <Button variant="outlined" startIcon={<PrintIcon />} onClick={print} disabled={!rooms.length}>Print plan</Button>
+        <Button variant="outlined" startIcon={<PrintIcon />} onClick={print} disabled={!seatingRooms.length}>Print plan</Button>
       </Stack>
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
@@ -220,7 +224,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
       </Paper>
 
       <Stack spacing={2}>
-        {rooms.map((rm) => (
+        {seatingRooms.map((rm) => (
           <Paper key={rm.uuid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
               <RoomIcon color="primary" fontSize="small" />
@@ -280,7 +284,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
             )}
           </Paper>
         ))}
-        {!rooms.length && <Alert severity="info">No rooms yet. Add the first room below (or copy the scheme from another exam).</Alert>}
+        {!seatingRooms.length && <Alert severity="info">No rooms yet. Add the first room below (or copy the scheme from another exam).</Alert>}
       </Stack>
 
       {canManage && (

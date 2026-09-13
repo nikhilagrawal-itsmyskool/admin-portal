@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
   ToggleButton, ToggleButtonGroup, List, ListItem, ListItemText, Divider,
+  Autocomplete, TextField, IconButton,
 } from '@mui/material';
-import { ArrowBack as BackIcon, HowToReg as SignIcon, Edit as EditIcon, Lock as LockIcon } from '@mui/icons-material';
+import { ArrowBack as BackIcon, HowToReg as SignIcon, Edit as EditIcon, Lock as LockIcon, PersonAdd as AddIcon, Close as RemoveIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
+import { studentService } from '../../services/studentService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useAuth } from '../../context/AuthContext';
 import { fmtDate } from '../../utils/date';
@@ -25,8 +27,8 @@ export default function RoomRoster({ mode = 'me' }) {
   const { user } = useAuth();
 
   const svc = mode === 'admin'
-    ? { roster: examinationService.adminRoomRoster, mark: examinationService.adminRoomMark, sign: examinationService.adminRoomSign }
-    : { roster: examinationService.myRoomRoster, mark: examinationService.myRoomMark, sign: examinationService.myRoomSign };
+    ? { roster: examinationService.adminRoomRoster, mark: examinationService.adminRoomMark, sign: examinationService.adminRoomSign, av: examinationService.adminAvStudent }
+    : { roster: examinationService.myRoomRoster, mark: examinationService.myRoomMark, sign: examinationService.myRoomSign, av: examinationService.myAvStudent };
 
   const [editing, setEditing] = useState(false);
   const [roster, setRoster] = useState(null);
@@ -35,6 +37,7 @@ export default function RoomRoster({ mode = 'me' }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [studentOpts, setStudentOpts] = useState([]); // AV room: student search results
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -72,6 +75,28 @@ export default function RoomRoster({ mode = 'me' }) {
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to submit the room');
     } finally { setBusy(false); }
+  };
+
+  // AV room: search + add/remove the students present that day. Re-sync statuses from the
+  // returned roster (preserving any in-progress toggles).
+  const searchStudents = async (q) => {
+    if (!q || q.trim().length < 2) { setStudentOpts([]); return; }
+    try { setStudentOpts(await studentService.searchStudents({ name: q.trim() }) || []); } catch { setStudentOpts([]); }
+  };
+  const applyAvRoster = (r) => {
+    setRoster(r);
+    setStatusMap((prev) => {
+      const m = {};
+      (r.sections || []).forEach((sec) => sec.students.forEach((st) => { m[st.studentId] = prev[st.studentId] || st.status || 'present'; }));
+      return m;
+    });
+  };
+  const avStudent = async (studentId, action) => {
+    if (!studentId) return;
+    setBusy(true); setErr(''); setMsg('');
+    try { applyAvRoster(await svc.av(exam, roomId, date, studentId, action)); }
+    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to update the AV list'); }
+    finally { setBusy(false); }
   };
 
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
@@ -140,6 +165,17 @@ export default function RoomRoster({ mode = 'me' }) {
         </Box>
       )}
 
+      {roster.isAv && editMode && (
+        <Autocomplete
+          sx={{ mb: 1.5 }} size="small" options={studentOpts} getOptionLabel={(o) => `${o.name}${o.admissionNumber ? ` · ${o.admissionNumber}` : ''}`}
+          filterOptions={(x) => x} value={null} blurOnSelect clearOnBlur disabled={busy}
+          onInputChange={(_, v) => searchStudents(v)}
+          onChange={(_, v) => { if (v) avStudent(v.uuid, 'add'); setStudentOpts([]); }}
+          isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+          renderInput={(p) => <TextField {...p} label="Add a student to the AV room" placeholder="Search by name…" />}
+        />
+      )}
+
       {(roster.sections || []).map((sec) => (
         <Card key={sec.sectionClassId} sx={{ mb: 1.5 }}>
           <CardContent sx={{ p: 0 }}>
@@ -156,31 +192,40 @@ export default function RoomRoster({ mode = 'me' }) {
                   {i > 0 && <Divider component="li" />}
                   <ListItem
                     secondaryAction={
-                      <ToggleButtonGroup
-                        exclusive size="small" value={statusMap[s.studentId] || 'present'} disabled={readOnly}
-                        onChange={(_, v) => setStatus(s.studentId, v)}
-                      >
-                        <ToggleButton value="present" color="success" sx={{ px: 1.5, py: 0.25 }}>P</ToggleButton>
-                        <ToggleButton value="absent" color="error" sx={{ px: 1.5, py: 0.25 }}>A</ToggleButton>
-                      </ToggleButtonGroup>
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        <ToggleButtonGroup
+                          exclusive size="small" value={statusMap[s.studentId] || 'present'} disabled={readOnly}
+                          onChange={(_, v) => setStatus(s.studentId, v)}
+                        >
+                          <ToggleButton value="present" color="success" sx={{ px: 1.5, py: 0.25 }}>P</ToggleButton>
+                          <ToggleButton value="absent" color="error" sx={{ px: 1.5, py: 0.25 }}>A</ToggleButton>
+                        </ToggleButtonGroup>
+                        {roster.isAv && editMode && (
+                          <IconButton size="small" onClick={() => avStudent(s.studentId, 'remove')} disabled={busy} aria-label="Remove from AV room">
+                            <RemoveIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Stack>
                     }
                   >
                     <ListItemText
                       primary={s.name}
-                      secondary={[s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ') || null}
+                      secondary={roster.isAv
+                        ? (s.className || s.admissionNumber || null)
+                        : ([s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ') || null)}
                     />
                   </ListItem>
                 </React.Fragment>
               ))}
               {!sec.students.length && (
-                <ListItem><ListItemText secondary="No students resolved for this section." /></ListItem>
+                <ListItem><ListItemText secondary={roster.isAv ? 'No students added yet. Search above to add the students present in the AV room.' : 'No students resolved for this section.'} /></ListItem>
               )}
             </List>
           </CardContent>
         </Card>
       ))}
 
-      {!allStudents.length && <Alert severity="info">No students sit in this room on this day.</Alert>}
+      {!allStudents.length && !roster.isAv && <Alert severity="info">No students sit in this room on this day.</Alert>}
 
       {allStudents.length > 0 && editMode && (
         <>
