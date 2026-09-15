@@ -231,7 +231,7 @@ export default function Approvals() {
 
   const approveButton = (a, extraSx) => (
     <Button size="small" variant="contained" color={passes(a) ? 'success' : 'warning'} startIcon={<ApproveIcon />}
-      onClick={() => approve(a)} disabled={busyId === a.uuid} sx={extraSx}>
+      onClick={() => approve(a)} disabled={busyId === a.uuid} sx={{ minWidth: 116, ...extraSx }}>
       {passes(a) ? 'Approve' : 'Approve…'}
     </Button>
   );
