@@ -11,7 +11,7 @@ import {
 } from '@mui/icons-material';
 import { leaveService } from '../../services/leaveService';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { fmtDate, fmtMonth, todayIso } from '../../utils/date';
+import { fmtDate, fmtMonth, fmtDateTime, todayIso } from '../../utils/date';
 
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
 const HALF_LABEL = { first_half: '½ day (1st half)', second_half: '½ day (2nd half)' };
@@ -110,7 +110,10 @@ export default function Approvals() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      setApps(await leaveService.listApplications({ status: 'pending', withEvaluation: 1 }) || []);
+      // FIFO queue: oldest submission first, so requests are approved in the order received.
+      const list = await leaveService.listApplications({ status: 'pending', withEvaluation: 1 }) || [];
+      list.sort((a, b) => String(a.appliedAt || '').localeCompare(String(b.appliedAt || '')));
+      setApps(list);
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to load pending requests');
     } finally {
@@ -255,6 +258,7 @@ export default function Approvals() {
                   <Box sx={{ minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: 14.5 }}>{a.employeeName || a.employeeId}</Typography>
                     <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{dateRange(a.fromDate, a.toDate)} · {daysLabel(a)}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'text.disabled' }}>Submitted {fmtDateTime(a.appliedAt)}</Typography>
                     {a.reason && <Typography sx={{ fontSize: 12.5, color: 'text.disabled', mt: 0.25 }}>{a.reason}</Typography>}
                   </Box>
                   <Chip size="small" label={a.leaveTypeName || a.leaveTypeCode} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
@@ -276,8 +280,8 @@ export default function Approvals() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {['', 'Staff', 'Type', 'Dates', 'Days', 'Reason', 'Action'].map((c, i) => (
-                  <TableCell key={c || i} align={i === 6 ? 'right' : 'left'} sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{c}</TableCell>
+                {['', 'Staff', 'Type', 'Dates', 'Days', 'Reason', 'Submitted', 'Action'].map((c, i) => (
+                  <TableCell key={c || i} align={i === 7 ? 'right' : 'left'} sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{c}</TableCell>
                 ))}
               </TableRow>
             </TableHead>
@@ -300,6 +304,7 @@ export default function Approvals() {
                       {a.reason || '—'}
                       {a.hasAttachment && <Button size="small" color="inherit" startIcon={<AttachIcon />} onClick={() => openDoc(a)} sx={{ ml: 0.5, minWidth: 0 }}>Doc</Button>}
                     </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12, color: 'text.secondary' }}>{fmtDateTime(a.appliedAt)}</TableCell>
                     <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                       {approveButton(a, { mr: 1 })}
                       <Button size="small" variant="outlined" color="error" startIcon={<RejectIcon />}
@@ -307,7 +312,7 @@ export default function Approvals() {
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell colSpan={7} sx={{ py: 0, borderBottom: expandedId === a.uuid ? undefined : 'none' }}>
+                    <TableCell colSpan={8} sx={{ py: 0, borderBottom: expandedId === a.uuid ? undefined : 'none' }}>
                       <Collapse in={expandedId === a.uuid} unmountOnExit>
                         <Box sx={{ px: 2, pb: 1 }}><ExpandedDetail a={a} /></Box>
                       </Collapse>
