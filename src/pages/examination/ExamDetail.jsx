@@ -15,6 +15,7 @@ import DatesheetGrid from './DatesheetGrid';
 import InvigilatorGrid from './InvigilatorGrid';
 import RoomInvigilatorGrid from './RoomInvigilatorGrid';
 import SeatingTab from './SeatingTab';
+import ClassAttendanceTab from './ClassAttendanceTab';
 import AdmitCardsTab from './AdmitCardsTab';
 import BrandingDialog from './BrandingDialog';
 import ExamHome from './mobile/ExamHome';
@@ -73,7 +74,7 @@ export default function ExamDetail() {
 
   const inchargeValue = employees.find((e) => e.uuid === exam.inchargeEmployeeId) || null;
   // Keep the active tab valid when a feature is turned off.
-  const effectiveTab = (tab === 'invigilators' && !exam.hasInvigilation) || (tab === 'admit' && !exam.hasAdmitCards) || (tab === 'seating' && !exam.hasSeating) ? 'datesheet' : tab;
+  const effectiveTab = (tab === 'invigilators' && !exam.hasInvigilation) || (tab === 'admit' && !exam.hasAdmitCards) || (tab === 'seating' && !exam.hasSeating) || (tab === 'attendance' && !(canManage && exam.hasInvigilation)) ? 'datesheet' : tab;
 
   return (
     <Box>
@@ -170,6 +171,7 @@ export default function ExamDetail() {
         <Tab value="datesheet" label="Datesheet" />
         {exam.hasSeating && <Tab value="seating" label="Seating" />}
         {exam.hasInvigilation && <Tab value="invigilators" label="Invigilators" />}
+        {canManage && exam.hasInvigilation && <Tab value="attendance" label="Attendance" />}
         {exam.hasAdmitCards && <Tab value="admit" label="Admit Cards" />}
       </Tabs>
 
@@ -180,6 +182,7 @@ export default function ExamDetail() {
           ? <RoomInvigilatorGrid examId={id} canManage={canManage} employees={employees} />
           : <InvigilatorGrid examId={id} canManage={canManage} employees={employees} />
       )}
+      {effectiveTab === 'attendance' && canManage && exam.hasInvigilation && <ClassAttendanceTab examId={id} canManage={canManage} />}
       {effectiveTab === 'admit' && exam.hasAdmitCards && <AdmitCardsTab examId={id} exam={exam} canManage={canManage} />}
     </Box>
   );

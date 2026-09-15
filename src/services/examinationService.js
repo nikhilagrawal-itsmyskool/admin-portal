@@ -79,6 +79,12 @@ export const examinationService = {
   adminSign: async (id, paperId, sectionId, signatureBase64) =>
     (await api.post(`/examination/examinations/${id}/rosters/${paperId}/${sectionId}/sign`, { signatureBase64 })).data,
 
+  // Class-wise attendance sheet (exam.manage) — one section, one date, across rooms.
+  classAttendance: async (id, sectionId, date) =>
+    (await api.get(`/examination/examinations/${id}/class-attendance/${sectionId}/${date}`)).data,
+  markClassAttendance: async (id, sectionId, date, marks) =>
+    (await api.post(`/examination/examinations/${id}/class-attendance/${sectionId}/${date}`, { marks })).data,
+
   // ── Phase 4: seating rooms ──────────────────────────────────────────────────
   // Rooms: { examId, rooms:[{uuid,name,sortOrder,allocations:[{uuid,sectionClassId,sectionName,grade,rollFrom,rollTo}]}] }
   getRooms: async (id) => (await api.get(`/examination/examinations/${id}/rooms`)).data,

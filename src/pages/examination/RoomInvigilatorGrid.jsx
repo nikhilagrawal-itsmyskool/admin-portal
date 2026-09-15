@@ -4,10 +4,11 @@ import {
   Box, Button, Alert, CircularProgress, Stack, Autocomplete, TextField, Paper, IconButton, Tooltip,
   Table, TableHead, TableRow, TableCell, TableBody, Typography, MenuItem, Chip, Divider,
 } from '@mui/material';
-import { HowToReg as RosterIcon, CheckCircle as DoneIcon, Lock as LockIcon } from '@mui/icons-material';
+import { HowToReg as RosterIcon, CheckCircle as DoneIcon, Lock as LockIcon, People as PeopleIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { useAuth } from '../../context/AuthContext';
 import { fmtDate, todayIso } from '../../utils/date';
+import ManageRoomInvigilatorsDialog from './ManageRoomInvigilatorsDialog';
 
 const cellKey = (date, roomId) => `${date}|${roomId}`;
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -21,20 +22,26 @@ const pickDefaultDate = (dates) => {
   return dates.filter((d) => d >= today).sort()[0] || dates[dates.length - 1];
 };
 
-// Per-(room, date) invigilator assignment for a seating-room exam. A cell is assignable
-// only when the room is active that date (a section in it has a paper). Open the roster
-// from any active cell to mark attendance + sign the room for that day.
+// One assignment as "Name · 09:00–10:00" (or the shift label if no times).
+const invLabel = (a) => {
+  const time = a.fromTime && a.toTime ? `${a.fromTime}–${a.toTime}` : (a.fromTime || a.toTime || '');
+  const tag = time || a.shiftLabel || '';
+  return tag ? `${a.employeeName || '—'} · ${tag}` : (a.employeeName || '—');
+};
+
+// Per-(room, date) invigilators for a seating-room exam — MULTIPLE teachers per room, each with
+// an optional shift + time (hand-offs). Manage a cell via the dialog; open the roster to sign.
 export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isGod = (user?.roles || []).some((r) => r === 'god' || r === 'exam-incharge');
   const [view, setView] = useState(null);
-  const [map, setMap] = useState({}); // cellKey -> employeeId
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
-  const [focusDate, setFocusDate] = useState(''); // '' = all days; else assign just that day's active rooms
+  const [focusDate, setFocusDate] = useState(''); // '' = all days; else just that day's active rooms
+  const [manage, setManage] = useState(null); // { roomId, roomName, date, current }
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -42,9 +49,6 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
       const v = await examinationService.getRoomInvigilators(examId);
       setView(v);
       setFocusDate((cur) => cur || pickDefaultDate(v.dates));
-      const m = {};
-      for (const a of v.assignments || []) m[cellKey(a.examDate, a.roomId)] = a.employeeId;
-      setMap(m);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load room invigilators');
     } finally { setLoading(false); }
@@ -59,53 +63,28 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
     return s;
   }, [view]);
 
-  // Submitted (signed) room-days — the completion board. A submitted cell is ticked and its
-  // invigilator is locked (except for god).
   const submittedSet = useMemo(() => {
     const s = new Set();
     if (view) for (const x of (view.submitted || [])) s.add(cellKey(x.examDate, x.roomId));
     return s;
   }, [view]);
 
-  const conflictCells = useMemo(() => {
-    const set = new Set();
-    if (!view) return set;
-    for (const date of view.dates) {
-      const seen = {};
-      for (const rm of view.rooms) {
-        const emp = map[cellKey(date, rm.uuid)];
-        if (emp) (seen[emp] ||= []).push(rm.uuid);
-      }
-      for (const emp of Object.keys(seen)) if (seen[emp].length > 1) seen[emp].forEach((rid) => set.add(cellKey(date, rid)));
+  // All invigilators of a (room, date), grouped from the server's assignment list.
+  const cellAssignments = useMemo(() => {
+    const m = new Map();
+    if (view) for (const a of view.assignments || []) {
+      const k = cellKey(a.examDate, a.roomId);
+      (m.get(k) || m.set(k, []).get(k)).push(a);
     }
-    return set;
-  }, [view, map]);
+    return m;
+  }, [view]);
 
-  // Assign/clear a cell and auto-save that day at once — no Save button, so the grid never
-  // shows a stale "unsaved" state. A submitted room is locked (god excepted). On failure we
-  // reload to the server's truth.
-  const onAssign = async (date, roomId, empId) => {
-    if (submittedSet.has(cellKey(date, roomId)) && !isGod) return;
-    const next = { ...map };
-    if (empId) next[cellKey(date, roomId)] = empId; else delete next[cellKey(date, roomId)];
-    setMap(next);
-    setSaving(true); setErr(''); setMsg('');
-    try {
-      const assignments = view.rooms
-        .filter((rm) => activeSet.has(cellKey(date, rm.uuid)))
-        .map((rm) => ({ roomId: rm.uuid, employeeId: next[cellKey(date, rm.uuid)] }))
-        .filter((a) => a.employeeId);
-      const v = await examinationService.saveRoomInvigilatorsForDate(examId, date, assignments);
-      setView(v);
-      const m = {};
-      for (const a of v.assignments || []) m[cellKey(a.examDate, a.roomId)] = a.employeeId;
-      setMap(m);
-      setMsg('Saved.');
-    } catch (e) {
-      setErr(e.response?.data?.error?.description || 'Failed to save');
-      await load();
-    } finally { setSaving(false); }
-  };
+  // Same teacher on more than one room the same day (soft warning, from the server).
+  const conflictCells = useMemo(() => {
+    const s = new Set();
+    if (view) for (const c of view.conflicts || []) for (const rid of c.roomIds) s.add(cellKey(c.examDate, rid));
+    return s;
+  }, [view]);
 
   const saveRelievers = async (ids) => {
     setSaving(true); setErr(''); setMsg('');
@@ -119,21 +98,19 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
   if (!view.rooms.length) return <Alert severity="info">Set up the seating rooms first (Seating tab), then assign invigilators per room.</Alert>;
   if (!view.dates.length) return <Alert severity="info">Add the datesheet first — invigilators are assigned per exam date.</Alert>;
 
-  // Date focus: assignment usually happens a day before, so narrow to one day and show
-  // only the rooms actually used that day (the sections sitting then).
   const shownDates = focusDate ? [focusDate] : view.dates;
   const shownRooms = focusDate ? view.rooms.filter((rm) => activeSet.has(cellKey(focusDate, rm.uuid))) : view.rooms;
 
-  // Per-day completion: how many of the active rooms have a submitted roster.
   const dayTally = (d) => {
     const active = view.activeByDate?.[d] || [];
     return { signed: active.filter((rid) => submittedSet.has(cellKey(d, rid))).length, total: active.length };
   };
 
-  // Relievers + free teachers for the focused day (the panel only shows when a day is focused).
+  // Relievers + free teachers for the focused day. "Assigned" now spans every invigilator of
+  // every room that day (any shift) — so an on-duty teacher is never offered/shown as free.
   const relievers = focusDate ? (view.relieversByDate?.[focusDate] || []) : [];
   const relieverIds = new Set(relievers.map((r) => r.employeeId));
-  const assignedForDay = new Set((focusDate ? (view.activeByDate?.[focusDate] || []) : []).map((rid) => map[cellKey(focusDate, rid)]).filter(Boolean));
+  const assignedForDay = new Set((view.assignments || []).filter((a) => a.examDate === focusDate).map((a) => a.employeeId));
   const relieverValue = relievers.map((r) => empById[r.employeeId] || { uuid: r.employeeId, name: r.employeeName });
   const relieverOptions = (employees || []).filter((e) => !assignedForDay.has(e.uuid));
   const freeTeachers = (employees || []).filter((e) => !assignedForDay.has(e.uuid) && !relieverIds.has(e.uuid));
@@ -144,7 +121,7 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
       {conflictCells.size > 0 && (
-        <Alert severity="warning" sx={{ mb: 2 }}>A teacher is assigned to more than one room on the same day (highlighted). Allowed, but double-check.</Alert>
+        <Alert severity="warning" sx={{ mb: 2 }}>A teacher is assigned to more than one room on the same day (highlighted). Fine for split shifts — double-check the times.</Alert>
       )}
 
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
@@ -157,8 +134,9 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
 
       <Paper variant="outlined" sx={{ overflowX: 'auto', borderRadius: 2 }}>
         <Table size="small" sx={{
-          minWidth: 160 + shownDates.length * 220,
+          minWidth: 160 + shownDates.length * 240,
           '& thead th': { bgcolor: 'action.hover', fontWeight: 700, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: 0.6, color: 'text.secondary', borderBottom: 2, borderColor: 'divider' },
+          '& td': { verticalAlign: 'top' },
         }}>
           <TableHead>
             <TableRow>
@@ -166,7 +144,7 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
               {shownDates.map((d) => {
                 const t = dayTally(d);
                 return (
-                  <TableCell key={d} sx={{ minWidth: 210, lineHeight: 1.25 }}>
+                  <TableCell key={d} sx={{ minWidth: 230, lineHeight: 1.25 }}>
                     {fmtDate(d)}
                     <Typography variant="caption" display="block" color="primary.main" sx={{ fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>{dayOf(d)}</Typography>
                     <Typography variant="caption" display="block" sx={{ textTransform: 'none', letterSpacing: 0, fontWeight: 600, color: t.total && t.signed === t.total ? 'success.main' : 'text.secondary' }}>
@@ -179,32 +157,32 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
           </TableHead>
           <TableBody>
             {shownRooms.map((rm) => (
-              <TableRow key={rm.uuid} sx={{ '& td': { height: 58, py: 1 } }}>
+              <TableRow key={rm.uuid}>
                 <TableCell sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1, fontWeight: 600 }}>{rm.name}</TableCell>
                 {shownDates.map((d) => {
                   if (!activeSet.has(cellKey(d, rm.uuid))) {
                     return <TableCell key={d} sx={{ bgcolor: 'action.hover' }}><span style={{ opacity: 0.3 }}>—</span></TableCell>;
                   }
-                  const empId = map[cellKey(d, rm.uuid)] || null;
+                  const list = cellAssignments.get(cellKey(d, rm.uuid)) || [];
                   const conflict = conflictCells.has(cellKey(d, rm.uuid));
                   const submitted = submittedSet.has(cellKey(d, rm.uuid));
                   const locked = (submitted || d < todayIso()) && !isGod;
                   return (
                     <TableCell key={d} sx={{ bgcolor: conflict ? 'warning.light' : undefined }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
+                        {list.map((a, i) => <Chip key={i} size="small" variant="outlined" label={invLabel(a)} />)}
+                        {!list.length && <Typography variant="caption" color="text.secondary">Unassigned</Typography>}
+                      </Box>
                       <Stack direction="row" spacing={0.5} alignItems="center">
-                        <Autocomplete
-                          size="small" sx={{ flex: 1 }} options={employees || []} getOptionLabel={(o) => o.name || ''}
-                          value={empId ? (empById[empId] || null) : null}
-                          disabled={!canManage || saving || locked}
-                          onChange={(_, v) => onAssign(d, rm.uuid, v ? v.uuid : null)}
-                          isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-                          renderInput={(p) => <TextField {...p} placeholder="Assign…" />}
-                        />
-                        {submitted && (
-                          <Tooltip title={locked ? 'Roster submitted — reassignment locked (god only)' : 'Roster submitted'}>
-                            {locked ? <LockIcon fontSize="small" color="disabled" /> : <DoneIcon fontSize="small" color="success" />}
-                          </Tooltip>
+                        {canManage && !locked && (
+                          <Button size="small" startIcon={<PeopleIcon fontSize="small" />}
+                            onClick={() => setManage({ roomId: rm.uuid, roomName: rm.name, date: d, current: list })}>
+                            {list.length ? 'Manage' : 'Assign'}
+                          </Button>
                         )}
+                        {locked && <Tooltip title="Locked (submitted or day passed)"><LockIcon fontSize="small" color="disabled" /></Tooltip>}
+                        {submitted && <Tooltip title="Roster submitted"><DoneIcon fontSize="small" color="success" /></Tooltip>}
+                        <Box sx={{ flex: 1 }} />
                         <Tooltip title="Open room roster (mark + sign)">
                           <IconButton size="small" onClick={() => navigate(`/examinations/${examId}/room-roster/${rm.uuid}/${d}`)}>
                             <RosterIcon fontSize="small" />
@@ -248,14 +226,19 @@ export default function RoomInvigilatorGrid({ examId, canManage, employees }) {
       )}
 
       {canManage && (
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} alignItems="center">
-          <Typography variant="caption" color="text.secondary">
-            Grey = no section sits that day. Changes save automatically; a ✓ means that room's roster is submitted (and locked).
-          </Typography>
-          <Box sx={{ flex: 1 }} />
-          {saving && <><CircularProgress size={14} /><Typography variant="caption" color="text.secondary">Saving…</Typography></>}
-        </Stack>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+          Grey = no section sits that day. Use <b>Manage</b> to assign one or more teachers per room (add shifts + times). A ✓ means that room's roster is submitted (and locked).
+        </Typography>
       )}
+
+      <ManageRoomInvigilatorsDialog
+        open={!!manage} onClose={() => setManage(null)}
+        examId={examId} date={manage?.date} roomId={manage?.roomId} roomName={manage?.roomName}
+        current={manage?.current || []}
+        dayAssignments={(view.assignments || []).filter((a) => a.examDate === manage?.date)}
+        employees={employees}
+        onSaved={(v) => { setView(v); setMsg('Saved.'); }}
+      />
     </Box>
   );
 }
