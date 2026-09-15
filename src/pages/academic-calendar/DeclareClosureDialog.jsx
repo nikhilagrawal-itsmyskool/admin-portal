@@ -33,6 +33,7 @@ export default function DeclareClosureDialog({ open, onClose, weeklyOff, academi
   const [to, setTo] = useState(today);
   const [name, setName] = useState('');
   const [kind, setKind] = useState('full');
+  const [staffWorking, setStaffWorking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -42,7 +43,7 @@ export default function DeclareClosureDialog({ open, onClose, weeklyOff, academi
   const submit = async () => {
     setBusy(true); setErr('');
     try {
-      await activityCalendarService.closeRange({ from, to, name: name.trim(), kind, academicYearId });
+      await activityCalendarService.closeRange({ from, to, name: name.trim(), kind, staffWorking: kind === 'full' && staffWorking, academicYearId });
       onDone?.();
       onClose();
     } catch (e) {
@@ -79,6 +80,13 @@ export default function DeclareClosureDialog({ open, onClose, weeklyOff, academi
             <MenuItem value="full">Full — school closed</MenuItem>
             <MenuItem value="restricted">Restricted — school open</MenuItem>
           </TextField>
+
+          {kind === 'full' && (
+            <FormControlLabel
+              control={<Checkbox size="small" checked={staffWorking} onChange={(e) => setStaffWorking(e.target.checked)} />}
+              label={<Typography variant="body2">Staff still report (students off) — e.g. a DM-declared student holiday</Typography>}
+            />
+          )}
 
           {!invalid && (
             <Alert severity={days.length ? 'info' : 'warning'} icon={false} sx={{ py: 0.5 }}>

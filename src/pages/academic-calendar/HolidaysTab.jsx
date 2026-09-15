@@ -39,7 +39,7 @@ export default function HolidaysTab({ canManage }) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const [form, setForm] = useState({ date: '', name: '', kind: 'full' });
+  const [form, setForm] = useState({ date: '', name: '', kind: 'full', staffWorking: false });
   const [closureOpen, setClosureOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -75,8 +75,11 @@ export default function HolidaysTab({ canManage }) {
   };
 
   const addHoliday = () => run(async () => {
-    await activityCalendarService.setHoliday({ holidayDate: form.date, name: form.name.trim() || 'Holiday', kind: form.kind, academicYearId });
-    setForm({ date: '', name: '', kind: 'full' });
+    await activityCalendarService.setHoliday({
+      holidayDate: form.date, name: form.name.trim() || 'Holiday', kind: form.kind,
+      staffWorking: form.kind === 'full' && form.staffWorking, academicYearId,
+    });
+    setForm({ date: '', name: '', kind: 'full', staffWorking: false });
   });
 
   const fullHols = holidays.filter((h) => h.kind === 'full').length;
@@ -157,6 +160,13 @@ export default function HolidaysTab({ canManage }) {
                 <MenuItem value="full">Full (closed)</MenuItem>
                 <MenuItem value="restricted">Restricted (open)</MenuItem>
               </TextField>
+              {form.kind === 'full' && (
+                <FormControlLabel
+                  control={<Checkbox size="small" checked={form.staffWorking} onChange={(e) => setForm((f) => ({ ...f, staffWorking: e.target.checked }))} />}
+                  label={<Typography variant="body2">Staff working</Typography>}
+                  title="Closed for students, but staff still report (e.g. DM-declared student holiday)"
+                />
+              )}
               <Button variant="contained" startIcon={<AddIcon />} disabled={busy || !form.date} onClick={addHoliday}>Add</Button>
             </Stack>
           )}
@@ -173,7 +183,10 @@ export default function HolidaysTab({ canManage }) {
                     <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{h.name}</Typography>
                     <Typography variant="caption" color="text.secondary">{fmtDateDow(h.holidayDate)}</Typography>
                   </Box>
-                  <Chip size="small" label={h.kind === 'full' ? 'Closed' : 'Open · RH'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" sx={{ flexShrink: 0 }} />
+                  <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                    {h.staffWorking && <Chip size="small" label="Staff working" color="info" variant="outlined" />}
+                    <Chip size="small" label={h.kind === 'full' ? 'Closed' : 'Open · RH'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" />
+                  </Stack>
                 </Box>
               ))}
             </Stack>
@@ -188,7 +201,12 @@ export default function HolidaysTab({ canManage }) {
                     <TableRow key={h.uuid}>
                       <TableCell>{fmtDateDow(h.holidayDate)}</TableCell>
                       <TableCell>{h.name}</TableCell>
-                      <TableCell><Chip size="small" label={h.kind === 'full' ? 'Full · closed' : 'Restricted · open'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" /></TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5}>
+                          <Chip size="small" label={h.kind === 'full' ? 'Full · closed' : 'Restricted · open'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" />
+                          {h.staffWorking && <Chip size="small" label="Staff working" color="info" variant="outlined" />}
+                        </Stack>
+                      </TableCell>
                       {canManage && (
                         <TableCell align="right">
                           <Tooltip title="Delete"><IconButton size="small" disabled={busy} onClick={() => run(() => activityCalendarService.deleteHoliday(h.uuid))}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
