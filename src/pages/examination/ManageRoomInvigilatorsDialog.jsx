@@ -66,21 +66,21 @@ export default function ManageRoomInvigilatorsDialog({
               {i > 0 && <Divider sx={{ mb: 1.5 }} />}
               <Stack direction="row" spacing={1} alignItems="center">
                 <Autocomplete
-                  size="small" sx={{ flex: 1, minWidth: 160 }} options={employees}
+                  fullWidth size="small" options={employees} autoHighlight openOnFocus
                   getOptionLabel={(o) => o.name || ''}
                   value={r.employeeId ? (empById[r.employeeId] || { uuid: r.employeeId, name: r.employeeName }) : null}
                   onChange={(_, v) => setRow(i, { employeeId: v ? v.uuid : '', employeeName: v ? v.name : '' })}
                   isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-                  renderInput={(p) => <TextField {...p} placeholder="Teacher" />}
+                  renderInput={(p) => <TextField {...p} label="Teacher" placeholder="Search…" />}
                 />
                 <IconButton size="small" color="error" onClick={() => removeRow(i)} aria-label="Remove"><RemoveIcon fontSize="small" /></IconButton>
               </Stack>
+              <TextField size="small" fullWidth label="Shift (optional)" placeholder="e.g. Shift 1" sx={{ mt: 1 }}
+                value={r.shiftLabel} onChange={(e) => setRow(i, { shiftLabel: e.target.value })} />
               <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                <TextField size="small" label="Shift" placeholder="e.g. Shift 1" sx={{ flex: 1 }}
-                  value={r.shiftLabel} onChange={(e) => setRow(i, { shiftLabel: e.target.value })} />
-                <TextField size="small" label="From" type="time" sx={{ width: 120 }} InputLabelProps={{ shrink: true }}
+                <TextField size="small" label="From" type="time" sx={{ flex: 1 }} InputLabelProps={{ shrink: true }}
                   value={r.fromTime} onChange={(e) => setRow(i, { fromTime: e.target.value })} />
-                <TextField size="small" label="To" type="time" sx={{ width: 120 }} InputLabelProps={{ shrink: true }}
+                <TextField size="small" label="To" type="time" sx={{ flex: 1 }} InputLabelProps={{ shrink: true }}
                   value={r.toTime} onChange={(e) => setRow(i, { toTime: e.target.value })} />
               </Stack>
             </Box>
