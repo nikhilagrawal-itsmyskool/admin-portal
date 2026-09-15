@@ -240,7 +240,7 @@ export default function Approvals() {
   );
 
   return (
-    <Box sx={{ maxWidth: 1100 }}>
+    <Box sx={{ maxWidth: 1400 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>Leave Approvals</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
