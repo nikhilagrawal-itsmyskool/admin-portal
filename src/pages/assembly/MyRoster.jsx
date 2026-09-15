@@ -42,6 +42,7 @@ function TeacherRoster() {
       date: d.date, weekday: d.weekday, anchors: toRows(d.anchors), owners: toRows(d.owners),
       commanders: toRows(d.commanders), drummers: toRows(d.drummers),
       references: d.references || [],
+      version: d.version ?? 0,
       slots: (d.slots || []).map((s) => ({ ...s, participants: toRows(s.participants) })),
     })),
   });
@@ -100,9 +101,14 @@ function TeacherRoster() {
         entries: draft.days.flatMap((d) => d.slots.map((s) => ({
           date: d.date, nodeId: s.nodeId, opted: s.opted, content: (s.content || '').trim() || null, participants: toPayload(s.participants),
         }))),
+        dayVersions: Object.fromEntries(draft.days.map((d) => [d.date, d.version ?? 0])),
       };
       const detail = await assemblyService.mySaveRoster(week.uuid, payload);
-      setWeek(detail); setDraft(buildDraft(detail)); setMsg('Roster saved');
+      setWeek(detail); setDraft(buildDraft(detail));
+      if (detail.conflictDates?.length) {
+        setMsg('');
+        setError(`Saved your changes, but these day(s) were updated by someone else and were left as they saved them: ${detail.conflictDates.map(fmtDateDow).join(', ')}. You're now seeing the latest — re-apply your edits there if needed.`);
+      } else { setMsg('Roster saved'); }
     } catch (err) { setError(err.response?.data?.error?.description || 'Failed to save'); }
     finally { setBusy(''); }
   };
