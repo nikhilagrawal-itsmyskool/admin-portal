@@ -21,6 +21,8 @@ export const feedbackService = {
 
   // ── Director / oversight (feedback.review) ────────────────────────────────────
   list: async (params = {}) => (await api.get('/feedback', { params })).data,
+  // params: { by: student|class|teacher|date, academicYearId? }
+  grouped: async (params = {}) => (await api.get('/feedback/grouped', { params })).data,
   summary: async (academicYearId) =>
     (await api.get('/feedback/summary', { params: academicYearId ? { academicYearId } : {} })).data,
   getById: async (id) => (await api.get(`/feedback/${id}`)).data,
