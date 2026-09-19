@@ -56,6 +56,7 @@ import {
   EventAvailable as PublishedIcon,
   Schedule as ScheduleIcon,
   School as StudentIcon,
+  Summarize as ReportIcon,
   RecordVoiceOver as AssistantIcon,
   AssignmentReturn as TransferIcon,
   Home as HouseIcon,
@@ -295,6 +296,7 @@ const menuItems = [
       { title: 'Class Strength', icon: OverviewIcon, path: '/students/class-strength', perm: 'student.manage' },
       { title: 'Bulk Edit', icon: GridIcon, path: '/students/bulk-edit', perm: 'student.manage' },
       { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.manage' },
+      { title: 'Reports', icon: ReportIcon, path: '/students/reports', perm: 'student.manage' },
     ],
   },
   {

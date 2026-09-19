@@ -222,6 +222,20 @@ export const studentService = {
     return response.data; // { updated, failed, results: [...] }
   },
 
+  // ---- Reports (printable roster / contact-list export) ----
+  // Field catalogue the column-picker renders: [{ key, label, group, contact }].
+  getReportFields: async () => {
+    const response = await api.get('/students/reports/fields');
+    return response.data; // { fields: [...] }
+  },
+
+  // Build a roster. body: { academicYearId, classIds: [...], fields: [...], filter? }
+  // filter: 'all' | 'rte' | 'examOnly'. Contacts are masked server-side unless admin/god.
+  getReportRoster: async (body) => {
+    const response = await api.post('/students/reports/roster', body);
+    return response.data; // { meta: { classes, fields, total, ... }, rows: [...] }
+  },
+
   // ---- Promotion lifecycle ----
   promote: async (data) => {
     // { academicYearFromId, academicYearToId, items: [{ studentId, toClassId, rollNumber? }] }
