@@ -5,7 +5,11 @@ import {
 } from '@mui/material';
 import { EventBusy as EventBusyIcon } from '@mui/icons-material';
 import { activityCalendarService } from '../../services/activityCalendarService';
-import { fmtDateDow, todayIso } from '../../utils/date';
+import { fmtDate, todayIso } from '../../utils/date';
+
+// Date-first label ("05-09-2026, Fri"), consistent with the Holidays list.
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const fmtDateThenDow = (v) => `${fmtDate(v)}, ${DOW[new Date(`${v}T00:00:00Z`).getUTCDay()]}`;
 
 // Count the days in [from,to] that are NOT weekly-offs — these are the days that will
 // actually be marked closed (weekly-offs are already non-teaching, so we skip them).
@@ -93,8 +97,8 @@ export default function DeclareClosureDialog({ open, onClose, weeklyOff, academi
               {days.length === 0
                 ? 'No working days in this range (all fall on weekly-offs) — nothing to mark.'
                 : days.length === 1
-                  ? <>Will mark <b>{fmtDateDow(days[0])}</b> as {kind === 'full' ? 'closed' : 'a restricted holiday'}.</>
-                  : <>Will mark <b>{days.length} days</b> ({fmtDateDow(days[0])} → {fmtDateDow(days[days.length - 1])}). Weekly-offs in the range are skipped.</>}
+                  ? <>Will mark <b>{fmtDateThenDow(days[0])}</b> as {kind === 'full' ? 'closed' : 'a restricted holiday'}.</>
+                  : <>Will mark <b>{days.length} days</b> ({fmtDateThenDow(days[0])} → {fmtDateThenDow(days[days.length - 1])}). Weekly-offs in the range are skipped.</>}
             </Alert>
           )}
 
