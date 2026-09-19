@@ -121,13 +121,17 @@ export default function Approvals() {
     } catch (err) { setError(err.response?.data?.error?.description || 'Could not open file'); }
   };
 
+  // FIFO queue: oldest submission first, so requests are approved in the order received.
+  const fetchPending = async () => {
+    const list = await leaveService.listApplications({ status: 'pending', withEvaluation: 1 }) || [];
+    list.sort((a, b) => String(a.appliedAt || '').localeCompare(String(b.appliedAt || '')));
+    return list;
+  };
+
   const load = async () => {
     setLoading(true); setError('');
     try {
-      // FIFO queue: oldest submission first, so requests are approved in the order received.
-      const list = await leaveService.listApplications({ status: 'pending', withEvaluation: 1 }) || [];
-      list.sort((a, b) => String(a.appliedAt || '').localeCompare(String(b.appliedAt || '')));
-      setApps(list);
+      setApps(await fetchPending());
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to load pending requests');
     } finally {
@@ -135,6 +139,16 @@ export default function Approvals() {
     }
   };
   useEffect(() => { load(); }, []);
+
+  // Silent refresh after a decision: re-evaluates every remaining request against the now
+  // updated approved counts (server is the source of truth for the daily cap / quota), so e.g.
+  // the 3rd Casual Leave on a cap-2 day flips green→amber once two are approved. No full-screen
+  // spinner (keeps the success toast + expanded row); drops the mini-calendar cache so the day
+  // counts recount on next expand.
+  const reload = async () => {
+    try { setApps(await fetchPending()); setMonths({}); }
+    catch { /* keep the current list on a transient refresh failure */ }
+  };
 
   // Lazy-load the month's leaves (approved + pending) for the inline calendar, cached by month.
   const loadMonth = async (month) => {
@@ -176,7 +190,7 @@ export default function Approvals() {
         setOverrideReason('');
       } else {
         setSuccess(`Approved ${a.employeeName || 'request'}`);
-        setApps((prev) => prev.filter((x) => x.uuid !== a.uuid));
+        await reload();
       }
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Could not approve');
@@ -191,8 +205,8 @@ export default function Approvals() {
     try {
       await leaveService.approve(a.uuid, true, overrideReason.trim() || undefined);
       setSuccess(`Approved ${a.employeeName || 'request'} (exception)`);
-      setApps((prev) => prev.filter((x) => x.uuid !== a.uuid));
       setOverrideTarget(null); setOverrideReason('');
+      await reload();
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Could not approve');
     } finally {
@@ -206,8 +220,8 @@ export default function Approvals() {
     try {
       await leaveService.reject(a.uuid, note.trim() || undefined);
       setSuccess(`Rejected ${a.employeeName || 'request'}`);
-      setApps((prev) => prev.filter((x) => x.uuid !== a.uuid));
       setRejectTarget(null); setNote('');
+      await reload();
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Could not reject');
     } finally {
