@@ -197,7 +197,7 @@ export default function StudentDetailModern({ ctx }) {
             <Info label="Student email" value={student.studentEmail} />
             <Info label="WhatsApp" value={maskContact(student.studentWhatsapp, 'phone', canViewContacts)} />
             <Info label="Comm. preference" value={prettyPref(student.communicationPreference)} />
-            <Info label="Aadhaar" value={maskContact(student.aadhaarNumber, 'aadhaar', canViewContacts)} />
+            <Info label="Aadhaar" value={maskContact(student.aadhaarNumber, 'aadhaar', canManage)} />
           </SectionCard>
         </Grid>
 

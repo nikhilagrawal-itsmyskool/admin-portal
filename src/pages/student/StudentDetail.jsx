@@ -699,7 +699,7 @@ export default function StudentDetail() {
                 <Fact label="Blood group" value={codeLabel('blood_group', student.bloodGroupCode)} />
                 <Fact label="Nationality" value={codeLabel('nationality', student.nationalityCode)} />
                 <Fact label="Mother tongue" value={codeLabel('mother_tongue', student.motherTongueCode)} />
-                <Fact label="Aadhaar" value={maskContact(student.aadhaarNumber, 'aadhaar', canViewContacts)} />
+                <Fact label="Aadhaar" value={maskContact(student.aadhaarNumber, 'aadhaar', canManage)} />
                 <Fact label="Student email" value={student.studentEmail} />
                 <Fact label="Student mobile" value={maskContact(student.studentMobile, 'phone', canViewContacts)} />
                 <Fact label="Student WhatsApp" value={maskContact(student.studentWhatsapp, 'phone', canViewContacts)} />

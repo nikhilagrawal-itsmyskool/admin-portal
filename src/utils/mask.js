@@ -1,7 +1,8 @@
 // Partial redaction helpers for sensitive contact fields. Hide parent/guardian/
 // employee/driver phone, WhatsApp and email from users who lack `student.contacts.view`
-// (admin/god only). The backend now masks these too for non-admin/god callers, so this
-// is a defense-in-depth / consistent-format layer, not the sole gate.
+// (admin/god + teaching staff). Aadhaar is gated tighter — admin/god only (pass canManage,
+// not canViewContacts). The backend masks these too for callers who lack the right role,
+// so this is a defense-in-depth / consistent-format layer, not the sole gate.
 
 const DOT = '•'; // •
 

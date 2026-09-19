@@ -62,6 +62,7 @@ export const ROLE_PERMISSIONS = {
     "supplies.view",
     "timetable.view", // Published timetable only (menu gates the rest)
     "student.view",
+    "student.contacts.view", // Teachers may see un-masked parent/student & staff numbers
     "employee.view",
     "syllabus.view", // Read plans; class teachers also mark coverage for their section
     "syllabus.progress.mark",
