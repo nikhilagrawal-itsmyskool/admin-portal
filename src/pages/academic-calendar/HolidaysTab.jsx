@@ -20,6 +20,16 @@ const WEEKDAYS = [
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const fmtDateThenDow = (v) => `${fmtDate(v)}, ${DOW[new Date(`${v}T00:00:00Z`).getUTCDay()]}`;
 
+// The "you are here" marker: a dashed line with a Today chip, drawn between the last
+// past holiday and the first upcoming one.
+const TodayLine = ({ label }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ flex: 1, borderTop: '2px dashed', borderColor: 'primary.main', opacity: 0.55 }} />
+    <Chip size="small" color="primary" label={label} sx={{ fontWeight: 700 }} />
+    <Box sx={{ flex: 1, borderTop: '2px dashed', borderColor: 'primary.main', opacity: 0.55 }} />
+  </Box>
+);
+
 // Derive the AY's date range from its name ("2026-27" -> 2026-04-01..2027-03-31).
 function ayRange(name) {
   const m = /^(\d{4})/.exec(name || '');
@@ -71,6 +81,9 @@ export default function HolidaysTab({ canManage }) {
   // Users care about "now" first, then scroll up (past) / down (rest of year).
   const today = todayIso();
   const anchorUuid = useMemo(() => (holidays.find((h) => h.holidayDate >= today) || {}).uuid || null, [holidays, today]);
+  // Only show the "Today" marker when today actually falls inside the selected AY.
+  const todayInRange = !!range && today >= range.from && today <= range.to;
+  const todayLabel = `Today · ${fmtDate(today)}`;
   useEffect(() => {
     if (loading || scrolledRef.current || !anchorRef.current) return;
     scrolledRef.current = true;
@@ -194,17 +207,21 @@ export default function HolidaysTab({ canManage }) {
           ) : isMobile ? (
             <Stack spacing={1}>
               {holidays.map((h) => (
-                <Box key={h.uuid} ref={h.uuid === anchorUuid ? anchorRef : undefined} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{h.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{fmtDateThenDow(h.holidayDate)}</Typography>
+                <React.Fragment key={h.uuid}>
+                  {todayInRange && h.uuid === anchorUuid && <Box ref={anchorRef}><TodayLine label={todayLabel} /></Box>}
+                  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{h.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">{fmtDateThenDow(h.holidayDate)}</Typography>
+                    </Box>
+                    <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                      {h.staffWorking && <Chip size="small" label="Staff working" color="info" variant="outlined" />}
+                      <Chip size="small" label={h.kind === 'full' ? 'Closed' : 'Open · RH'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" />
+                    </Stack>
                   </Box>
-                  <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
-                    {h.staffWorking && <Chip size="small" label="Staff working" color="info" variant="outlined" />}
-                    <Chip size="small" label={h.kind === 'full' ? 'Closed' : 'Open · RH'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" />
-                  </Stack>
-                </Box>
+                </React.Fragment>
               ))}
+              {todayInRange && !anchorUuid && <Box ref={anchorRef}><TodayLine label={`${todayLabel} · no more holidays`} /></Box>}
             </Stack>
           ) : (
             <Box sx={{ overflowX: 'auto' }}>
@@ -214,22 +231,34 @@ export default function HolidaysTab({ canManage }) {
                 </TableHead>
                 <TableBody>
                   {holidays.map((h) => (
-                    <TableRow key={h.uuid} ref={h.uuid === anchorUuid ? anchorRef : undefined}>
-                      <TableCell>{fmtDateThenDow(h.holidayDate)}</TableCell>
-                      <TableCell>{h.name}</TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={0.5}>
-                          <Chip size="small" label={h.kind === 'full' ? 'Full · closed' : 'Restricted · open'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" />
-                          {h.staffWorking && <Chip size="small" label="Staff working" color="info" variant="outlined" />}
-                        </Stack>
-                      </TableCell>
-                      {canManage && (
-                        <TableCell align="right">
-                          <Tooltip title="Delete"><IconButton size="small" disabled={busy} onClick={() => run(() => activityCalendarService.deleteHoliday(h.uuid))}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
-                        </TableCell>
+                    <React.Fragment key={h.uuid}>
+                      {todayInRange && h.uuid === anchorUuid && (
+                        <TableRow ref={anchorRef}>
+                          <TableCell colSpan={canManage ? 4 : 3} sx={{ py: 1, borderBottom: 0 }}><TodayLine label={todayLabel} /></TableCell>
+                        </TableRow>
                       )}
-                    </TableRow>
+                      <TableRow>
+                        <TableCell>{fmtDateThenDow(h.holidayDate)}</TableCell>
+                        <TableCell>{h.name}</TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5}>
+                            <Chip size="small" label={h.kind === 'full' ? 'Full · closed' : 'Restricted · open'} color={h.kind === 'full' ? 'error' : 'warning'} variant="outlined" />
+                            {h.staffWorking && <Chip size="small" label="Staff working" color="info" variant="outlined" />}
+                          </Stack>
+                        </TableCell>
+                        {canManage && (
+                          <TableCell align="right">
+                            <Tooltip title="Delete"><IconButton size="small" disabled={busy} onClick={() => run(() => activityCalendarService.deleteHoliday(h.uuid))}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    </React.Fragment>
                   ))}
+                  {todayInRange && !anchorUuid && (
+                    <TableRow ref={anchorRef}>
+                      <TableCell colSpan={canManage ? 4 : 3} sx={{ py: 1, borderBottom: 0 }}><TodayLine label={`${todayLabel} · no more holidays`} /></TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Box>
