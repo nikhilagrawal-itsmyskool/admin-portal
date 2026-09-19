@@ -54,6 +54,22 @@ export default function TakeAttendance() {
     })();
   }, []);
 
+  // Surface the holiday / weekly-off warning as soon as a date is picked — no class
+  // needed. The roster/session load below refreshes dayInfo from the same source.
+  useEffect(() => {
+    if (!academicYearId || !date) { setDayInfo(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await attendanceService.getDayInfo({ academicYearId, date });
+        if (!cancelled) setDayInfo(res.dayInfo || null);
+      } catch {
+        if (!cancelled) setDayInfo(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [academicYearId, date]);
+
   const finalized = session?.status === 'finalized';
 
   const load = async () => {

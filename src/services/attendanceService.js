@@ -7,6 +7,12 @@ export const attendanceService = {
     return response.data;
   },
 
+  // Holiday / weekly-off flags for a date (no class needed): { dayInfo }
+  getDayInfo: async ({ academicYearId, date }) => {
+    const response = await api.get('/attendance/day-info', { params: { academicYearId, date } });
+    return response.data;
+  },
+
   // Create/open a session for class+date (idempotent). Returns the session.
   openSession: async (data) => {
     const response = await api.post('/attendance/sessions', data);
