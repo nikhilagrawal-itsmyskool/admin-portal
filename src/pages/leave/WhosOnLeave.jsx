@@ -100,26 +100,30 @@ export default function WhosOnLeave() {
                     <Typography sx={{ fontSize: 16, fontWeight: 800, lineHeight: 1, color: isToday ? '#274bdb' : (isSunday ? '#c3cad9' : '#2e3a59'), fontVariantNumeric: 'tabular-nums' }}>{dd}</Typography>
                     <Typography sx={{ fontSize: 10, color: 'text.disabled', textTransform: 'uppercase' }}>{dow}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}>
+                  <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 0.5 }}>
+                    {/* Today sits on its own line above the names so the name chips stay
+                        left-aligned with every other day (no inline label shoving them over). */}
                     {isToday && <Chip size="small" label="Today" sx={{ height: 20, bgcolor: '#3366ff', color: '#fff', fontWeight: 700, fontSize: 10.5 }} />}
-                    {list.length === 0 ? (
-                      <Typography sx={{ fontSize: 12.5, color: 'text.disabled' }}>—</Typography>
-                    ) : (
-                      list.map((p, i) => (
-                        <Chip
-                          key={`${date}-${i}`} size="small"
-                          label={<span><b>{p.name}</b>{p.code ? ` · ${p.code}` : ''}{p.half ? ' · ½' : ''}</span>}
-                          variant="outlined"
-                          sx={{
-                            fontSize: 12,
-                            borderColor: p.status === 'approved' ? '#00b887' : '#f0c14b',
-                            color: p.status === 'approved' ? '#00916e' : '#8a6400',
-                            bgcolor: p.status === 'approved' ? '#f2fcf9' : '#fffaf0',
-                          }}
-                          title={p.status}
-                        />
-                      ))
-                    )}
+                    <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}>
+                      {list.length === 0 ? (
+                        <Typography sx={{ fontSize: 12.5, color: 'text.disabled' }}>—</Typography>
+                      ) : (
+                        list.map((p, i) => (
+                          <Chip
+                            key={`${date}-${i}`} size="small"
+                            label={<span><b>{p.name}</b>{p.code ? ` · ${p.code}` : ''}{p.half ? ' · ½' : ''}</span>}
+                            variant="outlined"
+                            sx={{
+                              fontSize: 12,
+                              borderColor: p.status === 'approved' ? '#00b887' : '#f0c14b',
+                              color: p.status === 'approved' ? '#00916e' : '#8a6400',
+                              bgcolor: p.status === 'approved' ? '#f2fcf9' : '#fffaf0',
+                            }}
+                            title={p.status}
+                          />
+                        ))
+                      )}
+                    </Box>
                   </Box>
                 </Box>
               );
