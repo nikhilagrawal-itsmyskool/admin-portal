@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, CircularProgress, Stack,
   TextField, MenuItem, Autocomplete, Table, TableHead, TableRow, TableCell, TableBody,
-  ToggleButton, ToggleButtonGroup,
+  ToggleButton, ToggleButtonGroup, FormControlLabel, Checkbox,
 } from '@mui/material';
 import { PersonSearch as StudentSearchIcon, Clear as ClearIcon, ArrowBack as BackIcon } from '@mui/icons-material';
 import { feedbackService, FEEDBACK_STATUS_COLOR, FEEDBACK_STATUS_LABEL } from '../../services/feedbackService';
@@ -36,7 +36,7 @@ const GROUP_FIELD = { student: 'studentId', class: 'classId', teacher: 'assigned
 
 const DEFAULT_VIEW = {
   groupBy: 'none', status: 'open', owner: '', assignedTo: '', categoryId: '', sort: 'oldest',
-  studentId: '', classId: '', date: '', drillLabel: '', drillFrom: '',
+  studentId: '', classId: '', date: '', drillLabel: '', drillFrom: '', naturalOrder: false,
 };
 
 function Stat({ n, label, active, onClick, color }) {
@@ -67,7 +67,7 @@ export default function FeedbackDashboard() {
   const [error, setError] = useState('');
   const [studentSearchOpen, setStudentSearchOpen] = useState(false);
 
-  const { groupBy, status, owner, assignedTo, categoryId, sort, studentId, classId, date, drillLabel, drillFrom } = view;
+  const { groupBy, status, owner, assignedTo, categoryId, sort, studentId, classId, date, drillLabel, drillFrom, naturalOrder } = view;
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -75,7 +75,7 @@ export default function FeedbackDashboard() {
       const sum = await feedbackService.summary(academicYearId);
       setSummary(sum);
       if (groupBy !== 'none') {
-        setGroups((await feedbackService.grouped({ by: groupBy, academicYearId: academicYearId || undefined })) || []);
+        setGroups((await feedbackService.grouped({ by: groupBy, academicYearId: academicYearId || undefined, order: naturalOrder ? 'natural' : undefined })) || []);
       } else {
         setItems((await feedbackService.list({
           status: status || undefined,
@@ -94,7 +94,7 @@ export default function FeedbackDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [groupBy, status, owner, assignedTo, studentId, classId, date, categoryId, sort, academicYearId]);
+  }, [groupBy, status, owner, assignedTo, studentId, classId, date, categoryId, sort, naturalOrder, academicYearId]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { feedbackService.categories().then(setCategories).catch(() => {}); }, []);
@@ -153,6 +153,12 @@ export default function FeedbackDashboard() {
           onChange={(e, v) => v !== null && setView({ groupBy: v, studentId: '', classId: '', date: '', drillLabel: '', drillFrom: '' })}>
           {GROUP_OPTIONS.map((o) => <ToggleButton key={o.key} value={o.key}>{o.label}</ToggleButton>)}
         </ToggleButtonGroup>
+        {groupBy !== 'none' && (
+          <FormControlLabel
+            control={<Checkbox size="small" checked={naturalOrder} onChange={(e) => setView({ naturalOrder: e.target.checked })} />}
+            label={<Typography sx={{ fontSize: 13 }}>Natural order</Typography>}
+          />
+        )}
         <Button size="small" variant="outlined" startIcon={<StudentSearchIcon />} onClick={() => setStudentSearchOpen(true)}>
           Find student
         </Button>
