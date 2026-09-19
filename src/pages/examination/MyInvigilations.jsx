@@ -37,7 +37,8 @@ export default function MyInvigilations() {
     <Box sx={{ maxWidth: 720, mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>My Exam Duties</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Mark attendance and sign the roster for the exams you invigilate.
+        Mark attendance and sign the roster for the rooms you invigilate. On days you are a
+        reliever, every room appears here for you to countersign.
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
 
@@ -45,29 +46,38 @@ export default function MyInvigilations() {
         <Card sx={{ mb: 2 }}>
           <CardContent>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>Room duties</Typography>
-            {roomDuties.map((d, i) => (
-              <React.Fragment key={`${d.roomId}-${d.examDate}`}>
-                {i > 0 && <Divider sx={{ my: 1 }} />}
-                <Stack direction="row" alignItems="center" spacing={2} sx={{ py: 0.5 }}>
-                  <Box sx={{ textAlign: 'center', minWidth: 64 }}>
-                    <Typography variant="subtitle2">{fmtDate(d.examDate)}</Typography>
-                    <Typography variant="caption" color="text.secondary">{dayOf(d.examDate)}</Typography>
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2"><b>Room {d.roomName}</b></Typography>
-                    <Typography variant="caption" color="text.secondary">{d.examName}</Typography>
-                  </Box>
-                  {d.signed ? <Chip size="small" color="success" label="signed" />
-                    : <Chip size="small" variant="outlined" label={`${d.marked}/${d.total} marked`} />}
-                  <Button
-                    size="small" variant="contained" endIcon={<OpenIcon />}
-                    onClick={() => navigate(`/exam/room-roster/${d.examId}/${d.roomId}/${d.examDate}`)}
-                  >
-                    Open
-                  </Button>
-                </Stack>
-              </React.Fragment>
-            ))}
+            {roomDuties.map((d, i) => {
+              const isReliever = d.role === 'reliever';
+              return (
+                <React.Fragment key={`${d.roomId}-${d.examDate}-${d.role || 'inv'}`}>
+                  {i > 0 && <Divider sx={{ my: 1 }} />}
+                  <Stack direction="row" alignItems="center" spacing={2} sx={{ py: 0.5 }}>
+                    <Box sx={{ textAlign: 'center', minWidth: 64 }}>
+                      <Typography variant="subtitle2">{fmtDate(d.examDate)}</Typography>
+                      <Typography variant="caption" color="text.secondary">{dayOf(d.examDate)}</Typography>
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexWrap: 'wrap' }}>
+                        <Typography variant="body2"><b>Room {d.roomName}</b></Typography>
+                        {isReliever && <Chip size="small" color="secondary" variant="outlined" label="Reliever" />}
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary">
+                        {d.examName}{isReliever ? ' · floor duty — countersign' : ''}
+                      </Typography>
+                    </Box>
+                    {d.signed ? <Chip size="small" color="success" label="signed" />
+                      : isReliever ? <Chip size="small" variant="outlined" label="sign" />
+                        : <Chip size="small" variant="outlined" label={`${d.marked}/${d.total} marked`} />}
+                    <Button
+                      size="small" variant="contained" endIcon={<OpenIcon />}
+                      onClick={() => navigate(`/exam/room-roster/${d.examId}/${d.roomId}/${d.examDate}`)}
+                    >
+                      Open
+                    </Button>
+                  </Stack>
+                </React.Fragment>
+              );
+            })}
           </CardContent>
         </Card>
       )}
