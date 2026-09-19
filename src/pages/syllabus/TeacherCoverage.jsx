@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Alert, Chip, LinearProgress, CircularProgress, Button,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import { ArrowBack as BackIcon } from '@mui/icons-material';
 import { syllabusService } from '../../services/syllabusService';
@@ -17,6 +18,10 @@ export default function TeacherCoverage() {
   const navigate = useNavigate();
   const can = useCan();
   const canMark = can('syllabus.progress.mark');
+  // On mobile (< md) the global header shows a back arrow, so the in-page Back
+  // is redundant there — keep it only on desktop, which has no global back.
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const [roster, setRoster] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +84,9 @@ export default function TeacherCoverage() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Button startIcon={<BackIcon />} size="small" onClick={() => navigate('/syllabus/my')}>Back</Button>
+        {isDesktop && (
+          <Button startIcon={<BackIcon />} size="small" onClick={() => navigate('/syllabus/my')}>Back</Button>
+        )}
         <Typography variant="h6">{roster.className}</Typography>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
