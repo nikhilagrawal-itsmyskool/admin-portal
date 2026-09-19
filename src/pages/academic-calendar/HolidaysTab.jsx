@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Card, CardContent, Box, Stack, Typography, TextField, Button, IconButton, Alert, MenuItem,
   Table, TableHead, TableRow, TableCell, TableBody, Chip, FormGroup, FormControlLabel, Checkbox,
@@ -8,13 +8,17 @@ import { Add as AddIcon, Delete as DeleteIcon, EventBusy as EventBusyIcon } from
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { activityCalendarService } from '../../services/activityCalendarService';
-import { fmtDateDow } from '../../utils/date';
+import { fmtDate, todayIso } from '../../utils/date';
 import DeclareClosureDialog from './DeclareClosureDialog';
 
 const WEEKDAYS = [
   { n: 0, label: 'Sunday' }, { n: 1, label: 'Monday' }, { n: 2, label: 'Tuesday' },
   { n: 3, label: 'Wednesday' }, { n: 4, label: 'Thursday' }, { n: 5, label: 'Friday' }, { n: 6, label: 'Saturday' },
 ];
+
+// Date-first label ("03-04-2026, Fri") — the date reads first, weekday after the comma.
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const fmtDateThenDow = (v) => `${fmtDate(v)}, ${DOW[new Date(`${v}T00:00:00Z`).getUTCDay()]}`;
 
 // Derive the AY's date range from its name ("2026-27" -> 2026-04-01..2027-03-31).
 function ayRange(name) {
@@ -41,10 +45,12 @@ export default function HolidaysTab({ canManage }) {
   const [err, setErr] = useState('');
   const [form, setForm] = useState({ date: '', name: '', kind: 'full', staffWorking: false });
   const [closureOpen, setClosureOpen] = useState(false);
+  const anchorRef = useRef(null);   // the first holiday on/after today (current-month landing)
+  const scrolledRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!academicYearId || !range) return;
-    setLoading(true); setErr('');
+    setLoading(true); setErr(''); scrolledRef.current = false;
     try {
       const [settings, hols, nt] = await Promise.all([
         activityCalendarService.getSettings({ academicYearId }),
@@ -60,6 +66,16 @@ export default function HolidaysTab({ canManage }) {
   }, [academicYearId, ayName]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Land the list on the current month: the first declared holiday on/after today.
+  // Users care about "now" first, then scroll up (past) / down (rest of year).
+  const today = todayIso();
+  const anchorUuid = useMemo(() => (holidays.find((h) => h.holidayDate >= today) || {}).uuid || null, [holidays, today]);
+  useEffect(() => {
+    if (loading || scrolledRef.current || !anchorRef.current) return;
+    scrolledRef.current = true;
+    anchorRef.current.scrollIntoView({ block: 'center' });
+  }, [loading, holidays, anchorUuid]);
 
   const run = async (fn) => {
     setBusy(true); setErr('');
@@ -178,10 +194,10 @@ export default function HolidaysTab({ canManage }) {
           ) : isMobile ? (
             <Stack spacing={1}>
               {holidays.map((h) => (
-                <Box key={h.uuid} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Box key={h.uuid} ref={h.uuid === anchorUuid ? anchorRef : undefined} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{h.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{fmtDateDow(h.holidayDate)}</Typography>
+                    <Typography variant="caption" color="text.secondary">{fmtDateThenDow(h.holidayDate)}</Typography>
                   </Box>
                   <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
                     {h.staffWorking && <Chip size="small" label="Staff working" color="info" variant="outlined" />}
@@ -198,8 +214,8 @@ export default function HolidaysTab({ canManage }) {
                 </TableHead>
                 <TableBody>
                   {holidays.map((h) => (
-                    <TableRow key={h.uuid}>
-                      <TableCell>{fmtDateDow(h.holidayDate)}</TableCell>
+                    <TableRow key={h.uuid} ref={h.uuid === anchorUuid ? anchorRef : undefined}>
+                      <TableCell>{fmtDateThenDow(h.holidayDate)}</TableCell>
                       <TableCell>{h.name}</TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={0.5}>
