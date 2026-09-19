@@ -33,6 +33,25 @@ const parse = (v) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+// Parse a real timestamp, treating a timezone-less string as UTC. Backend timestamp
+// columns are stored/returned in UTC, but come back either as an ISO string with a Z
+// (raw pg Date) OR as a tz-less "YYYY-MM-DD HH:MM:SS" (a `::text` cast). JS `new Date()`
+// parses the tz-less *date-time* form as LOCAL, which silently skips the UTC->IST shift
+// and shows the raw UTC clock. So for a tz-less date-time we build the Date explicitly in
+// UTC; anything already carrying Z / an offset (or a Date object) is left untouched.
+const parseTs = (v) => {
+  if (v == null || v === '') return null;
+  if (typeof v === 'string') {
+    const s = v.trim();
+    const hasTz = /[zZ]$/.test(s) || /[+-]\d{2}:?\d{2}$/.test(s);
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (m && !hasTz) {
+      return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)));
+    }
+  }
+  return parse(v);
+};
+
 export function fmtDate(v) {
   const d = parse(v);
   if (!d) return v ? String(v) : '';
@@ -70,7 +89,7 @@ export function isoDate(v) {
 }
 
 export function fmtDateTime(v) {
-  const d = parse(v);
+  const d = parseTs(v);
   if (!d) return v ? String(v) : '';
   const t = toIst(d); // stored UTC -> IST wall-clock (read via UTC getters)
   const hh = String(t.getUTCHours()).padStart(2, '0');
