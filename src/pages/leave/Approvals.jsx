@@ -106,6 +106,20 @@ export default function Approvals() {
   const [overrideReason, setOverrideReason] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [months, setMonths] = useState({}); // 'YYYY-MM' -> { loading, byDate }
+  const [handovers, setHandovers] = useState({}); // appId -> { loading, data }
+
+  const loadHandover = async (id) => {
+    if (handovers[id]) return;
+    setHandovers((m) => ({ ...m, [id]: { loading: true, data: null } }));
+    try { const data = await leaveService.getHandover(id); setHandovers((m) => ({ ...m, [id]: { loading: false, data } })); }
+    catch { setHandovers((m) => ({ ...m, [id]: { loading: false, data: null } })); }
+  };
+  const viewHandoverFile = async (appId, fileId, name) => {
+    try {
+      const f = await leaveService.handoverFile(appId, fileId);
+      if (f?.dataUri) { const w = window.open('', '_blank'); if (w) w.document.write(`<title>${name}</title><iframe src="${f.dataUri}" style="border:0;position:fixed;inset:0;width:100%;height:100%"></iframe>`); }
+    } catch (err) { setError(err.response?.data?.error?.description || 'Could not open file'); }
+  };
 
   const load = async () => {
     setLoading(true); setError('');
@@ -150,7 +164,7 @@ export default function Approvals() {
   const toggleExpand = (a) => {
     const next = expandedId === a.uuid ? null : a.uuid;
     setExpandedId(next);
-    if (next) loadMonth(a.fromDate.slice(0, 7));
+    if (next) { loadMonth(a.fromDate.slice(0, 7)); loadHandover(a.uuid); }
   };
 
   const approve = async (a) => {
@@ -214,20 +228,66 @@ export default function Approvals() {
     }
   };
 
-  // The expanded detail (checklist + mini calendar), shared by desktop + mobile.
+  // The expanded detail (checklist + mini calendar + academic handover), desktop + mobile.
   const ExpandedDetail = ({ a }) => {
     const month = a.fromDate.slice(0, 7);
     const md = months[month] || { loading: true, byDate: {} };
+    const ho = handovers[a.uuid];
     return (
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, py: 1.5 }}>
-        <Box>
-          <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary', mb: 1 }}>Approval checks</Typography>
-          <RuleChecklist evaluation={a.evaluation} />
-          {!passes(a) && (
-            <Typography sx={{ fontSize: 12, color: '#8a6400', mt: 1 }}>A red check means approving needs an exception (you'll be asked to confirm + give a reason).</Typography>
-          )}
+      <Box sx={{ py: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+          <Box>
+            <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary', mb: 1 }}>Approval checks</Typography>
+            <RuleChecklist evaluation={a.evaluation} />
+            {!passes(a) && (
+              <Typography sx={{ fontSize: 12, color: '#8a6400', mt: 1 }}>A red check means approving needs an exception (you'll be asked to confirm + give a reason).</Typography>
+            )}
+          </Box>
+          <MiniMonth month={month} byDate={md.byDate} fromDate={a.fromDate} toDate={a.toDate} loading={md.loading} />
         </Box>
-        <MiniMonth month={month} byDate={md.byDate} fromDate={a.fromDate} toDate={a.toDate} loading={md.loading} />
+        <HandoverPanel a={a} ho={ho} />
+      </Box>
+    );
+  };
+
+  // Academic handover the teacher submitted (periods, topics, lesson plan, duties, files).
+  const HandoverPanel = ({ a, ho }) => {
+    if (!ho || ho.loading) return null;
+    const d = ho.data;
+    if (!d) return <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 2 }}>No academic handover on file (non-teaching staff).</Typography>;
+    const duties = d.otherDuties || {};
+    return (
+      <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eef2f8' }}>
+        <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary', mb: 1 }}>Academic handover</Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+          <Box>
+            {(d.topics || []).length > 0 && (
+              <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+                {d.topics.map((t, i) => (
+                  <Box key={i} sx={{ fontSize: 12.5 }}>
+                    <Typography component="span" sx={{ fontWeight: 700, fontSize: 12.5 }}>{t.className || '—'}{t.subjectName ? ` · ${t.subjectName}` : ''}: </Typography>
+                    <Typography component="span" sx={{ fontSize: 12.5 }}>{t.chapter ? `${t.chapter} — ` : ''}{t.topic}</Typography>
+                    {t.substitution && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>↳ {t.substitution}</Typography>}
+                  </Box>
+                ))}
+              </Stack>
+            )}
+            {d.lessonPlan && <Typography sx={{ fontSize: 12.5, mb: 1 }}><b>Lesson plan:</b> {d.lessonPlan}</Typography>}
+            <Typography sx={{ fontSize: 12.5 }}><b>Other duties:</b> {(duties.duties || []).join(', ') || '—'}{duties.covering ? ` · covered by ${duties.covering}` : ''}{duties.note ? ` · ${duties.note}` : ''}</Typography>
+          </Box>
+          <Box>
+            {(d.files || []).length > 0 ? (
+              <Stack spacing={0.5}>
+                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: 'text.secondary' }}>Attachments</Typography>
+                {d.files.map((f) => (
+                  <Button key={f.fileId} size="small" startIcon={<AttachIcon />} sx={{ justifyContent: 'flex-start' }} onClick={() => viewHandoverFile(a.uuid, f.fileId, f.fileName)}>
+                    {f.variant === 'worksheet' ? 'Worksheet' : 'Lesson plan'}: {f.fileName}
+                  </Button>
+                ))}
+              </Stack>
+            ) : <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>No attachments.</Typography>}
+          </Box>
+        </Box>
       </Box>
     );
   };

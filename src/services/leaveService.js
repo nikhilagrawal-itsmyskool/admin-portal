@@ -14,6 +14,7 @@ export const leaveService = {
   myTypes: async () => (await api.get('/leave/me/types')).data,
   mySummary: async (month) => (await api.get('/leave/me/summary', { params: { month } })).data,
   myApplications: async (params = {}) => (await api.get('/leave/me/applications', { params })).data,
+  handoverPreview: async (fromDate, toDate) => (await api.get('/leave/me/handover-preview', { params: { fromDate, toDate } })).data,
   apply: async (data) => (await api.post('/leave/me/applications', data)).data,
   cancel: async (id) => (await api.post(`/leave/me/applications/${id}/cancel`)).data,
   myAttendance: async (month) => (await api.get('/leave/me/attendance', { params: { month } })).data,
@@ -28,6 +29,8 @@ export const leaveService = {
     (await api.post(`/leave/applications/${id}/approve`, { override, overrideReason })).data,
   reject: async (id, note) => (await api.post(`/leave/applications/${id}/reject`, { note })).data,
   getAudit: async (id) => (await api.get(`/leave/applications/${id}/audit`)).data,
+  getHandover: async (id) => (await api.get(`/leave/applications/${id}/handover`)).data,
+  handoverFile: async (id, fileId) => (await api.get(`/leave/applications/${id}/handover/file/${fileId}`)).data,
   getAttachment: async (id) => (await api.get(`/leave/applications/${id}/attachment`)).data,
   balance: async (employeeId, month) => (await api.get('/leave/balance', { params: { employeeId, month } })).data,
 

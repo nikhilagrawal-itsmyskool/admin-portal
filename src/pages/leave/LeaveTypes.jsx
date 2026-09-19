@@ -44,7 +44,7 @@ export default function LeaveTypes() {
   const openEdit = (t) => setEditType({
     code: t.code, name: t.name, annualQuota: num(t.annualQuota),
     attachmentOverDays: num(t.attachmentOverDays), requiresAttachment: !!t.requiresAttachment, paid: t.paid,
-    showInBalance: t.showInBalance !== false,
+    showInBalance: t.showInBalance !== false, allowHalfDay: t.allowHalfDay === true,
   });
 
   const saveType = async () => {
@@ -55,6 +55,7 @@ export default function LeaveTypes() {
         attachmentOverDays: editType.attachmentOverDays === '' ? null : Number(editType.attachmentOverDays),
         requiresAttachment: editType.requiresAttachment,
         showInBalance: editType.showInBalance,
+        allowHalfDay: editType.allowHalfDay,
         paid: editType.paid,
       });
       setEditType(null); setToast('Leave type updated'); load();
@@ -188,6 +189,10 @@ export default function LeaveTypes() {
               <FormControlLabel
                 control={<Switch checked={editType.showInBalance} onChange={(e) => setEditType((f) => ({ ...f, showInBalance: e.target.checked }))} />}
                 label="Show as a balance card in the staff app (off = selectable but not advertised)"
+              />
+              <FormControlLabel
+                control={<Switch checked={editType.allowHalfDay} onChange={(e) => setEditType((f) => ({ ...f, allowHalfDay: e.target.checked }))} />}
+                label="Allow half-day (first/second half) for this type"
               />
             </Stack>
           )}
