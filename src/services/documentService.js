@@ -15,6 +15,8 @@ export const documentService = {
   ackArtifact: async (ackId, which = 'signature') =>
     (await api.get(`/employees/documents/acks/${ackId}/artifact`, { params: { which } })).data,
   docPdf: async (id) => (await api.get(`/employees/documents/${id}/pdf`)).data,
+  // Nudge only staff who haven't signed the current version (in-app notification).
+  remind: async (id) => (await api.post(`/employees/documents/${id}/remind`)).data,
 
   // ── Employee /me ────────────────────────────────────────────────────────────
   myList: async () => (await api.get('/employees/me/documents')).data,
