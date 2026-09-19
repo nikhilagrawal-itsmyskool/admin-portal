@@ -5,7 +5,7 @@ import {
   TextField, MenuItem, Autocomplete, Table, TableHead, TableRow, TableCell, TableBody,
   ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
-import { PersonSearch as StudentSearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import { PersonSearch as StudentSearchIcon, Clear as ClearIcon, ArrowBack as BackIcon } from '@mui/icons-material';
 import { feedbackService, FEEDBACK_STATUS_COLOR, FEEDBACK_STATUS_LABEL } from '../../services/feedbackService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -36,7 +36,7 @@ const GROUP_FIELD = { student: 'studentId', class: 'classId', teacher: 'assigned
 
 const DEFAULT_VIEW = {
   groupBy: 'none', status: 'open', owner: '', assignedTo: '', categoryId: '', sort: 'oldest',
-  studentId: '', classId: '', date: '', drillLabel: '',
+  studentId: '', classId: '', date: '', drillLabel: '', drillFrom: '',
 };
 
 function Stat({ n, label, active, onClick, color }) {
@@ -67,7 +67,7 @@ export default function FeedbackDashboard() {
   const [error, setError] = useState('');
   const [studentSearchOpen, setStudentSearchOpen] = useState(false);
 
-  const { groupBy, status, owner, assignedTo, categoryId, sort, studentId, classId, date, drillLabel } = view;
+  const { groupBy, status, owner, assignedTo, categoryId, sort, studentId, classId, date, drillLabel, drillFrom } = view;
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -101,16 +101,19 @@ export default function FeedbackDashboard() {
 
   // Stat tile → quick filter (drops grouping + any drill).
   const quick = (patch) => setView({ ...DEFAULT_VIEW, sort, ...patch });
-  // Drill into a group row → list that group across all statuses.
+  // Drill into a group row → list that group across all statuses. Remember which group we
+  // came from so we can offer a "back to <group>" affordance.
   const drill = (g) => {
     const field = GROUP_FIELD[groupBy];
     const label = groupBy === 'date' ? fmtDate(g.key) : (g.label || '—');
     setView({
       groupBy: 'none', status: '', owner: '', assignedTo: '', studentId: '', classId: '', date: '',
-      [field]: g.key, drillLabel: `${GROUP_OPTIONS.find((o) => o.key === groupBy).label}: ${label}`,
+      [field]: g.key, drillLabel: `${GROUP_OPTIONS.find((o) => o.key === groupBy).label}: ${label}`, drillFrom: groupBy,
     });
   };
-  const clearDrill = () => setView({ studentId: '', classId: '', date: '', drillLabel: '', status: 'open' });
+  // Return to the group list we drilled from (or the flat list if the drill came from a
+  // student search rather than a group).
+  const backToGroup = () => setView({ groupBy: drillFrom || 'none', studentId: '', classId: '', date: '', drillLabel: '', drillFrom: '', status: 'open' });
 
   const teacherOptions = summary?.byTeacher || [];
   const selectedTeacher = teacherOptions.find((t) => t.employeeId === assignedTo) || null;
@@ -141,15 +144,20 @@ export default function FeedbackDashboard() {
 
       {/* View controls: group-by + student search */}
       <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap', gap: 1 }} alignItems="center">
+        {drillFrom && (
+          <Button size="small" variant="outlined" startIcon={<BackIcon />} onClick={backToGroup}>
+            Back to {GROUP_OPTIONS.find((o) => o.key === drillFrom)?.label || 'groups'}
+          </Button>
+        )}
         <ToggleButtonGroup size="small" exclusive value={groupBy}
-          onChange={(e, v) => v !== null && setView({ groupBy: v, studentId: '', classId: '', date: '', drillLabel: '' })}>
+          onChange={(e, v) => v !== null && setView({ groupBy: v, studentId: '', classId: '', date: '', drillLabel: '', drillFrom: '' })}>
           {GROUP_OPTIONS.map((o) => <ToggleButton key={o.key} value={o.key}>{o.label}</ToggleButton>)}
         </ToggleButtonGroup>
         <Button size="small" variant="outlined" startIcon={<StudentSearchIcon />} onClick={() => setStudentSearchOpen(true)}>
           Find student
         </Button>
         {drillLabel && (
-          <Chip color="primary" label={drillLabel} onDelete={clearDrill} deleteIcon={<ClearIcon />} />
+          <Chip color="primary" label={drillLabel} onDelete={backToGroup} deleteIcon={<ClearIcon />} />
         )}
       </Stack>
 
