@@ -102,6 +102,7 @@ export const feesService = {
   getManagerDay: async (date) => (await api.get('/fees/manager/day', { params: date ? { date } : {} })).data,
   getManagerSearch: async (q, signal) => (await api.get('/fees/manager/search', { params: { q }, signal })).data,
   getManagerStudentDues: async (studentId) => (await api.get('/fees/manager/student-dues', { params: { studentId } })).data,
+  getManagerTopDues: async (academicYearId) => (await api.get('/fees/manager/top-dues', { params: academicYearId ? { academicYearId } : {} })).data,
 
   // ---- Refunds ----
   getRefunds: async (params = {}) => (await api.get('/fees/refunds', { params })).data,
@@ -116,6 +117,8 @@ export const feesService = {
     (await api.get('/fees/reports/ungenerated-students', { params: { academicYearId } })).data,
   getDues: async (params = {}) =>
     (await api.get('/fees/reports/dues', { params })).data,
+  getTopDues: async (academicYearId) =>
+    (await api.get('/fees/reports/top-dues', { params: academicYearId ? { academicYearId } : {} })).data,
   setFollowup: async (data) => (await api.post('/fees/reports/followup', data)).data,
   getFollowup: async (params = {}) => (await api.get('/fees/reports/followup', { params })).data,
   getFamilyDues: async (studentId, params = {}) => (await api.get(`/fees/students/${studentId}/family-dues`, { params })).data,

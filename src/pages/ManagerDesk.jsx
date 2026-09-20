@@ -2,11 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, CircularProgress, Alert, Avatar,
-  IconButton, Divider, Button, TextField, InputAdornment,
+  IconButton, Divider, Button, TextField, InputAdornment, Chip,
 } from '@mui/material';
 import {
   ChevronRight, ChevronLeft, ArrowBack, Payments as FeesIcon, DirectionsBus as BusIcon,
-  OpenInNew, Refresh, Search as SearchIcon, Clear as ClearIcon,
+  OpenInNew, Refresh, Search as SearchIcon, Clear as ClearIcon, ReceiptLong as ReportIcon,
 } from '@mui/icons-material';
 import { feesService } from '../services/feesService';
 import { inr, errMsg, PAYMENT_MODE_LABELS } from './fees/feesUi';
@@ -36,6 +36,9 @@ const guardianLine = (gender, father) => {
   const pfx = g === 'F' ? 'D/o' : g === 'M' ? 'S/o' : 'C/o';
   return `${pfx} ${stripTitle(father)}`;
 };
+
+const REL_LABEL = { father: 'Father', mother: 'Mother', guardian: 'Guardian' };
+const relLabel = (r) => REL_LABEL[r] || (r ? r.charAt(0).toUpperCase() + r.slice(1) : 'Contact');
 
 const C = { bg: '#f4f7fb', card: '#ffffff', ink: '#0f172a', muted: '#64748b', due: '#b91c1c', fees: '#0f766e', bus: '#b45309', line: '#e6ebf2' };
 
@@ -117,6 +120,21 @@ export default function ManagerDesk() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // Top accumulated-dues report (phone-first cards)
+  const [topOpen, setTopOpen] = useState(false);
+  const [top, setTop] = useState(null);
+  const [topLoading, setTopLoading] = useState(false);
+  const [topQ, setTopQ] = useState('');
+  const openTop = () => {
+    setTopOpen(true);
+    if (top) return;
+    setTopLoading(true); setError('');
+    feesService.getManagerTopDues(summary?.years?.[0]?.academicYearId)
+      .then(setTop)
+      .catch((e) => setError(errMsg(e, 'Could not load report')))
+      .finally(() => setTopLoading(false));
+  };
 
   const pickStudent = (row) => {
     setPicked(row); setStudentDues(null); setDuesLoading(true); setError('');
@@ -344,6 +362,91 @@ export default function ManagerDesk() {
     );
   }
 
+  // ── Top accumulated dues: who owes the most, across all years ────────────────
+  if (topOpen) {
+    const term = topQ.trim().toLowerCase();
+    const all = top?.rows || [];
+    const filtered = term
+      ? all.filter((r) => (r.name || '').toLowerCase().includes(term) || (r.className || '').toLowerCase().includes(term)
+        || (r.contacts || []).some((c) => (c.mobile || '').includes(term) || (c.name || '').toLowerCase().includes(term)))
+      : all.slice(0, 50);
+    const cols = top?.columns || [];
+    return (
+      <Shell>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5 }}>
+          <IconButton onClick={() => setTopOpen(false)} sx={{ color: C.ink }}><ArrowBack /></IconButton>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.ink }}>Highest dues</Typography>
+        </Box>
+        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+
+        {topLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
+        ) : (
+          <>
+            <Card sx={{ borderRadius: 4, mb: 2, bgcolor: '#0f172a' }}>
+              <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 2 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 13, color: '#94a3b8', fontWeight: 700, letterSpacing: 0.5 }}>TOTAL DUES</Typography>
+                  <Typography sx={{ fontSize: 28, fontWeight: 800, color: '#fca5a5' }}>{inr(top?.grandTotal || 0)}</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography sx={{ fontSize: 20, fontWeight: 800, color: '#e2e8f0' }}>{top?.studentCount || 0}</Typography>
+                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>students owe</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <TextField fullWidth size="small" value={topQ} onChange={(e) => setTopQ(e.target.value)}
+              placeholder="Find a name, class or phone…" sx={{ mb: 1.5, bgcolor: '#fff', borderRadius: 2 }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
+                endAdornment: topQ ? <InputAdornment position="end"><IconButton size="small" onClick={() => setTopQ('')}><ClearIcon /></IconButton></InputAdornment> : null }} />
+            <Typography sx={{ fontSize: 12, color: C.muted, px: 0.5, mb: 1 }}>
+              {term ? `${filtered.length} match${filtered.length === 1 ? '' : 'es'}` : `Top ${filtered.length} of ${all.length}`} · current year is due {top?.monthLabel || 'till this month'}
+            </Typography>
+
+            {filtered.map((r, i) => (
+              <Card key={r.studentId} sx={{ borderRadius: 3, mb: 1.25 }}>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontSize: 16, fontWeight: 700, color: C.ink }}>
+                        {!term && <span style={{ color: C.muted, fontWeight: 800 }}>{i + 1}. </span>}{r.name}
+                        {r.hasLeft && <Chip size="small" label="left" sx={{ ml: 0.75, height: 18, fontSize: 10, color: C.bus, borderColor: C.bus }} variant="outlined" />}
+                      </Typography>
+                      <Typography sx={{ fontSize: 12.5, color: C.muted }}>{r.className}{r.admissionNumber ? ` · ${r.admissionNumber}` : ''}</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.due, whiteSpace: 'nowrap' }}>{inr(r.total)}</Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {cols.filter((c) => Number(r.byYear?.[c.academicYearId] || 0) > 0).map((c) => (
+                      <Chip key={c.academicYearId} size="small" variant="outlined"
+                        sx={{ height: 22, fontSize: 11, borderColor: c.isCurrent ? C.fees : C.line, color: c.isCurrent ? C.fees : C.ink }}
+                        label={`${c.name}${c.isCurrent ? '*' : ''}: ${inr(r.byYear[c.academicYearId])}`} />
+                    ))}
+                  </Box>
+
+                  {(r.contacts || []).length > 0 && (
+                    <Box sx={{ mt: 1, pt: 1, borderTop: `1px solid ${C.line}` }}>
+                      {r.contacts.map((c, k) => (
+                        <Typography key={k} sx={{ fontSize: 12.5, color: C.ink, lineHeight: 1.6 }}>
+                          <span style={{ color: C.muted }}>{relLabel(c.relation)}:</span> {c.name || '—'}
+                          {c.mobile && <a href={`tel:${c.mobile}`} style={{ color: C.fees, textDecoration: 'none', fontWeight: 600 }}> · {c.mobile}</a>}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+            {filtered.length === 0 && <Card sx={{ borderRadius: 3 }}><CardContent><Typography sx={{ textAlign: 'center', color: C.muted, py: 2 }}>No match.</Typography></CardContent></Card>}
+            {!term && all.length > 50 && <Typography sx={{ fontSize: 12, color: C.muted, textAlign: 'center', mt: 1 }}>Showing the top 50 — use search to find anyone else.</Typography>}
+          </>
+        )}
+      </Shell>
+    );
+  }
+
   // ── Find a student ───────────────────────────────────────────────────────────
   if (find) {
     const rows = results || [];
@@ -401,10 +504,22 @@ export default function ManagerDesk() {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       {/* Find a student (tap, or Ctrl+K) */}
-      <Card onClick={() => setFind(true)} sx={{ borderRadius: 3, mb: 2, cursor: 'pointer', '&:active': { bgcolor: '#eef2f7' } }}>
+      <Card onClick={() => setFind(true)} sx={{ borderRadius: 3, mb: 1.5, cursor: 'pointer', '&:active': { bgcolor: '#eef2f7' } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 1.5 }}>
           <SearchIcon sx={{ color: C.muted }} />
           <Typography sx={{ flex: 1, fontSize: 16, color: C.muted }}>Find a student…</Typography>
+          <ChevronRight sx={{ color: C.muted }} />
+        </Box>
+      </Card>
+
+      {/* Highest dues report */}
+      <Card onClick={openTop} sx={{ borderRadius: 3, mb: 2, cursor: 'pointer', border: `1px solid ${C.line}`, '&:active': { bgcolor: '#eef2f7' } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 1.5 }}>
+          <ReportIcon sx={{ color: C.due }} />
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: C.ink }}>Highest dues report</Typography>
+            <Typography sx={{ fontSize: 12.5, color: C.muted }}>Students who owe the most, year by year, with contacts</Typography>
+          </Box>
           <ChevronRight sx={{ color: C.muted }} />
         </Box>
       </Card>

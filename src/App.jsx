@@ -43,6 +43,7 @@ import FineIncidentForm from './pages/fine/incidents/FineIncidentForm';
 import FineIncidentDetail from './pages/fine/incidents/FineIncidentDetail';
 import FeesDashboard from './pages/fees/FeesDashboard';
 import DuesReport from './pages/fees/DuesReport';
+import AccumulatedDues from './pages/fees/AccumulatedDues';
 import FeesSetup from './pages/fees/FeesSetup';
 import FeeStructure from './pages/fees/FeeStructure';
 import ConcessionList from './pages/fees/ConcessionList';
@@ -291,6 +292,7 @@ export default function App() {
         <Route path="fine/incidents/:id/edit" element={<FineIncidentForm />} />
         <Route path="fees" element={<FeesDashboard />} />
         <Route path="fees/dues" element={<DuesReport />} />
+        <Route path="fees/accumulated-dues" element={<AccumulatedDues />} />
         <Route path="fees/collect" element={<CollectFees />} />
         <Route path="fees/receipts" element={<ReceiptsSearch />} />
         <Route path="fees/setup" element={<FeesSetup />} />
