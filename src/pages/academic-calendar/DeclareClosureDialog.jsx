@@ -38,6 +38,7 @@ export default function DeclareClosureDialog({ open, onClose, weeklyOff, academi
   const [name, setName] = useState('');
   const [kind, setKind] = useState('full');
   const [staffWorking, setStaffWorking] = useState(false);
+  const [notify, setNotify] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -47,7 +48,7 @@ export default function DeclareClosureDialog({ open, onClose, weeklyOff, academi
   const submit = async () => {
     setBusy(true); setErr('');
     try {
-      await activityCalendarService.closeRange({ from, to, name: name.trim(), kind, staffWorking: kind === 'full' && staffWorking, academicYearId });
+      await activityCalendarService.closeRange({ from, to, name: name.trim(), kind, staffWorking: kind === 'full' && staffWorking, notify: kind === 'full' && notify, academicYearId });
       onDone?.();
       onClose();
     } catch (e) {
@@ -102,14 +103,16 @@ export default function DeclareClosureDialog({ open, onClose, weeklyOff, academi
             </Alert>
           )}
 
-          {/* Notify — plumbing deferred until the closure SMS template is approved. */}
-          <Box sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
+          {/* Notify — parents by SMS/WhatsApp (school_closure template) + staff in-app. */}
+          <Box sx={{ border: '1px solid', borderColor: notify ? 'primary.main' : 'divider', borderRadius: 1, p: 1.5 }}>
             <FormControlLabel
-              control={<Checkbox size="small" disabled />}
-              label="Notify parents by SMS / WhatsApp"
+              control={<Checkbox size="small" checked={notify} onChange={(e) => setNotify(e.target.checked)} disabled={kind !== 'full'} />}
+              label="Notify everyone"
             />
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -0.5 }}>
-              Coming soon — awaiting approval of the school-closure message template (DLT / Meta).
+              {kind === 'full'
+                ? 'Parents get an SMS/WhatsApp; staff get an in-app notification. Sent once when you declare.'
+                : 'Only available for a full closure.'}
             </Typography>
           </Box>
         </Stack>
