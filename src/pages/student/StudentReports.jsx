@@ -25,11 +25,17 @@ import {
   TableRow,
   TableCell,
   TableContainer,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip,
 } from '@mui/material';
 import {
   Print as PrintIcon,
   Download as DownloadIcon,
   Summarize as ReportIcon,
+  BookmarkAdd as SaveIcon,
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { classService } from '../../services/classService';
@@ -49,28 +55,6 @@ const GROUP_LABELS = {
   attributes: 'Other',
 };
 const GROUP_ORDER = ['identity', 'student', 'father', 'mother', 'guardian', 'attributes'];
-
-// Named reports = the same builder with different defaults.
-const PRESETS = [
-  {
-    key: 'contact',
-    label: 'Contact list',
-    fields: ['className', 'rollNumber', 'studentName', 'fatherName', 'fatherMobile', 'fatherWhatsapp', 'motherMobile'],
-    filter: 'all',
-  },
-  {
-    key: 'rte',
-    label: 'RTE students',
-    fields: ['className', 'rollNumber', 'studentName', 'admissionNumber', 'house', 'fatherMobile'],
-    filter: 'rte',
-  },
-  {
-    key: 'examOnly',
-    label: 'Exam-only students',
-    fields: ['className', 'rollNumber', 'studentName', 'admissionNumber', 'fatherMobile'],
-    filter: 'examOnly',
-  },
-];
 
 const DEFAULT_FIELDS = ['className', 'rollNumber', 'studentName', 'fatherMobile'];
 
@@ -93,6 +77,11 @@ export default function StudentReports() {
   const [error, setError] = useState('');
   const [report, setReport] = useState(null); // { meta, rows }
 
+  const [savedReports, setSavedReports] = useState([]); // [{ uuid, name, config }]
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const yearName = useMemo(
     () => (years || []).find((y) => y.uuid === academicYearId)?.name || '',
     [years, academicYearId]
@@ -110,6 +99,13 @@ export default function StudentReports() {
     [catalog, selected]
   );
 
+  const loadSaved = useCallback(async () => {
+    try {
+      const { saved } = await studentService.getSavedReports();
+      setSavedReports(saved || []);
+    } catch { /* non-fatal — the builder still works without saved reports */ }
+  }, []);
+
   useEffect(() => {
     (async () => {
       try {
@@ -124,6 +120,49 @@ export default function StudentReports() {
       }
     })();
   }, [academicYearId]);
+
+  useEffect(() => { loadSaved(); }, [loadSaved]);
+
+  // Apply a saved template's remembered options (columns + filter + layout). Classes
+  // are intentionally left as-is — you pick them fresh for each run.
+  const applySaved = (cfg) => {
+    if (!cfg) return;
+    if (Array.isArray(cfg.fields)) setSelected(new Set(cfg.fields));
+    if (cfg.filter) setFilter(cfg.filter);
+    if (cfg.orientation) setOrientation(cfg.orientation === 'landscape' ? 'landscape' : 'portrait');
+    setPageBreak(!!cfg.pageBreak);
+    setReport(null);
+  };
+
+  const removeSaved = async (id) => {
+    try {
+      await studentService.deleteSavedReport(id);
+      setSavedReports((prev) => prev.filter((s) => s.uuid !== id));
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || 'Failed to delete saved report');
+    }
+  };
+
+  const doSave = async () => {
+    const name = saveName.trim();
+    if (!name) return;
+    setSaving(true);
+    try {
+      await studentService.saveReport(name, {
+        fields: orderedFields.map((f) => f.key),
+        filter,
+        orientation,
+        pageBreak,
+      });
+      setSaveOpen(false);
+      setSaveName('');
+      await loadSaved();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || 'Failed to save report');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const grouped = useMemo(() => {
     const by = {};
@@ -224,14 +263,26 @@ export default function StudentReports() {
       )}
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        {/* Presets */}
-        <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Quick reports</Typography>
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-          {PRESETS.map((p) => (
-            <Chip key={p.key} label={p.label} variant="outlined" clickable onClick={() => applyPreset(p)} />
-          ))}
-        </Stack>
-        <Divider sx={{ mb: 2 }} />
+        {/* Saved reports (school-wide) */}
+        {savedReports.length > 0 && (
+          <>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Saved reports</Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+              {savedReports.map((s) => (
+                <Tooltip key={s.uuid} title="Load this report's columns & options">
+                  <Chip
+                    label={s.name}
+                    variant="outlined"
+                    clickable
+                    onClick={() => applySaved(s.config)}
+                    onDelete={() => removeSaved(s.uuid)}
+                  />
+                </Tooltip>
+              ))}
+            </Stack>
+            <Divider sx={{ mb: 2 }} />
+          </>
+        )}
 
         {/* Scope: year (context) + classes */}
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }} sx={{ mb: 2 }}>
@@ -313,6 +364,9 @@ export default function StudentReports() {
             <Box sx={{ flex: 1 }} />
             <Button startIcon={<PrintIcon />} variant="outlined" onClick={doPrint} disabled={!report.rows.length}>Print / PDF</Button>
             <Button startIcon={<DownloadIcon />} variant="outlined" onClick={doCsv} disabled={!report.rows.length}>CSV</Button>
+            <Tooltip title="Save these columns & options to run again later">
+              <Button startIcon={<SaveIcon />} onClick={() => { setSaveName(''); setSaveOpen(true); }}>Save report</Button>
+            </Tooltip>
           </Stack>
 
           {report.rows.length === 0 ? (
@@ -339,6 +393,33 @@ export default function StudentReports() {
           )}
         </Paper>
       )}
+
+      <Dialog open={saveOpen} onClose={() => setSaveOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Save report</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Saves the selected columns, filter and layout (not the classes) so you can run it again later.
+            Everyone at the school sees saved reports.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            label="Report name"
+            placeholder="e.g. Parent contact list"
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && saveName.trim()) doSave(); }}
+            helperText="Saving with an existing name updates that report."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSaveOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={doSave} disabled={!saveName.trim() || saving}>
+            {saving ? <CircularProgress size={18} /> : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

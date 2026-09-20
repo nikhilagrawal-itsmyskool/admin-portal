@@ -236,6 +236,23 @@ export const studentService = {
     return response.data; // { meta: { classes, fields, total, ... }, rows: [...] }
   },
 
+  // Saved report templates (school-wide). config = { fields, filter, orientation, pageBreak }.
+  getSavedReports: async () => {
+    const response = await api.get('/students/reports/saved');
+    return response.data; // { saved: [{ uuid, name, config }] }
+  },
+
+  // Upsert by name. { name, config }. Classes are never saved.
+  saveReport: async (name, config) => {
+    const response = await api.post('/students/reports/saved', { name, config });
+    return response.data; // { uuid, name, config }
+  },
+
+  deleteSavedReport: async (id) => {
+    const response = await api.delete(`/students/reports/saved/${id}`);
+    return response.data;
+  },
+
   // ---- Promotion lifecycle ----
   promote: async (data) => {
     // { academicYearFromId, academicYearToId, items: [{ studentId, toClassId, rollNumber? }] }
