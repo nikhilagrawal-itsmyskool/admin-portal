@@ -126,6 +126,7 @@ export default function ManagerDesk() {
   const [top, setTop] = useState(null);
   const [topLoading, setTopLoading] = useState(false);
   const [topQ, setTopQ] = useState('');
+  const [topLimit, setTopLimit] = useState(200); // 50 | 100 | 200 | 500 | 'all'
   const openTop = () => {
     setTopOpen(true);
     if (top) return;
@@ -366,11 +367,13 @@ export default function ManagerDesk() {
   if (topOpen) {
     const term = topQ.trim().toLowerCase();
     const all = top?.rows || [];
+    const lim = topLimit === 'all' ? all.length : topLimit;
     const filtered = term
       ? all.filter((r) => (r.name || '').toLowerCase().includes(term) || (r.className || '').toLowerCase().includes(term)
         || (r.contacts || []).some((c) => (c.mobile || '').includes(term) || (c.name || '').toLowerCase().includes(term)))
-      : all.slice(0, 50);
+      : all.slice(0, lim);
     const cols = top?.columns || [];
+    const LIMITS = [50, 100, 200, 500, 'all'];
     return (
       <Shell>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5 }}>
@@ -400,8 +403,20 @@ export default function ManagerDesk() {
               placeholder="Find a name, class or phone…" sx={{ mb: 1.5, bgcolor: '#fff', borderRadius: 2 }}
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
                 endAdornment: topQ ? <InputAdornment position="end"><IconButton size="small" onClick={() => setTopQ('')}><ClearIcon /></IconButton></InputAdornment> : null }} />
+            {!term && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
+                <Typography sx={{ fontSize: 12, color: C.muted, mr: 0.5 }}>Show</Typography>
+                {LIMITS.map((n) => (
+                  <Box key={n} onClick={() => setTopLimit(n)}
+                    sx={{ px: 1.25, py: 0.4, borderRadius: 5, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                      bgcolor: topLimit === n ? C.ink : '#eef2f7', color: topLimit === n ? '#fff' : C.ink }}>
+                    {n === 'all' ? `All ${all.length}` : n}
+                  </Box>
+                ))}
+              </Box>
+            )}
             <Typography sx={{ fontSize: 12, color: C.muted, px: 0.5, mb: 1 }}>
-              {term ? `${filtered.length} match${filtered.length === 1 ? '' : 'es'}` : `Top ${filtered.length} of ${all.length}`} · current year is due {top?.monthLabel || 'till this month'}
+              {term ? `${filtered.length} match${filtered.length === 1 ? '' : 'es'}` : `Showing ${filtered.length} of ${all.length}`} · current year is due {top?.monthLabel || 'till this month'}
             </Typography>
 
             {filtered.map((r, i) => (
@@ -440,7 +455,7 @@ export default function ManagerDesk() {
               </Card>
             ))}
             {filtered.length === 0 && <Card sx={{ borderRadius: 3 }}><CardContent><Typography sx={{ textAlign: 'center', color: C.muted, py: 2 }}>No match.</Typography></CardContent></Card>}
-            {!term && all.length > 50 && <Typography sx={{ fontSize: 12, color: C.muted, textAlign: 'center', mt: 1 }}>Showing the top 50 — use search to find anyone else.</Typography>}
+            {!term && topLimit !== 'all' && all.length > lim && <Typography sx={{ fontSize: 12, color: C.muted, textAlign: 'center', mt: 1 }}>Raise the limit above or search to find anyone else.</Typography>}
           </>
         )}
       </Shell>
