@@ -18,6 +18,10 @@ export const leaveService = {
   apply: async (data) => (await api.post('/leave/me/applications', data)).data,
   cancel: async (id) => (await api.post(`/leave/me/applications/${id}/cancel`)).data,
   myAttendance: async (month) => (await api.get('/leave/me/attendance', { params: { month } })).data,
+  // Classes I've been asked to cover (substitute) + the handover behind each.
+  covering: async () => (await api.get('/leave/me/covering')).data,
+  getCovering: async (id) => (await api.get(`/leave/me/covering/${id}`)).data,
+  coveringFile: async (id, fileId) => (await api.get(`/leave/me/covering/${id}/file/${fileId}`)).data,
   myDeductions: async (month) => (await api.get('/leave/me/deductions', { params: { month } })).data,
 
   // ── Oversight: applications + decisions ───────────────────────────────────────

@@ -83,6 +83,8 @@ export default function NotificationBell() {
     // to the key-prefix route.
     const to = (n.entityType === 'feedback' && n.entityId)
       ? `/feedback/t/${n.entityId}`
+      : (n.entityType === 'leave_covering' && n.entityId)
+      ? `/leave/covering/${n.entityId}`
       : routeFor(n.key);
     if (to) navigate(to);
   };

@@ -186,6 +186,7 @@ import MyRoster from './pages/assembly/MyRoster';
 import MyChecklist from './pages/assembly/MyChecklist';
 import MyGrade from './pages/assembly/MyGrade';
 import MyLeave from './pages/leave/MyLeave';
+import CoveringDetail from './pages/leave/CoveringDetail';
 import LeaveMyAttendance from './pages/leave/MyAttendance';
 import MyPenalty from './pages/leave/MyPenalty';
 import LeaveApprovals from './pages/leave/Approvals';
@@ -451,6 +452,7 @@ export default function App() {
         <Route path="assembly/plans/:id" element={<PlanBuilder />} />
         <Route path="assembly/specials/:id" element={<SpecialBuilder />} />
         <Route path="leave/me" element={<MyLeave />} />
+        <Route path="leave/covering/:id" element={<CoveringDetail />} />
         <Route path="leave/me/attendance" element={<LeaveMyAttendance />} />
         <Route path="leave/me/penalty" element={<MyPenalty />} />
         <Route path="leave/approvals" element={<LeaveApprovals />} />

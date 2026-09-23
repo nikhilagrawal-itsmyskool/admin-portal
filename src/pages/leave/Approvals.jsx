@@ -281,6 +281,7 @@ export default function Approvals() {
                   <Box key={i} sx={{ fontSize: 12.5 }}>
                     <Typography component="span" sx={{ fontWeight: 700, fontSize: 12.5 }}>{t.className || '—'}{t.subjectName ? ` · ${t.subjectName}` : ''}: </Typography>
                     <Typography component="span" sx={{ fontSize: 12.5 }}>{t.chapter ? `${t.chapter} — ` : ''}{t.topic}</Typography>
+                    {t.substituteName && <Typography sx={{ fontSize: 11.5, color: '#274bdb', fontWeight: 600 }}>↳ Covering: {t.substituteName}</Typography>}
                     {t.substitution && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>↳ {t.substitution}</Typography>}
                   </Box>
                 ))}

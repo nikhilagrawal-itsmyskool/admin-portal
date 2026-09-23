@@ -11,6 +11,8 @@ import { APP_STATUS_COLOR, thisMonth } from './LeaveShared';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate, todayIso } from '../../utils/date';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import EmployeeSearchDialog from '../../components/common/EmployeeSearchDialog';
+import { useNavigate } from 'react-router-dom';
 
 function readFileB64(file) {
   return new Promise((resolve, reject) => {
@@ -53,13 +55,16 @@ export default function MyLeave() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [handover, setHandover] = useState({ ...blankHandover });
   const [busy, setBusy] = useState(false);
+  const [pickerIdx, setPickerIdx] = useState(null); // which topic card is choosing a covering teacher
+  const [covering, setCovering] = useState([]); // classes I've been asked to cover
+  const navigate = useNavigate();
   const [cancelTarget, setCancelTarget] = useState(null);
 
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const [t, s, a] = await Promise.all([leaveService.myTypes(), leaveService.mySummary(thisMonth()), leaveService.myApplications()]);
-      setTypes(t || []); setSummary(s); setApps(a || []);
+      const [t, s, a, c] = await Promise.all([leaveService.myTypes(), leaveService.mySummary(thisMonth()), leaveService.myApplications(), leaveService.covering().catch(() => [])]);
+      setTypes(t || []); setSummary(s); setApps(a || []); setCovering(c || []);
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to load your leave');
     } finally { setLoading(false); }
@@ -179,6 +184,22 @@ export default function MyLeave() {
                 <Typography sx={{ fontSize: 11, color: 'text.disabled', mt: 1.5 }}>Allocations are per academic year and lapse on 31 March.</Typography>
               </CardContent>
             </Card>
+          )}
+
+          {covering.length > 0 && (
+            <Box sx={{ mb: 2.5 }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary', mb: 1 }}>Classes you're covering</Typography>
+              <Stack spacing={1}>
+                {covering.map((c) => (
+                  <Card key={c.applicationId} variant="outlined" sx={{ borderColor: '#cfe0ff', cursor: 'pointer' }} onClick={() => navigate(`/leave/covering/${c.applicationId}`)}>
+                    <CardContent sx={{ py: 1.25, '&:last-child': { pb: 1.25 } }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: 13.5 }}>{(c.myClasses || []).map((t) => t.className).filter(Boolean).join(', ') || 'Class'} <Typography component="span" sx={{ fontWeight: 400, color: 'text.secondary' }}>· for {c.applicantName || 'a colleague'}</Typography></Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{dateRange(c.fromDate, c.toDate)} · tap to see the lesson plan & worksheets</Typography>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            </Box>
           )}
 
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary', mb: 1 }}>My requests</Typography>
@@ -313,6 +334,14 @@ export default function MyLeave() {
                           onChange={(e) => setHandover((h) => ({ ...h, topics: h.topics.map((x, i) => i === idx ? { ...x, topic: e.target.value } : x) }))} />
                         <TextField fullWidth size="small" sx={{ mt: 1 }} label="Substitution instructions (optional)" value={t.substitution || ''}
                           onChange={(e) => setHandover((h) => ({ ...h, topics: h.topics.map((x, i) => i === idx ? { ...x, substitution: e.target.value } : x) }))} />
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+                          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Covering teacher:</Typography>
+                          {t.substituteName
+                            ? <Chip size="small" color="primary" variant="outlined" label={t.substituteName}
+                                onDelete={() => setHandover((h) => ({ ...h, topics: h.topics.map((x, i) => i === idx ? { ...x, substituteId: undefined, substituteName: undefined } : x) }))} />
+                            : <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>none</Typography>}
+                          <Button size="small" variant="text" onClick={() => setPickerIdx(idx)}>{t.substituteName ? 'Change' : 'Assign'}</Button>
+                        </Stack>
                       </CardContent></Card>
                     ))}
                   </Stack>
@@ -394,6 +423,9 @@ export default function MyLeave() {
 
       <ConfirmDialog open={Boolean(cancelTarget)} title="Cancel this leave request?" message="The request will be withdrawn. You can apply again if needed."
         confirmLabel="Cancel leave" confirmColor="error" onConfirm={doCancel} onCancel={() => setCancelTarget(null)} loading={busy} />
+
+      <EmployeeSearchDialog open={pickerIdx !== null} onClose={() => setPickerIdx(null)}
+        onSelect={(emp) => setHandover((h) => ({ ...h, topics: h.topics.map((x, i) => i === pickerIdx ? { ...x, substituteId: emp.uuid, substituteName: emp.name } : x) }))} />
     </Box>
   );
 }
