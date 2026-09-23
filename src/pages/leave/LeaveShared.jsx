@@ -226,6 +226,33 @@ function Row({ k, v, danger }) {
 }
 
 // Month picker value helper: current month YYYY-MM in IST.
+// Open a `data:` URI (from getAttachment/handoverFile) reliably. Writing a PDF into a blank
+// window.open('', '_blank') is silently killed by popup blockers ("click does nothing") — so
+// we convert to a Blob URL and open that; if the tab is still blocked we fall back to a
+// download. Used by every leave file-open (attachment, handover files, covering files).
+export function openDataUri(dataUri, fileName) {
+  if (!dataUri) return;
+  try {
+    const comma = dataUri.indexOf(',');
+    const meta = dataUri.slice(0, comma);
+    const b64 = dataUri.slice(comma + 1);
+    const mime = (meta.match(/data:(.*?);base64/) || [])[1] || 'application/octet-stream';
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) arr[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([arr], { type: mime }));
+    const w = window.open(url, '_blank');
+    if (!w) {
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName || 'file'; document.body.appendChild(a); a.click(); a.remove();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch {
+    // last resort: navigate the current tab to the data URI
+    try { window.open(dataUri, '_blank'); } catch { /* ignore */ }
+  }
+}
+
 export function thisMonth() {
   return new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 7);
 }

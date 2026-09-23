@@ -12,6 +12,7 @@ import {
 import { leaveService } from '../../services/leaveService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { fmtDate, fmtMonth, fmtDateTime, todayIso } from '../../utils/date';
+import { openDataUri } from './LeaveShared';
 
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
 const HALF_LABEL = { first_half: '½ day (1st half)', second_half: '½ day (2nd half)' };
@@ -117,7 +118,7 @@ export default function Approvals() {
   const viewHandoverFile = async (appId, fileId, name) => {
     try {
       const f = await leaveService.handoverFile(appId, fileId);
-      if (f?.dataUri) { const w = window.open('', '_blank'); if (w) w.document.write(`<title>${name}</title><iframe src="${f.dataUri}" style="border:0;position:fixed;inset:0;width:100%;height:100%"></iframe>`); }
+      if (f?.dataUri) openDataUri(f.dataUri, name);
     } catch (err) { setError(err.response?.data?.error?.description || 'Could not open file'); }
   };
 
@@ -233,10 +234,7 @@ export default function Approvals() {
     setError('');
     try {
       const att = await leaveService.getAttachment(a.uuid);
-      if (att?.dataUri) {
-        const w = window.open('', '_blank');
-        if (w) w.document.write(`<title>${a.employeeName || 'Document'}</title><iframe src="${att.dataUri}" style="border:0;position:fixed;inset:0;width:100%;height:100%"></iframe>`);
-      }
+      if (att?.dataUri) openDataUri(att.dataUri, att.fileName || a.employeeName || 'document');
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Could not open document');
     }

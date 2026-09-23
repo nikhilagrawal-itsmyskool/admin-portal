@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, TextField, Alert, CircularProgress, Card, Chip, Stack } from '@mui/material';
+import {
+  Box, Typography, TextField, Alert, CircularProgress, Card, Chip, Stack,
+  Drawer, IconButton, Button, Divider,
+} from '@mui/material';
+import { Close as CloseIcon, AttachFile as AttachIcon } from '@mui/icons-material';
 import { leaveService } from '../../services/leaveService';
-import { thisMonth } from './LeaveShared';
-import { todayIso } from '../../utils/date';
+import { thisMonth, openDataUri } from './LeaveShared';
+import { fmtDate, todayIso } from '../../utils/date';
+
+const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -24,6 +30,23 @@ export default function WhosOnLeave() {
   const [error, setError] = useState('');
   const today = todayIso();
   const todayRef = useRef(null);
+  const [drawer, setDrawer] = useState(null); // { person } — the tapped leave
+  const [detail, setDetail] = useState({ loading: false, handover: null, attachment: null });
+
+  const openDrawer = async (person) => {
+    setDrawer(person);
+    if (!person.uuid) { setDetail({ loading: false, handover: null, attachment: null }); return; }
+    setDetail({ loading: true, handover: null, attachment: null });
+    const [ho, att] = await Promise.all([
+      leaveService.getHandover(person.uuid).catch(() => null),
+      leaveService.getAttachment(person.uuid).catch(() => null),
+    ]);
+    setDetail({ loading: false, handover: ho, attachment: att });
+  };
+  const openFile = async (fileId, name) => {
+    const f = await leaveService.handoverFile(drawer.uuid, fileId).catch(() => null);
+    if (f?.dataUri) openDataUri(f.dataUri, name);
+  };
 
   const [y, m] = month.split('-').map(Number);
   const first = `${month}-01`;
@@ -54,7 +77,7 @@ export default function WhosOnLeave() {
     const hi = a.toDate > last ? last : a.toDate;
     for (const d of eachDate(lo, hi)) {
       const half = a.dayPortion === 'first_half' || a.dayPortion === 'second_half';
-      (byDate[d] = byDate[d] || []).push({ name: a.employeeName || a.employeeId, code: a.leaveTypeCode, status: a.status, half });
+      (byDate[d] = byDate[d] || []).push({ uuid: a.uuid, name: a.employeeName || a.employeeId, code: a.leaveTypeCode, status: a.status, half, fromDate: a.fromDate, toDate: a.toDate, typeName: a.leaveTypeName, reason: a.reason });
     }
   }
 
@@ -113,13 +136,14 @@ export default function WhosOnLeave() {
                             key={`${date}-${i}`} size="small"
                             label={<span><b>{p.name}</b>{p.code ? ` · ${p.code}` : ''}{p.half ? ' · ½' : ''}</span>}
                             variant="outlined"
+                            onClick={() => openDrawer(p)}
                             sx={{
-                              fontSize: 12,
+                              fontSize: 12, cursor: 'pointer',
                               borderColor: p.status === 'approved' ? '#00b887' : '#f0c14b',
                               color: p.status === 'approved' ? '#00916e' : '#8a6400',
                               bgcolor: p.status === 'approved' ? '#f2fcf9' : '#fffaf0',
                             }}
-                            title={p.status}
+                            title="View leave & handover"
                           />
                         ))
                       )}
@@ -130,10 +154,87 @@ export default function WhosOnLeave() {
             })}
           </Card>
           <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 1.5 }}>
-            Green = approved, amber = pending. One row per day; today is highlighted.
+            Green = approved, amber = pending. One row per day; today is highlighted. Tap a name to see the leave & academic handover.
           </Typography>
         </>
       )}
+
+      <Drawer anchor="right" open={Boolean(drawer)} onClose={() => setDrawer(null)}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 440 }, maxWidth: '100%' } }}>
+        {drawer && (
+          <Box sx={{ p: 2.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>{drawer.name}</Typography>
+                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+                  {drawer.typeName || drawer.code} · {dateRange(drawer.fromDate, drawer.toDate)}
+                  {drawer.half ? ' · ½ day' : ''}
+                </Typography>
+                <Chip size="small" label={drawer.status} sx={{ mt: 0.5, height: 20, fontWeight: 700,
+                  bgcolor: drawer.status === 'approved' ? '#e5f8f2' : '#fff5e0', color: drawer.status === 'approved' ? '#00916e' : '#8a6400' }} />
+              </Box>
+              <IconButton size="small" onClick={() => setDrawer(null)}><CloseIcon fontSize="small" /></IconButton>
+            </Box>
+            {drawer.reason && <Typography sx={{ fontSize: 13, mt: 1 }}><b>Reason:</b> {drawer.reason}</Typography>}
+
+            <Divider sx={{ my: 2 }} />
+
+            {detail.loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={22} /></Box>
+            ) : (
+              <>
+                {detail.attachment?.dataUri && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary', mb: 0.5 }}>Supporting document</Typography>
+                    <Button size="small" startIcon={<AttachIcon />} onClick={() => openDataUri(detail.attachment.dataUri, detail.attachment.fileName)}>
+                      {detail.attachment.fileName || 'View document'}
+                    </Button>
+                  </Box>
+                )}
+
+                {(() => {
+                  const ho = detail.handover;
+                  if (!ho) return <Typography sx={{ fontSize: 13, color: 'text.disabled' }}>No academic handover on file (non-teaching staff or older leave).</Typography>;
+                  const topics = ho.topics || [];
+                  const duties = ho.otherDuties || {};
+                  const files = ho.files || [];
+                  const plans = files.filter((f) => f.variant !== 'worksheet');
+                  const sheets = files.filter((f) => f.variant === 'worksheet');
+                  return (
+                    <>
+                      <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary', mb: 1 }}>Academic handover</Typography>
+                      {topics.length > 0 && (
+                        <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+                          {topics.map((t, i) => (
+                            <Box key={i} sx={{ fontSize: 12.5 }}>
+                              <Typography component="span" sx={{ fontWeight: 700, fontSize: 12.5 }}>{t.className || '—'}{t.subjectName ? ` · ${t.subjectName}` : ''}: </Typography>
+                              <Typography component="span" sx={{ fontSize: 12.5 }}>{t.chapter ? `${t.chapter} — ` : ''}{t.topic}</Typography>
+                              {t.substituteName && <Typography sx={{ fontSize: 11.5, color: '#274bdb', fontWeight: 600 }}>↳ Covering: {t.substituteName}</Typography>}
+                              {t.substitution && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>↳ {t.substitution}</Typography>}
+                            </Box>
+                          ))}
+                        </Stack>
+                      )}
+                      {ho.lessonPlan && <Typography sx={{ fontSize: 12.5, mb: 1 }}><b>Lesson plan:</b> {ho.lessonPlan}</Typography>}
+                      {plans.length > 0 && (
+                        <Stack spacing={0.5} alignItems="flex-start" sx={{ mb: 1 }}>
+                          {plans.map((f) => <Button key={f.fileId} size="small" startIcon={<AttachIcon />} onClick={() => openFile(f.fileId, f.fileName)}>Lesson plan: {f.fileName}</Button>)}
+                        </Stack>
+                      )}
+                      {sheets.length > 0 && (
+                        <Stack spacing={0.5} alignItems="flex-start" sx={{ mb: 1 }}>
+                          {sheets.map((f) => <Button key={f.fileId} size="small" startIcon={<AttachIcon />} onClick={() => openFile(f.fileId, f.fileName)}>Worksheet: {f.fileName}</Button>)}
+                        </Stack>
+                      )}
+                      <Typography sx={{ fontSize: 12.5, mt: 1 }}><b>Other duties:</b> {(duties.duties || []).join(', ') || '—'}{duties.covering ? ` · covered by ${duties.covering}` : ''}{duties.note ? ` · ${duties.note}` : ''}</Typography>
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </Box>
+        )}
+      </Drawer>
     </Box>
   );
 }

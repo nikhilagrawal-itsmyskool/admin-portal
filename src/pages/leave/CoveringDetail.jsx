@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { ArrowBack as BackIcon, AttachFile as AttachIcon } from '@mui/icons-material';
 import { leaveService } from '../../services/leaveService';
+import { openDataUri } from './LeaveShared';
 import { fmtDate } from '../../utils/date';
 
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
@@ -30,7 +31,7 @@ export default function CoveringDetail() {
   const openFile = async (fileId, name) => {
     try {
       const f = await leaveService.coveringFile(id, fileId);
-      if (f?.dataUri) { const w = window.open('', '_blank'); if (w) w.document.write(`<title>${name}</title><iframe src="${f.dataUri}" style="border:0;position:fixed;inset:0;width:100%;height:100%"></iframe>`); }
+      if (f?.dataUri) openDataUri(f.dataUri, name);
     } catch (err) { setError(err.response?.data?.error?.description || 'Could not open file'); }
   };
 
