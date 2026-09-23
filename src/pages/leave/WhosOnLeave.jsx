@@ -7,6 +7,7 @@ import { Close as CloseIcon, AttachFile as AttachIcon } from '@mui/icons-materia
 import { leaveService } from '../../services/leaveService';
 import { thisMonth, openDataUri } from './LeaveShared';
 import { fmtDate, todayIso } from '../../utils/date';
+import { useCan } from '../../permissions/can';
 
 const dateRange = (a, b) => (a === b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`);
 
@@ -32,6 +33,9 @@ export default function WhosOnLeave() {
   const todayRef = useRef(null);
   const [drawer, setDrawer] = useState(null); // { person } — the tapped leave
   const [detail, setDetail] = useState({ loading: false, handover: null, attachment: null });
+  // The calendar (who's on leave) is visible to all staff, but the detail drawer reveals the
+  // reason, supporting document (e.g. medical certificate) and handover — approver-only.
+  const canManage = useCan()('leave.manage');
 
   const openDrawer = async (person) => {
     setDrawer(person);
@@ -136,14 +140,14 @@ export default function WhosOnLeave() {
                             key={`${date}-${i}`} size="small"
                             label={<span><b>{p.name}</b>{p.code ? ` · ${p.code}` : ''}{p.half ? ' · ½' : ''}</span>}
                             variant="outlined"
-                            onClick={() => openDrawer(p)}
+                            onClick={canManage ? () => openDrawer(p) : undefined}
                             sx={{
-                              fontSize: 12, cursor: 'pointer',
+                              fontSize: 12, cursor: canManage ? 'pointer' : 'default',
                               borderColor: p.status === 'approved' ? '#00b887' : '#f0c14b',
                               color: p.status === 'approved' ? '#00916e' : '#8a6400',
                               bgcolor: p.status === 'approved' ? '#f2fcf9' : '#fffaf0',
                             }}
-                            title="View leave & handover"
+                            title={canManage ? 'View leave & handover' : undefined}
                           />
                         ))
                       )}
@@ -154,7 +158,7 @@ export default function WhosOnLeave() {
             })}
           </Card>
           <Typography sx={{ fontSize: 12, color: 'text.disabled', mt: 1.5 }}>
-            Green = approved, amber = pending. One row per day; today is highlighted. Tap a name to see the leave & academic handover.
+            Green = approved, amber = pending. One row per day; today is highlighted.{canManage ? ' Tap a name to see the leave & academic handover.' : ''}
           </Typography>
         </>
       )}
