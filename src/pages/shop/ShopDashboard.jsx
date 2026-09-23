@@ -45,10 +45,10 @@ export default function ShopDashboard() {
   ];
 
   const quickLinks = [
-    { title: 'Catalog', description: 'Manage books and stationery', icon: BookIcon, path: '/shop/catalog', color: '#3366ff' },
-    { title: 'Purchases', description: 'Record stock purchases', icon: PurchaseIcon, path: '/shop/purchases', color: '#00b887' },
-    { title: 'Class Sets', description: 'Define booklists per class', icon: SetsIcon, path: '/shop/sets', color: '#ffaa00' },
-    { title: 'Sales', description: 'Sell to students', icon: SalesIcon, path: '/shop/sales', color: '#ff3d71' },
+    { title: 'Grade Sets', description: 'Priced sets per grade, stock & intake', icon: SetsIcon, path: '/shop/sets', color: '#ffaa00' },
+    { title: 'Assign to Student', description: 'Give a set to a student (minus declines)', icon: SalesIcon, path: '/shop/assign', color: '#ff3d71' },
+    { title: 'Assignments', description: 'All set assignments & payments', icon: SalesIcon, path: '/shop/sales', color: '#00b887' },
+    { title: 'Catalog', description: 'Books & stationery master', icon: BookIcon, path: '/shop/catalog', color: '#3366ff' },
   ];
 
   return (

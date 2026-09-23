@@ -184,10 +184,10 @@ const menuItems = [
     perm: 'shop.view',
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/shop' },
+      { title: 'Grade Sets', icon: SetsIcon, path: '/shop/sets' },
+      { title: 'Assign to Student', icon: IssueIcon, path: '/shop/assign' },
+      { title: 'Assignments', icon: IssueIcon, path: '/shop/sales' },
       { title: 'Catalog', icon: MenuBookIcon, path: '/shop/catalog' },
-      { title: 'Purchases', icon: PurchaseIcon, path: '/shop/purchases' },
-      { title: 'Sets', icon: SetsIcon, path: '/shop/sets' },
-      { title: 'Sales', icon: IssueIcon, path: '/shop/sales' },
     ],
   },
   {

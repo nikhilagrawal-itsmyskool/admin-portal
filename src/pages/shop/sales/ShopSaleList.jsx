@@ -26,8 +26,8 @@ export default function ShopSaleList() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Sales</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/shop/sales/new')}>New Sale</Button>
+        <Typography variant="h4">Assignments</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/shop/assign')}>Assign Set</Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}

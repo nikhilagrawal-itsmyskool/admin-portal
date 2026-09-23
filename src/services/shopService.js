@@ -95,6 +95,33 @@ const shopService = {
     return response.data;
   },
 
+  getSetStock: async (id) => {
+    const response = await api.get(`/shop/sets/${id}/stock`);
+    return response.data;
+  },
+
+  // Set intakes (sets received from the vendor)
+  getIntakes: async (filters = {}) => {
+    const response = await api.get('/shop/intakes', { params: filters });
+    return response.data;
+  },
+
+  createIntake: async (data) => {
+    const response = await api.post('/shop/intakes', data);
+    return response.data;
+  },
+
+  deleteIntake: async (id) => {
+    const response = await api.delete(`/shop/intakes/${id}`);
+    return response.data;
+  },
+
+  // Loose box (leftovers from declined items)
+  getLoose: async (filters = {}) => {
+    const response = await api.get('/shop/loose', { params: filters });
+    return response.data;
+  },
+
   // Sales
   getSales: async (filters = {}) => {
     const response = await api.get('/shop/sales', { params: filters });
@@ -108,6 +135,12 @@ const shopService = {
 
   createSale: async (data) => {
     const response = await api.post('/shop/sales', data);
+    return response.data;
+  },
+
+  // Assign a whole set to a student (minus any declined recipe lines)
+  assignSet: async (data) => {
+    const response = await api.post('/shop/sales/assign', data);
     return response.data;
   },
 };

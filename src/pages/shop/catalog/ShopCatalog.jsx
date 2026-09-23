@@ -13,7 +13,7 @@ const TYPE_COLORS = { book: 'primary', notebook: 'success', stationery: 'default
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
 
 function ItemDialog({ open, onClose, onSave, item, lookups }) {
-  const [form, setForm] = useState({ name: '', type: 'book', subject: '', publisher: '', classNo: '', description: '' });
+  const [form, setForm] = useState({ name: '', type: 'book', subject: '', publisher: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,19 +22,14 @@ function ItemDialog({ open, onClose, onSave, item, lookups }) {
       setForm(item ? {
         name: item.name, type: item.type,
         subject: item.subject || '', publisher: item.publisher || '',
-        classNo: item.classNo || '', description: item.description || '',
-      } : { name: '', type: 'book', subject: '', publisher: '', classNo: '', description: '' });
+        description: item.description || '',
+      } : { name: '', type: 'book', subject: '', publisher: '', description: '' });
       setError('');
     }
   }, [open, item]);
 
   const handleSave = async () => {
     if (!form.name.trim()) { setError('Name is required'); return; }
-    if (form.type === 'book') {
-      if (!form.subject.trim()) { setError('Subject is required for books'); return; }
-      if (!form.publisher.trim()) { setError('Publisher is required for books'); return; }
-      if (!form.classNo || form.classNo < 1 || form.classNo > 12) { setError('Class No (1-12) is required for books'); return; }
-    }
     setSaving(true);
     try {
       const payload = {
@@ -42,9 +37,8 @@ function ItemDialog({ open, onClose, onSave, item, lookups }) {
         type: form.type,
         description: form.description || undefined,
         ...(form.type === 'book' && {
-          subject: form.subject.trim(),
-          publisher: form.publisher.trim(),
-          classNo: parseInt(form.classNo, 10),
+          subject: form.subject.trim() || undefined,
+          publisher: form.publisher.trim() || undefined,
         }),
       };
       if (item) {
@@ -86,12 +80,6 @@ function ItemDialog({ open, onClose, onSave, item, lookups }) {
               <TextField fullWidth label="Publisher" value={form.publisher}
                 onChange={e => setForm(p => ({ ...p, publisher: e.target.value }))} size="small" />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth select label="Class No" value={form.classNo}
-                onChange={e => setForm(p => ({ ...p, classNo: e.target.value }))} size="small">
-                {(lookups?.classNos || []).map(n => <MenuItem key={n} value={n}>Class {n}</MenuItem>)}
-              </TextField>
-            </Grid>
           </>}
           <Grid item xs={12}>
             <TextField fullWidth label="Description (optional)" value={form.description}
@@ -113,8 +101,7 @@ export default function ShopCatalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState('');
-  const [filterClassNo, setFilterClassNo] = useState('');
-  const [filterSession, setFilterSession] = useState('');
+  const [filterName, setFilterName] = useState('');
   const [dialog, setDialog] = useState({ open: false, item: null });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
@@ -129,8 +116,7 @@ export default function ShopCatalog() {
     try {
       const filters = {};
       if (filterType) filters.type = filterType;
-      if (filterClassNo) filters.classNo = filterClassNo;
-      if (filterSession) filters.academicSession = filterSession;
+      if (filterName.trim()) filters.name = filterName.trim();
       const data = await shopService.getItems(filters);
       setItems(data);
     } catch {
@@ -138,7 +124,7 @@ export default function ShopCatalog() {
     } finally {
       setLoading(false);
     }
-  }, [filterType, filterClassNo, filterSession]);
+  }, [filterType, filterName]);
 
   const handleDelete = async (item) => {
     try {
@@ -172,20 +158,12 @@ export default function ShopCatalog() {
                 {(lookups?.itemTypes || []).map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={6} sm={3}>
-              <TextField fullWidth select label="Class No" value={filterClassNo}
-                onChange={e => setFilterClassNo(e.target.value)} size="small"
-                disabled={filterType === 'stationery' || filterType === 'notebook'}>
-                <MenuItem value="">All Classes</MenuItem>
-                {(lookups?.classNos || []).map(n => <MenuItem key={n} value={n}>Class {n}</MenuItem>)}
-              </TextField>
+            <Grid item xs={6} sm={5}>
+              <TextField fullWidth label="Search by name" value={filterName}
+                onChange={e => setFilterName(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadItems()}
+                size="small" placeholder="e.g. Diary, Grammatica" />
             </Grid>
-            <Grid item xs={6} sm={3}>
-              <TextField fullWidth label="Academic Session" value={filterSession}
-                onChange={e => setFilterSession(e.target.value)} size="small"
-                placeholder="e.g. 2025-26" />
-            </Grid>
-            <Grid item xs={6} sm={3}>
+            <Grid item xs={12} sm={3}>
               <Button variant="contained" onClick={loadItems} size="small" fullWidth>Search</Button>
             </Grid>
           </Grid>
@@ -208,12 +186,6 @@ export default function ShopCatalog() {
                 <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Subject / Publisher</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="center">Class</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">MRP</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc.</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="center">Stock</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">Stock Value</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">Session</TableCell>
                 <TableCell align="right" />
               </TableRow>
             </TableHead>
@@ -226,14 +198,6 @@ export default function ShopCatalog() {
                   </TableCell>
                   <TableCell>
                     {item.subject ? <>{item.subject}<br /><Typography variant="caption" color="text.secondary">{item.publisher}</Typography></> : '—'}
-                  </TableCell>
-                  <TableCell align="center">{item.classNo || '—'}</TableCell>
-                  <TableCell align="right">{formatCurrency(item.lastMrp)}</TableCell>
-                  <TableCell align="right">{item.lastStudentDiscountPct != null ? `${item.lastStudentDiscountPct}%` : '—'}</TableCell>
-                  <TableCell align="center">{item.currentStock ?? 0}</TableCell>
-                  <TableCell align="right">{formatCurrency(item.discountedStockValue)}</TableCell>
-                  <TableCell align="right">
-                    <Typography variant="caption" color="text.secondary">{item.lastAcademicSession || '—'}</Typography>
                   </TableCell>
                   <TableCell align="right">
                     <IconButton size="small" onClick={() => setDialog({ open: true, item })}><EditIcon fontSize="small" /></IconButton>

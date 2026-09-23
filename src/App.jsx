@@ -75,8 +75,10 @@ import ShopPurchaseList from './pages/shop/purchases/ShopPurchaseList';
 import ShopPurchaseForm from './pages/shop/purchases/ShopPurchaseForm';
 import ShopSetList from './pages/shop/sets/ShopSetList';
 import ShopSetForm from './pages/shop/sets/ShopSetForm';
+import ShopSetDetail from './pages/shop/sets/ShopSetDetail';
 import ShopSaleList from './pages/shop/sales/ShopSaleList';
 import ShopSaleForm from './pages/shop/sales/ShopSaleForm';
+import ShopAssignForm from './pages/shop/sales/ShopAssignForm';
 import ShopSaleDetail from './pages/shop/sales/ShopSaleDetail';
 import AssetDashboard from './pages/asset/AssetDashboard';
 import AssetTree from './pages/asset/tree/AssetTree';
@@ -328,7 +330,9 @@ export default function App() {
         <Route path="shop/purchases/:id" element={<ShopPurchaseForm />} />
         <Route path="shop/sets" element={<ShopSetList />} />
         <Route path="shop/sets/new" element={<ShopSetForm />} />
+        <Route path="shop/sets/:id" element={<ShopSetDetail />} />
         <Route path="shop/sets/:id/edit" element={<ShopSetForm />} />
+        <Route path="shop/assign" element={<ShopAssignForm />} />
         <Route path="shop/sales" element={<ShopSaleList />} />
         <Route path="shop/sales/new" element={<ShopSaleForm />} />
         <Route path="shop/sales/:id" element={<ShopSaleDetail />} />
