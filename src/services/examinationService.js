@@ -88,10 +88,18 @@ export const examinationService = {
   // ── Phase 4: seating rooms ──────────────────────────────────────────────────
   // Rooms: { examId, rooms:[{uuid,name,sortOrder,allocations:[{uuid,sectionClassId,sectionName,grade,rollFrom,rollTo}]}] }
   getRooms: async (id) => (await api.get(`/examination/examinations/${id}/rooms`)).data,
+  // Rooms with allocations resolved for one exam date (per-date override or base). Adds
+  // { examDate, dateHasCustom, rooms:[{ ...room, hasOverride }] }.
+  getRoomsForDate: async (id, date) => (await api.get(`/examination/examinations/${id}/rooms/date/${date}`)).data,
   saveRoom: async (id, body) => (await api.post(`/examination/examinations/${id}/rooms`, body)).data,
   deleteRoom: async (id, roomId) => (await api.delete(`/examination/examinations/${id}/rooms/${roomId}`)).data,
-  saveRoomAllocations: async (id, roomId, allocations) =>
-    (await api.put(`/examination/examinations/${id}/rooms/${roomId}/allocations`, { allocations })).data,
+  // examDate present → save this room's one-day override; absent → the base plan.
+  saveRoomAllocations: async (id, roomId, allocations, examDate) =>
+    (await api.put(`/examination/examinations/${id}/rooms/${roomId}/allocations`, { allocations, examDate })).data,
+  customiseSeatingDay: async (id, date) =>
+    (await api.post(`/examination/examinations/${id}/seating/date/${date}/customise`, {})).data,
+  revertSeatingDay: async (id, date) =>
+    (await api.post(`/examination/examinations/${id}/seating/date/${date}/revert`, {})).data,
   copyRooms: async (id, sourceExamId) =>
     (await api.post(`/examination/examinations/${id}/rooms/copy`, { sourceExamId })).data,
 

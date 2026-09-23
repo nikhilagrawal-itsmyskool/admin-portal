@@ -10,6 +10,10 @@ import {
 } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { printSeatingPlan } from './seatingPlanHtml';
+import { fmtDate } from '../../utils/date';
+
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const dayOf = (d) => (d ? DOW[new Date(`${d}T00:00:00`).getDay()] : '');
 
 // Read a File into { base64 (no data: prefix), mimeType, fileName }.
 const readFile = (file) => new Promise((resolve, reject) => {
@@ -36,17 +40,22 @@ export default function SeatingTab({ examId, exam, canManage }) {
   const [planImg, setPlanImg] = useState(null); // { fileId, dataUri }
   const [roomImgHas, setRoomImgHas] = useState({}); // roomId -> bool
   const [viewImg, setViewImg] = useState(null); // { name, dataUri }
+  const [viewDate, setViewDate] = useState(''); // '' = base plan; else an exam date (per-day layout)
+  const [dates, setDates] = useState([]);
+  const [dateHasCustom, setDateHasCustom] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
     try {
       const [r, inv, list, img] = await Promise.all([
-        examinationService.getRooms(examId),
-        examinationService.getInvigilators(examId).catch(() => ({ sections: [] })),
+        viewDate ? examinationService.getRoomsForDate(examId, viewDate) : examinationService.getRooms(examId),
+        examinationService.getInvigilators(examId).catch(() => ({ sections: [], dates: [] })),
         examinationService.list({ academicYearId: exam?.academicYearId }).catch(() => []),
         examinationService.getSeatingImage(examId).catch(() => ({ dataUri: null })),
       ]);
       setRooms(r.rooms || []);
+      setDateHasCustom(!!r.dateHasCustom);
+      setDates(inv.dates || []);
       setSections(inv.sections || []);
       setOtherExams((list || []).filter((e) => e.uuid !== examId));
       setPlanImg(img || null);
@@ -56,8 +65,27 @@ export default function SeatingTab({ examId, exam, canManage }) {
     } catch (x) {
       setErr(x.response?.data?.error?.description || 'Failed to load the seating scheme');
     } finally { setLoading(false); }
-  }, [examId, exam?.academicYearId]);
+  }, [examId, exam?.academicYearId, viewDate]);
   useEffect(() => { load(); }, [load]);
+
+  const customiseDay = async () => {
+    setBusy(true); setErr(''); setMsg('');
+    try { const r = await examinationService.customiseSeatingDay(examId, viewDate); applyDayRooms(r); setMsg('Base plan copied to this day — edit it freely.'); }
+    catch (x) { setErr(x.response?.data?.error?.description || 'Failed to customise the day'); }
+    finally { setBusy(false); }
+  };
+  const revertDay = async () => {
+    setBusy(true); setErr(''); setMsg('');
+    try { const r = await examinationService.revertSeatingDay(examId, viewDate); applyDayRooms(r); setMsg('This day now follows the base plan.'); }
+    catch (x) { setErr(x.response?.data?.error?.description || 'Failed to revert the day'); }
+    finally { setBusy(false); }
+  };
+  const applyDayRooms = (r) => {
+    setRooms(r.rooms || []); setDateHasCustom(!!r.dateHasCustom);
+    const e = {};
+    (r.rooms || []).forEach((rm) => { e[rm.uuid] = (rm.allocations || []).map((a) => ({ sectionClassId: a.sectionClassId, rollFrom: a.rollFrom ?? '', rollTo: a.rollTo ?? '' })); });
+    setEdits(e);
+  };
 
   const sectionById = useMemo(() => {
     const m = {}; for (const s of sections) m[s.classId] = s; return m;
@@ -95,9 +123,10 @@ export default function SeatingTab({ examId, exam, canManage }) {
     setBusy(true); setErr(''); setMsg('');
     try {
       const allocations = (edits[roomId] || []).filter((a) => a.sectionClassId);
-      const r = await examinationService.saveRoomAllocations(examId, roomId, allocations);
+      const r = await examinationService.saveRoomAllocations(examId, roomId, allocations, viewDate || undefined);
       setRooms(r.rooms || []);
-      setMsg('Room saved.');
+      if (viewDate) setDateHasCustom(!!r.dateHasCustom);
+      setMsg(viewDate ? `Saved for ${fmtDate(viewDate)} (this day only).` : 'Room saved.');
     } catch (x) { setErr(x.response?.data?.error?.description || 'Failed to save the room'); }
     finally { setBusy(false); }
   };
@@ -181,11 +210,44 @@ export default function SeatingTab({ examId, exam, canManage }) {
 
   return (
     <Box>
+      {/* Per-day layout switch: the Base plan applies to every exam date; pick a date to give
+          that day its own layout (e.g. the last day, when some grades are done and students are
+          merged into fewer rooms). Editing a room on a date changes ONLY that day. */}
+      {dates.length > 0 && (
+        <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, mb: 2 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
+            <TextField
+              select size="small" label="Seating for" value={viewDate}
+              onChange={(e) => setViewDate(e.target.value)} sx={{ minWidth: 220 }}
+            >
+              <MenuItem value="">Base plan (all days)</MenuItem>
+              {dates.map((d) => <MenuItem key={d} value={d}>{fmtDate(d)} · {dayOf(d)}</MenuItem>)}
+            </TextField>
+            {viewDate && dateHasCustom && <Chip size="small" color="warning" variant="outlined" label="Custom layout for this day" />}
+            {viewDate && !dateHasCustom && <Chip size="small" variant="outlined" label="Follows the base plan" />}
+            <Box sx={{ flex: 1 }} />
+            {canManage && viewDate && !dateHasCustom && (
+              <Button size="small" startIcon={<CopyIcon />} onClick={customiseDay} disabled={busy}>Copy base plan to this day</Button>
+            )}
+            {canManage && viewDate && dateHasCustom && (
+              <Button size="small" color="error" onClick={revertDay} disabled={busy}>Revert this day to base</Button>
+            )}
+          </Stack>
+          {viewDate && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              Editing a room below and saving creates a one-day override for <b>{fmtDate(viewDate)}</b> only — the base plan and other days are untouched. Rooms tagged “this day” carry an override.
+            </Typography>
+          )}
+        </Paper>
+      )}
+
       <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1} alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1, minWidth: 200 }}>
-          {seatingRooms.length} room{seatingRooms.length === 1 ? '' : 's'} · each seats a mix of sections by roll range. An AV Room is available every exam day (manage its students from the Invigilators tab → open its roster).
+          {viewDate
+            ? <>Layout for <b>{fmtDate(viewDate)} · {dayOf(viewDate)}</b> ({seatingRooms.length} room{seatingRooms.length === 1 ? '' : 's'}). Changes here apply to this day only.</>
+            : <>{seatingRooms.length} room{seatingRooms.length === 1 ? '' : 's'} · each seats a mix of sections by roll range. An AV Room is available every exam day (manage its students from the Invigilators tab → open its roster).</>}
         </Typography>
-        {canManage && otherExams.length > 0 && (
+        {canManage && !viewDate && otherExams.length > 0 && (
           <Stack direction="row" spacing={1} alignItems="center">
             <TextField select size="small" sx={{ minWidth: 200 }} label="Copy seating from" value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)}>
               {otherExams.map((e) => <MenuItem key={e.uuid} value={e.uuid}>{e.name}</MenuItem>)}
@@ -229,6 +291,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
             <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
               <RoomIcon color="primary" fontSize="small" />
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Room {rm.name}</Typography>
+              {viewDate && rm.hasOverride && <Chip size="small" color="warning" variant="outlined" label="this day" />}
               {hasRoomImg(rm) && (
                 <Tooltip title="View room plan image"><Chip size="small" icon={<ImageIcon />} label="Plan" variant="outlined" onClick={() => viewRoomImage(rm)} /></Tooltip>
               )}
