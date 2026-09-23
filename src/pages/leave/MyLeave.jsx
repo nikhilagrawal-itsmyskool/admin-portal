@@ -34,7 +34,7 @@ function daysLabel(a) {
 
 const DUTY_OPTIONS = ['Van / Bus Duty', 'House Duty', 'Morning Assembly', 'Floor Duty', 'Gate Duty', 'Club / Activity'];
 const blankDetails = { leaveTypeCode: '', fromDate: todayIso(), toDate: todayIso(), reason: '', dayPortion: 'full' };
-const blankHandover = { topics: [], lessonPlan: '', otherDuties: { duties: [], covering: '', note: '' }, lessonPlanFile: null, worksheetFiles: [] };
+const blankHandover = { topics: [], lessonPlan: '', otherDuties: { duties: [], covering: '', note: '' }, lessonPlanFiles: [], worksheetFiles: [] };
 
 export default function MyLeave() {
   const isMobile = useIsMobile();
@@ -92,7 +92,7 @@ export default function MyLeave() {
   const handoverValid = () => {
     if (!preview?.isTeaching) return true;
     if (handover.topics.some((t) => !t.topic || !t.topic.trim())) { setError('Enter the current chapter/topic for every affected class'); return false; }
-    const hasPlan = handover.lessonPlan.trim() || handover.lessonPlanFile;
+    const hasPlan = handover.lessonPlan.trim() || handover.lessonPlanFiles.length;
     if (!hasPlan) { setError('Provide a lesson plan (type it or attach a file)'); return false; }
     const d = handover.otherDuties;
     if (!d.duties.length && !d.covering.trim() && !d.note.trim()) { setError("Declare your other duties (tick any that apply, or note 'none')"); return false; }
@@ -108,8 +108,8 @@ export default function MyLeave() {
         payload.handover = {
           topics: handover.topics,
           lessonPlan: handover.lessonPlan.trim() || undefined,
+          lessonPlanFiles: handover.lessonPlanFiles,
           otherDuties: handover.otherDuties,
-          lessonPlanFile: handover.lessonPlanFile,
           worksheetFiles: handover.worksheetFiles,
           affected: preview.affected,
         };
@@ -135,7 +135,7 @@ export default function MyLeave() {
     ...h, otherDuties: { ...h.otherDuties, duties: on ? [...h.otherDuties.duties, label] : h.otherDuties.duties.filter((x) => x !== label) },
   }));
   const addWorksheet = async (f) => { if (!f) return; const doc = await readDoc(f); setHandover((h) => ({ ...h, worksheetFiles: [...h.worksheetFiles, doc] })); };
-  const setLessonFile = async (f) => { const doc = f ? await readDoc(f) : null; setHandover((h) => ({ ...h, lessonPlanFile: doc })); };
+  const addLessonPlan = async (f) => { if (!f) return; const doc = await readDoc(f); setHandover((h) => ({ ...h, lessonPlanFiles: [...h.lessonPlanFiles, doc] })); };
 
   const activeStep = preview?.isTeaching ? step : (step === 0 ? 0 : 1);
 
@@ -323,13 +323,19 @@ export default function MyLeave() {
                 <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.secondary', mb: 1 }}>Lesson plan for the leave days (required)</Typography>
                 <TextField fullWidth size="small" multiline minRows={3} label="Type the plan…" value={handover.lessonPlan} onChange={(e) => setHandover((h) => ({ ...h, lessonPlan: e.target.value }))} />
                 <Button component="label" size="small" variant="outlined" startIcon={<UploadIcon />} sx={{ mt: 1 }}>
-                  {handover.lessonPlanFile ? handover.lessonPlanFile.fileName : 'Attach lesson-plan file (optional)'}
-                  <input hidden type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => setLessonFile(e.target.files?.[0] || null)} />
+                  Add lesson-plan file
+                  <input hidden type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => { addLessonPlan(e.target.files?.[0]); e.target.value = ''; }} />
                 </Button>
+                <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+                  {handover.lessonPlanFiles.map((p, i) => (
+                    <Chip key={i} label={p.fileName} onDelete={() => setHandover((h) => ({ ...h, lessonPlanFiles: h.lessonPlanFiles.filter((_, x) => x !== i) }))} />
+                  ))}
+                </Stack>
+                <Typography sx={{ fontSize: 11.5, color: 'text.disabled', mt: 0.5 }}>Type an overall plan and/or attach one file per class/period — add as many as you need.</Typography>
               </Box>
 
               <Box>
-                <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.secondary', mb: 1 }}>Assignment / worksheet (optional)</Typography>
+                <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.secondary', mb: 1 }}>Assignments / worksheets (optional)</Typography>
                 <Button component="label" size="small" variant="outlined" startIcon={<UploadIcon />}>
                   Add file
                   <input hidden type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => { addWorksheet(e.target.files?.[0]); e.target.value = ''; }} />
@@ -339,6 +345,7 @@ export default function MyLeave() {
                     <Chip key={i} label={w.fileName} onDelete={() => setHandover((h) => ({ ...h, worksheetFiles: h.worksheetFiles.filter((_, x) => x !== i) }))} />
                   ))}
                 </Stack>
+                <Typography sx={{ fontSize: 11.5, color: 'text.disabled', mt: 0.5 }}>Add one per class/period as needed.</Typography>
               </Box>
 
               <Box>
@@ -367,7 +374,7 @@ export default function MyLeave() {
               {preview?.isTeaching && (
                 <>
                   <Divider sx={{ my: 1 }} />
-                  <Row k="Handover" v={`${handover.topics.length} class${handover.topics.length === 1 ? '' : 'es'} · lesson plan ${handover.lessonPlan.trim() || handover.lessonPlanFile ? '✓' : '—'} · ${handover.worksheetFiles.length} worksheet(s)`} />
+                  <Row k="Handover" v={`${handover.topics.length} class${handover.topics.length === 1 ? '' : 'es'} · lesson plan ${handover.lessonPlan.trim() || handover.lessonPlanFiles.length ? '✓' : '—'}${handover.lessonPlanFiles.length ? ` (${handover.lessonPlanFiles.length} file${handover.lessonPlanFiles.length === 1 ? '' : 's'})` : ''} · ${handover.worksheetFiles.length} worksheet(s)`} />
                   <Row k="Other duties" v={handover.otherDuties.duties.join(', ') || handover.otherDuties.note || 'none'} />
                 </>
               )}
