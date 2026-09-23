@@ -350,8 +350,7 @@ export default function MyLeave() {
 
               <Box>
                 <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.secondary', mb: 1 }}>Lesson plan for the leave days (required)</Typography>
-                <TextField fullWidth size="small" multiline minRows={3} label="Type the plan…" value={handover.lessonPlan} onChange={(e) => setHandover((h) => ({ ...h, lessonPlan: e.target.value }))} />
-                <Button component="label" size="small" variant="outlined" startIcon={<UploadIcon />} sx={{ mt: 1 }}>
+                <Button component="label" size="small" variant="outlined" startIcon={<UploadIcon />}>
                   Add lesson-plan file
                   <input hidden type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => { addLessonPlan(e.target.files?.[0]); e.target.value = ''; }} />
                 </Button>
@@ -360,7 +359,9 @@ export default function MyLeave() {
                     <Chip key={i} label={p.fileName} onDelete={() => setHandover((h) => ({ ...h, lessonPlanFiles: h.lessonPlanFiles.filter((_, x) => x !== i) }))} />
                   ))}
                 </Stack>
-                <Typography sx={{ fontSize: 11.5, color: 'text.disabled', mt: 0.5 }}>Type an overall plan and/or attach one file per class/period — add as many as you need.</Typography>
+                <Typography sx={{ fontSize: 11.5, color: 'text.disabled', mt: 0.5, mb: 1.5 }}>Attach one file per class/period — add as many as you need.</Typography>
+                <TextField fullWidth size="small" multiline minRows={2} label="Optional note (typed plan)" value={handover.lessonPlan} onChange={(e) => setHandover((h) => ({ ...h, lessonPlan: e.target.value }))}
+                  helperText="Optional — shared with the covering teacher. Not needed if you've attached the plan." />
               </Box>
 
               <Box>
