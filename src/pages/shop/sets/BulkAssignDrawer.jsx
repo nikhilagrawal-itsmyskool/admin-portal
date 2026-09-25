@@ -109,6 +109,13 @@ export default function BulkAssignDrawer({ open, onClose, set, onDone }) {
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
           </Box>
 
+          {!loading && (
+            <Typography variant="caption" color="text.secondary" sx={{ px: 2, pb: 1, display: 'block' }}>
+              {students.length} student{students.length === 1 ? '' : 's'} in Grade {set.grade} across {sections.length} section{sections.length === 1 ? '' : 's'}
+              {(section || search) ? ` · showing ${visible.length}` : ''}
+            </Typography>
+          )}
+
           {error && <Alert severity="error" sx={{ mx: 2, mb: 1 }} onClose={() => setError('')}>{error}</Alert>}
 
           <Box sx={{ flex: 1, overflow: 'auto', px: 1 }}>

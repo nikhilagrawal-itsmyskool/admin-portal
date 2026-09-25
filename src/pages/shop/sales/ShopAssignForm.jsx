@@ -23,6 +23,9 @@ const parseGrade = (name) => {
 export default function ShopAssignForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  // Where we came from: a set (via "One student…" on the set detail) or the nav.
+  // Drives the back button — only show it when we arrived from a set.
+  const [fromSetId] = useState(() => searchParams.get('setId') || '');
   const { academicYearId, years } = useAcademicYear();
   const sessionName = useMemo(() => years.find(y => y.uuid === academicYearId)?.name || '', [years, academicYearId]);
 
@@ -87,7 +90,7 @@ export default function ShopAssignForm() {
         declinedSetItemIds: Object.keys(declined).filter(k => declined[k]),
         ...discountPayload(discount),
       });
-      navigate('/shop/sales');
+      navigate(fromSetId ? `/shop/sets/${fromSetId}` : '/shop/sales');
     } catch (err) {
       setError(err.response?.data?.error?.description || err.response?.data?.error?.message || 'Failed to assign set');
     } finally { setSaving(false); }
@@ -119,7 +122,7 @@ export default function ShopAssignForm() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <IconBack onClick={() => navigate('/shop/sales')} />
+        {fromSetId && <IconBack onClick={() => navigate(`/shop/sets/${fromSetId}`)} />}
         <Typography variant="h4">Assign Set to Student</Typography>
       </Box>
 
