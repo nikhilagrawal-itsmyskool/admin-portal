@@ -19,9 +19,10 @@ function esc(s) {
 
 // Display formatting per field key (shared by print + CSV so both agree).
 export function formatValue(key, val) {
+  // Boolean flags default to No — an unset (null) rte/examOnly means "No", not blank.
+  if (key === 'rte' || key === 'examOnly') return val === true ? 'Yes' : 'No';
   if (val == null || val === '') return '';
   if (key === 'dob' || key === 'admissionDate') return fmtDate(val);
-  if (key === 'rte' || key === 'examOnly') return val === true ? 'Yes' : 'No';
   return String(val);
 }
 

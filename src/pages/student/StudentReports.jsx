@@ -12,6 +12,8 @@ import {
   RadioGroup,
   FormControl,
   FormLabel,
+  Select,
+  MenuItem,
   Divider,
   Chip,
   Alert,
@@ -70,6 +72,8 @@ export default function StudentReports() {
   const [selectedClasses, setSelectedClasses] = useState([]);
   const [selected, setSelected] = useState(new Set(DEFAULT_FIELDS));
   const [filter, setFilter] = useState('all');
+  const [sortField, setSortField] = useState('rollNumber');
+  const [sortDir, setSortDir] = useState('asc');
   const [orientation, setOrientation] = useState('portrait');
   const [pageBreak, setPageBreak] = useState(true);
 
@@ -131,6 +135,8 @@ export default function StudentReports() {
     if (cfg.filter) setFilter(cfg.filter);
     if (cfg.orientation) setOrientation(cfg.orientation === 'landscape' ? 'landscape' : 'portrait');
     setPageBreak(!!cfg.pageBreak);
+    if (cfg.sort?.field) setSortField(cfg.sort.field);
+    setSortDir(cfg.sort?.dir === 'desc' ? 'desc' : 'asc');
     setReport(null);
   };
 
@@ -153,6 +159,7 @@ export default function StudentReports() {
         filter,
         orientation,
         pageBreak,
+        sort: { field: sortField, dir: sortDir },
       });
       setSaveOpen(false);
       setSaveName('');
@@ -179,11 +186,6 @@ export default function StudentReports() {
       return next;
     });
 
-  const applyPreset = (p) => {
-    setSelected(new Set(p.fields));
-    setFilter(p.filter);
-    setReport(null);
-  };
 
   const generate = useCallback(async () => {
     setError('');
@@ -197,6 +199,7 @@ export default function StudentReports() {
         classIds: selectedClasses.map((c) => c.uuid),
         fields: orderedFields.map((f) => f.key),
         filter,
+        sort: { field: sortField, dir: sortDir },
       });
       setReport(data);
     } catch (e) {
@@ -204,7 +207,7 @@ export default function StudentReports() {
     } finally {
       setLoading(false);
     }
-  }, [academicYearId, selectedClasses, selected, orderedFields, filter]);
+  }, [academicYearId, selectedClasses, selected, orderedFields, filter, sortField, sortDir]);
 
   const reportTitle = useMemo(() => {
     if (filter === 'rte') return 'RTE Students';
@@ -303,15 +306,42 @@ export default function StudentReports() {
           </Stack>
         </Stack>
 
-        {/* Filter */}
-        <FormControl sx={{ mb: 1 }}>
-          <FormLabel sx={{ fontSize: 13 }}>Include</FormLabel>
-          <RadioGroup row value={filter} onChange={(e) => { setFilter(e.target.value); setReport(null); }}>
-            <FormControlLabel value="all" control={<Radio size="small" />} label="All students" />
-            <FormControlLabel value="rte" control={<Radio size="small" />} label="RTE only" />
-            <FormControlLabel value="examOnly" control={<Radio size="small" />} label="Exam-only" />
-          </RadioGroup>
-        </FormControl>
+        {/* Filter + order by */}
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
+          <FormControl>
+            <FormLabel sx={{ fontSize: 13 }}>Include</FormLabel>
+            <RadioGroup row value={filter} onChange={(e) => { setFilter(e.target.value); setReport(null); }}>
+              <FormControlLabel value="all" control={<Radio size="small" />} label="All students" />
+              <FormControlLabel value="rte" control={<Radio size="small" />} label="RTE only" />
+              <FormControlLabel value="examOnly" control={<Radio size="small" />} label="Exam-only" />
+            </RadioGroup>
+          </FormControl>
+
+          <Box>
+            <FormLabel sx={{ fontSize: 13, display: 'block', mb: 0.5 }}>Order by</FormLabel>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Select
+                size="small"
+                value={sortField}
+                onChange={(e) => { setSortField(e.target.value); setReport(null); }}
+                sx={{ minWidth: 150 }}
+              >
+                <MenuItem value="rollNumber">Roll number</MenuItem>
+                <MenuItem value="studentName">Student name</MenuItem>
+                <MenuItem value="admissionDate">Admission date</MenuItem>
+              </Select>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={sortDir}
+                onChange={(_e, v) => { if (v) { setSortDir(v); setReport(null); } }}
+              >
+                <ToggleButton value="asc">Asc</ToggleButton>
+                <ToggleButton value="desc">Desc</ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+          </Box>
+        </Stack>
 
         <Divider sx={{ my: 1.5 }} />
 
