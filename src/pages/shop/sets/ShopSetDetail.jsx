@@ -53,8 +53,7 @@ function RecipeGroup({ title, lines }) {
   return (
     <>
       <TableRow sx={{ bgcolor: '#f7f9fc' }}>
-        <TableCell colSpan={5} sx={{ fontWeight: 700, color: '#5b6a85' }}>{title}</TableCell>
-        <TableCell align="right" sx={{ fontWeight: 700, color: '#5b6a85' }}>{formatCurrency(subtotal)}</TableCell>
+        <TableCell colSpan={6} sx={{ fontWeight: 700, color: '#5b6a85' }}>{title}</TableCell>
       </TableRow>
       {lines.map(l => (
         <TableRow key={l.uuid} hover>
@@ -69,6 +68,10 @@ function RecipeGroup({ title, lines }) {
           <TableCell align="right"><Typography fontWeight={600}>{formatCurrency(l.lineTotal)}</Typography></TableCell>
         </TableRow>
       ))}
+      <TableRow>
+        <TableCell colSpan={5} align="right"><Typography variant="body2" color="text.secondary">{title} subtotal</Typography></TableCell>
+        <TableCell align="right"><Typography fontWeight={700}>{formatCurrency(subtotal)}</Typography></TableCell>
+      </TableRow>
     </>
   );
 }

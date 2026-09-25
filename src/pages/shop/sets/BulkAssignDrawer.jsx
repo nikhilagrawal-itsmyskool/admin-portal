@@ -13,9 +13,14 @@ import DiscountField, { emptyDiscount, discountPayload, payableFrom } from '../c
 
 const formatCurrency = (v) => `₹${parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 const parseGrade = (name) => { const n = (name || '').trim(); const i = n.lastIndexOf('-'); return i <= 0 ? n : n.slice(0, i).trim(); };
+const gradeEq = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
 
 export default function BulkAssignDrawer({ open, onClose, set, onDone }) {
-  const { academicYearId } = useAcademicYear();
+  const { academicYearId, years } = useAcademicYear();
+  // Fall back to the year that matches the set's session if the global selector
+  // hasn't resolved yet — otherwise the search returns no className and no
+  // students match the grade.
+  const yearId = academicYearId || (years || []).find(y => y.name === set?.academicSession)?.uuid || '';
   const [students, setStudents] = useState([]);
   const [assignedIds, setAssignedIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
@@ -30,16 +35,18 @@ export default function BulkAssignDrawer({ open, onClose, set, onDone }) {
   useEffect(() => {
     if (!open || !set) return;
     setLoading(true); setError(''); setPicked({}); setSearch(''); setSection('');
-    const params = academicYearId ? { academicYearId } : {};
+    const params = yearId ? { academicYearId: yearId } : {};
     Promise.all([
       api.get('/student/search', { params }).then(r => r.data || []),
       shopService.getSales({ setId: set.uuid }).then(r => r || []),
     ]).then(([studs, sales]) => {
-      const inGrade = studs.filter(s => parseGrade(s.className) === set.grade);
+      // className only comes back on a year-scoped search; match grade case-insensitively
+      // ("NURSERY-A" -> "NURSERY" vs stored grade "Nursery").
+      const inGrade = studs.filter(s => gradeEq(parseGrade(s.className), set.grade));
       setStudents(inGrade);
       setAssignedIds(new Set(sales.map(s => s.studentId)));
     }).catch(() => setError('Failed to load students')).finally(() => setLoading(false));
-  }, [open, set, academicYearId]);
+  }, [open, set, yearId]);
 
   const sections = useMemo(
     () => [...new Set(students.map(s => s.className).filter(Boolean))].sort(),
@@ -108,7 +115,7 @@ export default function BulkAssignDrawer({ open, onClose, set, onDone }) {
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
             ) : visible.length === 0 ? (
-              <Typography color="text.secondary" sx={{ p: 2 }}>No students found for this grade{academicYearId ? '' : ' — pick an academic year first'}.</Typography>
+              <Typography color="text.secondary" sx={{ p: 2 }}>No students found for this grade{yearId ? '' : ' — pick an academic year first'}.</Typography>
             ) : (
               <List dense>
                 <ListItemButton onClick={toggleAll} sx={{ py: 0 }}>

@@ -58,8 +58,8 @@ export default function ShopAssignForm() {
   const onStudent = (val) => {
     setStudent(val);
     if (val?.className) {
-      const grade = parseGrade(val.className);
-      const match = sets.find(s => s.grade === grade);
+      const grade = parseGrade(val.className).toLowerCase();
+      const match = sets.find(s => (s.grade || '').toLowerCase() === grade);
       if (match) setSetId(match.uuid);
     }
   };
