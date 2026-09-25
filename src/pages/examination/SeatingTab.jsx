@@ -7,6 +7,7 @@ import {
 import {
   Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon, Print as PrintIcon,
   ContentCopy as CopyIcon, MeetingRoom as RoomIcon, PhotoCamera as PhotoIcon, Image as ImageIcon,
+  CheckCircle as SavedIcon,
 } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { printSeatingPlan } from './seatingPlanHtml';
@@ -14,6 +15,16 @@ import { fmtDate } from '../../utils/date';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const dayOf = (d) => (d ? DOW[new Date(`${d}T00:00:00`).getDay()] : '');
+
+// Build the editable allocation map from a rooms response.
+const roomsToEdits = (rlist) => {
+  const e = {};
+  (rlist || []).forEach((rm) => { e[rm.uuid] = (rm.allocations || []).map((a) => ({ sectionClassId: a.sectionClassId, rollFrom: a.rollFrom ?? '', rollTo: a.rollTo ?? '' })); });
+  return e;
+};
+// Normalised, order-sensitive signature of a room's real (non-empty) allocations — used to
+// tell whether a room has unsaved changes (so Save only lights up when it means something).
+const sig = (arr) => JSON.stringify((arr || []).filter((a) => a.sectionClassId).map((a) => ({ s: a.sectionClassId, f: String(a.rollFrom ?? ''), t: String(a.rollTo ?? '') })));
 
 // Read a File into { base64 (no data: prefix), mimeType, fileName }.
 const readFile = (file) => new Promise((resolve, reject) => {
@@ -31,6 +42,7 @@ export default function SeatingTab({ examId, exam, canManage }) {
   const [sections, setSections] = useState([]);
   const [otherExams, setOtherExams] = useState([]);
   const [edits, setEdits] = useState({}); // roomId -> [{sectionClassId, rollFrom, rollTo}]
+  const [savedEdits, setSavedEdits] = useState({}); // last-saved snapshot per room, to detect unsaved changes
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -59,9 +71,8 @@ export default function SeatingTab({ examId, exam, canManage }) {
       setSections(inv.sections || []);
       setOtherExams((list || []).filter((e) => e.uuid !== examId));
       setPlanImg(img || null);
-      const e = {};
-      (r.rooms || []).forEach((rm) => { e[rm.uuid] = (rm.allocations || []).map((a) => ({ sectionClassId: a.sectionClassId, rollFrom: a.rollFrom ?? '', rollTo: a.rollTo ?? '' })); });
-      setEdits(e);
+      setEdits(roomsToEdits(r.rooms));
+      setSavedEdits(roomsToEdits(r.rooms));
     } catch (x) {
       setErr(x.response?.data?.error?.description || 'Failed to load the seating scheme');
     } finally { setLoading(false); }
@@ -82,10 +93,11 @@ export default function SeatingTab({ examId, exam, canManage }) {
   };
   const applyDayRooms = (r) => {
     setRooms(r.rooms || []); setDateHasCustom(!!r.dateHasCustom);
-    const e = {};
-    (r.rooms || []).forEach((rm) => { e[rm.uuid] = (rm.allocations || []).map((a) => ({ sectionClassId: a.sectionClassId, rollFrom: a.rollFrom ?? '', rollTo: a.rollTo ?? '' })); });
-    setEdits(e);
+    setEdits(roomsToEdits(r.rooms));
+    setSavedEdits(roomsToEdits(r.rooms));
   };
+  // A room has unsaved changes when its current edit differs from the last saved snapshot.
+  const isDirty = (roomId) => sig(edits[roomId]) !== sig(savedEdits[roomId]);
 
   const sectionById = useMemo(() => {
     const m = {}; for (const s of sections) m[s.classId] = s; return m;
@@ -100,11 +112,13 @@ export default function SeatingTab({ examId, exam, canManage }) {
   };
 
   const syncEdits = (rlist) => {
-    setEdits((prev) => {
+    const seed = (prev) => {
       const e = { ...prev };
       (rlist || []).forEach((rm) => { if (!e[rm.uuid]) e[rm.uuid] = (rm.allocations || []).map((a) => ({ sectionClassId: a.sectionClassId, rollFrom: a.rollFrom ?? '', rollTo: a.rollTo ?? '' })); });
       return e;
-    });
+    };
+    setEdits(seed);
+    setSavedEdits(seed);
   };
 
   const removeRoom = async (roomId) => {
@@ -126,6 +140,11 @@ export default function SeatingTab({ examId, exam, canManage }) {
       const r = await examinationService.saveRoomAllocations(examId, roomId, allocations, viewDate || undefined);
       setRooms(r.rooms || []);
       if (viewDate) setDateHasCustom(!!r.dateHasCustom);
+      // Re-sync this room's edit + saved snapshot from the server so it reads as "Saved".
+      const savedRoom = (r.rooms || []).find((x) => x.uuid === roomId);
+      const savedAllocs = (savedRoom?.allocations || []).map((a) => ({ sectionClassId: a.sectionClassId, rollFrom: a.rollFrom ?? '', rollTo: a.rollTo ?? '' }));
+      setEdits((e) => ({ ...e, [roomId]: savedAllocs }));
+      setSavedEdits((e) => ({ ...e, [roomId]: savedAllocs }));
       setMsg(viewDate ? `Saved for ${fmtDate(viewDate)} (this day only).` : 'Room saved.');
     } catch (x) { setErr(x.response?.data?.error?.description || 'Failed to save the room'); }
     finally { setBusy(false); }
@@ -137,9 +156,9 @@ export default function SeatingTab({ examId, exam, canManage }) {
     try {
       const r = await examinationService.copyRooms(examId, copyFrom);
       setRooms(r.rooms || []);
-      const e = {};
-      (r.rooms || []).forEach((rm) => { e[rm.uuid] = (rm.allocations || []).map((a) => ({ sectionClassId: a.sectionClassId, rollFrom: a.rollFrom ?? '', rollTo: a.rollTo ?? '' })); });
-      setEdits(e); setCopyFrom(''); setMsg('Seating copied.');
+      setEdits(roomsToEdits(r.rooms));
+      setSavedEdits(roomsToEdits(r.rooms));
+      setCopyFrom(''); setMsg('Seating copied.');
     } catch (x) { setErr(x.response?.data?.error?.description || 'Failed to copy seating'); }
     finally { setBusy(false); }
   };
@@ -342,7 +361,18 @@ export default function SeatingTab({ examId, exam, canManage }) {
               <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
                 <Button size="small" startIcon={<AddIcon />} onClick={() => addAlloc(rm.uuid)}>Add section</Button>
                 <Box sx={{ flex: 1 }} />
-                <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={() => saveRoomAllocs(rm.uuid)} disabled={busy}>Save room</Button>
+                {/* Filled + enabled only when this room has unsaved edits; otherwise a quiet
+                    "Saved" so the button stops looking like pending work all the time. */}
+                <Button
+                  size="small"
+                  variant={isDirty(rm.uuid) ? 'contained' : 'outlined'}
+                  color={isDirty(rm.uuid) ? 'primary' : 'inherit'}
+                  startIcon={isDirty(rm.uuid) ? <SaveIcon /> : <SavedIcon />}
+                  onClick={() => saveRoomAllocs(rm.uuid)}
+                  disabled={busy || !isDirty(rm.uuid)}
+                >
+                  {isDirty(rm.uuid) ? 'Save room' : 'Saved'}
+                </Button>
               </Stack>
             )}
           </Paper>
