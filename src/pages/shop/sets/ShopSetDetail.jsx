@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, Table, TableHead, TableBody,
-  TableRow, TableCell, IconButton, Alert, CircularProgress, Chip, Divider,
+  TableRow, TableCell, IconButton, Alert, CircularProgress, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  FormGroup, FormControlLabel, Checkbox,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon, Edit as EditIcon, Add as AddIcon,
   LocalShipping as IntakeIcon, PersonAdd as AssignIcon, Delete as DeleteIcon,
+  Category as GroupIcon,
 } from '@mui/icons-material';
 import shopService from '../../../services/shopService';
 import { todayIso, fmtDate } from '../../../utils/date';
+import BulkAssignDrawer from './BulkAssignDrawer';
 
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0';
 
@@ -25,19 +28,39 @@ function StatCard({ label, value, color }) {
   );
 }
 
+// Build ordered display groups from the recipe + highlight publishers.
+function buildGroups(items, highlightPublishers) {
+  const books = items.filter(i => i.itemType === 'book');
+  const stationery = items.filter(i => i.itemType !== 'book');
+  const groups = [];
+  const hp = (highlightPublishers || []).filter(p =>
+    books.some(b => (b.itemPublisher || '').toLowerCase() === p.toLowerCase()));
+  if (hp.length) {
+    for (const pub of hp) {
+      groups.push({ title: pub, lines: books.filter(b => (b.itemPublisher || '').toLowerCase() === pub.toLowerCase()) });
+    }
+    const rest = books.filter(b => !hp.some(p => p.toLowerCase() === (b.itemPublisher || '').toLowerCase()));
+    if (rest.length) groups.push({ title: 'Other Books', lines: rest });
+  } else if (books.length) {
+    groups.push({ title: 'Books', lines: books });
+  }
+  if (stationery.length) groups.push({ title: 'Stationery', lines: stationery });
+  return groups;
+}
+
 function RecipeGroup({ title, lines }) {
-  if (!lines.length) return null;
   const subtotal = lines.reduce((s, l) => s + (l.lineTotal || 0), 0);
   return (
     <>
       <TableRow sx={{ bgcolor: '#f7f9fc' }}>
-        <TableCell colSpan={6} sx={{ fontWeight: 700, color: '#5b6a85' }}>{title}</TableCell>
+        <TableCell colSpan={5} sx={{ fontWeight: 700, color: '#5b6a85' }}>{title}</TableCell>
+        <TableCell align="right" sx={{ fontWeight: 700, color: '#5b6a85' }}>{formatCurrency(subtotal)}</TableCell>
       </TableRow>
       {lines.map(l => (
         <TableRow key={l.uuid} hover>
           <TableCell>
             {l.itemName}
-            {l.itemSubject ? <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{l.itemSubject}{l.itemPublisher ? ` · ${l.itemPublisher}` : ''}</Typography> : null}
+            {l.itemPublisher ? <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{l.itemSubject ? `${l.itemSubject} · ` : ''}{l.itemPublisher}</Typography> : null}
           </TableCell>
           <TableCell align="center">{l.quantity}</TableCell>
           <TableCell align="right">{formatCurrency(l.mrp)}</TableCell>
@@ -46,10 +69,6 @@ function RecipeGroup({ title, lines }) {
           <TableCell align="right"><Typography fontWeight={600}>{formatCurrency(l.lineTotal)}</Typography></TableCell>
         </TableRow>
       ))}
-      <TableRow>
-        <TableCell colSpan={5} align="right"><Typography variant="body2" color="text.secondary">{title} subtotal</Typography></TableCell>
-        <TableCell align="right"><Typography fontWeight={700}>{formatCurrency(subtotal)}</Typography></TableCell>
-      </TableRow>
     </>
   );
 }
@@ -62,9 +81,13 @@ export default function ShopSetDetail() {
   const [intakes, setIntakes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [intakeForm, setIntakeForm] = useState({ qtySets: '', intakeDate: todayIso(), supplier: '', notes: '' });
   const [saving, setSaving] = useState(false);
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupPicked, setGroupPicked] = useState([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,6 +103,10 @@ export default function ShopSetDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  const bookPublishers = useMemo(() => set
+    ? [...new Set(set.items.filter(i => i.itemType === 'book' && i.itemPublisher).map(i => i.itemPublisher))].sort()
+    : [], [set]);
 
   const submitIntake = async () => {
     if (!intakeForm.qtySets || parseInt(intakeForm.qtySets, 10) < 1) { setError('Quantity of sets is required'); return; }
@@ -105,25 +132,38 @@ export default function ShopSetDetail() {
     catch (err) { setError(err.response?.data?.error?.description || 'Failed to delete intake'); }
   };
 
+  const openGrouping = () => { setGroupPicked(set.highlightPublishers || []); setGroupOpen(true); };
+  const saveGrouping = async () => {
+    setSaving(true);
+    try {
+      await shopService.updateSet(id, { highlightPublishers: groupPicked });
+      setGroupOpen(false);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to save grouping');
+    } finally { setSaving(false); }
+  };
+
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
   if (!set) return <Alert severity="error">{error || 'Set not found'}</Alert>;
 
-  const books = set.items.filter(i => i.itemType === 'book');
-  const stationery = set.items.filter(i => i.itemType !== 'book');
+  const groups = buildGroups(set.items, set.highlightPublishers);
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3, flexWrap: 'wrap' }}>
         <IconButton onClick={() => navigate('/shop/sets')}><BackIcon /></IconButton>
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <Typography variant="h4">Grade {set.grade} Set</Typography>
           <Typography variant="body2" color="text.secondary">{set.academicSession} · {set.items.length} items · {formatCurrency(set.setPrice)}</Typography>
         </Box>
-        <Button variant="outlined" startIcon={<AssignIcon />} onClick={() => navigate(`/shop/assign?setId=${id}`)}>Assign to student</Button>
+        <Button variant="contained" startIcon={<AssignIcon />} onClick={() => setDrawerOpen(true)}>Assign to students</Button>
+        <Button variant="outlined" onClick={() => navigate(`/shop/assign?setId=${id}`)}>One student…</Button>
         <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/shop/sets/${id}/edit`)}>Edit</Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
+      {notice && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setNotice('')}>{notice}</Alert>}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4}><StatCard label="Sets received" value={stock?.received ?? 0} color="#3366ff" /></Grid>
@@ -184,7 +224,12 @@ export default function ShopSetDetail() {
       {/* Recipe */}
       <Card>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>What's in the set</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">What's in the set</Typography>
+            <Button size="small" startIcon={<GroupIcon />} onClick={openGrouping} disabled={bookPublishers.length === 0}>
+              {set.highlightPublishers?.length ? `Grouped: ${set.highlightPublishers.join(', ')}` : 'Group by publisher'}
+            </Button>
+          </Box>
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -197,8 +242,7 @@ export default function ShopSetDetail() {
               </TableRow>
             </TableHead>
             <TableBody>
-              <RecipeGroup title="Books" lines={books} />
-              <RecipeGroup title="Stationery" lines={stationery} />
+              {groups.map(g => <RecipeGroup key={g.title} title={g.title} lines={g.lines} />)}
               <TableRow>
                 <TableCell colSpan={5} align="right"><Typography variant="subtitle1" fontWeight={700}>Set price</Typography></TableCell>
                 <TableCell align="right"><Typography variant="subtitle1" fontWeight={800}>{formatCurrency(set.setPrice)}</Typography></TableCell>
@@ -236,6 +280,32 @@ export default function ShopSetDetail() {
           <Button variant="contained" onClick={submitIntake} disabled={saving}>{saving ? 'Saving...' : 'Record'}</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Grouping dialog */}
+      <Dialog open={groupOpen} onClose={() => setGroupOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Group books by publisher</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Tick the publishers to break out into their own subtotal (e.g. NCERT). Everything else lumps into “Other Books”.
+          </Typography>
+          <FormGroup>
+            {bookPublishers.map(pub => (
+              <FormControlLabel key={pub}
+                control={<Checkbox checked={groupPicked.includes(pub)}
+                  onChange={e => setGroupPicked(prev => e.target.checked ? [...prev, pub] : prev.filter(x => x !== pub))} />}
+                label={pub} />
+            ))}
+          </FormGroup>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGroupPicked([])}>Clear</Button>
+          <Button onClick={() => setGroupOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={saveGrouping} disabled={saving}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      <BulkAssignDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} set={set}
+        onDone={(res) => { setNotice(`Assigned to ${res.assigned} student(s)${res.skipped ? `, ${res.skipped} already had it` : ''}.`); load(); }} />
     </Box>
   );
 }

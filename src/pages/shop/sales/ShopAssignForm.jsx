@@ -10,6 +10,7 @@ import shopService from '../../../services/shopService';
 import api from '../../../config/api';
 import { todayIso } from '../../../utils/date';
 import { useAcademicYear } from '../../../context/AcademicYearContext';
+import DiscountField, { emptyDiscount, discountPayload, payableFrom } from '../components/DiscountField';
 
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0';
 // "I-A" -> "I"; name without a hyphen is its own grade.
@@ -32,6 +33,7 @@ export default function ShopAssignForm() {
   const [setDetail, setSetDetail] = useState(null);
   const [declined, setDeclined] = useState({}); // setItemUuid -> true
   const [form, setForm] = useState({ saleDate: todayIso(), amountPaid: '', notes: '' });
+  const [discount, setDiscount] = useState(emptyDiscount());
   const [loadingSet, setLoadingSet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -64,9 +66,10 @@ export default function ShopAssignForm() {
 
   const lines = setDetail?.items || [];
   const included = lines.filter(l => !declined[l.uuid]);
-  const total = included.reduce((s, l) => s + (l.lineTotal || 0), 0);
+  const includedTotal = included.reduce((s, l) => s + (l.lineTotal || 0), 0);
+  const total = payableFrom(includedTotal, discount); // after set-level discount
   const setPrice = setDetail?.setPrice || 0;
-  const savings = setPrice - total;
+  const declineSavings = setPrice - includedTotal;
 
   const handleSubmit = async () => {
     if (!student?.uuid) { setError('Select a student'); return; }
@@ -82,6 +85,7 @@ export default function ShopAssignForm() {
         amountPaid: parseFloat(form.amountPaid),
         notes: form.notes || undefined,
         declinedSetItemIds: Object.keys(declined).filter(k => declined[k]),
+        ...discountPayload(discount),
       });
       navigate('/shop/sales');
     } catch (err) {
@@ -185,15 +189,17 @@ export default function ShopAssignForm() {
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={5}>
+              <Grid item xs={12} sm={4}>
                 <Typography variant="body2" color="text.secondary">Set price {formatCurrency(setPrice)}
-                  {savings > 0 && <Chip size="small" color="warning" variant="outlined" sx={{ ml: 1 }} label={`− ${formatCurrency(savings)} declined`} />}
+                  {declineSavings > 0 && <Chip size="small" color="warning" variant="outlined" sx={{ ml: 1 }} label={`− ${formatCurrency(declineSavings)} declined`} />}
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, mt: 0.5 }}>Payable {formatCurrency(total)}</Typography>
+                <Box sx={{ mt: 1 }}><DiscountField base={includedTotal} value={discount} onChange={setDiscount} /></Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, mt: 1 }}>Payable {formatCurrency(total)}</Typography>
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField fullWidth label="Amount Paid (₹)" type="number" value={form.amountPaid}
                   onChange={e => setForm(p => ({ ...p, amountPaid: e.target.value }))} size="small" inputProps={{ min: 0 }} />
+                <Button size="small" onClick={() => setForm(p => ({ ...p, amountPaid: String(total) }))} sx={{ mt: 0.5 }}>Pay full</Button>
                 {form.amountPaid !== '' && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     Balance: <strong style={{ color: total - parseFloat(form.amountPaid || 0) > 0 ? '#ff3d71' : '#00d68f' }}>
@@ -201,7 +207,7 @@ export default function ShopAssignForm() {
                   </Typography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={3} sx={{ textAlign: 'right' }}>
+              <Grid item xs={12} sm={4} sx={{ textAlign: 'right' }}>
                 <Button variant="contained" size="large" onClick={handleSubmit} disabled={saving}>
                   {saving ? 'Assigning...' : 'Assign Set'}
                 </Button>

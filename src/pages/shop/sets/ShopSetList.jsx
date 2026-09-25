@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, Table, TableHead, TableBody, TableRow, TableCell,
-  Alert, CircularProgress, TextField, MenuItem, Grid, CardContent, Chip,
+  Alert, CircularProgress, TextField, MenuItem, Grid, CardContent, Chip, IconButton, Tooltip,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import shopService from '../../../services/shopService';
 
 const formatCurrency = (v) => `₹${parseFloat(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
@@ -78,6 +78,7 @@ export default function ShopSetList() {
                 <TableCell sx={{ fontWeight: 600 }} align="center">Received</TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="center">Assigned</TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="center">Remaining</TableCell>
+                <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -93,6 +94,13 @@ export default function ShopSetList() {
                     <Chip size="small" label={s.remaining}
                       color={s.remaining < 0 ? 'error' : s.remaining === 0 ? 'default' : 'success'}
                       variant={s.remaining > 0 ? 'outlined' : 'filled'} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="View set">
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/shop/sets/${s.uuid}`); }}>
+                        <ViewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}

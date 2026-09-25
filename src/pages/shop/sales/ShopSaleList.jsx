@@ -43,8 +43,8 @@ export default function ShopSaleList() {
               <TableRow sx={{ bgcolor: '#f7f9fc' }}>
                 <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Student</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Session</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">Total</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Grade / Set</TableCell>
+                <TableCell sx={{ fontWeight: 600 }} align="right">Payable</TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="right">Paid</TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="center">Status</TableCell>
                 <TableCell align="right" />
@@ -58,8 +58,14 @@ export default function ShopSaleList() {
                     {s.studentName || s.studentId}
                     {s.studentAdmissionNo && <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>#{s.studentAdmissionNo}</Typography>}
                   </TableCell>
-                  <TableCell>{s.academicSession || '—'}</TableCell>
-                  <TableCell align="right">{formatCurrency(s.totalAmount)}</TableCell>
+                  <TableCell>
+                    {s.setGrade ? `Grade ${s.setGrade}` : '—'}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{s.academicSession || ''}</Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(s.totalAmount)}
+                    {s.extraDiscount > 0 && <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>− {formatCurrency(s.extraDiscount)} disc</Typography>}
+                  </TableCell>
                   <TableCell align="right">{formatCurrency(s.amountPaid)}</TableCell>
                   <TableCell align="center">
                     <Chip label={s.paymentStatus} color={PAYMENT_COLORS[s.paymentStatus] || 'default'} size="small" />

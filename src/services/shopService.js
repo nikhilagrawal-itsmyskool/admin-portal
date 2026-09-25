@@ -143,6 +143,12 @@ const shopService = {
     const response = await api.post('/shop/sales/assign', data);
     return response.data;
   },
+
+  // Assign the full set to many students at once (grade drawer)
+  assignSetBulk: async (data) => {
+    const response = await api.post('/shop/sales/assign-bulk', data);
+    return response.data;
+  },
 };
 
 export default shopService;
