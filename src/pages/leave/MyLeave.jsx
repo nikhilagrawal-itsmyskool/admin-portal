@@ -51,7 +51,7 @@ export default function MyLeave() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ ...blankDetails });
   const [file, setFile] = useState(null); // medical certificate
-  const [preview, setPreview] = useState(null); // { isTeaching, affected, topics }
+  const [preview, setPreview] = useState(null); // { isTeaching, handoverRequired, affected, topics }
   const [previewLoading, setPreviewLoading] = useState(false);
   const [handover, setHandover] = useState({ ...blankHandover });
   const [busy, setBusy] = useState(false);
@@ -88,14 +88,14 @@ export default function MyLeave() {
       const p = await leaveService.handoverPreview(form.fromDate, form.toDate);
       setPreview(p);
       setHandover((h) => ({ ...h, topics: (p.topics || []).map((t) => ({ ...t })) }));
-      setStep(p.isTeaching ? 1 : 2);
+      setStep(p.handoverRequired ? 1 : 2);
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Could not load your schedule');
     } finally { setPreviewLoading(false); }
   };
 
   const handoverValid = () => {
-    if (!preview?.isTeaching) return true;
+    if (!preview?.handoverRequired) return true;
     if (handover.topics.some((t) => !t.topic || !t.topic.trim())) { setError('Enter the current chapter/topic for every affected class'); return false; }
     const hasPlan = handover.lessonPlan.trim() || handover.lessonPlanFiles.length;
     if (!hasPlan) { setError('Provide a lesson plan (type it or attach a file)'); return false; }
@@ -109,7 +109,7 @@ export default function MyLeave() {
     try {
       const payload = { leaveTypeCode: form.leaveTypeCode, fromDate: form.fromDate, toDate: form.toDate, dayPortion: canHalf ? form.dayPortion : 'full', reason: form.reason.trim() || undefined };
       if (file) payload.attachment = { fileName: file.name, mimeType: file.type, base64Data: await readFileB64(file) };
-      if (preview?.isTeaching) {
+      if (preview?.handoverRequired) {
         payload.handover = {
           topics: handover.topics,
           lessonPlan: handover.lessonPlan.trim() || undefined,
@@ -142,7 +142,7 @@ export default function MyLeave() {
   const addWorksheet = async (f) => { if (!f) return; const doc = await readDoc(f); setHandover((h) => ({ ...h, worksheetFiles: [...h.worksheetFiles, doc] })); };
   const addLessonPlan = async (f) => { if (!f) return; const doc = await readDoc(f); setHandover((h) => ({ ...h, lessonPlanFiles: [...h.lessonPlanFiles, doc] })); };
 
-  const activeStep = preview?.isTeaching ? step : (step === 0 ? 0 : 1);
+  const activeStep = preview?.handoverRequired ? step : (step === 0 ? 0 : 1);
 
   return (
     <Box sx={{ maxWidth: 1040 }}>
@@ -263,7 +263,7 @@ export default function MyLeave() {
         <DialogContent dividers>
           <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
             <Step><StepLabel>Leave details</StepLabel></Step>
-            {preview?.isTeaching && <Step><StepLabel>Academic handover</StepLabel></Step>}
+            {preview?.handoverRequired && <Step><StepLabel>Academic handover</StepLabel></Step>}
             <Step><StepLabel>Review</StepLabel></Step>
           </Stepper>
           {error && open && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
@@ -298,7 +298,7 @@ export default function MyLeave() {
             </Grid>
           )}
 
-          {step === 1 && preview?.isTeaching && (
+          {step === 1 && preview?.handoverRequired && (
             <Stack spacing={2.5}>
               <Alert severity="info" sx={{ py: 0.5 }}>Before you apply, hand over your classes so a colleague can cover. Topics are pre-filled from the syllabus where available — please check them.</Alert>
 
@@ -401,7 +401,7 @@ export default function MyLeave() {
               <Row k="Duration" v={canHalf && form.dayPortion !== 'full' ? HALF_LABEL[form.dayPortion] : 'Full day(s)'} />
               {form.reason && <Row k="Reason" v={form.reason} />}
               {file && <Row k="Certificate" v={file.name} />}
-              {preview?.isTeaching && (
+              {preview?.handoverRequired && (
                 <>
                   <Divider sx={{ my: 1 }} />
                   <Row k="Handover" v={`${handover.topics.length} class${handover.topics.length === 1 ? '' : 'es'} · lesson plan ${handover.lessonPlan.trim() || handover.lessonPlanFiles.length ? '✓' : '—'}${handover.lessonPlanFiles.length ? ` (${handover.lessonPlanFiles.length} file${handover.lessonPlanFiles.length === 1 ? '' : 's'})` : ''} · ${handover.worksheetFiles.length} worksheet(s)`} />
@@ -413,7 +413,7 @@ export default function MyLeave() {
           )}
         </DialogContent>
         <DialogActions>
-          {step > 0 && <Button onClick={() => setStep(preview?.isTeaching ? step - 1 : 0)} disabled={busy}>Back</Button>}
+          {step > 0 && <Button onClick={() => setStep(preview?.handoverRequired ? step - 1 : 0)} disabled={busy}>Back</Button>}
           <Box sx={{ flex: 1 }} />
           <Button onClick={() => setOpen(false)}>Cancel</Button>
           {step === 0 && <Button variant="contained" onClick={goNext} disabled={previewLoading}>{previewLoading ? 'Loading…' : 'Next'}</Button>}
