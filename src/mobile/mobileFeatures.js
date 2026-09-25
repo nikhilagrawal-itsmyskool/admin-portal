@@ -19,6 +19,7 @@ import {
   EditCalendar as AssemblyRosterIcon,
   FactCheck as AssemblyChecklistIcon,
   Grading as AssemblyGradeIcon,
+  EmojiEvents as AssemblyLeaderboardIcon,
   MenuBook as SyllabusIcon,
   PhotoCamera as HomeworkIcon,
   RecordVoiceOver as AssistantIcon,
@@ -81,6 +82,7 @@ export const MOBILE_FEATURES = [
   { title: "My Roster", hubLabel: "My Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
   { title: "My Checklist", hubLabel: "My Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
   { title: "Grade Assembly", hubLabel: "Grade", icon: AssemblyGradeIcon, path: "/assembly/my-grade", perm: "assembly.view", derived: "evaluator", section: "today", hub: "assembly" },
+  { title: "Leaderboard", hubLabel: "Leaderboard", icon: AssemblyLeaderboardIcon, path: "/assembly/leaderboard", perm: "assembly.view", section: "today", hub: "assembly" },
   {
     title: "Bus Attendance",
     icon: TransportIcon,
@@ -109,7 +111,7 @@ export const MOBILE_FEATURES = [
   // ── People & Staff ───────────────────────────────────────────────────────────
   { title: "Students", hubLabel: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", hub: "people", routes: ["/students", "/students/:id"] },
   { title: "Employees", hubLabel: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view", section: "people", hub: "people" },
-  { title: "Hiring", hubLabel: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "people", hub: "people", routes: ["/hiring", "/hiring/:id"] },
+  { title: "Hiring", hubLabel: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "people", hub: "people", routes: ["/hiring", "/hiring/new", "/hiring/:id", "/hiring/:id/edit"] },
   // Read-only TC search/list on mobile; tapping a row opens the student detail
   // (permitted via the Students feature). Apply/issue stays desktop-only.
   { title: "Transfer Certificate", hubLabel: "TC", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", hub: "people", routes: ["/transfer"] },

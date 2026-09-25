@@ -406,7 +406,7 @@ const menuItems = [
       { title: 'Roster', icon: RosterIcon, path: '/assembly/roster', perm: 'assembly.manage' },
       { title: 'Checklist', icon: ChecklistIcon, path: '/assembly/checklist', perm: 'assembly.manage' },
       { title: 'Grading', icon: GradingIcon, path: '/assembly/grading', perm: 'assembly.manage' },
-      { title: 'Leaderboard', icon: LeaderboardIcon, path: '/assembly/leaderboard', perm: 'assembly.manage' },
+      { title: 'Leaderboard', icon: LeaderboardIcon, path: '/assembly/leaderboard', perm: 'assembly.view' },
       { title: 'Settings', icon: AsmSettingsIcon, path: '/assembly/settings', perm: 'assembly.manage' },
     ],
   },
