@@ -5,7 +5,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { Close as CloseIcon, Search as SearchIcon } from '@mui/icons-material';
-import api from '../../../config/api';
+import { studentService } from '../../../services/studentService';
 import shopService from '../../../services/shopService';
 import { todayIso } from '../../../utils/date';
 import { useAcademicYear } from '../../../context/AcademicYearContext';
@@ -37,7 +37,7 @@ export default function BulkAssignDrawer({ open, onClose, set, onDone }) {
     setLoading(true); setError(''); setPicked({}); setSearch(''); setSection('');
     const params = yearId ? { academicYearId: yearId } : {};
     Promise.all([
-      api.get('/student/search', { params }).then(r => r.data || []),
+      studentService.searchStudents(params).then(r => r || []),
       shopService.getSales({ setId: set.uuid }).then(r => r || []),
     ]).then(([studs, sales]) => {
       // className only comes back on a year-scoped search; match grade case-insensitively

@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, ArrowBack as BackIcon } from '@mui/icons-material';
 import shopService from '../../../services/shopService';
-import api from '../../../config/api';
+import { studentService } from '../../../services/studentService';
 import { todayIso } from '../../../utils/date';
 
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0';
@@ -29,7 +29,7 @@ export default function ShopSaleForm() {
   useEffect(() => {
     shopService.getItems().then(setAllItems).catch(() => {});
     shopService.getSets().then(setSets).catch(() => {});
-    api.get('/student/search').then(r => setStudents(r.data || [])).catch(() => {});
+    studentService.searchStudents().then(r => setStudents(r || [])).catch(() => {});
   }, []);
 
   const setLine = (i, field, value) => setLines(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));

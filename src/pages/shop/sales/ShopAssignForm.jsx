@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { ArrowBack as BackIcon } from '@mui/icons-material';
 import shopService from '../../../services/shopService';
-import api from '../../../config/api';
+import { studentService } from '../../../services/studentService';
 import { todayIso } from '../../../utils/date';
 import { useAcademicYear } from '../../../context/AcademicYearContext';
 import DiscountField, { emptyDiscount, discountPayload, payableFrom } from '../components/DiscountField';
@@ -40,7 +40,7 @@ export default function ShopAssignForm() {
 
   useEffect(() => {
     const params = academicYearId ? { academicYearId } : {};
-    api.get('/student/search', { params }).then(r => setStudents(r.data || [])).catch(() => {});
+    studentService.searchStudents(params).then(r => setStudents(r || [])).catch(() => {});
     shopService.getSets(sessionName ? { academicSession: sessionName } : {}).then(setSets).catch(() => {});
   }, [academicYearId, sessionName]);
 
