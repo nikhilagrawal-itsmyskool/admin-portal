@@ -39,7 +39,7 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `purchaseLog.restore` | Restore a deleted purchase log entry | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `student.view` | See the Students menu and view/search the student list | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `student.manage` | Admit/edit/delete students, manage guardians & houses, assign house, promote/graduate | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
-| `student.contacts.view` | View unmasked parent/guardian phone, WhatsApp & email | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `student.contacts.view` | View unmasked parent/guardian phone, WhatsApp & email | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `attendance.finalize` | Finalize a daily attendance session and edit records after finalize (marking & viewing are open to all staff) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.send` | Compose, schedule, preview, send and cancel SMS/WhatsApp messages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.template.manage` | Create, edit and activate message templates | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
@@ -63,6 +63,8 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `academic-calendar.manage` | Add/edit/delete calendar entries, holidays & columns, and import from Excel | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `exam.view` | See the Examinations menu and read exam schedules, datesheets & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `exam.manage` | Create/edit/delete/publish examinations, datesheet papers & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `programme.view` | See the Programmes menu and read a programme's monthly units (Class → Month → Theme) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `programme.manage` | Author programme units and re-upload class-module source documents | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `assistant.use` | Use the voice/LLM student assistant (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `leave.apply` | Apply for your own leave and see your own attendance & penalty (teacher/office/admin) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `leave.manage` | Approve/reject leave, view any staff member's records, set policy, import biometric attendance & run the deduction report (god-only for now) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |

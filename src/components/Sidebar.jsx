@@ -74,6 +74,7 @@ import {
   AltRoute as RouteIcon,
   AssignmentInd as AssignmentIcon,
   MenuBook as SyllabusIcon,
+  Forum as ProgrammesIcon,
   LibraryBooks as PlanIcon,
   Subject as SyllabusSubjectIcon,
   Checklist as CoverageIcon,
@@ -358,6 +359,16 @@ const menuItems = [
     ],
   },
   {
+    // No parent perm: teachers (programme.view) see the read-only "Spoken English"
+    // reader; managers (programme.manage) also get "Manage Content".
+    title: 'Programmes',
+    icon: ProgrammesIcon,
+    children: [
+      { title: 'Spoken English', icon: ProgrammesIcon, path: '/programmes/selc', perm: 'programme.view' },
+      { title: 'Manage Content', icon: SyllabusSubjectIcon, path: '/programmes/selc/edit', perm: 'programme.manage' },
+    ],
+  },
+  {
     // No parent perm: class teachers (homework.post) see Post Homework; admins also
     // see Class Teachers (the mapping override, gated by homework.manage).
     title: 'Homework',
@@ -380,6 +391,9 @@ const menuItems = [
     children: [
       { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
+      { title: 'Enter Marks', icon: CalendarIcon, path: '/exam/marks' },
+      { title: 'Co-Scholastic', icon: CalendarIcon, path: '/exam/coscholastic' },
+      { title: 'Marks Progress', icon: ExamIcon, path: '/exam/report-progress', perm: 'exam.view' },
       { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
       { title: 'Branding', icon: BrandingSidebarIcon, path: '/branding', perm: 'exam.manage' },
     ],

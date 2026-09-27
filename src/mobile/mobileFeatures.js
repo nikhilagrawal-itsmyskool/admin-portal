@@ -28,6 +28,9 @@ import {
   HowToReg as DutyIcon,
   EventNote as ScheduleIcon,
   Image as BrandingTileIcon,
+  EditNote as MarksIcon,
+  Stars as CoscholasticIcon,
+  Insights as ProgressIcon,
   Payments as FeesIcon,
   ReceiptLong as DuesIcon,
   Receipt as ReceiptIcon,
@@ -36,6 +39,7 @@ import {
   HowToReg as LeaveApprovalIcon,
   Description as DocumentIcon,
   Feedback as FeedbackIcon,
+  Forum as ProgrammesIcon,
 } from "@mui/icons-material";
 
 // Features published to the mobile (small-screen) surface. EVERYTHING ELSE is
@@ -101,10 +105,20 @@ export const MOBILE_FEATURES = [
   { title: "Record Feedback", icon: FeedbackIcon, path: "/feedback/record", perm: "feedback.record", section: "today", color: "#0097a7" },
   { title: "My Feedback", icon: FeedbackIcon, path: "/feedback/me", perm: "feedback.respond", notPerm: "feedback.review", section: "mine", color: "#0097a7", routes: ["/feedback/me", "/feedback/t/:id"] },
 
+  // ── Programmes ─────────────────────────────────────────────────────────────────
+  // Developmental programmes (Spoken English & Life Communication, later Scout, ...) collapse
+  // into one "Programmes" hub. With a single programme visible it links straight to it; when a
+  // second is added the hub screen appears. Teacher read view (programme.view) — Class -> Month
+  // -> Theme reader. Content authoring is desktop-primary in Phase 1 (no separate mobile tile).
+  { title: "Spoken English", hubLabel: "Spoken English", icon: ProgrammesIcon, path: "/programmes/selc", perm: "programme.view", section: "programmes", hub: "programmes", routes: ["/programmes", "/programmes/selc", "/programmes/selc/:grade/:month"] },
+
   // ── Examinations ─────────────────────────────────────────────────────────────
   // Schedule + duties are open to all staff (no perm); management is exam.view only.
   { title: "Exam Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", color: "#5e35b1", routes: ["/exam/schedule"] },
   { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
+  { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", section: "mine", color: "#5e35b1", routes: ["/exam/marks"] },
+  { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", section: "mine", color: "#5e35b1", routes: ["/exam/coscholastic"] },
+  { title: "Marks Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
   { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/seating", "/examinations/:id/invigilators", "/examinations/:id/room-invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/:id/room-roster/:roomId/:date", "/examinations/verify/:id"] },
   { title: "Branding", icon: BrandingTileIcon, path: "/branding", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/branding"] },
 
@@ -181,6 +195,7 @@ export const MOBILE_HUBS = {
   supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
   fees: { title: "Fees", icon: FeesIcon, color: "#00897b" },
   leave: { title: "Leave", icon: LeaveIcon, color: "#3d5afe" },
+  programmes: { title: "Programmes", icon: ProgrammesIcon, color: "#00838f" },
 };
 
 // The home bands, in display order (mirrors the desktop groups; "Today" is mobile-first).
@@ -188,6 +203,7 @@ export const MOBILE_SECTIONS = [
   { key: "office", label: "Operations" }, // god-only oversight tiles (godpwa.* / leave.manage) — pinned to the top
   { key: "today", label: "Now" },
   { key: "mine", label: "Mine" },
+  { key: "programmes", label: "Programmes" }, // developmental programmes hub (Spoken English, ...)
   { key: "manage", label: "Manage" }, // module consoles (Examinations; god-only Syllabus Overview)
   { key: "people", label: "People & Staff" },
   { key: "stores", label: "Stores & Inventory" },

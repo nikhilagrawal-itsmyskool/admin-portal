@@ -198,7 +198,6 @@ export default function HiringCandidateList() {
             <IconButton
               size="small"
               title="Edit candidate"
-              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
               onClick={() => navigate(`/hiring/${params.row.uuid}/edit`)}
             >
               <EditIcon fontSize="small" />
@@ -209,7 +208,6 @@ export default function HiringCandidateList() {
               size="small"
               color="error"
               title="Withdraw candidate"
-              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
               onClick={() => setDeleteDialog({ open: true, item: params.row })}
             >
               <DeleteIcon fontSize="small" />
@@ -225,7 +223,7 @@ export default function HiringCandidateList() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Hiring</Typography>
         {canManage && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/hiring/new')} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/hiring/new')}>
             Add Candidate
           </Button>
         )}

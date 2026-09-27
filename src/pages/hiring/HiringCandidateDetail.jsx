@@ -262,12 +262,17 @@ export default function HiringCandidateDetail() {
   const openResume = async () => {
     try {
       const f = await hiringService.getFile(candidate.resumeFileId);
-      const win = window.open();
-      if (win) {
-        win.document.write(
-          `<iframe src="data:${f.mimeType};base64,${f.data}" style="width:100%;height:100%;border:0"></iframe>`
-        );
-      }
+      // Decode base64 → Blob → object URL. A real object URL opens reliably on
+      // mobile browsers / inside the PWA webview, unlike window.open of a
+      // data:-URI iframe (popup-blocked or blank on iOS Safari).
+      const byteChars = atob(f.data);
+      const bytes = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([bytes], { type: f.mimeType || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // Revoke after a delay so the new tab has time to load the resource.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch {
       setError('Failed to open resume');
     }
@@ -299,7 +304,7 @@ export default function HiringCandidateDetail() {
           />
         </Box>
         {canManage && (
-          <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/hiring/${id}/edit`)} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+          <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/hiring/${id}/edit`)}>
             Edit Details
           </Button>
         )}

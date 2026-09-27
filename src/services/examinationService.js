@@ -145,4 +145,18 @@ export const examinationService = {
     (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/sign`, { signatureBase64 })).data,
   myAvStudent: async (examId, roomId, date, studentId, action) =>
     (await api.post(`/examination/me/exam/rooms/${examId}/${roomId}/${date}/av-students`, { studentId, action })).data,
+
+  // ── Report cards: marks (subject teacher) + co-scholastic (class teacher) + progress ──
+  myReportSubjects: async (ay) => (await api.get('/examination/me/report/subjects', { params: ay ? { ay } : {} })).data,
+  myReportMarks: async (classId, subjectCode, term, ay) =>
+    (await api.get(`/examination/me/report/marks/${classId}/${subjectCode}/${term}`, { params: ay ? { ay } : {} })).data,
+  saveReportMarks: async (classId, subjectCode, term, entries, ay) =>
+    (await api.post(`/examination/me/report/marks/${classId}/${subjectCode}/${term}`, { entries }, { params: ay ? { ay } : {} })).data,
+  myReportClasses: async (ay) => (await api.get('/examination/me/report/classes', { params: ay ? { ay } : {} })).data,
+  myReportCoscholastic: async (classId, term, ay) =>
+    (await api.get(`/examination/me/report/coscholastic/${classId}/${term}`, { params: ay ? { ay } : {} })).data,
+  saveReportCoscholastic: async (classId, term, entries, ay) =>
+    (await api.post(`/examination/me/report/coscholastic/${classId}/${term}`, { entries }, { params: ay ? { ay } : {} })).data,
+  reportProgress: async (term, ay) =>
+    (await api.get(`/examination/report/progress/${term}`, { params: ay ? { ay } : {} })).data,
 };

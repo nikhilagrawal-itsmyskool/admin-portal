@@ -154,6 +154,9 @@ import SyllabusSubjectList from './pages/syllabus/subjects/SubjectList';
 import SyllabusProgress from './pages/syllabus/SyllabusProgress';
 import MySyllabus from './pages/syllabus/MySyllabus';
 import TeacherCoverage from './pages/syllabus/TeacherCoverage';
+import ProgrammesList from './pages/programmes/ProgrammesList';
+import SelcReader from './pages/programmes/SelcReader';
+import SelcEditor from './pages/programmes/SelcEditor';
 import HomeworkPage from './pages/homework/HomeworkPage';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
 import AcademicCalendarPage from './pages/academic-calendar/AcademicCalendarPage';
@@ -163,6 +166,9 @@ import VerifyAdmitCard from './pages/examination/VerifyAdmitCard';
 import MyInvigilations from './pages/examination/MyInvigilations';
 import InvigilatorRoster from './pages/examination/InvigilatorRoster';
 import RoomRoster from './pages/examination/RoomRoster';
+import ReportMarks from './pages/examination/ReportMarks';
+import ReportCoscholastic from './pages/examination/ReportCoscholastic';
+import ReportProgress from './pages/examination/ReportProgress';
 import ExamSchedule from './pages/examination/ExamSchedule';
 import BrandingPage from './pages/examination/BrandingPage';
 import ConfigScreen from './pages/examination/mobile/ConfigScreen';
@@ -420,6 +426,10 @@ export default function App() {
         <Route path="syllabus/plans/:id" element={<SyllabusBuilder />} />
         <Route path="syllabus/my" element={<MySyllabus />} />
         <Route path="syllabus/my/:syllabusId/:classId" element={<TeacherCoverage />} />
+        <Route path="programmes" element={<ProgrammesList />} />
+        <Route path="programmes/selc/edit" element={<SelcEditor />} />
+        <Route path="programmes/selc" element={<SelcReader />} />
+        <Route path="programmes/selc/:grade/:month" element={<SelcReader />} />
         <Route path="homework" element={<HomeworkPage />} />
         <Route path="homework/class-teachers" element={<HomeworkMappingPage />} />
         <Route path="academic-calendar" element={<AcademicCalendarPage />} />
@@ -438,6 +448,9 @@ export default function App() {
         <Route path="exam/roster/:examId/:paperId/:sectionId" element={<InvigilatorRoster mode="me" />} />
         <Route path="exam/room-roster/:examId/:roomId/:date" element={<RoomRoster mode="me" />} />
         <Route path="exam/schedule" element={<ExamSchedule />} />
+        <Route path="exam/marks" element={<ReportMarks />} />
+        <Route path="exam/coscholastic" element={<ReportCoscholastic />} />
+        <Route path="exam/report-progress" element={<ReportProgress />} />
         <Route path="branding" element={<BrandingPage />} />
         <Route path="assembly" element={<AssemblyList />} />
         <Route path="assembly/day" element={<ScheduleDay />} />

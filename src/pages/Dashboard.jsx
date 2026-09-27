@@ -29,6 +29,7 @@ import {
   RecordVoiceOver as AssistantIcon,
   AssignmentReturn as TransferIcon,
   LibraryBooks as SyllabusIcon,
+  Forum as ProgrammesIcon,
   Groups as AssemblyIcon,
   PhotoCamera as HomeworkIcon,
 } from "@mui/icons-material";
@@ -195,6 +196,14 @@ const modules = [
     path: "/syllabus",
     color: "#8e24aa",
     perm: "syllabus.view",
+  },
+  {
+    title: "Programmes",
+    description: "Spoken English & Life Communication — monthly units by class",
+    icon: ProgrammesIcon,
+    path: "/programmes",
+    color: "#00838f",
+    perm: "programme.view",
   },
   {
     title: "Assembly",

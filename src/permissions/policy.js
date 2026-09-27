@@ -42,6 +42,8 @@ export const ROLE_PERMISSIONS = {
     "syllabus.view",
     "syllabus.manage",
     "syllabus.progress.mark",
+    "programme.view",
+    "programme.manage",
     "assembly.view",
     "assembly.manage",
     "homework.post",
@@ -66,6 +68,7 @@ export const ROLE_PERMISSIONS = {
     "employee.view",
     "syllabus.view", // Read plans; class teachers also mark coverage for their section
     "syllabus.progress.mark",
+    "programme.view", // Read the Spoken English & Life Communication monthly units
     "assembly.view", // Read the assembly plan for their wing
     "academic-calendar.view", // Read the school's academic calendar
     "leave.apply", // Apply for own leave; see own attendance & penalty
@@ -92,6 +95,7 @@ export const ROLE_PERMISSIONS = {
   "hiring-incharge": ["hiring.*"],
   "transport-incharge": ["transport.*"],
   "syllabus-incharge": ["syllabus.*"],
+  "programme-incharge": ["programme.*"],
   "assembly-incharge": ["assembly.*"],
   // Exam incharge === admin, but scoped to the examination module.
   "exam-incharge": ["exam.*"],

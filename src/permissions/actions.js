@@ -64,6 +64,11 @@ export const ACTIONS = {
   ACADEMIC_CALENDAR_MANAGE: "academic-calendar.manage",
   EXAM_VIEW: "exam.view",
   EXAM_MANAGE: "exam.manage",
+  // Developmental programmes (Spoken English & Life Communication, …). view = the
+  // teacher Class→Month→Theme reader + catalog (teacher/admin); manage = author units
+  // + re-upload source docs (admin/god/programme-incharge).
+  PROGRAMME_VIEW: "programme.view",
+  PROGRAMME_MANAGE: "programme.manage",
   // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
   ASSISTANT_USE: "assistant.use",
   // Staff leave. `apply` = self-service (own leave/attendance/penalty), granted to
@@ -312,6 +317,14 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.EXAM_MANAGE,
     description: "Create/edit/delete/publish examinations, datesheet papers & invigilator assignments",
+  },
+  {
+    action: ACTIONS.PROGRAMME_VIEW,
+    description: "See the Programmes menu and read a programme's monthly units (Class → Month → Theme)",
+  },
+  {
+    action: ACTIONS.PROGRAMME_MANAGE,
+    description: "Author programme units and re-upload class-module source documents",
   },
   {
     action: ACTIONS.ASSISTANT_USE,
