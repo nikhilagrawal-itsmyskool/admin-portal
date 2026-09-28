@@ -11,7 +11,7 @@ import { useCan } from '../../permissions/can';
 export default function ProgrammesList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can('programme.manage');
+  const canManage = can('godpwa.programme.manage');
   const [programmes, setProgrammes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

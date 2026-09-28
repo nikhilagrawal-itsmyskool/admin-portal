@@ -39,7 +39,7 @@ const emptyForm = { title: '', programmeFocus: '', workflowStatus: 'published', 
 export default function SelcEditor() {
   const { academicYearId } = useAcademicYear();
   const can = useCan();
-  const canManage = can('programme.manage');
+  const canManage = can('godpwa.programme.manage');
 
   const [fieldTypes, setFieldTypes] = useState([]);
   const [skills, setSkills] = useState([]);

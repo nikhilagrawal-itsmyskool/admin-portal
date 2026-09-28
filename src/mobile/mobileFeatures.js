@@ -196,7 +196,10 @@ export const MOBILE_HUBS = {
   supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
   fees: { title: "Fees", icon: FeesIcon, color: "#00897b" },
   leave: { title: "Leave", icon: LeaveIcon, color: "#3d5afe" },
-  programmes: { title: "Programmes", icon: ProgrammesIcon, color: "#00838f" },
+  // Single programme today -> the collapsed hub card reads "Spoken English" (the band
+  // header is already "Programmes"). When a 2nd programme is added, rename this back to
+  // "Programmes" so the multi-child hub tile groups them.
+  programmes: { title: "Spoken English", icon: ProgrammesIcon, color: "#00838f" },
 };
 
 // The home bands, in display order (mirrors the desktop groups; "Today" is mobile-first).

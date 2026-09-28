@@ -43,7 +43,6 @@ export const ROLE_PERMISSIONS = {
     "syllabus.manage",
     "syllabus.progress.mark",
     "programme.view",
-    "programme.manage",
     "assembly.view",
     "assembly.manage",
     "homework.post",

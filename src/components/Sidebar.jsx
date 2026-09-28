@@ -365,7 +365,7 @@ const menuItems = [
     icon: ProgrammesIcon,
     children: [
       { title: 'Spoken English', icon: ProgrammesIcon, path: '/programmes/selc', perm: 'programme.view' },
-      { title: 'Manage Content', icon: SyllabusSubjectIcon, path: '/programmes/selc/edit', perm: 'programme.manage' },
+      { title: 'Manage Content', icon: SyllabusSubjectIcon, path: '/programmes/selc/edit', perm: 'godpwa.programme.manage' },
     ],
   },
   {

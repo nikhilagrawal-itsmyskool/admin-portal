@@ -64,7 +64,7 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `exam.view` | See the Examinations menu and read exam schedules, datesheets & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `exam.manage` | Create/edit/delete/publish examinations, datesheet papers & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `programme.view` | See the Programmes menu and read a programme's monthly units (Class → Month → Theme) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
-| `programme.manage` | Author programme units and re-upload class-module source documents | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `programme.manage` | Author programme units and re-upload class-module source documents | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `assistant.use` | Use the voice/LLM student assistant (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `leave.apply` | Apply for your own leave and see your own attendance & penalty (teacher/office/admin) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `leave.manage` | Approve/reject leave, view any staff member's records, set policy, import biometric attendance & run the deduction report (god-only for now) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
