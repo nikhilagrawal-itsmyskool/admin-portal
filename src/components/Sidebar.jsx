@@ -365,7 +365,8 @@ const menuItems = [
     icon: ProgrammesIcon,
     children: [
       { title: 'Spoken English', icon: ProgrammesIcon, path: '/programmes/selc', perm: 'programme.view' },
-      { title: 'Manage Content', icon: SyllabusSubjectIcon, path: '/programmes/selc/edit', perm: 'godpwa.programme.manage' },
+      { title: 'Manage Spoken English', icon: SyllabusSubjectIcon, path: '/programmes/selc/edit', perm: 'godpwa.programme.manage' },
+      { title: 'Spoken English Settings', icon: AsmSettingsIcon, path: '/programmes/selc/settings', perm: 'godpwa.programme.manage' },
     ],
   },
   {
@@ -395,9 +396,10 @@ const menuItems = [
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
       { title: 'Marks Progress', icon: ExamIcon, path: '/exam/report-progress', perm: 'exam.manage' },
       { title: 'Subject Mapping', icon: ExamIcon, path: '/exam/subject-mapping', perm: 'exam.manage' },
-      { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.manage' },
       { title: 'Enter Marks', icon: CalendarIcon, path: '/exam/marks' },
       { title: 'Co-Scholastic', icon: CalendarIcon, path: '/exam/coscholastic' },
+      { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.manage' },
+      { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.manage' },
     ],
   },
   {
@@ -534,6 +536,30 @@ export default function Sidebar({ open, onClose, isDesktop }) {
     textActive: '#ffffff',
     hover: '#1a2138',
   };
+
+  // One mobile tile as a sidebar list row (shared by a section's loose tiles and its groups).
+  const renderMobileTile = (t) => (
+    <ListItem key={t.id ?? t.path} disablePadding>
+      <ListItemButton
+        onClick={() => handleNavigate(t.path)}
+        sx={{
+          px: 3,
+          py: 1.5,
+          backgroundColor: isActive(t.path) ? 'rgba(51, 102, 255, 0.2)' : 'transparent',
+          borderLeft: isActive(t.path) ? '3px solid #3366ff' : '3px solid transparent',
+          '&:hover': { backgroundColor: sidebarStyles.hover },
+        }}
+      >
+        <ListItemIcon sx={{ color: isActive(t.path) ? sidebarStyles.textActive : sidebarStyles.text, minWidth: 40 }}>
+          <t.icon />
+        </ListItemIcon>
+        <ListItemText
+          primary={t.title}
+          sx={{ '& .MuiTypography-root': { color: isActive(t.path) ? sidebarStyles.textActive : sidebarStyles.text } }}
+        />
+      </ListItemButton>
+    </ListItem>
+  );
 
   const drawerContent = (
     <>
@@ -705,44 +731,26 @@ export default function Sidebar({ open, onClose, isDesktop }) {
               >
                 {sec.label}
               </ListSubheader>
-              {sec.tiles.map((t) => (
-                <ListItem key={t.id ?? t.path} disablePadding>
-                  <ListItemButton
-                    onClick={() => handleNavigate(t.path)}
+              {sec.tiles.map(renderMobileTile)}
+              {sec.groups.map((g) => (
+                <React.Fragment key={g.label}>
+                  <ListSubheader
                     sx={{
-                      px: 3,
-                      py: 1.5,
-                      backgroundColor: isActive(t.path)
-                        ? 'rgba(51, 102, 255, 0.2)'
-                        : 'transparent',
-                      borderLeft: isActive(t.path)
-                        ? '3px solid #3366ff'
-                        : '3px solid transparent',
-                      '&:hover': { backgroundColor: sidebarStyles.hover },
+                      bgcolor: 'transparent',
+                      color: sidebarStyles.text,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: 0.8,
+                      textTransform: 'uppercase',
+                      lineHeight: '2.2',
+                      pl: 5,
+                      opacity: 0.8,
                     }}
                   >
-                    <ListItemIcon
-                      sx={{
-                        color: isActive(t.path)
-                          ? sidebarStyles.textActive
-                          : sidebarStyles.text,
-                        minWidth: 40,
-                      }}
-                    >
-                      <t.icon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={t.title}
-                      sx={{
-                        '& .MuiTypography-root': {
-                          color: isActive(t.path)
-                            ? sidebarStyles.textActive
-                            : sidebarStyles.text,
-                        },
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+                    {g.label}
+                  </ListSubheader>
+                  {g.tiles.map(renderMobileTile)}
+                </React.Fragment>
               ))}
             </React.Fragment>
           ))}

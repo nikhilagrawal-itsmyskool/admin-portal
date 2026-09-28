@@ -72,7 +72,7 @@ export default function ReportCards() {
   const selected = (data?.students || []).filter((s) => sel.has(s.studentId));
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
+    <Box sx={{ width: '100%' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Report Cards</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Preview and print report cards for a class. Printing records the count &amp; date per student.
