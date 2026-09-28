@@ -26,7 +26,7 @@ export default function ReportSubjectMapping() {
     setLoading(true); setErr('');
     try {
       const [cls, emps] = await Promise.all([
-        examinationService.myReportClasses(),
+        examinationService.reportClasses(), // all scheme sections (exam.manage) — not class-teacher-scoped
         employeeService.searchEmployees({}).catch(() => []),
       ]);
       const clist = cls.classes || [];
