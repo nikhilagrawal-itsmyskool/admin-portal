@@ -63,16 +63,16 @@ Names below are the live titles. `·` separates a hub's children.
 - **Now**
   - Take Attendance `attendance.mark` · Bus Attendance `transport.attendance.mark`
   - Post Homework `homework.post` · Send Message `communication.send` · Record Feedback `feedback.record`
-  - Assembly `[hub]` · Today's assembly `assembly.view` · My Roster / My Checklist `+derived houseMember` · Grade Assembly `+derived evaluator`
+  - Assembly `[hub]` · Today's assembly `assembly.view` · My Roster / My Checklist `+derived houseMember` · Grade Assembly `+derived evaluator` · Leaderboard `assembly.view`
 - **Mine**
   - My Timetable `timetable.view` · My Syllabus `syllabus.view` · Academic Calendar `academic-calendar.view`
-  - Exam Schedule *(all staff)* · My Exam Duties *(all staff)*
+  - Exam Schedule *(all staff)* · My Exam Duties *(all staff)* · Enter Marks *(all staff)* · Co-Scholastic *(all staff)*
   - My Feedback `feedback.respond` / not `feedback.review` · My Documents `documents.sign` / not `documents.manage`
   - Leave `[hub]` · My Leave `leave.apply` / not `leave.manage` · Leave Calendar `leave.apply` · My Attendance · My Penalty
 - **Programmes** `[hub: programmes]`
   - Spoken English `programme.view` — Class → Month → Theme reader (links straight through while it's the only programme; becomes a hub when Scout etc. are added)
 - **Manage**
-  - Examinations `exam.view` · Branding `exam.manage` · Feedback `feedback.review` · Staff Documents `documents.manage`
+  - Examinations `exam.view` · Subject Mapping `exam.manage` · Marks Progress `exam.manage` · Branding `exam.manage` · Feedback `feedback.review` · Staff Documents `documents.manage`
 - **People & Staff** `[hub: people]`
   - Students `student.view` · Employees `employee.view` · Hiring `hiring.view` · Transfer Certificate `transfer.view`
 - **Stores & Inventory** *(per-module `[hub]`)*
@@ -86,19 +86,48 @@ Names below are the live titles. `·` separates a hub's children.
 
 ---
 
-## Proposed reorg (target — NOT in code yet)
+## Reorg — IMPLEMENTED (on main working tree, pending commit)
+
+Done in `mobileFeatures.js` (tiles + a new `group` field + `buildMobileTiles` now returns
+`{ tiles, groups }`), `pages/MobileHome.jsx` and `components/Sidebar.jsx` (render subheadings).
+Co-Scholastic is gated on `homework.post` as an interim class-teacher proxy (the clean
+`derived: 'classTeacher'` resolver is still the follow-up). The items below are what shipped:
 
 1. **Assembly duty → Mine.** Move My Roster / My Checklist / Grade Assembly from **Now**
    into **Mine**; only **Today's assembly** stays in Now (as a loose card).
 2. **Rename** to the convention: `Grade Assembly → Grading`, `My Roster → Roster`,
    `My Checklist → Checklist`.
-3. **Exams gets a subheading** in Mine: `My Exam Duties → Duties`, `Exam Schedule → Schedule`.
+3. **Exams gets a subheading** in Mine: `My Exam Duties → Duties`, `Exam Schedule → Schedule`,
+   plus **Enter Marks** and **Co-Scholastic** (task-shaped, no "My") — one group for the whole
+   exam→report-card cycle. **Enter Marks** stays visible to teachers (subject teachers,
+   row-scoped by `canTeach`). **Co-Scholastic** is **class-teacher-only** — gate the tile so
+   plain teachers don't see it (backend already enforces `isClassTeacher`). Cleanest gate is a
+   `derived: 'classTeacher'` runtime check (mirrors the Assembly duty pattern; reuse
+   `/me/report/classes`, empty ⇒ not a class teacher); interim proxy = a class-teacher role perm.
 4. **Leave group naming:** `My Leave → Request`, `Leave Calendar → Calendar`,
    `My Penalty → Penalties`; **My Attendance** stays.
 5. **Flatten Leave, Assembly, Exams** from hubs (2 taps) into **flat subheadings** (1 tap).
    Requires a new **`group`** field on features + `buildMobileTiles` rendering subheadings
    within a section — today the model has only `section` + `hub`.
+6. **Manage stays a flat launcher** with the exam consoles clustered in order:
+   Examinations · Subject Mapping · Marks Progress · Branding (then Feedback · Staff Documents).
+   No subheading — a "Examinations" group would clash with the tile of the same name.
 
-Not changing: Fees stays god-only on mobile; People and per-store groups stay as hubs.
+7. **People & Staff → flatten to direct tiles** (Students · Employees · Hiring · Transfer
+   Certificate) — drop the `people` hub; the section header is the group. One tap.
+8. **Stores & Inventory → keep the per-module hubs** (Library · Lab · Medical · Sports ·
+   Supplies) — flattening would be 10+ tiles for an admin; hub-per-module stays scannable and a
+   single-module incharge sees just their one tile. Asset Counts stays a loose tile.
+
+Confirmed behavior: **Roster / Checklist** appear only for a `houseMember` of the on-duty house;
+**Grading** only for an assigned `evaluator` (both `derived`, resolved via `/me/assembly/duties`).
+
+Not changing: Fees stays god-only on mobile.
+
+## Open check — marks-entry scoping
+
+`Enter Marks` / `Co-Scholastic` carry **no `perm`** (all staff). Safe only if the backend
+**row-scopes** writes to the caller's own teaching assignments (empty otherwise), like
+invigilation `/me`. If not, they need a teaching/marks gate. _(Verifying in core-api.)_
 
 _Interactive view of current vs proposed, per role: the "Staff PWA — cards by role" artifact._

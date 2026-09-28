@@ -82,11 +82,14 @@ export const MOBILE_FEATURES = [
   // Read-only academic calendar (month view + holidays). No operations on mobile —
   // the page forces read-only and hides Import/Manage columns below the sm breakpoint.
   { title: "Academic Calendar", icon: AcademicCalendarIcon, path: "/academic-calendar", perm: "academic-calendar.view", section: "mine", color: "#3366ff", routes: ["/academic-calendar"] },
-  { title: "Today's assembly", hubLabel: "Today's assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view", section: "today", hub: "assembly" },
-  { title: "My Roster", hubLabel: "My Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
-  { title: "My Checklist", hubLabel: "My Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view", derived: "houseMember", section: "today", hub: "assembly" },
-  { title: "Grade Assembly", hubLabel: "Grade", icon: AssemblyGradeIcon, path: "/assembly/my-grade", perm: "assembly.view", derived: "evaluator", section: "today", hub: "assembly" },
-  { title: "Leaderboard", hubLabel: "Leaderboard", icon: AssemblyLeaderboardIcon, path: "/assembly/leaderboard", perm: "assembly.view", section: "today", hub: "assembly" },
+  // Assembly: "Today's assembly" + Leaderboard are the shared views (loose in Now). The house
+  // member's Roster/Checklist and the evaluator's Grading are personal duty → Mine, grouped
+  // under an "Assembly" subheading, still gated by the runtime `derived` house/evaluator role.
+  { title: "Today's assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view", section: "today", color: "#1e88e5" },
+  { title: "Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view", derived: "houseMember", section: "mine", group: "Assembly", color: "#1e88e5" },
+  { title: "Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view", derived: "houseMember", section: "mine", group: "Assembly", color: "#1e88e5" },
+  { title: "Grading", icon: AssemblyGradeIcon, path: "/assembly/my-grade", perm: "assembly.view", derived: "evaluator", section: "mine", group: "Assembly", color: "#1e88e5" },
+  { title: "Leaderboard", icon: AssemblyLeaderboardIcon, path: "/assembly/leaderboard", perm: "assembly.view", section: "today", color: "#1e88e5" },
   {
     title: "Bus Attendance",
     icon: TransportIcon,
@@ -114,10 +117,14 @@ export const MOBILE_FEATURES = [
 
   // ── Examinations ─────────────────────────────────────────────────────────────
   // Schedule + duties are open to all staff (no perm); management is exam.view only.
-  { title: "Exam Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", color: "#5e35b1", routes: ["/exam/schedule"] },
-  { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
-  { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", section: "mine", color: "#5e35b1", routes: ["/exam/marks"] },
-  { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", section: "mine", color: "#5e35b1", routes: ["/exam/coscholastic"] },
+  // Exams subheading (Mine): the teacher's exam→report-card surfaces. Duties/Schedule/Enter
+  // Marks are open to all staff (row-scoped server-side); Co-Scholastic is class-teacher-only
+  // (backend enforces isClassTeacher) — gate the tile on homework.post as a class-teacher proxy
+  // until a `derived: classTeacher` resolver exists.
+  { title: "Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/schedule"] },
+  { title: "Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
+  { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/marks"] },
+  { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", perm: "homework.post", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/coscholastic"] },
   { title: "Marks Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
   { title: "Subject Mapping", icon: ExamMgmtIcon, path: "/exam/subject-mapping", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/exam/subject-mapping"] },
   // Report Cards (Phase B — printing) is desktop-only for now; intentionally not on the PWA.
@@ -125,12 +132,13 @@ export const MOBILE_FEATURES = [
   { title: "Branding", icon: BrandingTileIcon, path: "/branding", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/branding"] },
 
   // ── People & Staff ───────────────────────────────────────────────────────────
-  { title: "Students", hubLabel: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", hub: "people", routes: ["/students", "/students/:id"] },
-  { title: "Employees", hubLabel: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view", section: "people", hub: "people" },
-  { title: "Hiring", hubLabel: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "people", hub: "people", routes: ["/hiring", "/hiring/new", "/hiring/:id", "/hiring/:id/edit"] },
+  // People & Staff: flat tiles (the band header is the group — no hub, one tap).
+  { title: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", color: "#3d5afe", routes: ["/students", "/students/:id"] },
+  { title: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view", section: "people", color: "#3d5afe" },
+  { title: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "people", color: "#3d5afe", routes: ["/hiring", "/hiring/new", "/hiring/:id", "/hiring/:id/edit"] },
   // Read-only TC search/list on mobile; tapping a row opens the student detail
   // (permitted via the Students feature). Apply/issue stays desktop-only.
-  { title: "Transfer Certificate", hubLabel: "TC", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", hub: "people", routes: ["/transfer"] },
+  { title: "Transfer Certificate", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", color: "#3d5afe", routes: ["/transfer"] },
 
   // ── Stores & Inventory ───────────────────────────────────────────────────────
   { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.view", section: "stores", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
@@ -160,15 +168,15 @@ export const MOBILE_FEATURES = [
   { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
   // Leave Calendar — month view of who's on leave, inside the Leave hub with the other
   // leave options so staff can plan before applying (no notPerm so god sees it too).
-  { title: "Leave Calendar", hubLabel: "Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.apply", section: "mine", hub: "leave", routes: ["/leave/day"] },
+  { title: "Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.apply", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/day"] },
   { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
   // Feedback dashboard — reviewer oversight (feedback.review = god only for now); Manage band.
   { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "manage", color: "#0097a7", routes: ["/feedback", "/feedback/t/:id"] },
   // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
   // notPerm hides it from an oversight user (god / leave.manage) who never applies.
-  { title: "My Leave", hubLabel: "Requests", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me"] },
-  { title: "My Attendance", hubLabel: "Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me/attendance"] },
-  { title: "My Penalty", hubLabel: "Penalty", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.apply", notPerm: "leave.manage", section: "mine", hub: "leave", routes: ["/leave/me/penalty"] },
+  { title: "Request", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", notPerm: "leave.manage", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me"] },
+  { title: "My Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.apply", notPerm: "leave.manage", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/attendance"] },
+  { title: "Penalties", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.apply", notPerm: "leave.manage", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/penalty"] },
   // Staff documents — self-service (read & sign own policies). Hidden from the managing
   // user (god) who reads compliance via the office tile below instead.
   { title: "My Documents", icon: DocumentIcon, path: "/me/documents", perm: "documents.sign", notPerm: "documents.manage", section: "mine", color: "#3f51b5", routes: ["/me/documents", "/me/documents/:id"] },
@@ -217,6 +225,9 @@ export const MOBILE_SECTIONS = [
 
 const DEFAULT_COLOR = "#3366ff";
 
+// Display order for in-section subheading groups (Mine): Exams, then Leave, then Assembly.
+const GROUP_ORDER = { Exams: 1, Leave: 2, Assembly: 3 };
+
 export const getHub = (key) => MOBILE_HUBS[key];
 
 // Visible children of a hub (for the hub screen), in declaration order.
@@ -225,11 +236,14 @@ export const hubChildren = (key, visible) =>
 
 // Build the grouped, permission-filtered home model. `visible(feature) => boolean`
 // (supplied by useMobileVisibility) encapsulates perm + derived + admin-bypass.
-// Returns [{ key, label, tiles }] with empty sections dropped. A tile is either a
-// direct `link` or a `hub`; a hub with a single visible child collapses to a link.
+// Returns [{ key, label, tiles, groups }] with empty sections dropped. `tiles` are the
+// section's loose (ungrouped) tiles; `groups` are [{ label, tiles }] subheadings for any
+// features carrying a `group`. A tile is a direct `link` or a `hub` (single visible child
+// collapses to a link). Hubs are always loose (never grouped).
 export function buildMobileTiles(visible) {
   return MOBILE_SECTIONS.map((sec) => {
     const tiles = [];
+    const groupMap = new Map();
     const seenHubs = new Set();
     for (const f of MOBILE_FEATURES) {
       if (f.section !== sec.key) continue;
@@ -246,11 +260,20 @@ export function buildMobileTiles(visible) {
             : { kind: "hub", id: f.hub, title: hub.title, icon: hub.icon, path: `/hub/${f.hub}`, count: kids.length, color },
         );
       } else if (visible(f)) {
-        tiles.push({ kind: "link", id: f.path, title: f.title, icon: f.icon, path: f.path, color: f.color || DEFAULT_COLOR });
+        const tile = { kind: "link", id: f.path, title: f.title, icon: f.icon, path: f.path, color: f.color || DEFAULT_COLOR };
+        if (f.group) {
+          if (!groupMap.has(f.group)) groupMap.set(f.group, []);
+          groupMap.get(f.group).push(tile);
+        } else {
+          tiles.push(tile);
+        }
       }
     }
-    return { ...sec, tiles };
-  }).filter((s) => s.tiles.length > 0);
+    const groups = [...groupMap.entries()]
+      .map(([label, gtiles]) => ({ label, tiles: gtiles }))
+      .sort((a, b) => (GROUP_ORDER[a.label] || 99) - (GROUP_ORDER[b.label] || 99));
+    return { ...sec, tiles, groups };
+  }).filter((s) => s.tiles.length > 0 || s.groups.length > 0);
 }
 
 // Home + profile are always reachable on mobile.

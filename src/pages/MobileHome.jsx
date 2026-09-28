@@ -34,7 +34,26 @@ export default function MobileHome() {
             >
               {sec.label}
             </Typography>
-            <TileGrid tiles={sec.tiles} onOpen={(t) => navigate(t.path)} />
+            {sec.tiles.length > 0 && <TileGrid tiles={sec.tiles} onOpen={(t) => navigate(t.path)} />}
+            {sec.groups.map((g) => (
+              <Box key={g.label} sx={{ mt: sec.tiles.length ? 1.5 : 0 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.disabled",
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    textTransform: "uppercase",
+                    display: "block",
+                    mb: 0.75,
+                    ml: 0.25,
+                  }}
+                >
+                  {g.label}
+                </Typography>
+                <TileGrid tiles={g.tiles} onOpen={(t) => navigate(t.path)} />
+              </Box>
+            ))}
           </Box>
         ))
       )}
