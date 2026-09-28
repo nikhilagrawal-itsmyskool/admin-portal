@@ -7,17 +7,18 @@ import {
 import { examinationService } from '../../services/examinationService';
 
 const BANDS = [
+  { band: 'pre-primary', label: 'Pre-Primary' },
   { band: '1-3', label: 'Classes 1–3' },
   { band: '4-5', label: 'Classes 4–5' },
   { band: '6-9', label: 'Classes 6–9' },
-  { band: 'pre-primary', label: 'Pre-Primary' },
 ];
 
 // Report Format config (Manage, exam.manage — desktop). Edit the labels printed on the card:
 // subject names, the mark-column labels + max, the co-scholastic area names, and the grading
 // legend. Codes are fixed (marks reference them), so this is edit-only — no add/remove here.
 export default function ReportFormat() {
-  const [band, setBand] = useState('1-3');
+  const [band, setBand] = useState('pre-primary');
+  const [termFilter, setTermFilter] = useState(0); // 0 = both terms, 1, or 2
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -88,10 +89,18 @@ export default function ReportFormat() {
           {/* Components */}
           {data.components.length > 0 && (
             <Card variant="outlined"><CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Mark columns (per term)</Typography>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Mark columns (per term)</Typography>
+                <Box sx={{ flex: 1 }} />
+                <ToggleButtonGroup exclusive size="small" value={termFilter} onChange={(_, v) => v != null && setTermFilter(v)}>
+                  <ToggleButton value={0} sx={{ px: 1.5 }}>Both</ToggleButton>
+                  <ToggleButton value={1} sx={{ px: 1.5 }}>Term 1</ToggleButton>
+                  <ToggleButton value={2} sx={{ px: 1.5 }}>Term 2</ToggleButton>
+                </ToggleButtonGroup>
+              </Stack>
               <Paper variant="outlined" sx={{ overflowX: 'auto' }}><Table size="small">
                 <TableHead><TableRow><TableCell>Term</TableCell><TableCell>Code</TableCell><TableCell>Label</TableCell><TableCell align="right">Max</TableCell></TableRow></TableHead>
-                <TableBody>{data.components.map((c) => (
+                <TableBody>{data.components.filter((c) => !termFilter || c.term === termFilter).map((c) => (
                   <TableRow key={c.uuid}>
                     <TableCell>{c.term}</TableCell>
                     <TableCell><Chip size="small" variant="outlined" label={c.code} /></TableCell>
@@ -120,7 +129,10 @@ export default function ReportFormat() {
 
           {/* Grade scales */}
           <Card variant="outlined"><CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Grading legend</Typography>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Grading legend</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              Applies to <b>{BANDS.find((b) => b.band === band)?.label}</b> only. Each band keeps its own copy — editing here does not change the other bands.
+            </Typography>
             <Paper variant="outlined" sx={{ overflowX: 'auto' }}><Table size="small">
               <TableHead><TableRow><TableCell>Kind</TableCell><TableCell>Grade</TableCell><TableCell>Label</TableCell><TableCell align="right">Min %</TableCell><TableCell align="right">Max %</TableCell></TableRow></TableHead>
               <TableBody>{data.gradeScales.map((g) => (
