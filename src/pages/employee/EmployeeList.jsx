@@ -329,11 +329,6 @@ export default function EmployeeList() {
                   <TextField
                     {...params}
                     placeholder={selectedRoles.length ? "" : "Filter by role…"}
-                    helperText={
-                      selectedRoles.length > 1
-                        ? "Showing staff who hold ALL selected roles"
-                        : " "
-                    }
                   />
                 )}
               />
@@ -351,6 +346,15 @@ export default function EmployeeList() {
               />
             )}
           </Box>
+          {isAdmin && selectedRoles.length > 1 && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1 }}
+            >
+              Showing staff who hold ALL selected roles
+            </Typography>
+          )}
         </CardContent>
       </Card>
 
