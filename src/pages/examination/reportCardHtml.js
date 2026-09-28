@@ -10,18 +10,23 @@ const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', '
 const attendance = (s) => (s.attendancePresent != null && s.attendanceTotal != null ? `${s.attendancePresent}/${s.attendanceTotal}` : '');
 
 function masthead(b) {
-  const left = b.boardLogoDataUri || b.logoDataUri;
-  const right = b.logoDataUri || b.boardLogoDataUri;
+  // Left = board/affiliating-body emblem (falls back to the school crest until uploaded);
+  // right = school crest. Affiliation No. sits under the left crest, School Code under the right.
+  const boardLogo = b.boardLogoDataUri || b.logoDataUri;
+  const schoolLogo = b.logoDataUri || b.boardLogoDataUri;
+  const crest = (uri) => `<div class="crest">${uri ? `<img src="${uri}" alt="">` : ''}</div>`;
+  const cap = (label, val) => (val ? `<div class="crest-cap"><span>${esc(label)}</span>${esc(val)}</div>` : '');
+  const line = [b.email ? `E - mail : ${esc(b.email)}` : '', b.website ? `website : ${esc(b.website)}` : ''].filter(Boolean).join('&nbsp;&nbsp;★&nbsp;&nbsp;');
   return `<div class="mast">
-    <div class="crest">${left ? `<img src="${left}" alt="">` : ''}</div>
+    <div class="crest-col">${crest(boardLogo)}${cap('Affiliation No. :', b.affiliationNo)}</div>
     <div class="mast-mid">
       <div class="sname">${esc(b.schoolName || 'Report Card')}</div>
       ${b.motto ? `<div class="motto">${esc(b.motto)}</div>` : ''}
       ${b.address ? `<div class="addr">${esc(b.address)}</div>` : ''}
-      <div class="addr">${[b.contact ? `Contact: ${esc(b.contact)}` : '', b.email ? `E-mail: ${esc(b.email)}` : '', b.website ? esc(b.website) : ''].filter(Boolean).join(' · ')}</div>
-      <div class="addr small">${[b.affiliationNo ? `Affiliation No: ${esc(b.affiliationNo)}` : '', b.schoolCode ? `School Code: ${esc(b.schoolCode)}` : ''].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>
+      ${b.contact ? `<div class="addr">Contact No. : ${esc(b.contact)}</div>` : ''}
+      ${line ? `<div class="addr">${line}</div>` : ''}
     </div>
-    <div class="crest">${right && right !== left ? `<img src="${right}" alt="">` : ''}</div>
+    <div class="crest-col">${crest(schoolLogo)}${cap('School Code :', b.schoolCode)}</div>
   </div>`;
 }
 
@@ -108,7 +113,7 @@ function card(data, s) {
     ${marksTbl}
     ${areaSections(data, s)}
     ${s.remark ? `<div class="remark"><b>Class Teacher Remark:</b> ${esc(s.remark)}</div>` : ''}
-    ${s.promotedTo ? `<div class="promo">CONGRATULATIONS! PROMOTED TO CLASS: ${esc(s.promotedTo)}</div>` : ''}
+    ${s.promotedTo && data.term === 2 ? `<div class="promo">CONGRATULATIONS! PROMOTED TO CLASS: ${esc(s.promotedTo)}</div>` : ''}
     ${legends(data)}
     <div class="sigs">${sigs.map((x) => `<div class="sig">${esc(x)}</div>`).join('')}</div>
   </div>`;
@@ -121,13 +126,16 @@ export function buildReportCardsHtml(data, students) {
     body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .card { width: 210mm; min-height: 297mm; padding: 10mm; page-break-after: always; }
     .card:last-child { page-break-after: auto; }
-    .mast { display: flex; align-items: center; gap: 10px; background: #23264d; color: #f3f2ea; border-radius: 6px; padding: 8px 12px; }
-    .crest { width: 62px; text-align: center; }
-    .crest img { max-width: 60px; max-height: 60px; }
-    .mast-mid { flex: 1; text-align: center; }
-    .sname { font-size: 22px; font-weight: 800; letter-spacing: .3px; color:#e7c869; }
-    .motto { font-style: italic; font-size: 12px; opacity: .9; }
-    .addr { font-size: 10.5px; opacity: .92; }
+    .mast { display: flex; align-items: stretch; gap: 6px; background: #37407e; color: #f3f2ea; border-radius: 6px; padding: 12px 12px 11px; }
+    .crest-col { width: 92px; flex: 0 0 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+    .crest { width: 62px; height: 62px; border-radius: 50%; overflow: hidden; background: #fff; display: flex; align-items: center; justify-content: center; }
+    .crest img { width: 100%; height: 100%; object-fit: contain; }
+    .crest-cap { text-align: center; font-size: 9.5px; font-weight: 700; line-height: 1.25; }
+    .crest-cap span { display: block; color: #e7c869; font-size: 8.5px; font-weight: 600; }
+    .mast-mid { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+    .sname { font-size: 26px; font-weight: 800; letter-spacing: .2px; color:#e7c869; line-height: 1.1; white-space: nowrap; }
+    .motto { font-style: italic; font-size: 14px; opacity: .95; margin: 2px 0 5px; }
+    .addr { font-size: 12px; opacity: .95; line-height: 1.7; }
     .addr.small { opacity: .8; }
     .title { text-align: center; color: #7a1420; font-weight: 800; font-size: 16px; margin: 8px 0 2px; letter-spacing: .5px; }
     .session { text-align:center; font-size:12px; font-weight:700; margin-bottom:6px; }
@@ -155,8 +163,8 @@ export function buildReportCardsHtml(data, students) {
     table.area .g { text-align: center; width: 70px; }
     .remark { font-size: 11px; margin-top: 8px; border: 1px solid #999; padding: 4px 6px; }
     .promo { font-size: 11px; font-weight: 700; margin-top: 6px; }
-    .legends { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-    .leg { flex: 1 1 300px; }
+    .legends { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .leg { width: 100%; }
     .leg-t { text-align: center; font-weight: 700; font-size: 10.5px; margin-bottom: 2px; }
     table.leg-tbl { border-collapse: collapse; width: 100%; font-size: 9.5px; }
     table.leg-tbl td { border: 1px solid #999; padding: 2px 4px; text-align: center; }
