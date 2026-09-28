@@ -159,4 +159,8 @@ export const examinationService = {
     (await api.post(`/examination/me/report/coscholastic/${classId}/${term}`, { entries }, { params: ay ? { ay } : {} })).data,
   reportProgress: async (term, ay) =>
     (await api.get(`/examination/report/progress/${term}`, { params: ay ? { ay } : {} })).data,
+  reportMapping: async (classId, ay) =>
+    (await api.get(`/examination/report/mapping/${classId}`, { params: ay ? { ay } : {} })).data,
+  assignReportTeacher: async (classId, subjectCode, teacherId, ay) =>
+    (await api.post(`/examination/report/mapping/${classId}`, { subjectCode, teacherId }, { params: ay ? { ay } : {} })).data,
 };

@@ -5,11 +5,13 @@ import {
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Class-teacher co-scholastic entry (PWA). Grades the co-scholastic / personality / other areas
 // (and the remark + attendance) for one student at a time. Class list = the caller's class-teacher
 // classes (or every class, for the exam-incharge override).
 export default function ReportCoscholastic() {
+  const isMobile = useIsMobile();
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState('');
   const [term, setTerm] = useState(1);
@@ -75,7 +77,7 @@ export default function ReportCoscholastic() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: 640, mx: 'auto' }}>
+    <Box sx={{ maxWidth: isMobile ? 640 : 980, mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Co-Scholastic Grades</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Grade the co-scholastic areas, attendance and remark for your class — one student at a time.
@@ -111,8 +113,9 @@ export default function ReportCoscholastic() {
                 <IconButton size="small" disabled={idx >= grid.students.length - 1} onClick={() => setIdx((i) => Math.min(grid.students.length - 1, i + 1))}><ChevronRight /></IconButton>
               </Stack>
 
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5, mb: 1.5 }}>
               {sections.map(([section, areas]) => (
-                <Card key={section} variant="outlined" sx={{ mb: 1.5 }}>
+                <Card key={section} variant="outlined">
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography variant="subtitle2" color="primary.main" sx={{ mb: 1 }}>{section}</Typography>
                     <Stack spacing={1}>
@@ -132,6 +135,7 @@ export default function ReportCoscholastic() {
                   </CardContent>
                 </Card>
               ))}
+              </Box>
 
               <Card variant="outlined" sx={{ mb: 1.5 }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -140,12 +144,17 @@ export default function ReportCoscholastic() {
                     <TextField size="small" type="number" label="Attendance (present)" sx={{ flex: 1 }} value={d.attendancePresent} onChange={(e) => setField('attendancePresent', e.target.value)} InputLabelProps={{ shrink: true }} />
                     <TextField size="small" type="number" label="of (total)" sx={{ flex: 1 }} value={d.attendanceTotal} onChange={(e) => setField('attendanceTotal', e.target.value)} InputLabelProps={{ shrink: true }} />
                   </Stack>
-                  <TextField size="small" fullWidth label="House" sx={{ mb: 1 }} value={d.house} onChange={(e) => setField('house', e.target.value)} />
+                  <TextField select size="small" fullWidth label="House" sx={{ mb: 1 }} value={d.house || ''} onChange={(e) => setField('house', e.target.value)}>
+                    <MenuItem value="">—</MenuItem>
+                    {[...new Set([...(grid.houses || []), ...(d.house ? [d.house] : [])])].map((hn) => (
+                      <MenuItem key={hn} value={hn}>{hn}</MenuItem>
+                    ))}
+                  </TextField>
                   <TextField size="small" fullWidth multiline minRows={2} label="Class teacher remark" value={d.remark} onChange={(e) => setField('remark', e.target.value)} />
                 </CardContent>
               </Card>
 
-              <Box sx={{ position: 'sticky', bottom: 0, py: 1.5, background: (t) => t.palette.background.default }}>
+              <Box sx={{ py: 2 }}>
                 <Button fullWidth variant="contained" onClick={save} disabled={busy}>Save {student.name?.split(' ')[0]}</Button>
               </Box>
             </>

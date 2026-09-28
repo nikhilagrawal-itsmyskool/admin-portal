@@ -29,7 +29,7 @@ export default function ReportProgress() {
   const openSubject = (classId, subjectCode) => navigate(`/exam/marks?classId=${classId}&subjectCode=${subjectCode}&term=${term}`);
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 0.5 }}>
         <Typography variant="h5">Marks Progress</Typography>
         <Box sx={{ flex: 1 }} />
@@ -61,7 +61,7 @@ export default function ReportProgress() {
             </Grid>
           </Grid>
 
-          <Stack spacing={1.5}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5 }}>
             {(data.classes || []).map((c) => (
               <Card key={c.classId} variant="outlined">
                 <CardContent>
@@ -89,8 +89,8 @@ export default function ReportProgress() {
                 </CardContent>
               </Card>
             ))}
-            {!data.classes?.length && <Alert severity="info">No classes with enrolment for this year.</Alert>}
-          </Stack>
+            {!data.classes?.length && <Alert severity="info" sx={{ gridColumn: '1 / -1' }}>No classes with enrolment for this year.</Alert>}
+          </Box>
         </>
       )}
     </Box>

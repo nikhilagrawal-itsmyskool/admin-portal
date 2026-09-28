@@ -2,14 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
   TextField, MenuItem, LinearProgress, Divider, ToggleButton, ToggleButtonGroup,
+  Table, TableHead, TableBody, TableRow, TableCell, Paper,
 } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Subject-teacher marks entry (PWA). Lists the class × subject pairs the teacher is mapped to in
 // the syllabus; opening one shows a per-student grid of that band's Term component columns.
 // The exam-incharge can also deep-link to any (classId, subjectCode, term) from the dashboard.
 export default function ReportMarks() {
+  const isMobile = useIsMobile();
   const [params] = useSearchParams();
   const qClass = params.get('classId'); const qSubject = params.get('subjectCode'); const qTerm = params.get('term');
   const [subjects, setSubjects] = useState([]);
@@ -76,7 +79,7 @@ export default function ReportMarks() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: 760, mx: 'auto' }}>
+    <Box sx={{ maxWidth: isMobile ? 760 : 1200, mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Enter Marks</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Enter Term marks for the subjects you teach. Marks save per class &amp; subject.
@@ -112,35 +115,76 @@ export default function ReportMarks() {
                 <Chip size="small" variant="outlined" label={`${grid.entered}/${grid.total} complete`} />
               </Stack>
 
-              <Stack spacing={1}>
-                {grid.students.map((s, i) => (
-                  <Card key={s.studentId} variant="outlined">
-                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {[s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ')}
-                        </Typography>
-                      </Stack>
-                      <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${grid.components.length}, 1fr)`, gap: 0.75 }}>
+              {!grid.students.length ? (
+                <Alert severity="info">No students enrolled in this class.</Alert>
+              ) : isMobile ? (
+                <Stack spacing={1}>
+                  {grid.students.map((s) => (
+                    <Card key={s.studentId} variant="outlined">
+                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {[s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ')}
+                          </Typography>
+                        </Stack>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${grid.components.length}, 1fr)`, gap: 0.75 }}>
+                          {grid.components.map((c) => (
+                            <TextField
+                              key={c.code} type="number" size="small" label={`${c.label}/${c.max}`}
+                              value={vals[s.studentId]?.[c.code] ?? ''}
+                              onChange={(e) => setCell(s.studentId, c.code, e.target.value)}
+                              inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px' } }}
+                              InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
+                            />
+                          ))}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              ) : (
+                // Desktop: a spreadsheet-style table — students down, components across.
+                <Paper variant="outlined" sx={{ overflowX: 'auto' }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700, minWidth: 220 }}>Student</TableCell>
                         {grid.components.map((c) => (
-                          <TextField
-                            key={c.code} type="number" size="small" label={`${c.label}/${c.max}`}
-                            value={vals[s.studentId]?.[c.code] ?? ''}
-                            onChange={(e) => setCell(s.studentId, c.code, e.target.value)}
-                            inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px' } }}
-                            InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
-                          />
+                          <TableCell key={c.code} align="center" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            {c.label}<Typography variant="caption" color="text.secondary"> /{c.max}</Typography>
+                          </TableCell>
                         ))}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
-                {!grid.students.length && <Alert severity="info">No students enrolled in this class.</Alert>}
-              </Stack>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {grid.students.map((s) => (
+                        <TableRow key={s.studentId} hover>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {[s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ')}
+                            </Typography>
+                          </TableCell>
+                          {grid.components.map((c) => (
+                            <TableCell key={c.code} align="center" sx={{ px: 0.5 }}>
+                              <TextField
+                                type="number" size="small" variant="outlined"
+                                value={vals[s.studentId]?.[c.code] ?? ''}
+                                onChange={(e) => setCell(s.studentId, c.code, e.target.value)}
+                                inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px', width: 52 } }}
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              )}
 
               {grid.students.length > 0 && (
-                <Box sx={{ position: 'sticky', bottom: 0, py: 1.5, mt: 1, background: (t) => t.palette.background.default }}>
+                <Box sx={{ py: 2 }}>
                   <Button fullWidth variant="contained" onClick={save} disabled={busy}>Save marks</Button>
                 </Box>
               )}

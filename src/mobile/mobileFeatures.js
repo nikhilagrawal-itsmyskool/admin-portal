@@ -118,7 +118,8 @@ export const MOBILE_FEATURES = [
   { title: "My Exam Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
   { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", section: "mine", color: "#5e35b1", routes: ["/exam/marks"] },
   { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", section: "mine", color: "#5e35b1", routes: ["/exam/coscholastic"] },
-  { title: "Marks Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
+  { title: "Marks Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
+  { title: "Subject Mapping", icon: ExamMgmtIcon, path: "/exam/subject-mapping", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/exam/subject-mapping"] },
   { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/seating", "/examinations/:id/invigilators", "/examinations/:id/room-invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/:id/room-roster/:roomId/:date", "/examinations/verify/:id"] },
   { title: "Branding", icon: BrandingTileIcon, path: "/branding", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/branding"] },
 

@@ -389,13 +389,14 @@ const menuItems = [
     title: 'Examinations',
     icon: ExamIcon,
     children: [
+      { title: 'Branding', icon: BrandingSidebarIcon, path: '/branding', perm: 'exam.manage' },
       { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
+      { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
+      { title: 'Marks Progress', icon: ExamIcon, path: '/exam/report-progress', perm: 'exam.manage' },
+      { title: 'Subject Mapping', icon: ExamIcon, path: '/exam/subject-mapping', perm: 'exam.manage' },
       { title: 'Enter Marks', icon: CalendarIcon, path: '/exam/marks' },
       { title: 'Co-Scholastic', icon: CalendarIcon, path: '/exam/coscholastic' },
-      { title: 'Marks Progress', icon: ExamIcon, path: '/exam/report-progress', perm: 'exam.view' },
-      { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
-      { title: 'Branding', icon: BrandingSidebarIcon, path: '/branding', perm: 'exam.manage' },
     ],
   },
   {
