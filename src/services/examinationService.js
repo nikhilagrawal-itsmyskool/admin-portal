@@ -167,6 +167,7 @@ export const examinationService = {
     (await api.get(`/examination/report/cards/${classId}/${term}`, { params: ay ? { ay } : {} })).data,
   recordReportPrint: async (classId, term, studentIds, ay) =>
     (await api.post(`/examination/report/cards/${classId}/${term}`, { studentIds }, { params: ay ? { ay } : {} })).data,
+  reportPhoto: async (studentId) => (await api.get(`/examination/report/photo/${studentId}`)).data,
   getReportScheme: async (band, ay) =>
     (await api.get(`/examination/report/scheme/${encodeURIComponent(band)}`, { params: ay ? { ay } : {} })).data,
   saveReportScheme: async (band, payload, ay) =>

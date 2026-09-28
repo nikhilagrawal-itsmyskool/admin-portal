@@ -24,12 +24,13 @@ export default function ReportFormat() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true); setErr(''); setMsg('');
-    try { setData(await examinationService.getReportScheme(band)); }
+    try { setData(await examinationService.getReportScheme(band)); setDirty(false); }
     catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load the format'); setData(null); }
     finally { setLoading(false); }
   }, [band]);
@@ -49,7 +50,7 @@ export default function ReportFormat() {
     finally { setBusy(false); }
   };
 
-  const setField = (list, uuid, field, value) => setData((d) => ({ ...d, [list]: d[list].map((r) => (r.uuid === uuid ? { ...r, [field]: value } : r)) }));
+  const setField = (list, uuid, field, value) => { setDirty(true); setData((d) => ({ ...d, [list]: d[list].map((r) => (r.uuid === uuid ? { ...r, [field]: value } : r)) })); };
 
   const save = async () => {
     setBusy(true); setErr(''); setMsg('');
@@ -61,6 +62,7 @@ export default function ReportFormat() {
         gradeScales: data.gradeScales.map((g) => ({ uuid: g.uuid, label: g.label, minPct: g.minPct, maxPct: g.maxPct })),
       };
       setData(await examinationService.saveReportScheme(band, payload));
+      setDirty(false);
       setMsg('Report format saved.');
     } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save the format'); }
     finally { setBusy(false); }
@@ -95,7 +97,7 @@ export default function ReportFormat() {
           {BANDS.map((b) => <ToggleButton key={b.band} value={b.band} sx={{ px: 2 }}>{b.label}</ToggleButton>)}
         </ToggleButtonGroup>
         <Box sx={{ flex: 1 }} />
-        <Button variant="contained" onClick={save} disabled={busy || !data}>Save format</Button>
+        <Button variant={dirty ? 'contained' : 'outlined'} onClick={save} disabled={busy || !data || !dirty}>{dirty ? 'Save format' : 'No changes'}</Button>
       </Stack>
 
       {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress /></Box> : data && (
@@ -178,7 +180,7 @@ export default function ReportFormat() {
             </Table></Paper>
           </CardContent></Card>
 
-          <Box><Button variant="contained" onClick={save} disabled={busy}>Save format</Button></Box>
+          <Box><Button variant={dirty ? 'contained' : 'outlined'} onClick={save} disabled={busy || !dirty}>{dirty ? 'Save format' : 'No changes'}</Button></Box>
         </Stack>
       )}
     </Box>

@@ -79,7 +79,7 @@ export default function ReportCoscholastic() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: isMobile ? 640 : 980, mx: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: isMobile ? 640 : '100%', mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Co-Scholastic Grades</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Grade the co-scholastic areas, attendance and remark for your class — one student at a time.

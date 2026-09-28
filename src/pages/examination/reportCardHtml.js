@@ -1,9 +1,13 @@
 // Report-card HTML — one scheme-driven template for all four bands (1-3, 4-5, 6-9, and the
-// pre-primary "Progress Report"). Data comes from GET /report/cards/{classId}/{term}; everything
-// is inlined (logos are data URIs) and printed via a hidden iframe (house pattern → Save as PDF).
+// pre-primary "Progress Report"), matching the school's existing printed format. Data comes from
+// GET /report/cards/{classId}/{term}; everything is inlined (logos + photos are data URIs) and
+// printed via a hidden iframe (house pattern → Save as PDF). Photos are fetched + resized at print
+// time by the caller (ReportCards.jsx) and set on student.photoDataUri.
 
 const esc = (v) => (v == null ? '' : String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])));
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const attendance = (s) => (s.attendancePresent != null && s.attendanceTotal != null ? `${s.attendancePresent}/${s.attendanceTotal}` : '');
 
 function masthead(b) {
   const left = b.boardLogoDataUri || b.logoDataUri;
@@ -26,7 +30,7 @@ function infoGrid(data, s, withPhoto) {
     ['Name', s.name, 'Class', data.className],
     ["Father's Name", s.fatherName, "Mother's Name", s.motherName],
     ['Roll No', s.rollNumber, 'D.O.B', s.dob],
-    ['Admission No', s.admissionNumber, 'Attendance', s.attendancePresent != null && s.attendanceTotal != null ? `${s.attendancePresent}/${s.attendanceTotal}` : ''],
+    ['Admission No', s.admissionNumber, 'Attendance', attendance(s)],
     ['House', s.house, '', ''],
   ];
   const cells = rows.map((r) => `<tr>
@@ -43,7 +47,7 @@ function scholasticTable(data) {
   const termLabel = data.term === 2 ? 'TERM 2' : 'TERM 1';
   const head = `<tr>
     <th class="subj">SUBJECTS</th>
-    ${comps.map((c) => `<th>${esc(c.label)}<div class="mx">(${c.max})</div></th>`).join('')}
+    ${comps.map((c) => `<th>${esc(c.label)}<div class="mx">(${esc(c.max)})</div></th>`).join('')}
     <th>TOTAL</th><th>GRADE</th></tr>`;
   return (s) => {
     const body = data.scheme.subjects.map((subj) => {
@@ -99,6 +103,7 @@ function card(data, s) {
   return `<div class="card">
     ${masthead(data.branding || {})}
     <div class="title">${title}</div>
+    ${data.academicYear ? `<div class="session">Academic Session : ${esc(data.academicYear)}</div>` : ''}
     ${infoGrid(data, s, isPre)}
     ${marksTbl}
     ${areaSections(data, s)}
@@ -113,18 +118,19 @@ export function buildReportCardsHtml(data, students) {
   const cards = students.map((s) => card(data, s)).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Report Cards</title><style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .card { width: 210mm; min-height: 297mm; padding: 10mm; page-break-after: always; }
     .card:last-child { page-break-after: auto; }
     .mast { display: flex; align-items: center; gap: 10px; background: #23264d; color: #f3f2ea; border-radius: 6px; padding: 8px 12px; }
     .crest { width: 62px; text-align: center; }
     .crest img { max-width: 60px; max-height: 60px; }
     .mast-mid { flex: 1; text-align: center; }
-    .sname { font-size: 22px; font-weight: 800; letter-spacing: .3px; }
+    .sname { font-size: 22px; font-weight: 800; letter-spacing: .3px; color:#e7c869; }
     .motto { font-style: italic; font-size: 12px; opacity: .9; }
     .addr { font-size: 10.5px; opacity: .92; }
     .addr.small { opacity: .8; }
-    .title { text-align: center; color: #7a1420; font-weight: 800; font-size: 16px; margin: 8px 0 6px; letter-spacing: .5px; }
+    .title { text-align: center; color: #7a1420; font-weight: 800; font-size: 16px; margin: 8px 0 2px; letter-spacing: .5px; }
+    .session { text-align:center; font-size:12px; font-weight:700; margin-bottom:6px; }
     .info-wrap { display: flex; gap: 8px; align-items: stretch; }
     table.info { border-collapse: collapse; width: 100%; font-size: 11px; }
     table.info td { border: 1px solid #999; padding: 3px 6px; }

@@ -81,7 +81,7 @@ export default function ReportMarks() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: isMobile ? 760 : 1200, mx: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: isMobile ? 760 : '100%', mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Enter Marks</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Enter Term marks for the subjects you teach. Marks save per class &amp; subject.

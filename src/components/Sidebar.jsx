@@ -398,8 +398,8 @@ const menuItems = [
       { title: 'Subject Mapping', icon: ExamIcon, path: '/exam/subject-mapping', perm: 'exam.manage' },
       { title: 'Enter Marks', icon: CalendarIcon, path: '/exam/marks' },
       { title: 'Co-Scholastic', icon: CalendarIcon, path: '/exam/coscholastic' },
-      { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.manage' },
       { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.manage' },
+      { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.manage' },
     ],
   },
   {

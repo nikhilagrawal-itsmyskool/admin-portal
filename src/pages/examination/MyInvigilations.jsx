@@ -36,7 +36,7 @@ export default function MyInvigilations() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: isMobile ? 720 : 1100, mx: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: isMobile ? 720 : '100%', mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>My Exam Duties</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Mark attendance and sign the roster for the rooms you invigilate. On days you are a

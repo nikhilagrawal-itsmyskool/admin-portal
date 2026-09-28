@@ -8,6 +8,35 @@ import { Print as PrintIcon, Visibility as PreviewIcon } from '@mui/icons-materi
 import { examinationService } from '../../services/examinationService';
 import { printReportCards, buildReportCardsHtml } from './reportCardHtml';
 
+// Shrink a photo data URI to a print-sized JPEG (keeps the whole-class print payload small and
+// the printed image crisp). Resolves null on any decode failure so one bad photo can't block print.
+function resizeDataUri(dataUri, maxW = 200, maxH = 260) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      const cw = Math.max(1, Math.round(img.width * scale));
+      const ch = Math.max(1, Math.round(img.height * scale));
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      try { c.getContext('2d').drawImage(img, 0, 0, cw, ch); resolve(c.toDataURL('image/jpeg', 0.82)); }
+      catch { resolve(dataUri); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUri;
+  });
+}
+
+// Run async tasks with a small concurrency cap (photos fetched a few at a time, not 30 at once).
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) { const idx = i++; out[idx] = await fn(items[idx], idx); }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
 // Report Cards (exam.manage — incharge/admin/god). Pick a class + term, then preview / print the
 // printed cards (single or the whole class) and record the print. Teachers don't see this.
 export default function ReportCards() {
@@ -19,8 +48,10 @@ export default function ReportCards() {
   const [sel, setSel] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const photoCache = useRef(new Map()); // studentId -> resized data URI (null = no photo)
 
   const loadClasses = useCallback(async () => {
     setLoading(true); setErr('');
@@ -52,9 +83,30 @@ export default function ReportCards() {
   const allIds = (data?.students || []).map((s) => s.studentId);
   const toggleAll = () => setSel((s) => (s.size === allIds.length ? new Set() : new Set(allIds)));
 
+  // Pre-primary cards carry a photo; fetch it per student (kept off the class payload) and resize
+  // to a print-sized JPEG, cached so a re-print doesn't refetch. Other bands have no photo.
+  const withPhotos = async (students) => {
+    if (!data || data.band !== 'pre-primary') return students;
+    const cache = photoCache.current;
+    const need = students.filter((s) => s.photoFileId && !cache.has(s.studentId));
+    if (need.length) {
+      setPreparing(true);
+      try {
+        await mapLimit(need, 5, async (s) => {
+          try {
+            const { dataUri } = await examinationService.reportPhoto(s.studentId);
+            cache.set(s.studentId, dataUri ? await resizeDataUri(dataUri) : null);
+          } catch { cache.set(s.studentId, null); }
+        });
+      } finally { setPreparing(false); }
+    }
+    return students.map((s) => ({ ...s, photoDataUri: cache.get(s.studentId) ?? s.photoDataUri ?? null }));
+  };
+
   const doPrint = async (students) => {
-    if (!students.length) return;
-    printReportCards(data, students);
+    if (!students.length || preparing) return;
+    const withPics = await withPhotos(students);
+    printReportCards(data, withPics);
     try {
       const r = await examinationService.recordReportPrint(classId, term, students.map((s) => s.studentId));
       // reflect the new print counts locally
@@ -63,8 +115,10 @@ export default function ReportCards() {
     } catch { /* print already opened; recording is best-effort */ }
   };
 
-  const preview = (student) => {
-    const html = buildReportCardsHtml(data, [student]);
+  const preview = async (student) => {
+    if (preparing) return;
+    const [withPic] = await withPhotos([student]);
+    const html = buildReportCardsHtml(data, [withPic]);
     const w = window.open('', '_blank');
     if (w) { w.document.write(html); w.document.close(); }
   };
@@ -95,15 +149,16 @@ export default function ReportCards() {
               <ToggleButton value={2} sx={{ px: 2 }}>Term 2</ToggleButton>
             </ToggleButtonGroup>
             <Box sx={{ flex: 1 }} />
-            <Button variant="outlined" startIcon={<PrintIcon />} disabled={busy || !selected.length} onClick={() => doPrint(selected)}>
+            <Button variant="outlined" startIcon={<PrintIcon />} disabled={busy || preparing || !selected.length} onClick={() => doPrint(selected)}>
               Print selected ({selected.length})
             </Button>
-            <Button variant="contained" startIcon={<PrintIcon />} disabled={busy || !data?.students?.length} onClick={() => doPrint(data.students)}>
+            <Button variant="contained" startIcon={<PrintIcon />} disabled={busy || preparing || !data?.students?.length} onClick={() => doPrint(data.students)}>
               Print whole class
             </Button>
           </Stack>
 
-          {busy && !data && <LinearProgress sx={{ mb: 2 }} />}
+          {(busy && !data) || preparing ? <LinearProgress sx={{ mb: 2 }} /> : null}
+          {preparing && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Preparing photos…</Typography>}
 
           {data && (
             <Paper variant="outlined" sx={{ overflowX: 'auto' }}>
@@ -128,7 +183,7 @@ export default function ReportCards() {
                       <TableCell>{s.admissionNumber}</TableCell>
                       {data.band !== 'pre-primary' && <TableCell align="right">{s.overall.total != null ? `${s.overall.total}/${s.overall.max} · ${s.overall.percentage}%` : '—'}</TableCell>}
                       <TableCell align="center">{s.printCount ? <Chip size="small" color="success" variant="outlined" label={`×${s.printCount}`} /> : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
-                      <TableCell align="right"><Button size="small" startIcon={<PreviewIcon fontSize="small" />} onClick={() => preview(s)}>View</Button></TableCell>
+                      <TableCell align="right"><Button size="small" disabled={preparing} startIcon={<PreviewIcon fontSize="small" />} onClick={() => preview(s)}>View</Button></TableCell>
                     </TableRow>
                   ))}
                   {!data.students.length && <TableRow><TableCell colSpan={7}><Alert severity="info">No students in this class.</Alert></TableCell></TableRow>}

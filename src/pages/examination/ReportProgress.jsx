@@ -32,7 +32,7 @@ export default function ReportProgress() {
   const openSubject = (classId, subjectCode) => navigate(`/exam/marks?classId=${classId}&subjectCode=${subjectCode}&term=${term}`);
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ width: '100%' }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 0.5 }}>
         <Typography variant="h5">Marks Progress</Typography>
         <Box sx={{ flex: 1 }} />
