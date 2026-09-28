@@ -170,6 +170,7 @@ import ReportMarks from './pages/examination/ReportMarks';
 import ReportCoscholastic from './pages/examination/ReportCoscholastic';
 import ReportProgress from './pages/examination/ReportProgress';
 import ReportSubjectMapping from './pages/examination/ReportSubjectMapping';
+import ReportCards from './pages/examination/ReportCards';
 import ExamSchedule from './pages/examination/ExamSchedule';
 import BrandingPage from './pages/examination/BrandingPage';
 import ConfigScreen from './pages/examination/mobile/ConfigScreen';
@@ -453,6 +454,7 @@ export default function App() {
         <Route path="exam/coscholastic" element={<ReportCoscholastic />} />
         <Route path="exam/report-progress" element={<ReportProgress />} />
         <Route path="exam/subject-mapping" element={<ReportSubjectMapping />} />
+        <Route path="exam/report-cards" element={<ReportCards />} />
         <Route path="branding" element={<BrandingPage />} />
         <Route path="assembly" element={<AssemblyList />} />
         <Route path="assembly/day" element={<ScheduleDay />} />
