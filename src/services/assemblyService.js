@@ -107,6 +107,8 @@ export const assemblyService = {
   saveGrade: async (weekId, data) => (await api.post(`/assembly/weeks/${weekId}/grades`, data)).data,
   deleteGrade: async (id) => (await api.delete(`/assembly/grades/${id}`)).data,
   getLeaderboard: async (from, to) => (await api.get('/assembly/leaderboard', { params: { from, to } })).data,
+  // Director cockpit: per-day checklist on-time + evaluator coverage over a date range.
+  getPulse: async (from, to) => (await api.get('/assembly/pulse', { params: { from, to } })).data,
 
   // ---- Teacher PWA: my house-duty roster (derived, /me/assembly/*) ----
   // Derived roles for mobile tile gating — folded into /duties (the duties endpoint

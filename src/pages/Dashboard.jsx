@@ -32,6 +32,11 @@ import {
   Forum as ProgrammesIcon,
   Groups as AssemblyIcon,
   PhotoCamera as HomeworkIcon,
+  Payments as FeesIcon,
+  RateReview as FeedbackIcon,
+  EventBusy as LeaveIcon,
+  EditCalendar as ExamIcon,
+  Event as CalendarIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useCan } from "../permissions/can";
@@ -220,6 +225,46 @@ const modules = [
     path: "/homework",
     color: "#d97706",
     perm: "homework.post",
+  },
+  {
+    title: "Fees",
+    description: "Collections, dues, concessions, and receipts",
+    icon: FeesIcon,
+    path: "/fees",
+    color: "#00897b",
+    perm: "fee.view",
+  },
+  {
+    title: "Feedback",
+    description: "Home-visit feedback & complaints dashboard",
+    icon: FeedbackIcon,
+    path: "/feedback",
+    color: "#0097a7",
+    perm: "feedback.review",
+  },
+  {
+    title: "Leave",
+    description: "Who's on leave, approvals, and staff records",
+    icon: LeaveIcon,
+    path: "/leave/day",
+    color: "#3d5afe",
+    perm: "leave.manage",
+  },
+  {
+    title: "Examinations",
+    description: "Datesheets, admit cards, seating, and reports",
+    icon: ExamIcon,
+    path: "/examinations",
+    color: "#5e35b1",
+    perm: "exam.view",
+  },
+  {
+    title: "Academic Calendar",
+    description: "Holidays, themes, and the year's activity calendar",
+    icon: CalendarIcon,
+    path: "/academic-calendar",
+    color: "#009688",
+    perm: "academic-calendar.view",
   },
 ];
 

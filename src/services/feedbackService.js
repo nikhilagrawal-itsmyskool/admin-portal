@@ -25,6 +25,9 @@ export const feedbackService = {
   grouped: async (params = {}) => (await api.get('/feedback/grouped', { params })).data,
   summary: async (academicYearId) =>
     (await api.get('/feedback/summary', { params: academicYearId ? { academicYearId } : {} })).data,
+  // Director cockpit: weekly opened-vs-resolved flow + open backlog.
+  flow: async ({ weeks, academicYearId } = {}) =>
+    (await api.get('/feedback/flow', { params: { ...(weeks ? { weeks } : {}), ...(academicYearId ? { academicYearId } : {}) } })).data,
   getById: async (id) => (await api.get(`/feedback/${id}`)).data,
   comment: async (id, data) => (await api.post(`/feedback/${id}/comment`, data)).data,
   assign: async (id, data) => (await api.post(`/feedback/${id}/assign`, data)).data,

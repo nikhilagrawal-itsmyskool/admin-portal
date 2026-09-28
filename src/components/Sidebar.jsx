@@ -20,6 +20,7 @@ import {
 import { groupByModule } from '../config/moduleGroups';
 import {
   Dashboard as DashboardIcon,
+  MonitorHeart as CockpitIcon,
   LocalHospital as MedicalIcon,
   ExpandLess,
   ExpandMore,
@@ -115,6 +116,14 @@ const menuItems = [
     icon: BrandingSidebarIcon,
     path: '/branding',
     perm: 'exam.manage',
+  },
+  {
+    // Director's Cockpit / School Pulse — pinned as the first nav item, above Dashboard.
+    // Director + god only (god via '*').
+    title: 'Cockpit',
+    icon: CockpitIcon,
+    path: '/cockpit',
+    perm: 'cockpit.view',
   },
   {
     title: 'Dashboard',
@@ -507,9 +516,11 @@ export default function Sidebar({ open, onClose, isDesktop }) {
   // (People & Staff / Academics / Operations / Stores & Inventory) with a divider each.
   // Flatten to a single list of entries (item | divider | label) so the render loop keeps
   // the existing per-item markup and just interleaves separators.
+  const cockpitItem = visibleMenu.find((i) => i.title === 'Cockpit');
   const dashboardItem = visibleMenu.find((i) => i.title === 'Dashboard');
-  const groupedMenu = groupByModule(visibleMenu.filter((i) => i.title !== 'Dashboard'));
+  const groupedMenu = groupByModule(visibleMenu.filter((i) => i.title !== 'Dashboard' && i.title !== 'Cockpit'));
   const desktopEntries = [];
+  if (cockpitItem) desktopEntries.push({ type: 'item', item: cockpitItem });
   if (dashboardItem) desktopEntries.push({ type: 'item', item: dashboardItem });
   groupedMenu.forEach((group) => {
     desktopEntries.push({ type: 'divider', key: `div-${group.key}` });

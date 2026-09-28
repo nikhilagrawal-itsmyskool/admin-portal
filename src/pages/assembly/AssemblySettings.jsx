@@ -13,7 +13,7 @@ export default function AssemblySettings() {
   const can = useCan();
   const canManage = can('assembly.manage');
 
-  const [form, setForm] = useState({ mode: 'template', title: '', subtitle: '' });
+  const [form, setForm] = useState({ mode: 'template', title: '', subtitle: '', checklistDueTime: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +23,7 @@ export default function AssemblySettings() {
     (async () => {
       try {
         const c = await assemblyService.getConfig();
-        setForm({ mode: c?.mode || 'template', title: c?.title || '', subtitle: c?.subtitle || '' });
+        setForm({ mode: c?.mode || 'template', title: c?.title || '', subtitle: c?.subtitle || '', checklistDueTime: c?.checklistDueTime || '' });
       } catch {
         setError('Failed to load assembly settings');
       } finally { setLoading(false); }
@@ -37,6 +37,7 @@ export default function AssemblySettings() {
         mode: form.mode,
         title: form.title.trim() || null,
         subtitle: form.subtitle.trim() || null,
+        checklistDueTime: form.checklistDueTime || null,
       });
       setOk(true);
     } catch (err) {
@@ -70,6 +71,13 @@ export default function AssemblySettings() {
               disabled={!canManage || loading} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             <TextField fullWidth label="Subtitle (optional)" value={form.subtitle}
               disabled={!canManage || loading} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
+            {form.mode === 'house' && (
+              <TextField
+                label="Checklist due time" type="time" value={form.checklistDueTime}
+                disabled={!canManage || loading} onChange={(e) => setForm({ ...form, checklistDueTime: e.target.value })}
+                InputLabelProps={{ shrink: true }} inputProps={{ step: 300 }} sx={{ maxWidth: 220 }}
+                helperText="Daily sign-off cutoff — powers the Director Cockpit on-time heartbeat. Leave blank to skip." />
+            )}
             {canManage && (
               <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={saving || loading} sx={{ alignSelf: 'flex-start' }}>
                 {saving ? 'Saving…' : 'Save settings'}

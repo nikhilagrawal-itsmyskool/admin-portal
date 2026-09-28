@@ -1,8 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Card, CardActionArea } from "@mui/material";
+import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { buildMobileTiles } from "../mobile/mobileFeatures";
 import { useMobileVisibility } from "../mobile/useMobileVisibility";
+import { useCan } from "../permissions/can";
+import { ACTIONS } from "../permissions/actions";
 import TileGrid from "../mobile/TileGrid";
 import InstallButton from "../components/InstallButton";
 
@@ -11,6 +15,7 @@ import InstallButton from "../components/InstallButton";
 // (App.jsx HomeScreen). Tiles either navigate straight to a page or open a hub screen.
 export default function MobileHome() {
   const navigate = useNavigate();
+  const can = useCan();
   const { visible } = useMobileVisibility();
   const sections = buildMobileTiles(visible);
 
@@ -19,6 +24,21 @@ export default function MobileHome() {
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
         ItsMySkool
       </Typography>
+      {/* Director's Cockpit / School Pulse — pinned hero above the module bands (director + god). */}
+      {can(ACTIONS.COCKPIT_VIEW) && (
+        <Card variant="outlined" sx={{ mb: 2, borderColor: "#e4e9f2", borderRadius: 2 }}>
+          <CardActionArea onClick={() => navigate("/cockpit")} sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.75 }}>
+            <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: "rgba(51,102,255,0.12)", color: "#274bdb", display: "grid", placeItems: "center", flex: "none" }}>
+              <MonitorHeartIcon />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#222b45" }}>School Pulse</Typography>
+              <Typography sx={{ fontSize: 12.5, color: "#8f9bb3" }}>The day's heartbeat at a glance</Typography>
+            </Box>
+            <ChevronRightIcon sx={{ color: "#c5cee0" }} />
+          </CardActionArea>
+        </Card>
+      )}
       <InstallButton variant="contained" fullWidth sx={{ mb: 2 }} />
       {sections.length === 0 ? (
         <Typography color="text.secondary">

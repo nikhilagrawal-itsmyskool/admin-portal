@@ -15,10 +15,27 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
+import { ArrowForwardIos as GoIcon } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+
+// Navigation commands ("jump to a screen"). Each is permission-gated so a user only sees
+// destinations they can open. Shown above student search results; when the box is empty
+// they are the landing list.
+const COMMANDS = [
+  { label: 'Cockpit · School Pulse', path: '/cockpit', perm: ACTIONS.COCKPIT_VIEW, keywords: 'pulse heartbeat director' },
+  { label: 'Feedback · Dashboard', path: '/feedback', perm: ACTIONS.FEEDBACK_REVIEW, keywords: 'complaints tickets' },
+  { label: "Leave · Who's on leave", path: '/leave/day', perm: ACTIONS.LEAVE_MANAGE, keywords: 'staff absent out' },
+  { label: 'Leave · Approvals', path: '/leave/approvals', perm: ACTIONS.LEAVE_MANAGE, keywords: 'approve pending' },
+  { label: 'House balance', path: '/students/houses', perm: ACTIONS.STUDENT_VIEW, keywords: 'houses gender' },
+  { label: 'Assembly · Leaderboard', path: '/assembly/leaderboard', perm: ACTIONS.ASSEMBLY_VIEW, keywords: 'house points standings' },
+  { label: 'Assembly · Grading', path: '/assembly/grading', perm: ACTIONS.ASSEMBLY_MANAGE, keywords: 'evaluators grade' },
+  { label: 'Assembly · Checklist', path: '/assembly/checklist', perm: ACTIONS.ASSEMBLY_MANAGE, keywords: 'signoff' },
+  { label: 'Syllabus · Overview', path: '/syllabus/overview', perm: ACTIONS.SYLLABUS_VIEW, keywords: 'coverage plans' },
+  { label: 'Fees · Overview', path: '/fees', perm: ACTIONS.FEE_VIEW, keywords: 'dues collection money' },
+];
 
 // Global "type anything, get the student" palette. Open with Ctrl/⌘+K (or the
 // window 'open-command-palette' event fired by the header search button).
@@ -99,6 +116,17 @@ export default function CommandPalette({ pick = false, open: openProp, onClose, 
     return () => clearTimeout(t);
   }, [q, open, scope, currentYear]);
 
+  // Permission-gated navigation commands matching the query (all when empty). Student
+  // picker mode (`pick`) never shows commands.
+  const term = q.trim().toLowerCase();
+  const commandItems = (pick ? [] : COMMANDS.filter((c) => can(c.perm)))
+    .filter((c) => !term || c.label.toLowerCase().includes(term) || (c.keywords || '').includes(term));
+  // Flat list the keyboard navigates: commands first, then student results.
+  const combined = [
+    ...commandItems.map((c) => ({ type: 'command', cmd: c })),
+    ...results.map((r) => ({ type: 'student', row: r })),
+  ];
+
   const close = useCallback(() => {
     if (pick) onClose?.(); else setOpen(false);
     setQ('');
@@ -108,7 +136,10 @@ export default function CommandPalette({ pick = false, open: openProp, onClose, 
   }, [pick, onClose]);
 
   const choose = useCallback(
-    (row) => {
+    (item) => {
+      if (!item) return;
+      if (item.type === 'command') { close(); navigate(item.cmd.path); return; }
+      const row = item.type === 'student' ? item.row : item;
       if (!row) return;
       close();
       if (pick) onSelect?.(row);
@@ -120,13 +151,13 @@ export default function CommandPalette({ pick = false, open: openProp, onClose, 
   const onKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, results.length - 1));
+      setActive((i) => Math.min(i + 1, combined.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActive((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      choose(results[active]);
+      choose(combined[active]);
     }
   };
 
@@ -150,7 +181,7 @@ export default function CommandPalette({ pick = false, open: openProp, onClose, 
         <TextField
           autoFocus
           fullWidth
-          placeholder="Search students by name, admission no, parent name or phone…"
+          placeholder="Jump to a screen, or search students by name / admission no / phone…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={onKeyDown}
@@ -181,19 +212,50 @@ export default function CommandPalette({ pick = false, open: openProp, onClose, 
         </Box>
       </Box>
       <List ref={listRef} sx={{ maxHeight: '55vh', overflow: 'auto', pt: 0 }}>
-        {results.length === 0 && q.trim() && !loading && (
+        {combined.length === 0 && q.trim() && !loading && (
           <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              No students found.
+              No matches.
             </Typography>
           </Box>
+        )}
+        {commandItems.length > 0 && (
+          <>
+            <Box sx={{ px: 2, py: 0.5 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Go to</Typography>
+            </Box>
+            {commandItems.map((c, i) => (
+              <ListItemButton
+                key={c.path}
+                data-idx={i}
+                selected={i === active}
+                onMouseEnter={() => setActive(i)}
+                onClick={() => choose({ type: 'command', cmd: c })}
+              >
+                <ListItemAvatar>
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: '#eef2ff', color: '#3366ff' }}>
+                    <GoIcon sx={{ fontSize: 15 }} />
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{c.label}</Typography>} />
+              </ListItemButton>
+            ))}
+            {results.length > 0 && (
+              <Box sx={{ px: 2, py: 0.5, mt: 0.5, borderTop: '1px solid #eee' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Students</Typography>
+              </Box>
+            )}
+          </>
         )}
         {(() => {
           // Two-section render: current-year hits first (backend ranks them first),
           // then a "Not in <year>" divider before the rest, which render greyed.
-          // The flat index (data-idx) is preserved so keyboard nav still works.
+          // The flat index (data-idx) is preserved so keyboard nav still works — student
+          // rows sit AFTER the command rows, so offset by commandItems.length.
+          const offset = commandItems.length;
           let dividerShown = false;
           return results.map((r, i) => {
+            const idx = offset + i;
             const outOfScope = scope === 'current' && !r.inCurrentYear;
             const showDivider = outOfScope && !dividerShown;
             if (showDivider) dividerShown = true;
@@ -215,10 +277,10 @@ export default function CommandPalette({ pick = false, open: openProp, onClose, 
                   </Box>
                 )}
                 <ListItemButton
-                  data-idx={i}
-                  selected={i === active}
-                  onMouseEnter={() => setActive(i)}
-                  onClick={() => choose(r)}
+                  data-idx={idx}
+                  selected={idx === active}
+                  onMouseEnter={() => setActive(idx)}
+                  onClick={() => choose({ type: 'student', row: r })}
                   sx={{ opacity: outOfScope ? 0.6 : 1 }}
                 >
                   <ListItemAvatar>
@@ -249,7 +311,7 @@ export default function CommandPalette({ pick = false, open: openProp, onClose, 
           });
         })()}
       </List>
-      {results.length > 0 && (
+      {combined.length > 0 && (
         <Box sx={{ px: 2, py: 0.75, borderTop: '1px solid #eee' }}>
           <Typography variant="caption" color="text.secondary">
             ↑↓ to navigate · Enter to open · Esc to close

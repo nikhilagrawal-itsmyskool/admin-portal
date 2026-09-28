@@ -87,6 +87,10 @@ export const ACTIONS = {
   FEEDBACK_RECORD: "feedback.record",
   FEEDBACK_RESPOND: "feedback.respond",
   FEEDBACK_REVIEW: "feedback.review",
+  // Director's Cockpit / School Pulse — the at-a-glance heartbeat landing. Granted to the
+  // `director` role (god's '*' covers it). Read-only; drill-downs deep-link into the real
+  // screens, each gated by its own action.
+  COCKPIT_VIEW: "cockpit.view",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -354,5 +358,9 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.FEEDBACK_REVIEW,
     description: "Open the feedback dashboard, see the teacher-wise breakup, and complete/reopen feedback (education director; god-only for now)",
+  },
+  {
+    action: ACTIONS.COCKPIT_VIEW,
+    description: "See the Director's Cockpit / School Pulse heartbeat (director + god)",
   },
 ];

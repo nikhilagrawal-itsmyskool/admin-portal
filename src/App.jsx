@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import DeviceLogin from './pages/DeviceLogin';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
+import Cockpit from './pages/Cockpit';
 import MedicalDashboard from './pages/medical/MedicalDashboard';
 import ItemList from './pages/medical/items/ItemList';
 import ItemForm from './pages/medical/items/ItemForm';
@@ -232,6 +233,9 @@ function HomeScreen() {
   // hatch to the normal home (for a user who also holds broader roles — a plain manager sees
   // an empty home there, which is the intended "just in case").
   if ((user?.roles || []).includes('manager') && !full) return <ManagerDesk />;
+  // The education `director` lands straight on the Cockpit / School Pulse (desktop + mobile).
+  // `?full=1` is the escape hatch to the normal home for a director who also holds god/admin.
+  if ((user?.roles || []).includes('director') && !full) return <Cockpit />;
   return mobile ? <MobileHome /> : <Dashboard />;
 }
 
@@ -252,6 +256,7 @@ export default function App() {
         }
       >
         <Route index element={<HomeScreen />} />
+        <Route path="cockpit" element={<Cockpit />} />
         <Route path="hub/:key" element={<HubPage />} />
         <Route path="medical" element={<MedicalDashboard />} />
         <Route path="medical/items" element={<ItemList />} />

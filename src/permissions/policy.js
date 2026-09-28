@@ -106,6 +106,24 @@ export const ROLE_PERMISSIONS = {
   "transport-attendance": ["transport.attendance.mark"],
   // Collection-desk manager: a locked, read-only fee-collection view and nothing else.
   manager: ["fee.manager.view"],
+  // Education director: lands on the Cockpit / School Pulse and reviews the school's
+  // heartbeat. Read-oriented oversight across the pulse domains (feedback review, assembly,
+  // syllabus, students/houses, leave, calendar). Additive — a person can also hold `god`.
+  director: [
+    "cockpit.view",
+    "feedback.view",
+    "feedback.review",
+    "assembly.view",
+    "assembly.manage",
+    "syllabus.view",
+    "student.view",
+    "student.contacts.view",
+    "academic-calendar.view",
+    "timetable.view",
+    "transport.view",
+    "leave.apply",
+    "leave.manage",
+  ],
 };
 
 // Roles to show as columns in the generated permissions.md matrix.
