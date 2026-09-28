@@ -50,6 +50,7 @@ export const ROLE_PERMISSIONS = {
     "academic-calendar.view",
     "academic-calendar.manage",
     "exam.*",
+    "subject-mapping.manage", // report-card subject→teacher mapping (admin + god only, NOT exam-incharge)
     "receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
     "leave.apply", // Self-service leave only; oversight (leave.manage) is god-only for now
     "documents.sign", // Read & sign own documents; authoring (documents.manage) is god-only
