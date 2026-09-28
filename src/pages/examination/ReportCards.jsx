@@ -56,7 +56,7 @@ export default function ReportCards() {
   const loadClasses = useCallback(async () => {
     setLoading(true); setErr('');
     try {
-      const r = await examinationService.myReportClasses();
+      const r = await examinationService.reportClasses();
       setClasses(r.classes || []);
       if (!termSet.current) { termSet.current = true; if (r.currentTerm) setTerm(r.currentTerm); }
       setClassId((prev) => prev || ((r.classes || [])[0]?.classId || ''));

@@ -4,6 +4,7 @@ import {
   TextField, MenuItem, ToggleButton, ToggleButtonGroup, Divider, LinearProgress,
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -12,9 +13,11 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 // classes (or every class, for the exam-incharge override).
 export default function ReportCoscholastic() {
   const isMobile = useIsMobile();
+  const [params] = useSearchParams();
+  const qClass = params.get('classId'); const qTerm = params.get('term');
   const [classes, setClasses] = useState([]);
-  const [classId, setClassId] = useState('');
-  const [term, setTerm] = useState(1);
+  const [classId, setClassId] = useState(qClass || '');
+  const [term, setTerm] = useState(qTerm === '2' ? 2 : 1);
   const termSet = useRef(false);
   const [grid, setGrid] = useState(null);
   const [idx, setIdx] = useState(0);
@@ -28,9 +31,15 @@ export default function ReportCoscholastic() {
     setLoading(true); setErr('');
     try {
       const r = await examinationService.myReportClasses();
-      setClasses(r.classes || []);
-      if (!termSet.current) { termSet.current = true; if (r.currentTerm) setTerm(r.currentTerm); }
-      setClassId((prev) => prev || ((r.classes || [])[0]?.classId || ''));
+      let list = r.classes || [];
+      // Honour an incharge deep-link from the Co-Scholastic Progress tab even if this caller isn't
+      // the class teacher for it (the backend allows the exam-incharge override).
+      if (qClass && !list.some((c) => c.classId === qClass)) {
+        list = [{ classId: qClass, className: 'Selected class' }, ...list];
+      }
+      setClasses(list);
+      if (!termSet.current) { termSet.current = true; if (!qTerm && r.currentTerm) setTerm(r.currentTerm); }
+      setClassId((prev) => prev || (list[0]?.classId || ''));
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load your classes');
     } finally { setLoading(false); }
