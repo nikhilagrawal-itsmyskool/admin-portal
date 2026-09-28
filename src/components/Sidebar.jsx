@@ -109,6 +109,14 @@ const DRAWER_WIDTH = 260;
 
 const menuItems = [
   {
+    // School branding (crests, stamp, printed-header text + report-card masthead) is school-wide,
+    // so it sits at the top rather than inside Examinations. Director-only Copilot slots in below.
+    title: 'Branding',
+    icon: BrandingSidebarIcon,
+    path: '/branding',
+    perm: 'exam.manage',
+  },
+  {
     title: 'Dashboard',
     icon: DashboardIcon,
     path: '/',
@@ -390,7 +398,6 @@ const menuItems = [
     title: 'Examinations',
     icon: ExamIcon,
     children: [
-      { title: 'Branding', icon: BrandingSidebarIcon, path: '/branding', perm: 'exam.manage' },
       { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
       { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },

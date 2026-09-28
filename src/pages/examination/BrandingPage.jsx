@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Card, CardContent, Stack, Button, TextField, Alert, CircularProgress,
+  Box, Typography, Card, CardContent, Stack, Button, TextField, Alert, CircularProgress, Divider,
 } from '@mui/material';
 import { Image as BrandingIcon } from '@mui/icons-material';
 import { useCan } from '../../permissions/can';
@@ -16,13 +16,16 @@ function toBase64(file) {
   });
 }
 
-// School branding — the header the printed datesheet & admit cards use: logo, office
-// stamp, school name, motto and address. Set once, school-wide. Lives under Examinations
-// for now; can be pulled into its own settings area later.
+const EMPTY = { schoolName: '', motto: '', address: '', affiliationNo: '', schoolCode: '', contact: '', email: '', website: '' };
+
+// School branding — the printed header for the datesheet, admit cards and report cards: the two
+// crests, office stamp, school name / motto / address and the report-card masthead line
+// (affiliation no, school code, contact, e-mail, website). Set once, school-wide.
 export default function BrandingPage() {
   const canManage = useCan()('exam.manage');
   const [branding, setBranding] = useState(null);
-  const [form, setForm] = useState({ schoolName: '', motto: '', address: '' });
+  const [form, setForm] = useState(EMPTY);
+  const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -33,15 +36,22 @@ export default function BrandingPage() {
     try {
       const b = await examinationService.getBranding();
       setBranding(b);
-      setForm({ schoolName: b.schoolName || '', motto: b.motto || '', address: b.address || '' });
+      setForm({
+        schoolName: b.schoolName || '', motto: b.motto || '', address: b.address || '',
+        affiliationNo: b.affiliationNo || '', schoolCode: b.schoolCode || '',
+        contact: b.contact || '', email: b.email || '', website: b.website || '',
+      });
+      setDirty(false);
     } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load branding'); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const upd = (k, v) => { setDirty(true); setForm((f) => ({ ...f, [k]: v })); };
+
   const saveText = async () => {
     setBusy('text'); setErr(''); setMsg('');
-    try { setBranding(await examinationService.setBrandingText(form)); setMsg('Saved school details.'); }
+    try { setBranding(await examinationService.setBrandingText(form)); setDirty(false); setMsg('Saved school details.'); }
     catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save'); }
     finally { setBusy(''); }
   };
@@ -74,13 +84,13 @@ export default function BrandingPage() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: 720 }}>
+    <Box sx={{ maxWidth: 760 }}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
         <BrandingIcon color="primary" />
         <Typography variant="h4">Branding</Typography>
       </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        The header printed on the datesheet and admit cards. Set once for the whole school.
+        The header printed on the datesheet, admit cards and report cards. Set once for the whole school.
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
@@ -90,15 +100,36 @@ export default function BrandingPage() {
           <Typography variant="h6" sx={{ mb: 2 }}>School details</Typography>
           <Stack spacing={2}>
             <TextField label="School name" fullWidth value={form.schoolName} disabled={!canManage}
-              onChange={(e) => setForm((f) => ({ ...f, schoolName: e.target.value }))} placeholder="Dr. B. P. Agrawal Shiksha Niketan" />
+              onChange={(e) => upd('schoolName', e.target.value)} placeholder="Dr. B. P. Agrawal Shiksha Niketan" />
             <TextField label="Motto" fullWidth value={form.motto} disabled={!canManage}
-              onChange={(e) => setForm((f) => ({ ...f, motto: e.target.value }))} placeholder="Chariot of Knowledge" />
+              onChange={(e) => upd('motto', e.target.value)} placeholder="Chariot of Knowledge" />
             <TextField label="Address" fullWidth multiline minRows={1} value={form.address} disabled={!canManage}
-              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Kalyankunj, Kanpur Road (Farrukhabad)" />
+              onChange={(e) => upd('address', e.target.value)} placeholder="Kalyankunj, Kanpur Road (Farrukhabad)" />
           </Stack>
+
+          <Divider sx={{ my: 2 }}><Typography variant="caption" color="text.secondary">REPORT-CARD MASTHEAD</Typography></Divider>
+          <Stack spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField label="Affiliation No." fullWidth value={form.affiliationNo} disabled={!canManage}
+                onChange={(e) => upd('affiliationNo', e.target.value)} placeholder="2133499" />
+              <TextField label="School Code" fullWidth value={form.schoolCode} disabled={!canManage}
+                onChange={(e) => upd('schoolCode', e.target.value)} placeholder="71638" />
+            </Stack>
+            <TextField label="Contact No(s)." fullWidth value={form.contact} disabled={!canManage}
+              onChange={(e) => upd('contact', e.target.value)} placeholder="9565467882, 9129298033" />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField label="E-mail" fullWidth value={form.email} disabled={!canManage}
+                onChange={(e) => upd('email', e.target.value)} placeholder="admin@dbpasn.com" />
+              <TextField label="Website" fullWidth value={form.website} disabled={!canManage}
+                onChange={(e) => upd('website', e.target.value)} placeholder="www.dbpasn.com" />
+            </Stack>
+          </Stack>
+
           {canManage && (
             <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
-              <Button variant="contained" onClick={saveText} disabled={busy === 'text'}>Save details</Button>
+              <Button variant={dirty ? 'contained' : 'outlined'} onClick={saveText} disabled={busy === 'text' || !dirty}>
+                {dirty ? 'Save details' : 'No changes'}
+              </Button>
             </Stack>
           )}
         </CardContent>
@@ -106,9 +137,10 @@ export default function BrandingPage() {
 
       <Card>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>Logo &amp; stamp</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>Crests &amp; stamp</Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-            <Slot kind="logo" label="Logo (crest)" uri={branding?.logoDataUri} />
+            <Slot kind="boardLogo" label="Board logo (left crest)" uri={branding?.boardLogoDataUri} />
+            <Slot kind="logo" label="School crest (right)" uri={branding?.logoDataUri} />
             <Slot kind="stamp" label="Office stamp" uri={branding?.stampDataUri} />
           </Stack>
         </CardContent>

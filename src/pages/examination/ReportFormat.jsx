@@ -21,6 +21,7 @@ export default function ReportFormat() {
   const [termFilter, setTermFilter] = useState(0); // 0 = both terms, 1, or 2
   const [term2StartsOn, setTerm2StartsOn] = useState('');
   const [currentTerm, setCurrentTerm] = useState(1);
+  const [cfgDirty, setCfgDirty] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -37,14 +38,14 @@ export default function ReportFormat() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    examinationService.getReportConfig().then((c) => { setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); }).catch(() => {});
+    examinationService.getReportConfig().then((c) => { setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); setCfgDirty(false); }).catch(() => {});
   }, []);
 
   const saveConfig = async () => {
     setBusy(true); setErr(''); setMsg('');
     try {
       const c = await examinationService.setReportConfig(term2StartsOn || null);
-      setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1);
+      setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); setCfgDirty(false);
       setMsg('Term setting saved.');
     } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save the term setting'); }
     finally { setBusy(false); }
@@ -87,8 +88,10 @@ export default function ReportFormat() {
             </Typography>
           </Box>
           <TextField size="small" type="date" label="Term 2 starts on" value={term2StartsOn}
-            onChange={(e) => setTerm2StartsOn(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 190 }} />
-          <Button variant="outlined" onClick={saveConfig} disabled={busy}>Save term setting</Button>
+            onChange={(e) => { setCfgDirty(true); setTerm2StartsOn(e.target.value); }} InputLabelProps={{ shrink: true }} sx={{ minWidth: 190 }} />
+          <Button variant={cfgDirty ? 'contained' : 'outlined'} onClick={saveConfig} disabled={busy || !cfgDirty}>
+            {cfgDirty ? 'Save term setting' : 'Saved'}
+          </Button>
         </Stack>
       </CardContent></Card>
 
