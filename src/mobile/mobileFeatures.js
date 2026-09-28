@@ -119,12 +119,12 @@ export const MOBILE_FEATURES = [
   // Schedule + duties are open to all staff (no perm); management is exam.view only.
   // Exams subheading (Mine): the teacher's exam→report-card surfaces. Duties/Schedule/Enter
   // Marks are open to all staff (row-scoped server-side); Co-Scholastic is class-teacher-only
-  // (backend enforces isClassTeacher) — gate the tile on homework.post as a class-teacher proxy
-  // until a `derived: classTeacher` resolver exists.
+  // (backend enforces isClassTeacher), gated by `derived: "classTeacher"` — resolved from
+  // /me/report/classes in useMobileVisibility — so only actual class teachers see the tile.
   { title: "Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/schedule"] },
   { title: "Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
   { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/marks"] },
-  { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", perm: "homework.post", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/coscholastic"] },
+  { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", derived: "classTeacher", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/coscholastic"] },
   { title: "Marks Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
   { title: "Subject Mapping", icon: ExamMgmtIcon, path: "/exam/subject-mapping", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/exam/subject-mapping"] },
   // Report Cards (Phase B — printing) is desktop-only for now; intentionally not on the PWA.
@@ -168,7 +168,7 @@ export const MOBILE_FEATURES = [
   { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
   // Leave Calendar — month view of who's on leave, inside the Leave hub with the other
   // leave options so staff can plan before applying (no notPerm so god sees it too).
-  { title: "Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.apply", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/day"] },
+  { title: "Leave Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.apply", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/day"] },
   { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
   // Feedback dashboard — reviewer oversight (feedback.review = god only for now); Manage band.
   { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "manage", color: "#0097a7", routes: ["/feedback", "/feedback/t/:id"] },
@@ -196,15 +196,12 @@ export const MOBILE_FEATURES = [
 
 // Hub display metadata (title, icon, module accent color), keyed by the `hub` field above.
 export const MOBILE_HUBS = {
-  assembly: { title: "Assembly", icon: AssemblyIcon, color: "#1e88e5" },
-  people: { title: "People", icon: PeopleIcon, color: "#3d5afe" },
   library: { title: "Library", icon: LibraryIcon, color: "#5e35b1" },
   lab: { title: "Lab", icon: ScienceIcon, color: "#00b887" },
   medical: { title: "Medical", icon: MedicalIcon, color: "#3366ff" },
   sports: { title: "Sports", icon: SportsIcon, color: "#0095ff" },
   supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
   fees: { title: "Fees", icon: FeesIcon, color: "#00897b" },
-  leave: { title: "Leave", icon: LeaveIcon, color: "#3d5afe" },
   // Single programme today -> the collapsed hub card reads "Spoken English" (the band
   // header is already "Programmes"). When a 2nd programme is added, rename this back to
   // "Programmes" so the multi-child hub tile groups them.
@@ -269,9 +266,14 @@ export function buildMobileTiles(visible) {
         }
       }
     }
-    const groups = [...groupMap.entries()]
-      .map(([label, gtiles]) => ({ label, tiles: gtiles }))
-      .sort((a, b) => (GROUP_ORDER[a.label] || 99) - (GROUP_ORDER[b.label] || 99));
+    // A group with a single visible tile collapses to a plain (loose) tile — no subheading
+    // (mirrors the single-child hub rule; e.g. god's Leave → just "Leave Calendar").
+    const groups = [];
+    for (const [label, gtiles] of groupMap) {
+      if (gtiles.length === 1) tiles.push(gtiles[0]);
+      else groups.push({ label, tiles: gtiles });
+    }
+    groups.sort((a, b) => (GROUP_ORDER[a.label] || 99) - (GROUP_ORDER[b.label] || 99));
     return { ...sec, tiles, groups };
   }).filter((s) => s.tiles.length > 0 || s.groups.length > 0);
 }

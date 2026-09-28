@@ -90,8 +90,11 @@ Names below are the live titles. `·` separates a hub's children.
 
 Done in `mobileFeatures.js` (tiles + a new `group` field + `buildMobileTiles` now returns
 `{ tiles, groups }`), `pages/MobileHome.jsx` and `components/Sidebar.jsx` (render subheadings).
-Co-Scholastic is gated on `homework.post` as an interim class-teacher proxy (the clean
-`derived: 'classTeacher'` resolver is still the follow-up). The items below are what shipped:
+Co-Scholastic uses **`derived: "classTeacher"`** (resolved from `/me/report/classes` in
+`useMobileVisibility`) so only actual class teachers see it. **Single-tile groups collapse**
+to a plain tile (god's Leave → "Leave Calendar"). Section headers carry a hairline; subheadings
+indent under a left rail. Dead `assembly`/`leave`/`people` entries pruned from `MOBILE_HUBS`.
+The items below are what shipped:
 
 1. **Assembly duty → Mine.** Move My Roster / My Checklist / Grade Assembly from **Now**
    into **Mine**; only **Today's assembly** stays in Now (as a loose card).

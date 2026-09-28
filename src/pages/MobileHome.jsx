@@ -30,23 +30,30 @@ export default function MobileHome() {
           <Box key={sec.key} sx={{ mb: 3 }}>
             <Typography
               variant="overline"
-              sx={{ color: "text.secondary", fontWeight: 700, display: "block", mb: 1 }}
+              sx={{
+                color: "text.secondary",
+                fontWeight: 800,
+                letterSpacing: 0.9,
+                display: "block",
+                mb: 1.25,
+                pb: 0.75,
+                borderBottom: "1px solid rgba(34,43,69,0.09)",
+              }}
             >
               {sec.label}
             </Typography>
             {sec.tiles.length > 0 && <TileGrid tiles={sec.tiles} onOpen={(t) => navigate(t.path)} />}
             {sec.groups.map((g) => (
-              <Box key={g.label} sx={{ mt: sec.tiles.length ? 1.5 : 0 }}>
+              <Box key={g.label} sx={{ mt: 2, pl: 1.5, borderLeft: "2px solid rgba(51,102,255,0.22)" }}>
                 <Typography
-                  variant="caption"
                   sx={{
-                    color: "text.disabled",
-                    fontWeight: 700,
-                    letterSpacing: 0.5,
-                    textTransform: "uppercase",
                     display: "block",
-                    mb: 0.75,
-                    ml: 0.25,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    letterSpacing: 0.9,
+                    textTransform: "uppercase",
+                    color: "rgba(51,102,255,0.78)",
+                    mb: 1,
                   }}
                 >
                   {g.label}
