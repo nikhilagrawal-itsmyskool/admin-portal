@@ -72,7 +72,7 @@ export default function ReportSubjectMapping() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Subject Mapping</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Who enters each subject's marks, per section. By default it follows the syllabus; assign a

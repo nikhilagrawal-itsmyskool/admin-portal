@@ -6,12 +6,14 @@ import {
 import { ChevronRight as OpenIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { fmtDate } from '../../utils/date';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const dayOf = (d) => DOW[new Date(`${d}T00:00:00`).getDay()];
 
 export default function MyInvigilations() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [duties, setDuties] = useState([]);
   const [roomDuties, setRoomDuties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function MyInvigilations() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: 720, mx: 'auto' }}>
+    <Box sx={{ maxWidth: isMobile ? 720 : 1100, mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>My Exam Duties</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Mark attendance and sign the roster for the rooms you invigilate. On days you are a
