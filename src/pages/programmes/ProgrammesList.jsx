@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
 import EditIcon from '@mui/icons-material/Edit';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { programmesService } from '../../services/programmesService';
 import { useCan } from '../../permissions/can';
 
@@ -53,9 +54,12 @@ export default function ProgrammesList() {
                   </CardContent>
                 </CardActionArea>
                 {canManage && (
-                  <Box sx={{ px: 2, pb: 1.5 }}>
+                  <Box sx={{ px: 2, pb: 1.5, display: 'flex', gap: 1 }}>
                     <Button size="small" startIcon={<EditIcon />} onClick={() => navigate('/programmes/selc/edit')}>
-                      Manage content
+                      Manage
+                    </Button>
+                    <Button size="small" startIcon={<SettingsIcon />} onClick={() => navigate('/programmes/selc/settings')}>
+                      Settings
                     </Button>
                   </Box>
                 )}

@@ -157,6 +157,7 @@ import TeacherCoverage from './pages/syllabus/TeacherCoverage';
 import ProgrammesList from './pages/programmes/ProgrammesList';
 import SelcReader from './pages/programmes/SelcReader';
 import SelcEditor from './pages/programmes/SelcEditor';
+import SelcSettings from './pages/programmes/SelcSettings';
 import HomeworkPage from './pages/homework/HomeworkPage';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
 import AcademicCalendarPage from './pages/academic-calendar/AcademicCalendarPage';
@@ -430,6 +431,7 @@ export default function App() {
         <Route path="syllabus/my/:syllabusId/:classId" element={<TeacherCoverage />} />
         <Route path="programmes" element={<ProgrammesList />} />
         <Route path="programmes/selc/edit" element={<SelcEditor />} />
+        <Route path="programmes/selc/settings" element={<SelcSettings />} />
         <Route path="programmes/selc" element={<SelcReader />} />
         <Route path="programmes/selc/:grade/:month" element={<SelcReader />} />
         <Route path="homework" element={<HomeworkPage />} />

@@ -15,6 +15,9 @@ export const programmesService = {
   // A programme + its seeded masters (fieldTypes, materialTypes, domains, skills, stages).
   getProgramme: async (code) => (await api.get(`/programmes/catalog/${code}`)).data,
 
+  // Update programme settings (motto, philosophy, teacherGuidance[]). God-only.
+  updateProgramme: async (code, data) => (await api.put(`/programmes/catalog/${code}`, data)).data,
+
   // ---- Units (admin editor) ----
   getUnits: async (params = {}) => (await api.get('/programmes/units', { params })).data,
   getUnit: async (id) => (await api.get(`/programmes/units/${id}`)).data,
