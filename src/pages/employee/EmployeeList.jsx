@@ -13,6 +13,7 @@ import {
   Chip,
   FormControlLabel,
   Switch,
+  Autocomplete,
 } from "@mui/material";
 import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
 import usePersistedPaginationModel from "../../hooks/usePersistedPaginationModel";
@@ -49,6 +50,9 @@ export default function EmployeeList() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
+  // Server-side role filter (AND semantics: employee must hold every selected role).
+  const [roleOptions, setRoleOptions] = useState([]);
+  const [selectedRoles, setSelectedRoles] = useState([]);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
   const [restoreDialog, setRestoreDialog] = useState({
@@ -68,15 +72,25 @@ export default function EmployeeList() {
 
   useEffect(() => {
     loadEmployees();
-  }, [showDeleted]);
+  }, [showDeleted, selectedRoles]);
+
+  // The role list drives the filter picker (admin/god only — the endpoint is guarded).
+  useEffect(() => {
+    if (!isAdmin) return;
+    employeeService
+      .listRoles()
+      .then(setRoleOptions)
+      .catch(() => {});
+  }, [isAdmin]);
 
   const loadEmployees = async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await employeeService.searchEmployees(
-        showDeleted ? { includeDeleted: true } : {},
-      );
+      const params = {};
+      if (showDeleted) params.includeDeleted = true;
+      if (selectedRoles.length) params.roles = selectedRoles.map((r) => r.code).join(",");
+      const data = await employeeService.searchEmployees(params);
       setEmployees(data);
     } catch (err) {
       setError("Failed to load employees");
@@ -135,6 +149,31 @@ export default function EmployeeList() {
     { field: "familyUniqueNumber", headerName: "Login ID", width: 150 },
     { field: "employeeNumber", headerName: "Employee No.", width: 140 },
     { field: "code", headerName: "Code", width: 90 },
+    {
+      field: "roles",
+      headerName: "Roles",
+      flex: 1,
+      minWidth: 200,
+      sortable: false,
+      valueGetter: (value) => (value || []).map((r) => r.name).join(", "),
+      renderCell: (params) => {
+        const roles = params.row.roles || [];
+        if (roles.length === 0) {
+          return (
+            <Typography variant="body2" color="text.secondary">
+              —
+            </Typography>
+          );
+        }
+        return (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, py: 0.5 }}>
+            {roles.map((r) => (
+              <Chip key={r.uuid} label={r.name} size="small" variant="outlined" />
+            ))}
+          </Box>
+        );
+      },
+    },
     { field: "mobile", headerName: "Mobile", width: 140 },
     {
       field: "status",
@@ -248,7 +287,14 @@ export default function EmployeeList() {
 
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: "16px !important" }}>
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: { xs: "stretch", md: "center" },
+              flexDirection: { xs: "column", md: "row" },
+            }}
+          >
             <TextField
               fullWidth
               placeholder="Search by name, login ID or employee number..."
@@ -266,6 +312,32 @@ export default function EmployeeList() {
                 ),
               }}
             />
+            {isAdmin && (
+              <Autocomplete
+                multiple
+                size="small"
+                options={roleOptions}
+                value={selectedRoles}
+                onChange={(e, value) => {
+                  setSelectedRoles(value);
+                  setPaginationModel({ ...paginationModel, page: 0 });
+                }}
+                getOptionLabel={(o) => o.name}
+                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                sx={{ minWidth: { xs: "100%", md: 280 } }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder={selectedRoles.length ? "" : "Filter by role…"}
+                    helperText={
+                      selectedRoles.length > 1
+                        ? "Showing staff who hold ALL selected roles"
+                        : " "
+                    }
+                  />
+                )}
+              />
+            )}
             {isAdmin && (
               <FormControlLabel
                 control={
