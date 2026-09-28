@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button,
+  Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button, IconButton,
   TextField, ToggleButton, ToggleButtonGroup, Table, TableHead, TableBody, TableRow, TableCell,
   Paper, Chip,
 } from '@mui/material';
+import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 
 const BANDS = [
   { band: 'pre-primary', label: 'Pre-Primary' },
-  { band: '1-3', label: 'Classes 1–3' },
+  { band: '1-2', label: 'Classes 1–2' },
+  { band: '3', label: 'Class 3' },
   { band: '4-5', label: 'Classes 4–5' },
-  { band: '6-9', label: 'Classes 6–9' },
+  { band: '6-8', label: 'Classes 6–8' },
+  { band: '9', label: 'Class 9' },
 ];
 
 // Report Format config (Manage, exam.manage — desktop). Edit the labels printed on the card:
@@ -53,13 +56,35 @@ export default function ReportFormat() {
 
   const setField = (list, uuid, field, value) => { setDirty(true); setData((d) => ({ ...d, [list]: d[list].map((r) => (r.uuid === uuid ? { ...r, [field]: value } : r)) })); };
 
+  // Reorder a flat list (subjects) by swapping with the neighbour.
+  const moveRow = (list, uuid, dir) => { setDirty(true); setData((d) => {
+    const arr = [...d[list]]; const i = arr.findIndex((x) => x.uuid === uuid); const j = dir < 0 ? i - 1 : i + 1;
+    if (j < 0 || j >= arr.length) return d;
+    [arr[i], arr[j]] = [arr[j], arr[i]]; return { ...d, [list]: arr };
+  }); };
+  // Move an area within its section only (never crossing a section boundary).
+  const moveArea = (uuid, dir) => { setDirty(true); setData((d) => {
+    const arr = [...d.areas]; const i = arr.findIndex((x) => x.uuid === uuid); const j = dir < 0 ? i - 1 : i + 1;
+    if (j < 0 || j >= arr.length || arr[j].section !== arr[i].section) return d;
+    [arr[i], arr[j]] = [arr[j], arr[i]]; return { ...d, areas: arr };
+  }); };
+  // Move a whole section block up/down; rename every area in a section together.
+  const sectionNames = (arr) => { const n = []; arr.forEach((a) => { if (!n.includes(a.section)) n.push(a.section); }); return n; };
+  const moveSection = (name, dir) => { setDirty(true); setData((d) => {
+    const names = sectionNames(d.areas); const si = names.indexOf(name); const sj = dir < 0 ? si - 1 : si + 1;
+    if (sj < 0 || sj >= names.length) return d;
+    [names[si], names[sj]] = [names[sj], names[si]];
+    return { ...d, areas: names.flatMap((nm) => d.areas.filter((a) => a.section === nm)) };
+  }); };
+  const renameSection = (oldName, newName) => { setDirty(true); setData((d) => ({ ...d, areas: d.areas.map((a) => (a.section === oldName ? { ...a, section: newName } : a)) })); };
+
   const save = async () => {
     setBusy(true); setErr(''); setMsg('');
     try {
       const payload = {
-        subjects: data.subjects.map((s) => ({ uuid: s.uuid, reportLabel: s.reportLabel, syllabusSubject: s.syllabusSubject })),
+        subjects: data.subjects.map((s, i) => ({ uuid: s.uuid, reportLabel: s.reportLabel, syllabusSubject: s.syllabusSubject, appliesToGrades: s.appliesToGrades, sortOrder: i })),
         components: data.components.map((c) => ({ uuid: c.uuid, label: c.label, maxMarks: c.maxMarks })),
-        areas: data.areas.map((a) => ({ uuid: a.uuid, section: a.section, label: a.label })),
+        areas: data.areas.map((a, i) => ({ uuid: a.uuid, section: a.section, label: a.label, sortOrder: i })),
         gradeScales: data.gradeScales.map((g) => ({ uuid: g.uuid, label: g.label, minPct: g.minPct, maxPct: g.maxPct })),
       };
       setData(await examinationService.saveReportScheme(band, payload));
@@ -110,12 +135,17 @@ export default function ReportFormat() {
             <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Subjects</Typography>
             {data.subjects.length === 0 ? <Typography variant="body2" color="text.secondary">No subjects (this band is grade-only).</Typography> : (
               <Paper variant="outlined" sx={{ overflowX: 'auto' }}><Table size="small">
-                <TableHead><TableRow><TableCell>Code</TableCell><TableCell>Printed label</TableCell><TableCell>Syllabus subject(s) — comma list for teacher access</TableCell></TableRow></TableHead>
-                <TableBody>{data.subjects.map((s) => (
+                <TableHead><TableRow><TableCell>Order</TableCell><TableCell>Code</TableCell><TableCell>Printed label</TableCell><TableCell>Syllabus subject(s) — comma list for teacher access</TableCell><TableCell>Grades (blank = all)</TableCell></TableRow></TableHead>
+                <TableBody>{data.subjects.map((s, i) => (
                   <TableRow key={s.uuid}>
+                    <TableCell sx={{ whiteSpace: 'nowrap', px: 0.5 }}>
+                      <IconButton size="small" disabled={i === 0} onClick={() => moveRow('subjects', s.uuid, -1)}><KeyboardArrowUp fontSize="small" /></IconButton>
+                      <IconButton size="small" disabled={i === data.subjects.length - 1} onClick={() => moveRow('subjects', s.uuid, 1)}><KeyboardArrowDown fontSize="small" /></IconButton>
+                    </TableCell>
                     <TableCell><Chip size="small" variant="outlined" label={s.code} /></TableCell>
                     <TableCell><TextField size="small" fullWidth value={s.reportLabel || ''} onChange={(e) => setField('subjects', s.uuid, 'reportLabel', e.target.value)} /></TableCell>
                     <TableCell><TextField size="small" fullWidth value={s.syllabusSubject || ''} onChange={(e) => setField('subjects', s.uuid, 'syllabusSubject', e.target.value)} placeholder="e.g. English,English I" /></TableCell>
+                    <TableCell><TextField size="small" sx={{ minWidth: 130 }} value={s.appliesToGrades || ''} onChange={(e) => setField('subjects', s.uuid, 'appliesToGrades', e.target.value)} placeholder="e.g. VI,VII,VIII" /></TableCell>
                   </TableRow>
                 ))}</TableBody>
               </Table></Paper>
@@ -148,20 +178,42 @@ export default function ReportFormat() {
             </CardContent></Card>
           )}
 
-          {/* Areas */}
-          <Card variant="outlined"><CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Co-scholastic / other areas</Typography>
-            <Paper variant="outlined" sx={{ overflowX: 'auto' }}><Table size="small">
-              <TableHead><TableRow><TableCell>Section</TableCell><TableCell>Label</TableCell><TableCell>Type</TableCell></TableRow></TableHead>
-              <TableBody>{data.areas.map((a) => (
-                <TableRow key={a.uuid}>
-                  <TableCell><TextField size="small" sx={{ minWidth: 180 }} value={a.section || ''} onChange={(e) => setField('areas', a.uuid, 'section', e.target.value)} /></TableCell>
-                  <TableCell><TextField size="small" fullWidth value={a.label || ''} onChange={(e) => setField('areas', a.uuid, 'label', e.target.value)} /></TableCell>
-                  <TableCell><Chip size="small" variant="outlined" label={a.valueType} /></TableCell>
-                </TableRow>
-              ))}</TableBody>
-            </Table></Paper>
-          </CardContent></Card>
+          {/* Areas — grouped by section, reorderable */}
+          {data.areas.length > 0 && (() => {
+            const groups = [];
+            data.areas.forEach((a) => { let g = groups.find((x) => x.name === a.section); if (!g) { g = { name: a.section, items: [] }; groups.push(g); } g.items.push(a); });
+            return (
+              <Card variant="outlined"><CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>Co-scholastic / other areas</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Grouped by section. Use the arrows to reorder areas within a section, or move a whole section. This is the order they print on the card.
+                </Typography>
+                <Stack spacing={1.5}>
+                  {groups.map((g, gi) => (
+                    <Paper key={g.name} variant="outlined" sx={{ overflow: 'hidden' }}>
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ bgcolor: 'action.hover', px: 1, py: 0.5 }}>
+                        <IconButton size="small" disabled={gi === 0} onClick={() => moveSection(g.name, -1)}><KeyboardArrowUp fontSize="small" /></IconButton>
+                        <IconButton size="small" disabled={gi === groups.length - 1} onClick={() => moveSection(g.name, 1)}><KeyboardArrowDown fontSize="small" /></IconButton>
+                        <TextField variant="standard" value={g.name} onChange={(e) => renameSection(g.name, e.target.value)} sx={{ minWidth: 240 }} InputProps={{ sx: { fontWeight: 700 } }} />
+                      </Stack>
+                      <Table size="small">
+                        <TableBody>{g.items.map((a, ai) => (
+                          <TableRow key={a.uuid}>
+                            <TableCell sx={{ whiteSpace: 'nowrap', px: 0.5, width: 96 }}>
+                              <IconButton size="small" disabled={ai === 0} onClick={() => moveArea(a.uuid, -1)}><KeyboardArrowUp fontSize="small" /></IconButton>
+                              <IconButton size="small" disabled={ai === g.items.length - 1} onClick={() => moveArea(a.uuid, 1)}><KeyboardArrowDown fontSize="small" /></IconButton>
+                            </TableCell>
+                            <TableCell><TextField size="small" fullWidth value={a.label || ''} onChange={(e) => setField('areas', a.uuid, 'label', e.target.value)} /></TableCell>
+                            <TableCell sx={{ width: 90 }}><Chip size="small" variant="outlined" label={a.valueType} /></TableCell>
+                          </TableRow>
+                        ))}</TableBody>
+                      </Table>
+                    </Paper>
+                  ))}
+                </Stack>
+              </CardContent></Card>
+            );
+          })()}
 
           {/* Grade scales */}
           <Card variant="outlined"><CardContent>

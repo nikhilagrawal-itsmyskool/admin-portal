@@ -41,8 +41,11 @@ export default function ReportProgress() {
   }, [tab, term]);
   useEffect(() => { load(); }, [load]);
 
-  const openSubject = (classId, subjectCode) => navigate(`/exam/marks?classId=${classId}&subjectCode=${subjectCode}&term=${term}`);
-  const openCoscholastic = (classId) => navigate(`/exam/coscholastic?classId=${classId}&term=${term}`);
+  const q = (v) => encodeURIComponent(v || '');
+  const openSubject = (classId, subjectCode, className, subjectLabel) =>
+    navigate(`/exam/marks?classId=${classId}&subjectCode=${subjectCode}&term=${term}&className=${q(className)}&subjectLabel=${q(subjectLabel)}`);
+  const openCoscholastic = (classId, className) =>
+    navigate(`/exam/coscholastic?classId=${classId}&term=${term}&className=${q(className)}`);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -98,7 +101,7 @@ export default function ReportProgress() {
                     <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1}>
                       {c.subjects.map((s) => (
                         <Button
-                          key={s.subjectCode} size="small" onClick={() => openSubject(c.classId, s.subjectCode)}
+                          key={s.subjectCode} size="small" onClick={() => openSubject(c.classId, s.subjectCode, c.className, s.label)}
                           variant={s.done ? 'text' : 'outlined'} endIcon={s.done ? undefined : <OpenInNew fontSize="small" />}
                           color={s.done ? 'success' : 'warning'}
                           sx={{ textTransform: 'none' }}
@@ -139,15 +142,18 @@ export default function ReportProgress() {
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5 }}>
               {(coData.classes || []).map((c) => (
                 <Card key={c.classId} variant="outlined">
-                  <CardContent>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    {/* Line 1: class-section + band. Line 2: completion + action — wraps cleanly on PWA. */}
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{c.className}</Typography>
                       <Chip size="small" variant="outlined" label={`band ${c.band}`} />
-                      <Box sx={{ flex: 1 }} />
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1}>
                       <Chip size="small" color={c.done ? 'success' : 'default'} variant={c.done ? 'filled' : 'outlined'}
                         label={`${c.complete}/${c.total} students`} />
+                      <Box sx={{ flex: 1 }} />
                       <Button size="small" variant="outlined" endIcon={<OpenInNew fontSize="small" />}
-                        onClick={() => openCoscholastic(c.classId)} sx={{ textTransform: 'none' }}>
+                        onClick={() => openCoscholastic(c.classId, c.className)} sx={{ textTransform: 'none' }}>
                         {c.done ? 'Review' : 'Enter'}
                       </Button>
                     </Stack>

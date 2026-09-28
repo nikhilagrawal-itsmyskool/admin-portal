@@ -14,7 +14,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 export default function ReportCoscholastic() {
   const isMobile = useIsMobile();
   const [params] = useSearchParams();
-  const qClass = params.get('classId'); const qTerm = params.get('term');
+  const qClass = params.get('classId'); const qTerm = params.get('term'); const qClassName = params.get('className');
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState(qClass || '');
   const [term, setTerm] = useState(qTerm === '2' ? 2 : 1);
@@ -35,7 +35,7 @@ export default function ReportCoscholastic() {
       // Honour an incharge deep-link from the Co-Scholastic Progress tab even if this caller isn't
       // the class teacher for it (the backend allows the exam-incharge override).
       if (qClass && !list.some((c) => c.classId === qClass)) {
-        list = [{ classId: qClass, className: 'Selected class' }, ...list];
+        list = [{ classId: qClass, className: qClassName || 'Selected class' }, ...list];
       }
       setClasses(list);
       if (!termSet.current) { termSet.current = true; if (!qTerm && r.currentTerm) setTerm(r.currentTerm); }

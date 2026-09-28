@@ -15,6 +15,7 @@ export default function ReportMarks() {
   const isMobile = useIsMobile();
   const [params] = useSearchParams();
   const qClass = params.get('classId'); const qSubject = params.get('subjectCode'); const qTerm = params.get('term');
+  const qClassName = params.get('className'); const qSubjectLabel = params.get('subjectLabel');
   const [subjects, setSubjects] = useState([]);
   const [sel, setSel] = useState(qClass && qSubject ? `${qClass}|${qSubject}` : ''); // "classId|subjectCode"
   const [term, setTerm] = useState(qTerm === '2' ? 2 : 1);
@@ -33,7 +34,7 @@ export default function ReportMarks() {
       let subs = r.subjects || [];
       // Honour a dashboard deep-link even if this caller doesn't "own" the subject (incharge override).
       if (qClass && qSubject && !subs.some((s) => s.classId === qClass && s.subjectCode === qSubject)) {
-        subs = [{ classId: qClass, subjectCode: qSubject, className: 'Selected class', reportLabel: qSubject }, ...subs];
+        subs = [{ classId: qClass, subjectCode: qSubject, className: qClassName || 'Selected class', reportLabel: qSubjectLabel || qSubject }, ...subs];
       }
       setSubjects(subs);
       if (!termSet.current) { termSet.current = true; if (!qTerm && r.currentTerm) setTerm(r.currentTerm); }

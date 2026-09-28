@@ -103,7 +103,10 @@ export default function ReportSubjectMapping() {
                       return (
                         <Stack key={s.subjectCode} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} sx={{ py: 0.5 }}>
                           <Box sx={{ flex: 1, minWidth: 160 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.reportLabel}</Typography>
+                            <Stack direction="row" spacing={0.75} alignItems="center">
+                              <Chip size="small" variant="outlined" label={s.subjectCode} sx={{ height: 20, fontSize: 11 }} />
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.reportLabel}</Typography>
+                            </Stack>
                             <Typography variant="caption" color="text.secondary">
                               {s.syllabusSubjects ? `syllabus: ${s.syllabusSubjects}` : 'no syllabus link'}
                             </Typography>
