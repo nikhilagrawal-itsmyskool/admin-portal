@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
@@ -12,6 +12,7 @@ import { examinationService } from '../../services/examinationService';
 export default function ReportProgress() {
   const navigate = useNavigate();
   const [term, setTerm] = useState(1);
+  const termSet = useRef(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -19,7 +20,9 @@ export default function ReportProgress() {
   const load = useCallback(async () => {
     setLoading(true); setErr('');
     try {
-      setData(await examinationService.reportProgress(term));
+      const d = await examinationService.reportProgress(term);
+      setData(d);
+      if (!termSet.current) { termSet.current = true; if (d.currentTerm) setTerm(d.currentTerm); }
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load marks progress');
     } finally { setLoading(false); }

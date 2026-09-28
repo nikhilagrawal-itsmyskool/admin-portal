@@ -171,4 +171,7 @@ export const examinationService = {
     (await api.get(`/examination/report/scheme/${encodeURIComponent(band)}`, { params: ay ? { ay } : {} })).data,
   saveReportScheme: async (band, payload, ay) =>
     (await api.post(`/examination/report/scheme/${encodeURIComponent(band)}`, payload, { params: ay ? { ay } : {} })).data,
+  getReportConfig: async (ay) => (await api.get('/examination/report/config', { params: ay ? { ay } : {} })).data,
+  setReportConfig: async (term2StartsOn, ay) =>
+    (await api.post('/examination/report/config', { term2StartsOn }, { params: ay ? { ay } : {} })).data,
 };

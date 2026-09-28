@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
   TextField, MenuItem, LinearProgress, Divider, ToggleButton, ToggleButtonGroup,
@@ -18,6 +18,7 @@ export default function ReportMarks() {
   const [subjects, setSubjects] = useState([]);
   const [sel, setSel] = useState(qClass && qSubject ? `${qClass}|${qSubject}` : ''); // "classId|subjectCode"
   const [term, setTerm] = useState(qTerm === '2' ? 2 : 1);
+  const termSet = useRef(false);
   const [grid, setGrid] = useState(null);
   const [vals, setVals] = useState({}); // studentId -> { componentCode: value }
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,7 @@ export default function ReportMarks() {
         subs = [{ classId: qClass, subjectCode: qSubject, className: 'Selected class', reportLabel: qSubject }, ...subs];
       }
       setSubjects(subs);
+      if (!termSet.current) { termSet.current = true; if (!qTerm && r.currentTerm) setTerm(r.currentTerm); }
       setSel((prev) => prev || (subs[0] ? `${subs[0].classId}|${subs[0].subjectCode}` : ''));
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load your subjects');

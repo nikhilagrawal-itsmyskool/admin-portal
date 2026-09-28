@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
   TextField, MenuItem, ToggleButton, ToggleButtonGroup, Checkbox, LinearProgress,
@@ -14,6 +14,7 @@ export default function ReportCards() {
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState('');
   const [term, setTerm] = useState(1);
+  const termSet = useRef(false);
   const [data, setData] = useState(null);
   const [sel, setSel] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export default function ReportCards() {
     try {
       const r = await examinationService.myReportClasses();
       setClasses(r.classes || []);
+      if (!termSet.current) { termSet.current = true; if (r.currentTerm) setTerm(r.currentTerm); }
       setClassId((prev) => prev || ((r.classes || [])[0]?.classId || ''));
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load classes');

@@ -19,6 +19,8 @@ const BANDS = [
 export default function ReportFormat() {
   const [band, setBand] = useState('pre-primary');
   const [termFilter, setTermFilter] = useState(0); // 0 = both terms, 1, or 2
+  const [term2StartsOn, setTerm2StartsOn] = useState('');
+  const [currentTerm, setCurrentTerm] = useState(1);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -32,6 +34,20 @@ export default function ReportFormat() {
     finally { setLoading(false); }
   }, [band]);
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    examinationService.getReportConfig().then((c) => { setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); }).catch(() => {});
+  }, []);
+
+  const saveConfig = async () => {
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      const c = await examinationService.setReportConfig(term2StartsOn || null);
+      setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1);
+      setMsg('Term setting saved.');
+    } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save the term setting'); }
+    finally { setBusy(false); }
+  };
 
   const setField = (list, uuid, field, value) => setData((d) => ({ ...d, [list]: d[list].map((r) => (r.uuid === uuid ? { ...r, [field]: value } : r)) }));
 
@@ -58,6 +74,21 @@ export default function ReportFormat() {
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
+
+      {/* Term setting — drives the default term (1 vs 2) across the entry / report screens. */}
+      <Card variant="outlined" sx={{ mb: 2 }}><CardContent>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Current term</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Screens default to <b>Term {currentTerm}</b>. Before the date below it's Term 1; on/after, Term 2. Leave blank to always default to Term 1.
+            </Typography>
+          </Box>
+          <TextField size="small" type="date" label="Term 2 starts on" value={term2StartsOn}
+            onChange={(e) => setTerm2StartsOn(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 190 }} />
+          <Button variant="outlined" onClick={saveConfig} disabled={busy}>Save term setting</Button>
+        </Stack>
+      </CardContent></Card>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
         <ToggleButtonGroup exclusive size="small" value={band} onChange={(_, v) => v && setBand(v)}>
