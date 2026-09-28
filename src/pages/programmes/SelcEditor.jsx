@@ -51,6 +51,7 @@ export default function SelcEditor() {
   const [month, setMonth] = useState('');
   const [unitId, setUnitId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [baseline, setBaseline] = useState(JSON.stringify(emptyForm)); // last-saved/loaded snapshot
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -106,17 +107,20 @@ export default function SelcEditor() {
       const summary = list.find((u) => u.month === month);
       if (summary) {
         const u = await programmesService.getUnit(summary.uuid);
-        setUnitId(u.uuid);
-        setForm({
+        const loaded = {
           title: u.title || '',
           programmeFocus: u.programmeFocus || '',
           workflowStatus: u.workflowStatus || 'published',
           focusSkillIds: Array.isArray(u.focusSkillIds) ? u.focusSkillIds : [],
           fields: u.fields || {},
-        });
+        };
+        setUnitId(u.uuid);
+        setForm(loaded);
+        setBaseline(JSON.stringify(loaded));
       } else {
         setUnitId(null);
         setForm(emptyForm);
+        setBaseline(JSON.stringify(emptyForm));
       }
     } catch {
       setError('Failed to load the unit.');
@@ -151,6 +155,7 @@ export default function SelcEditor() {
         });
         setUnitId(created.uuid);
       }
+      setBaseline(JSON.stringify(form)); // clean again after save
       setSuccess('Saved.');
     } catch (err) {
       setError(err.response?.data?.error?.description || 'Failed to save.');
@@ -298,7 +303,10 @@ export default function SelcEditor() {
             </Stack>
 
             <Box sx={{ mt: 3 }}>
-              <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={saving}>
+              <Button
+                variant="contained" startIcon={<SaveIcon />} onClick={save}
+                disabled={saving || JSON.stringify(form) === baseline}
+              >
                 {saving ? 'Saving…' : unitId ? 'Save changes' : 'Create unit'}
               </Button>
             </Box>
