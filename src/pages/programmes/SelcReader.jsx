@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
+import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import { programmesService, SELC } from '../../services/programmesService';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 
@@ -16,11 +17,19 @@ const CAL_TO_MONTH = [
 ];
 const currentAcademicMonth = () => CAL_TO_MONTH[new Date().getMonth()];
 
+// Observation scale per assessment band (from the programme's stage master).
+const LEVELS = {
+  early: ['Emerging', 'Developing', 'Secure'],
+  i_viii: ['Emerging', 'Developing', 'Secure', 'Consistently Demonstrates'],
+  ix_xii: ['Emerging', 'Developing', 'Secure', 'Independent'],
+};
+
 export default function SelcReader() {
   const navigate = useNavigate();
   const { grade: urlGrade, month: urlMonth } = useParams();
   const { academicYearId } = useAcademicYear();
 
+  const [programme, setProgramme] = useState(null); // catalog obj: motto, philosophy, teacherGuidance, stages
   const [grades, setGrades] = useState([]); // [{ grade }]
   const [months, setMonths] = useState([]); // [{ value, label }]
   const [grade, setGrade] = useState(urlGrade || '');
@@ -33,13 +42,14 @@ export default function SelcReader() {
   useEffect(() => {
     (async () => {
       try {
-        const [programme, lookups] = await Promise.all([
+        const [prog, lookups] = await Promise.all([
           programmesService.getProgramme(SELC),
           programmesService.getLookups(),
         ]);
-        setGrades((programme.stages || []).map((s) => ({ grade: s.grade })));
+        setProgramme(prog);
+        setGrades((prog.stages || []).map((s) => ({ grade: s.grade })));
         setMonths(lookups.months || []);
-        if (!urlGrade && programme.stages?.length) setGrade(programme.stages[0].grade);
+        if (!urlGrade && prog.stages?.length) setGrade(prog.stages[0].grade);
       } catch {
         setError('Failed to load the programme.');
       }
@@ -73,13 +83,50 @@ export default function SelcReader() {
   }, [grade, month, academicYearId]);
 
   const unit = data?.unit;
+  const guidance = programme?.teacherGuidance || [];
+  const stage = (programme?.stages || []).find(
+    (s) => (s.grade || '').toLowerCase() === (grade || '').toLowerCase(),
+  );
+  const levels = LEVELS[stage?.assessmentBand] || [];
 
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 0.5 }}>Spoken English &amp; Life Communication</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Pick a class and month to open that unit — a resource bank, not a script.
       </Typography>
+
+      {(programme?.motto || guidance.length > 0) && (
+        <Accordion disableGutters sx={{ mb: 2, maxWidth: 820, bgcolor: 'action.hover' }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <TipsAndUpdatesIcon fontSize="small" color="primary" />
+              <Typography sx={{ fontWeight: 600 }}>How to teach this programme</Typography>
+            </Stack>
+          </AccordionSummary>
+          <AccordionDetails>
+            {programme?.motto && (
+              <Typography sx={{ fontStyle: 'italic', mb: 0.5 }}>{programme.motto}</Typography>
+            )}
+            {programme?.philosophy && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                {programme.philosophy}
+              </Typography>
+            )}
+            <Box component="ul" sx={{ pl: 3, m: 0, '& li': { mb: 0.5 } }}>
+              {guidance.map((g, i) => (
+                <li key={i}><Typography variant="body2">{g}</Typography></li>
+              ))}
+            </Box>
+            {levels.length > 0 && (
+              <Typography variant="body2" sx={{ mt: 1.5 }}>
+                <b>Observing {grade}:</b> {levels.join(' → ')}
+                {' '}(plus "Not Observed" when there isn't enough evidence).
+              </Typography>
+            )}
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
