@@ -5,6 +5,8 @@
 // time by the caller (ReportCards.jsx) and set on student.photoDataUri.
 
 const esc = (v) => (v == null ? '' : String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])));
+// A cell value that may be the Absent sentinel — Absent prints as a red-circled A.
+const cell = (v) => (v === 'ABSENT' ? '<span class="abs">A</span>' : esc(v));
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const attendance = (s) => (s.attendancePresent != null && s.attendanceTotal != null ? `${s.attendancePresent}/${s.attendanceTotal}` : '');
@@ -60,7 +62,7 @@ function scholasticTable(data) {
       const m = s.marks[subj.code] || {};
       return `<tr>
         <td class="subj">${esc(subj.label)}</td>
-        ${comps.map((c) => `<td>${m[c.code] == null ? '' : esc(m[c.code])}</td>`).join('')}
+        ${comps.map((c) => `<td>${m[c.code] == null ? '' : cell(m[c.code])}</td>`).join('')}
         <td class="tot">${t.total == null ? '' : `${esc(t.total)}/${esc(t.max)}`}</td>
         <td class="grd">${esc(t.grade)}</td></tr>`;
     }).join('');
@@ -76,7 +78,7 @@ function areaSections(data, s) {
   Object.keys(map).forEach((section) => {
     const rows = map[section].map((a) => {
       const v = s.areaGrades[a.id];
-      return `<tr><td class="k">${esc(a.label)}</td><td class="g">${esc(v)}</td></tr>`;
+      return `<tr><td class="k">${esc(a.label)}</td><td class="g">${cell(v)}</td></tr>`;
     }).join('');
     sections.push(`<div class="area-block"><table class="area"><thead><tr><th class="k">${esc(section)}</th><th class="g">${data.term === 2 ? 'TERM 2' : 'TERM 1'}</th></tr></thead><tbody>${rows}</tbody></table></div>`);
   });
@@ -91,10 +93,12 @@ function legends(data) {
     <table class="leg-tbl"><tr>${sch.map((g) => `<td class="lg">${esc(g.grade)}</td>`).join('')}</tr>
     <tr>${sch.map((g) => `<td>${esc(g.label)}</td>`).join('')}</tr>
     <tr>${sch.map((g) => `<td>${g.minPct != null ? `${esc(g.minPct)}-${esc(g.maxPct)}` : ''}</td>`).join('')}</tr></table></div>` : '';
+  const coHasPct = co.some((g) => g.minPct != null);
   const coL = co.length ? `<div class="leg">
     <div class="leg-t">Grading scale for Co-Scholastic Areas</div>
     <table class="leg-tbl"><tr>${co.map((g) => `<td class="lg">${esc(g.grade)}</td>`).join('')}</tr>
-    <tr>${co.map((g) => `<td>${esc(g.label)}</td>`).join('')}</tr></table></div>` : '';
+    <tr>${co.map((g) => `<td>${esc(g.label)}</td>`).join('')}</tr>
+    ${coHasPct ? `<tr>${co.map((g) => `<td>${g.minPct != null ? `${esc(g.minPct)}-${esc(g.maxPct)}` : ''}</td>`).join('')}</tr>` : ''}</table></div>` : '';
   return `<div class="legends">${schL}${coL}</div>`;
 }
 
@@ -153,6 +157,7 @@ export function buildReportCardsHtml(data, students) {
     table.marks .subj { text-align: left; font-weight: 600; }
     table.marks td.tot { font-weight: 700; white-space: nowrap; }
     table.marks td.grd { font-weight: 700; }
+    .abs { display:inline-block; min-width:15px; height:15px; line-height:12px; padding:0 2px; border:1.5px solid #c0392b; color:#c0392b; border-radius:50%; font-weight:700; font-size:9.5px; box-sizing:content-box; }
     .totals { text-align: right; font-size: 11px; font-weight: 700; margin: 3px 2px 0; }
     .areas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .area-block { flex: 1 1 240px; }

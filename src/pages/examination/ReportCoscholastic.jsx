@@ -1,33 +1,78 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button, IconButton,
-  TextField, MenuItem, ToggleButton, ToggleButtonGroup, Divider, LinearProgress,
+  TextField, MenuItem, ToggleButton, ToggleButtonGroup, Chip, LinearProgress,
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
-// One area's grade control (a grade toggle, or a free-text field). Memoized on its own value so
-// tapping one area's grade — or typing the remark — doesn't re-render every other area's buttons.
-const AreaField = React.memo(function AreaField({ area, value, scale, studentId, onGrade }) {
-  return (
-    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-      <Typography variant="body2" sx={{ flex: 1 }}>{area.label}</Typography>
-      {area.valueType === 'text' ? (
-        <TextField size="small" sx={{ width: 160 }} value={value || ''} onChange={(e) => onGrade(studentId, area.id, e.target.value)} />
-      ) : (
-        <ToggleButtonGroup exclusive size="small" value={value || null} onChange={(_, v) => onGrade(studentId, area.id, v)}>
-          {scale.map((g) => <ToggleButton key={g.grade} value={g.grade} sx={{ px: 1.25, py: 0.25 }}>{g.grade}</ToggleButton>)}
+// Compute a co-scholastic grade from marks (client-side preview; the card recomputes server-side).
+// /10 areas grade the raw mark; /100 areas grade the percent (marks ÷ effMax × 100).
+function gradeFor(area, marks, effMax, scales) {
+  if (marks == null || marks === '') return null;
+  const n = Number(marks);
+  if (isNaN(n)) return null;
+  const table = area.scaleKind === 'coscholastic10' ? scales.s10 : scales.s100;
+  if (!table || !table.length) return null;
+  const value = area.scaleKind === 'coscholastic10' ? n : (effMax ? (n / effMax) * 100 : NaN);
+  if (isNaN(value)) return null;
+  const sorted = [...table].sort((a, b) => (Number(b.minPct) || 0) - (Number(a.minPct) || 0));
+  const hit = sorted.find((r) => value >= (Number(r.minPct) || 0));
+  return (hit || sorted[sorted.length - 1]).grade;
+}
+const parseMark = (v) => {
+  const t = String(v).trim();
+  if (t.toUpperCase() === 'A') return { absent: true, marks: null };
+  return { absent: false, marks: t };
+};
+
+// One area's input. Marks areas = a number/A box + (max N) hint + live computed grade; pre-primary
+// = a grade toggle; text = a text field. Memoized on its own cell so a keystroke re-renders only it.
+const AreaField = React.memo(function AreaField({ area, cell, effMax, scales, studentId, onCell }) {
+  if (area.valueType === 'text') {
+    return (
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+        <Typography variant="body2" sx={{ flex: 1 }}>{area.label}</Typography>
+        <TextField size="small" sx={{ width: 170 }} value={cell?.text || ''} onChange={(e) => onCell(studentId, area.id, { text: e.target.value })} />
+      </Stack>
+    );
+  }
+  if (area.valueType === 'grade') { // pre-primary direct grade
+    return (
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+        <Typography variant="body2" sx={{ flex: 1 }}>{area.label}</Typography>
+        <ToggleButtonGroup exclusive size="small" value={cell?.grade || null} onChange={(_, v) => onCell(studentId, area.id, { grade: v })}>
+          {(scales.s100 || []).map((g) => <ToggleButton key={g.grade} value={g.grade} sx={{ px: 1.1, py: 0.25 }}>{g.grade}</ToggleButton>)}
         </ToggleButtonGroup>
-      )}
+      </Stack>
+    );
+  }
+  // marks
+  const absent = !!cell?.absent;
+  const grade = absent ? null : gradeFor(area, cell?.marks, effMax, scales);
+  const outOf = area.denomEditable ? (effMax || '?') : area.max;
+  return (
+    <Stack direction="row" alignItems="center" spacing={1}>
+      <Box sx={{ flex: 1 }}>
+        <Typography variant="body2">{area.label}</Typography>
+        <Typography variant="caption" color="text.secondary">max {outOf}</Typography>
+      </Box>
+      <TextField
+        size="small" sx={{ width: 62 }} value={absent ? 'A' : (cell?.marks ?? '')}
+        onChange={(e) => onCell(studentId, area.id, parseMark(e.target.value))}
+        inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 4px' } }}
+      />
+      <Chip size="small" variant="outlined" sx={{ width: 46 }}
+        color={absent ? 'error' : (grade ? 'primary' : 'default')}
+        label={absent ? 'Ab' : (grade || '—')} />
     </Stack>
   );
 });
 
-// Class-teacher co-scholastic entry (PWA). Grades the co-scholastic / personality / other areas
-// (and the remark + attendance) for one student at a time. Class list = the caller's class-teacher
-// classes (or every class, for the exam-incharge override).
+// Class-teacher co-scholastic entry (PWA). Enters MARKS per area (grade computed from the scheme's
+// scale); GA/Reasoning/Value Education take a per-class "out of". One student at a time.
 export default function ReportCoscholastic() {
   const isMobile = useIsMobile();
   const [params] = useSearchParams();
@@ -38,7 +83,8 @@ export default function ReportCoscholastic() {
   const termSet = useRef(false);
   const [grid, setGrid] = useState(null);
   const [idx, setIdx] = useState(0);
-  const [draft, setDraft] = useState({}); // studentId -> { grades, remark, attendancePresent, attendanceTotal, house }
+  const [draft, setDraft] = useState({});   // studentId -> { cells, remark, attendancePresent, attendanceTotal, house }
+  const [denoms, setDenoms] = useState({});  // areaId -> per-class "out of" (denominator-editable areas)
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -49,11 +95,7 @@ export default function ReportCoscholastic() {
     try {
       const r = await examinationService.myReportClasses();
       let list = r.classes || [];
-      // Honour an incharge deep-link from the Co-Scholastic Progress tab even if this caller isn't
-      // the class teacher for it (the backend allows the exam-incharge override).
-      if (qClass && !list.some((c) => c.classId === qClass)) {
-        list = [{ classId: qClass, className: qClassName || 'Selected class' }, ...list];
-      }
+      if (qClass && !list.some((c) => c.classId === qClass)) list = [{ classId: qClass, className: qClassName || 'Selected class' }, ...list];
       setClasses(list);
       if (!termSet.current) { termSet.current = true; if (!qTerm && r.currentTerm) setTerm(r.currentTerm); }
       setClassId((prev) => prev || (list[0]?.classId || ''));
@@ -70,8 +112,9 @@ export default function ReportCoscholastic() {
       const g = await examinationService.myReportCoscholastic(classId, term);
       setGrid(g); setIdx(0);
       const d = {};
-      (g.students || []).forEach((s) => { d[s.studentId] = { grades: { ...s.grades }, remark: s.remark || '', attendancePresent: s.attendancePresent ?? '', attendanceTotal: s.attendanceTotal ?? '', house: s.house || '' }; });
+      (g.students || []).forEach((s) => { d[s.studentId] = { cells: { ...(s.cells || {}) }, remark: s.remark || '', attendancePresent: s.attendancePresent ?? '', attendanceTotal: s.attendanceTotal ?? '', house: s.house || '' }; });
       setDraft(d);
+      setDenoms({ ...(g.denominators || {}) });
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load co-scholastic grid');
       setGrid(null);
@@ -84,19 +127,22 @@ export default function ReportCoscholastic() {
     (grid?.areas || []).forEach((a) => { (map[a.section] ||= []).push(a); });
     return Object.entries(map);
   }, [grid]);
+  const denomAreas = useMemo(() => (grid?.areas || []).filter((a) => a.denomEditable), [grid]);
+  const scales = useMemo(() => ({ s100: grid?.scale || [], s10: grid?.scale10 || [] }), [grid]);
 
   const student = grid?.students?.[idx];
   const d = student ? draft[student.studentId] : null;
-  // Stable setters keyed by studentId, so a keystroke/tap re-renders ONLY the changed area (each
-  // area is a memoized AreaField) — not all ~20 areas + their toggle buttons every time.
   const setField = useCallback((sid, field, value) => setDraft((p) => ({ ...p, [sid]: { ...p[sid], [field]: value } })), []);
-  const setGrade = useCallback((sid, areaId, value) => setDraft((p) => ({ ...p, [sid]: { ...p[sid], grades: { ...p[sid].grades, [areaId]: value } } })), []);
+  const setCell = useCallback((sid, areaId, patch) => setDraft((p) => ({ ...p, [sid]: { ...p[sid], cells: { ...p[sid].cells, [areaId]: { ...p[sid].cells?.[areaId], ...patch } } } })), []);
 
   const save = async () => {
     if (!student) return;
     setBusy(true); setErr(''); setMsg('');
     try {
-      const g = await examinationService.saveReportCoscholastic(classId, term, [{ studentId: student.studentId, ...d }]);
+      const g = await examinationService.saveReportCoscholastic(classId, term, [{
+        studentId: student.studentId, cells: d.cells, denominators: denoms,
+        remark: d.remark, attendancePresent: d.attendancePresent, attendanceTotal: d.attendanceTotal, house: d.house,
+      }]);
       setGrid(g);
       setMsg(`Saved ${student.name}.`);
     } catch (e) {
@@ -108,9 +154,9 @@ export default function ReportCoscholastic() {
 
   return (
     <Box sx={{ width: '100%', maxWidth: isMobile ? 640 : '100%', mx: 'auto' }}>
-      <Typography variant="h5" sx={{ mb: 0.5 }}>Co-Scholastic Grades</Typography>
+      <Typography variant="h5" sx={{ mb: 0.5 }}>Co-Scholastic Marks</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Grade the co-scholastic areas, attendance and remark for your class — one student at a time.
+        Enter marks for each area — type <b>A</b> for Absent. The grade is computed from the scheme's scale and shown beside each entry.
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
@@ -131,6 +177,23 @@ export default function ReportCoscholastic() {
 
           {busy && !grid && <LinearProgress sx={{ mb: 2 }} />}
 
+          {grid && denomAreas.length > 0 && (
+            <Card variant="outlined" sx={{ mb: 1.5, borderColor: 'warning.light' }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography variant="subtitle2" color="warning.main" sx={{ mb: 0.5 }}>Marked out of (this class)</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  These areas have no common total — set what they were marked out of for this class; grades scale to 100.
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1.5}>
+                  {denomAreas.map((a) => (
+                    <TextField key={a.id} size="small" sx={{ width: 150 }} label={`${a.label} — out of`} value={denoms[a.id] ?? ''}
+                      onChange={(e) => setDenoms((p) => ({ ...p, [a.id]: e.target.value }))} inputProps={{ inputMode: 'numeric' }} InputLabelProps={{ shrink: true }} />
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
+
           {grid && student && d && (
             <>
               {/* student pager */}
@@ -150,7 +213,9 @@ export default function ReportCoscholastic() {
                     <Typography variant="subtitle2" color="primary.main" sx={{ mb: 1 }}>{section}</Typography>
                     <Stack spacing={1}>
                       {areas.map((a) => (
-                        <AreaField key={a.id} area={a} value={d.grades[a.id]} scale={grid.scale} studentId={student.studentId} onGrade={setGrade} />
+                        <AreaField key={a.id} area={a} cell={d.cells?.[a.id]}
+                          effMax={a.denomEditable ? (denoms[a.id] === '' || denoms[a.id] == null ? null : Number(denoms[a.id])) : a.max}
+                          scales={scales} studentId={student.studentId} onCell={setCell} />
                       ))}
                     </Stack>
                   </CardContent>

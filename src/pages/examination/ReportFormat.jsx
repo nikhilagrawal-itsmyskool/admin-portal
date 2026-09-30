@@ -84,7 +84,7 @@ export default function ReportFormat() {
       const payload = {
         subjects: data.subjects.map((s, i) => ({ uuid: s.uuid, reportLabel: s.reportLabel, syllabusSubject: s.syllabusSubject, appliesToGrades: s.appliesToGrades, sortOrder: i })),
         components: data.components.map((c) => ({ uuid: c.uuid, label: c.label, maxMarks: c.maxMarks })),
-        areas: data.areas.map((a, i) => ({ uuid: a.uuid, section: a.section, label: a.label, sortOrder: i })),
+        areas: data.areas.map((a, i) => ({ uuid: a.uuid, section: a.section, label: a.label, max: a.maxMarks, denomEditable: !!a.denominatorEditable, sortOrder: i })),
         gradeScales: data.gradeScales.map((g) => ({ uuid: g.uuid, label: g.label, minPct: g.minPct, maxPct: g.maxPct })),
       };
       setData(await examinationService.saveReportScheme(band, payload));
@@ -204,7 +204,12 @@ export default function ReportFormat() {
                               <IconButton size="small" disabled={ai === g.items.length - 1} onClick={() => moveArea(a.uuid, 1)}><KeyboardArrowDown fontSize="small" /></IconButton>
                             </TableCell>
                             <TableCell><TextField size="small" fullWidth value={a.label || ''} onChange={(e) => setField('areas', a.uuid, 'label', e.target.value)} /></TableCell>
-                            <TableCell sx={{ width: 90 }}><Chip size="small" variant="outlined" label={a.valueType} /></TableCell>
+                            <TableCell sx={{ width: 88 }}>{a.valueType === 'marks'
+                              ? <TextField size="small" type="number" sx={{ width: 68 }} label="max" value={a.maxMarks ?? ''} onChange={(e) => setField('areas', a.uuid, 'maxMarks', e.target.value)} InputLabelProps={{ shrink: true }} />
+                              : <Chip size="small" variant="outlined" label={a.valueType} />}</TableCell>
+                            <TableCell sx={{ width: 138 }}>{a.valueType === 'marks'
+                              ? <Chip size="small" label="per-class out-of" variant={a.denominatorEditable ? 'filled' : 'outlined'} color={a.denominatorEditable ? 'warning' : 'default'} onClick={() => setField('areas', a.uuid, 'denominatorEditable', a.denominatorEditable ? null : 1)} />
+                              : null}</TableCell>
                           </TableRow>
                         ))}</TableBody>
                       </Table>
@@ -222,16 +227,19 @@ export default function ReportFormat() {
               Applies to <b>{BANDS.find((b) => b.band === band)?.label}</b> only. Each band keeps its own copy — editing here does not change the other bands.
             </Typography>
             <Paper variant="outlined" sx={{ overflowX: 'auto' }}><Table size="small">
-              <TableHead><TableRow><TableCell>Kind</TableCell><TableCell>Grade</TableCell><TableCell>Label</TableCell><TableCell align="right">Min %</TableCell><TableCell align="right">Max %</TableCell></TableRow></TableHead>
-              <TableBody>{data.gradeScales.map((g) => (
+              <TableHead><TableRow><TableCell>Kind</TableCell><TableCell>Grade</TableCell><TableCell>Label</TableCell><TableCell align="right">Min</TableCell><TableCell align="right">Max</TableCell></TableRow></TableHead>
+              <TableBody>{data.gradeScales.map((g) => {
+                const hasRange = g.kind === 'scholastic' || g.minPct != null || g.maxPct != null || g.kind === 'coscholastic' || g.kind === 'coscholastic10';
+                return (
                 <TableRow key={g.uuid}>
-                  <TableCell>{g.kind}</TableCell>
+                  <TableCell>{g.kind === 'coscholastic10' ? 'co-sch (/10)' : g.kind === 'coscholastic' ? 'co-sch (/100)' : g.kind}</TableCell>
                   <TableCell><Chip size="small" variant="outlined" label={g.grade} /></TableCell>
                   <TableCell><TextField size="small" fullWidth value={g.label || ''} onChange={(e) => setField('gradeScales', g.uuid, 'label', e.target.value)} /></TableCell>
-                  <TableCell align="right">{g.kind === 'scholastic' ? <TextField size="small" type="number" sx={{ width: 80 }} value={g.minPct ?? ''} onChange={(e) => setField('gradeScales', g.uuid, 'minPct', e.target.value)} inputProps={{ style: { textAlign: 'right' } }} /> : '—'}</TableCell>
-                  <TableCell align="right">{g.kind === 'scholastic' ? <TextField size="small" type="number" sx={{ width: 80 }} value={g.maxPct ?? ''} onChange={(e) => setField('gradeScales', g.uuid, 'maxPct', e.target.value)} inputProps={{ style: { textAlign: 'right' } }} /> : '—'}</TableCell>
+                  <TableCell align="right">{hasRange ? <TextField size="small" type="number" sx={{ width: 80 }} value={g.minPct ?? ''} onChange={(e) => setField('gradeScales', g.uuid, 'minPct', e.target.value)} inputProps={{ style: { textAlign: 'right' } }} /> : '—'}</TableCell>
+                  <TableCell align="right">{hasRange ? <TextField size="small" type="number" sx={{ width: 80 }} value={g.maxPct ?? ''} onChange={(e) => setField('gradeScales', g.uuid, 'maxPct', e.target.value)} inputProps={{ style: { textAlign: 'right' } }} /> : '—'}</TableCell>
                 </TableRow>
-              ))}</TableBody>
+                );
+              })}</TableBody>
             </Table></Paper>
           </CardContent></Card>
 

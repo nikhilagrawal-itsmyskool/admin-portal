@@ -23,7 +23,7 @@ const MarkRow = React.memo(function MarkRow({ student, components, rowVals, onCe
       {components.map((c) => (
         <TableCell key={c.code} align="center" sx={{ px: 0.5 }}>
           <TextField
-            type="number" size="small" variant="outlined"
+            type="text" inputMode="numeric" size="small" variant="outlined"
             value={rowVals?.[c.code] ?? ''}
             onChange={(e) => onCell(student.studentId, c.code, e.target.value)}
             inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px', width: 52 } }}
@@ -48,7 +48,7 @@ const MarkCard = React.memo(function MarkCard({ student, components, rowVals, on
         <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${components.length}, 1fr)`, gap: 0.75 }}>
           {components.map((c) => (
             <TextField
-              key={c.code} type="number" size="small" label={`${c.label}/${c.max}`}
+              key={c.code} type="text" inputMode="numeric" size="small" label={`${c.label}/${c.max}`}
               value={rowVals?.[c.code] ?? ''}
               onChange={(e) => onCell(student.studentId, c.code, e.target.value)}
               inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px' } }}
@@ -140,7 +140,7 @@ export default function ReportMarks() {
     <Box sx={{ width: '100%', maxWidth: isMobile ? 760 : '100%', mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Enter Marks</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Enter Term marks for the subjects you teach. Marks save per class &amp; subject.
+        Enter Term marks for the subjects you teach. Type <b>A</b> for Absent. Marks save per class &amp; subject.
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
