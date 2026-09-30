@@ -8,6 +8,23 @@ import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
+// One area's grade control (a grade toggle, or a free-text field). Memoized on its own value so
+// tapping one area's grade — or typing the remark — doesn't re-render every other area's buttons.
+const AreaField = React.memo(function AreaField({ area, value, scale, studentId, onGrade }) {
+  return (
+    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+      <Typography variant="body2" sx={{ flex: 1 }}>{area.label}</Typography>
+      {area.valueType === 'text' ? (
+        <TextField size="small" sx={{ width: 160 }} value={value || ''} onChange={(e) => onGrade(studentId, area.id, e.target.value)} />
+      ) : (
+        <ToggleButtonGroup exclusive size="small" value={value || null} onChange={(_, v) => onGrade(studentId, area.id, v)}>
+          {scale.map((g) => <ToggleButton key={g.grade} value={g.grade} sx={{ px: 1.25, py: 0.25 }}>{g.grade}</ToggleButton>)}
+        </ToggleButtonGroup>
+      )}
+    </Stack>
+  );
+});
+
 // Class-teacher co-scholastic entry (PWA). Grades the co-scholastic / personality / other areas
 // (and the remark + attendance) for one student at a time. Class list = the caller's class-teacher
 // classes (or every class, for the exam-incharge override).
@@ -70,8 +87,10 @@ export default function ReportCoscholastic() {
 
   const student = grid?.students?.[idx];
   const d = student ? draft[student.studentId] : null;
-  const setField = (field, value) => setDraft((p) => ({ ...p, [student.studentId]: { ...p[student.studentId], [field]: value } }));
-  const setGrade = (areaId, value) => setDraft((p) => ({ ...p, [student.studentId]: { ...p[student.studentId], grades: { ...p[student.studentId].grades, [areaId]: value } } }));
+  // Stable setters keyed by studentId, so a keystroke/tap re-renders ONLY the changed area (each
+  // area is a memoized AreaField) — not all ~20 areas + their toggle buttons every time.
+  const setField = useCallback((sid, field, value) => setDraft((p) => ({ ...p, [sid]: { ...p[sid], [field]: value } })), []);
+  const setGrade = useCallback((sid, areaId, value) => setDraft((p) => ({ ...p, [sid]: { ...p[sid], grades: { ...p[sid].grades, [areaId]: value } } })), []);
 
   const save = async () => {
     if (!student) return;
@@ -131,16 +150,7 @@ export default function ReportCoscholastic() {
                     <Typography variant="subtitle2" color="primary.main" sx={{ mb: 1 }}>{section}</Typography>
                     <Stack spacing={1}>
                       {areas.map((a) => (
-                        <Stack key={a.id} direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-                          <Typography variant="body2" sx={{ flex: 1 }}>{a.label}</Typography>
-                          {a.valueType === 'text' ? (
-                            <TextField size="small" sx={{ width: 160 }} value={d.grades[a.id] || ''} onChange={(e) => setGrade(a.id, e.target.value)} />
-                          ) : (
-                            <ToggleButtonGroup exclusive size="small" value={d.grades[a.id] || null} onChange={(_, v) => setGrade(a.id, v)}>
-                              {grid.scale.map((g) => <ToggleButton key={g.grade} value={g.grade} sx={{ px: 1.25, py: 0.25 }}>{g.grade}</ToggleButton>)}
-                            </ToggleButtonGroup>
-                          )}
-                        </Stack>
+                        <AreaField key={a.id} area={a} value={d.grades[a.id]} scale={grid.scale} studentId={student.studentId} onGrade={setGrade} />
                       ))}
                     </Stack>
                   </CardContent>
@@ -152,16 +162,16 @@ export default function ReportCoscholastic() {
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Typography variant="subtitle2" color="primary.main" sx={{ mb: 1 }}>Details</Typography>
                   <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                    <TextField size="small" type="number" label="Attendance (present)" sx={{ flex: 1 }} value={d.attendancePresent} onChange={(e) => setField('attendancePresent', e.target.value)} InputLabelProps={{ shrink: true }} />
-                    <TextField size="small" type="number" label="of (total)" sx={{ flex: 1 }} value={d.attendanceTotal} onChange={(e) => setField('attendanceTotal', e.target.value)} InputLabelProps={{ shrink: true }} />
+                    <TextField size="small" type="number" label="Attendance (present)" sx={{ flex: 1 }} value={d.attendancePresent} onChange={(e) => setField(student.studentId, 'attendancePresent', e.target.value)} InputLabelProps={{ shrink: true }} />
+                    <TextField size="small" type="number" label="of (total)" sx={{ flex: 1 }} value={d.attendanceTotal} onChange={(e) => setField(student.studentId, 'attendanceTotal', e.target.value)} InputLabelProps={{ shrink: true }} />
                   </Stack>
-                  <TextField select size="small" fullWidth label="House" sx={{ mb: 1 }} value={d.house || ''} onChange={(e) => setField('house', e.target.value)}>
+                  <TextField select size="small" fullWidth label="House" sx={{ mb: 1 }} value={d.house || ''} onChange={(e) => setField(student.studentId, 'house', e.target.value)}>
                     <MenuItem value="">—</MenuItem>
                     {[...new Set([...(grid.houses || []), ...(d.house ? [d.house] : [])])].map((hn) => (
                       <MenuItem key={hn} value={hn}>{hn}</MenuItem>
                     ))}
                   </TextField>
-                  <TextField size="small" fullWidth multiline minRows={2} label="Class teacher remark" value={d.remark} onChange={(e) => setField('remark', e.target.value)} />
+                  <TextField size="small" fullWidth multiline minRows={2} label="Class teacher remark" value={d.remark} onChange={(e) => setField(student.studentId, 'remark', e.target.value)} />
                 </CardContent>
               </Card>
 

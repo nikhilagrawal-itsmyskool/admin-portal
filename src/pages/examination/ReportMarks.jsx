@@ -8,6 +8,59 @@ import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
+// One student's row of mark inputs (desktop). Memoized on its own values so a keystroke in any
+// row re-renders ONLY that row — not the whole class grid. rowVals is vals[studentId], whose
+// reference changes only for the edited student (setCell spreads the rest by reference).
+const MarkRow = React.memo(function MarkRow({ student, components, rowVals, onCell }) {
+  return (
+    <TableRow hover>
+      <TableCell>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>{student.name}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {[student.rollNumber != null ? `Roll ${student.rollNumber}` : null, student.admissionNumber].filter(Boolean).join(' · ')}
+        </Typography>
+      </TableCell>
+      {components.map((c) => (
+        <TableCell key={c.code} align="center" sx={{ px: 0.5 }}>
+          <TextField
+            type="number" size="small" variant="outlined"
+            value={rowVals?.[c.code] ?? ''}
+            onChange={(e) => onCell(student.studentId, c.code, e.target.value)}
+            inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px', width: 52 } }}
+          />
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+});
+
+// One student's card of mark inputs (mobile) — same per-row memoization.
+const MarkCard = React.memo(function MarkCard({ student, components, rowVals, onCell }) {
+  return (
+    <Card variant="outlined">
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>{student.name}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {[student.rollNumber != null ? `Roll ${student.rollNumber}` : null, student.admissionNumber].filter(Boolean).join(' · ')}
+          </Typography>
+        </Stack>
+        <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${components.length}, 1fr)`, gap: 0.75 }}>
+          {components.map((c) => (
+            <TextField
+              key={c.code} type="number" size="small" label={`${c.label}/${c.max}`}
+              value={rowVals?.[c.code] ?? ''}
+              onChange={(e) => onCell(student.studentId, c.code, e.target.value)}
+              inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px' } }}
+              InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
+            />
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+});
+
 // Subject-teacher marks entry (PWA). Lists the class × subject pairs the teacher is mapped to in
 // the syllabus; opening one shows a per-student grid of that band's Term component columns.
 // The exam-incharge can also deep-link to any (classId, subjectCode, term) from the dashboard.
@@ -61,7 +114,9 @@ export default function ReportMarks() {
   }, [sel, term]);
   useEffect(() => { loadGrid(); }, [loadGrid]);
 
-  const setCell = (sid, code, value) => setVals((v) => ({ ...v, [sid]: { ...v[sid], [code]: value } }));
+  // Stable callback + memoized rows (below) so a keystroke re-renders ONLY the edited student's
+  // cells, not the whole grid of ~200 inputs (that full re-render is what made entry laggy).
+  const setCell = useCallback((sid, code, value) => setVals((v) => ({ ...v, [sid]: { ...v[sid], [code]: value } })), []);
 
   const save = async () => {
     if (!sel) return;
@@ -123,27 +178,7 @@ export default function ReportMarks() {
               ) : isMobile ? (
                 <Stack spacing={1}>
                   {grid.students.map((s) => (
-                    <Card key={s.studentId} variant="outlined">
-                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {[s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ')}
-                          </Typography>
-                        </Stack>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${grid.components.length}, 1fr)`, gap: 0.75 }}>
-                          {grid.components.map((c) => (
-                            <TextField
-                              key={c.code} type="number" size="small" label={`${c.label}/${c.max}`}
-                              value={vals[s.studentId]?.[c.code] ?? ''}
-                              onChange={(e) => setCell(s.studentId, c.code, e.target.value)}
-                              inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px' } }}
-                              InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
-                            />
-                          ))}
-                        </Box>
-                      </CardContent>
-                    </Card>
+                    <MarkCard key={s.studentId} student={s} components={grid.components} rowVals={vals[s.studentId]} onCell={setCell} />
                   ))}
                 </Stack>
               ) : (
@@ -162,24 +197,7 @@ export default function ReportMarks() {
                     </TableHead>
                     <TableBody>
                       {grid.students.map((s) => (
-                        <TableRow key={s.studentId} hover>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {[s.rollNumber != null ? `Roll ${s.rollNumber}` : null, s.admissionNumber].filter(Boolean).join(' · ')}
-                            </Typography>
-                          </TableCell>
-                          {grid.components.map((c) => (
-                            <TableCell key={c.code} align="center" sx={{ px: 0.5 }}>
-                              <TextField
-                                type="number" size="small" variant="outlined"
-                                value={vals[s.studentId]?.[c.code] ?? ''}
-                                onChange={(e) => setCell(s.studentId, c.code, e.target.value)}
-                                inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px', width: 52 } }}
-                              />
-                            </TableCell>
-                          ))}
-                        </TableRow>
+                        <MarkRow key={s.studentId} student={s} components={grid.components} rowVals={vals[s.studentId]} onCell={setCell} />
                       ))}
                     </TableBody>
                   </Table>
