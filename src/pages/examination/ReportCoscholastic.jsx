@@ -22,10 +22,14 @@ function gradeFor(area, marks, effMax, scales) {
   const hit = sorted.find((r) => value >= (Number(r.minPct) || 0));
   return (hit || sorted[sorted.length - 1]).grade;
 }
-const parseMark = (v) => {
+// A co-scholastic box only holds: Absent (a/A), or a number clamped to 0..max. Anything else dropped.
+const parseMark = (v, max) => {
   const t = String(v).trim();
-  if (t.toUpperCase() === 'A') return { absent: true, marks: null };
-  return { absent: false, marks: t };
+  if (/^a$/i.test(t)) return { absent: true, marks: null };
+  let n = t.replace(/[^0-9.]/g, '');
+  if (n === '.') n = '';
+  if (max != null && n !== '' && Number(n) > Number(max)) n = String(max);
+  return { absent: false, marks: n };
 };
 
 // One area's input. Marks areas = a number/A box + (max N) hint + live computed grade; pre-primary
@@ -61,8 +65,8 @@ const AreaField = React.memo(function AreaField({ area, cell, effMax, scales, st
       </Box>
       <TextField
         size="small" sx={{ width: 62 }} value={absent ? 'A' : (cell?.marks ?? '')}
-        onChange={(e) => onCell(studentId, area.id, parseMark(e.target.value))}
-        inputProps={{ inputMode: 'numeric', style: { textAlign: 'center', padding: '6px 4px' } }}
+        onChange={(e) => onCell(studentId, area.id, parseMark(e.target.value, effMax))}
+        inputProps={{ inputMode: 'numeric', maxLength: 4, style: { textAlign: 'center', padding: '6px 4px' } }}
       />
       <Chip size="small" variant="outlined" sx={{ width: 46 }}
         color={absent ? 'error' : (grade ? 'primary' : 'default')}
@@ -85,6 +89,7 @@ export default function ReportCoscholastic() {
   const [idx, setIdx] = useState(0);
   const [draft, setDraft] = useState({});   // studentId -> { cells, remark, attendancePresent, attendanceTotal, house }
   const [denoms, setDenoms] = useState({});  // areaId -> per-class "out of" (denominator-editable areas)
+  const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -115,6 +120,7 @@ export default function ReportCoscholastic() {
       (g.students || []).forEach((s) => { d[s.studentId] = { cells: { ...(s.cells || {}) }, remark: s.remark || '', attendancePresent: s.attendancePresent ?? '', attendanceTotal: s.attendanceTotal ?? '', house: s.house || '' }; });
       setDraft(d);
       setDenoms({ ...(g.denominators || {}) });
+      setDirty(false);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load co-scholastic grid');
       setGrid(null);
@@ -132,8 +138,8 @@ export default function ReportCoscholastic() {
 
   const student = grid?.students?.[idx];
   const d = student ? draft[student.studentId] : null;
-  const setField = useCallback((sid, field, value) => setDraft((p) => ({ ...p, [sid]: { ...p[sid], [field]: value } })), []);
-  const setCell = useCallback((sid, areaId, patch) => setDraft((p) => ({ ...p, [sid]: { ...p[sid], cells: { ...p[sid].cells, [areaId]: { ...p[sid].cells?.[areaId], ...patch } } } })), []);
+  const setField = useCallback((sid, field, value) => { setDirty(true); setDraft((p) => ({ ...p, [sid]: { ...p[sid], [field]: value } })); }, []);
+  const setCell = useCallback((sid, areaId, patch) => { setDirty(true); setDraft((p) => ({ ...p, [sid]: { ...p[sid], cells: { ...p[sid].cells, [areaId]: { ...p[sid].cells?.[areaId], ...patch } } } })); }, []);
 
   const save = async () => {
     if (!student) return;
@@ -143,7 +149,7 @@ export default function ReportCoscholastic() {
         studentId: student.studentId, cells: d.cells, denominators: denoms,
         remark: d.remark, attendancePresent: d.attendancePresent, attendanceTotal: d.attendanceTotal, house: d.house,
       }]);
-      setGrid(g);
+      setGrid(g); setDirty(false);
       setMsg(`Saved ${student.name}.`);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save');
@@ -187,7 +193,7 @@ export default function ReportCoscholastic() {
                 <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1.5}>
                   {denomAreas.map((a) => (
                     <TextField key={a.id} size="small" sx={{ width: 150 }} label={`${a.label} — out of`} value={denoms[a.id] ?? ''}
-                      onChange={(e) => setDenoms((p) => ({ ...p, [a.id]: e.target.value }))} inputProps={{ inputMode: 'numeric' }} InputLabelProps={{ shrink: true }} />
+                      onChange={(e) => { setDirty(true); setDenoms((p) => ({ ...p, [a.id]: e.target.value })); }} inputProps={{ inputMode: 'numeric' }} InputLabelProps={{ shrink: true }} />
                   ))}
                 </Stack>
               </CardContent>
@@ -241,7 +247,7 @@ export default function ReportCoscholastic() {
               </Card>
 
               <Box sx={{ py: 2 }}>
-                <Button fullWidth variant="contained" onClick={save} disabled={busy}>Save {student.name?.split(' ')[0]}</Button>
+                <Button fullWidth variant={dirty ? 'contained' : 'outlined'} onClick={save} disabled={busy || !dirty}>{dirty ? `Save ${student.name?.split(' ')[0]}` : 'No changes'}</Button>
               </Box>
             </>
           )}

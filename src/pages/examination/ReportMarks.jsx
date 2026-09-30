@@ -8,6 +8,18 @@ import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
+// Keep a box to a valid mark: '' (blank), 'A' (Absent — a/A only), or a number clamped to 0..max.
+// Any other character is dropped as typed, so an invalid value can never be entered.
+function sanitizeMark(raw, max) {
+  const t = String(raw).trim();
+  if (t === '') return '';
+  if (/^a$/i.test(t)) return 'A';
+  let n = t.replace(/[^0-9.]/g, '');
+  if (n === '' || n === '.') return '';
+  if (max != null && Number(n) > Number(max)) n = String(max);
+  return n;
+}
+
 // One student's row of mark inputs (desktop). Memoized on its own values so a keystroke in any
 // row re-renders ONLY that row — not the whole class grid. rowVals is vals[studentId], whose
 // reference changes only for the edited student (setCell spreads the rest by reference).
@@ -25,8 +37,8 @@ const MarkRow = React.memo(function MarkRow({ student, components, rowVals, onCe
           <TextField
             type="text" inputMode="numeric" size="small" variant="outlined"
             value={rowVals?.[c.code] ?? ''}
-            onChange={(e) => onCell(student.studentId, c.code, e.target.value)}
-            inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px', width: 52 } }}
+            onChange={(e) => onCell(student.studentId, c.code, sanitizeMark(e.target.value, c.max))}
+            inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px', width: 52 } }}
           />
         </TableCell>
       ))}
@@ -50,8 +62,8 @@ const MarkCard = React.memo(function MarkCard({ student, components, rowVals, on
             <TextField
               key={c.code} type="text" inputMode="numeric" size="small" label={`${c.label}/${c.max}`}
               value={rowVals?.[c.code] ?? ''}
-              onChange={(e) => onCell(student.studentId, c.code, e.target.value)}
-              inputProps={{ min: 0, max: c.max, style: { textAlign: 'center', padding: '6px 4px' } }}
+              onChange={(e) => onCell(student.studentId, c.code, sanitizeMark(e.target.value, c.max))}
+              inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px' } }}
               InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
             />
           ))}
@@ -75,6 +87,7 @@ export default function ReportMarks() {
   const termSet = useRef(false);
   const [grid, setGrid] = useState(null);
   const [vals, setVals] = useState({}); // studentId -> { componentCode: value }
+  const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -106,7 +119,7 @@ export default function ReportMarks() {
       const g = await examinationService.myReportMarks(classId, subjectCode, term);
       setGrid(g);
       const v = {}; (g.students || []).forEach((s) => { v[s.studentId] = { ...s.marks }; });
-      setVals(v);
+      setVals(v); setDirty(false);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load the marks grid');
       setGrid(null);
@@ -116,7 +129,7 @@ export default function ReportMarks() {
 
   // Stable callback + memoized rows (below) so a keystroke re-renders ONLY the edited student's
   // cells, not the whole grid of ~200 inputs (that full re-render is what made entry laggy).
-  const setCell = useCallback((sid, code, value) => setVals((v) => ({ ...v, [sid]: { ...v[sid], [code]: value } })), []);
+  const setCell = useCallback((sid, code, value) => { setDirty(true); setVals((v) => ({ ...v, [sid]: { ...v[sid], [code]: value } })); }, []);
 
   const save = async () => {
     if (!sel) return;
@@ -127,7 +140,7 @@ export default function ReportMarks() {
       const g = await examinationService.saveReportMarks(classId, subjectCode, term, entries);
       setGrid(g);
       const v = {}; (g.students || []).forEach((s) => { v[s.studentId] = { ...s.marks }; });
-      setVals(v);
+      setVals(v); setDirty(false);
       setMsg('Marks saved.');
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save marks');
@@ -206,7 +219,7 @@ export default function ReportMarks() {
 
               {grid.students.length > 0 && (
                 <Box sx={{ py: 2 }}>
-                  <Button fullWidth variant="contained" onClick={save} disabled={busy}>Save marks</Button>
+                  <Button fullWidth variant={dirty ? 'contained' : 'outlined'} onClick={save} disabled={busy || !dirty}>{dirty ? 'Save marks' : 'No changes'}</Button>
                 </Box>
               )}
             </>

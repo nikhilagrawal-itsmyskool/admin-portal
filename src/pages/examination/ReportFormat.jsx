@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button, IconButton,
+  Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button, IconButton, FormControlLabel, Checkbox,
   TextField, ToggleButton, ToggleButtonGroup, Table, TableHead, TableBody, TableRow, TableCell,
   Paper, Chip,
 } from '@mui/material';
@@ -24,6 +24,7 @@ export default function ReportFormat() {
   const [termFilter, setTermFilter] = useState(0); // 0 = both terms, 1, or 2
   const [term2StartsOn, setTerm2StartsOn] = useState('');
   const [currentTerm, setCurrentTerm] = useState(1);
+  const [remarkReq, setRemarkReq] = useState(false);
   const [cfgDirty, setCfgDirty] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,14 +42,14 @@ export default function ReportFormat() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    examinationService.getReportConfig().then((c) => { setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); setCfgDirty(false); }).catch(() => {});
+    examinationService.getReportConfig().then((c) => { setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); setRemarkReq(!!c.remarkRequiredFinal); setCfgDirty(false); }).catch(() => {});
   }, []);
 
   const saveConfig = async () => {
     setBusy(true); setErr(''); setMsg('');
     try {
-      const c = await examinationService.setReportConfig(term2StartsOn || null);
-      setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); setCfgDirty(false);
+      const c = await examinationService.setReportConfig(term2StartsOn || null, remarkReq);
+      setTerm2StartsOn(c.term2StartsOn || ''); setCurrentTerm(c.currentTerm || 1); setRemarkReq(!!c.remarkRequiredFinal); setCfgDirty(false);
       setMsg('Term setting saved.');
     } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to save the term setting'); }
     finally { setBusy(false); }
@@ -115,9 +116,11 @@ export default function ReportFormat() {
           <TextField size="small" type="date" label="Term 2 starts on" value={term2StartsOn}
             onChange={(e) => { setCfgDirty(true); setTerm2StartsOn(e.target.value); }} InputLabelProps={{ shrink: true }} sx={{ minWidth: 190 }} />
           <Button variant={cfgDirty ? 'contained' : 'outlined'} onClick={saveConfig} disabled={busy || !cfgDirty}>
-            {cfgDirty ? 'Save term setting' : 'Saved'}
+            {cfgDirty ? 'Save setting' : 'Saved'}
           </Button>
         </Stack>
+        <FormControlLabel sx={{ mt: 1 }} control={<Checkbox size="small" checked={remarkReq} onChange={(e) => { setCfgDirty(true); setRemarkReq(e.target.checked); }} />}
+          label={<Typography variant="body2">Require the class-teacher remark for the final term (Term 2) — never for Term 1</Typography>} />
       </CardContent></Card>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
