@@ -168,10 +168,13 @@ export default function ReportFormat() {
                 </ToggleButtonGroup>
               </Stack>
               <Paper variant="outlined" sx={{ overflowX: 'auto' }}><Table size="small">
-                <TableHead><TableRow><TableCell>Term</TableCell><TableCell>Code</TableCell><TableCell>Label</TableCell><TableCell align="right">Max</TableCell></TableRow></TableHead>
+                <TableHead><TableRow><TableCell>Term</TableCell><TableCell>Applies to</TableCell><TableCell>Code</TableCell><TableCell>Label</TableCell><TableCell align="right">Max</TableCell></TableRow></TableHead>
                 <TableBody>{data.components.filter((c) => !termFilter || c.term === termFilter).map((c) => (
                   <TableRow key={c.uuid}>
                     <TableCell>{c.term}</TableCell>
+                    <TableCell>{c.subjectCode
+                      ? <Chip size="small" color="warning" variant="outlined" label={c.subjectCode} />
+                      : <Typography variant="caption" color="text.secondary">all subjects</Typography>}</TableCell>
                     <TableCell><Chip size="small" variant="outlined" label={c.code} /></TableCell>
                     <TableCell><TextField size="small" fullWidth value={c.label || ''} onChange={(e) => setField('components', c.uuid, 'label', e.target.value)} /></TableCell>
                     <TableCell align="right"><TextField size="small" type="number" sx={{ width: 90 }} value={c.maxMarks ?? ''} onChange={(e) => setField('components', c.uuid, 'maxMarks', e.target.value)} inputProps={{ min: 0, style: { textAlign: 'right' } }} /></TableCell>
