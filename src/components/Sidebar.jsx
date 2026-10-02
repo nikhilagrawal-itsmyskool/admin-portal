@@ -412,6 +412,7 @@ const menuItems = [
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
       { title: 'Progress', icon: ExamIcon, path: '/exam/report-progress', perm: 'exam.manage' },
       { title: 'Subject Mapping', icon: ExamIcon, path: '/exam/subject-mapping', perm: 'subject-mapping.manage' },
+      { title: 'Class Teachers', icon: ExamIcon, path: '/exam/class-teachers', perm: 'subject-mapping.manage' },
       { title: 'Enter Marks', icon: CalendarIcon, path: '/exam/marks' },
       { title: 'Co-Scholastic', icon: CalendarIcon, path: '/exam/coscholastic' },
       { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.manage' },

@@ -161,8 +161,13 @@ export const examinationService = {
     (await api.get(`/examination/report/progress/${term}`, { params: ay ? { ay } : {} })).data,
   reportMapping: async (classId, ay) =>
     (await api.get(`/examination/report/mapping/${classId}`, { params: ay ? { ay } : {} })).data,
-  assignReportTeacher: async (classId, subjectCode, teacherId, ay) =>
-    (await api.post(`/examination/report/mapping/${classId}`, { subjectCode, teacherId }, { params: ay ? { ay } : {} })).data,
+  // action: 'add' | 'remove' — additive subject teacher (on top of the syllabus teacher).
+  setReportTeacher: async (classId, subjectCode, teacherId, action, ay) =>
+    (await api.post(`/examination/report/mapping/${classId}`, { subjectCode, teacherId, action }, { params: ay ? { ay } : {} })).data,
+  reportClassTeachers: async (classId, ay) =>
+    (await api.get(`/examination/report/class-teachers/${classId}`, { params: ay ? { ay } : {} })).data,
+  setReportClassTeacher: async (classId, teacherId, allSubjects, action, ay) =>
+    (await api.post(`/examination/report/class-teachers/${classId}`, { teacherId, allSubjects, action }, { params: ay ? { ay } : {} })).data,
   reportClasses: async (ay) => (await api.get('/examination/report/classes', { params: ay ? { ay } : {} })).data,
   coscholasticProgress: async (term, ay) =>
     (await api.get(`/examination/report/coscholastic-progress/${term}`, { params: ay ? { ay } : {} })).data,

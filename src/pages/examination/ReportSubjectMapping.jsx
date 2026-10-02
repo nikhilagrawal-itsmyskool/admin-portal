@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
-  TextField, MenuItem, Divider, Autocomplete, Tooltip,
+  TextField, MenuItem, Divider, Autocomplete,
 } from '@mui/material';
-import { Edit as EditIcon, Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Add as AddIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { employeeService } from '../../services/employeeService';
 
 const gradeOf = (name) => (name && name.indexOf('-') !== -1 ? name.slice(0, name.indexOf('-')) : name || '').trim();
 
-// Exam-incharge: per-grade view of who enters each subject's marks, per section. The effective
-// teacher is the syllabus offering unless the incharge overrides it (one teacher per section+subject).
+// Admin/god: per-section view of who may enter each subject's marks. The syllabus teacher is pulled
+// live (non-removable); you can ADD extra teachers so a colleague can enter on their behalf. The
+// class teacher (primary + any secondary flagged "all subjects") covers every subject automatically.
 export default function ReportSubjectMapping() {
   const [classes, setClasses] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -20,13 +21,13 @@ export default function ReportSubjectMapping() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
-  const [editing, setEditing] = useState(''); // "classId|subjectCode"
+  const [adding, setAdding] = useState(''); // "classId|subjectCode" currently showing the add-picker
 
   const loadBase = useCallback(async () => {
     setLoading(true); setErr('');
     try {
       const [cls, emps] = await Promise.all([
-        examinationService.reportClasses(), // all scheme sections (exam.manage) — not class-teacher-scoped
+        examinationService.reportClasses(),
         employeeService.searchEmployees({}).catch(() => []),
       ]);
       const clist = cls.classes || [];
@@ -57,15 +58,15 @@ export default function ReportSubjectMapping() {
   }, [sections]);
   useEffect(() => { loadMaps(); }, [loadMaps]);
 
-  const assign = async (classId, subjectCode, teacherId) => {
+  const change = async (classId, subjectCode, teacherId, action) => {
     setBusy(true); setErr(''); setMsg('');
     try {
-      const m = await examinationService.assignReportTeacher(classId, subjectCode, teacherId || '');
+      const m = await examinationService.setReportTeacher(classId, subjectCode, teacherId, action);
       setMaps((prev) => ({ ...prev, [classId]: m }));
-      setEditing('');
-      setMsg(teacherId ? 'Teacher assigned.' : 'Reverted to the syllabus teacher.');
+      setAdding('');
+      setMsg(action === 'remove' ? 'Teacher removed.' : 'Teacher added.');
     } catch (e) {
-      setErr(e.response?.data?.error?.description || 'Failed to assign teacher');
+      setErr(e.response?.data?.error?.description || 'Failed to update the teacher');
     } finally { setBusy(false); }
   };
 
@@ -75,8 +76,8 @@ export default function ReportSubjectMapping() {
     <Box sx={{ width: '100%' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Subject Mapping</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Who enters each subject's marks, per section. By default it follows the syllabus; assign a
-        teacher here to override (one teacher per section &amp; subject). The label shown is what prints on the card.
+        Who may enter each subject's marks, per section. The <b>syllabus</b> teacher is pulled live;
+        <b> add</b> more teachers so a colleague can enter on their behalf. The class teacher covers every subject automatically.
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
@@ -93,15 +94,22 @@ export default function ReportSubjectMapping() {
           return (
             <Card key={sec.classId} variant="outlined">
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>{sec.className}</Typography>
-                <Divider sx={{ mb: 1 }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{sec.className}</Typography>
+                {m && m.allSubjectsClassTeachers?.length > 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Class teacher (all subjects): {m.allSubjectsClassTeachers.map((t) => `${t.name}${t.role === 'secondary' ? ' (added)' : ''}`).join(', ')}
+                  </Typography>
+                )}
+                <Divider sx={{ mb: 1, mt: 0.5 }} />
                 {!m ? <Typography variant="body2" color="text.secondary">No report scheme for this class.</Typography> : (
                   <Stack divider={<Divider flexItem />} spacing={1}>
                     {m.subjects.map((s) => {
                       const key = `${sec.classId}|${s.subjectCode}`;
-                      const isEditing = editing === key;
+                      const isAdding = adding === key;
+                      // Teachers already covering this subject (so they aren't offered again).
+                      const taken = new Set([...(s.syllabusTeachers || []), ...(s.addedTeachers || [])].map((t) => t.id));
                       return (
-                        <Stack key={s.subjectCode} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} sx={{ py: 0.5 }}>
+                        <Stack key={s.subjectCode} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'flex-start' }} sx={{ py: 0.5 }}>
                           <Box sx={{ flex: 1, minWidth: 160 }}>
                             <Stack direction="row" spacing={0.75} alignItems="center">
                               <Chip size="small" variant="outlined" label={s.subjectCode} sx={{ height: 20, fontSize: 11 }} />
@@ -111,30 +119,34 @@ export default function ReportSubjectMapping() {
                               {s.syllabusSubjects ? `syllabus: ${s.syllabusSubjects}` : 'no syllabus link'}
                             </Typography>
                           </Box>
-                          {isEditing ? (
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
-                              <Autocomplete
-                                fullWidth size="small" options={employees} autoHighlight openOnFocus
-                                getOptionLabel={(o) => o.name || ''}
-                                defaultValue={employees.find((e) => e.uuid === s.assignedTeacherId) || null}
-                                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-                                onChange={(_, v) => assign(sec.classId, s.subjectCode, v ? v.uuid : '')}
-                                renderInput={(p) => <TextField {...p} label="Assign teacher" placeholder="Search…" />}
-                              />
-                              <Tooltip title="Cancel"><Button size="small" onClick={() => setEditing('')}><CloseIcon fontSize="small" /></Button></Tooltip>
-                            </Stack>
-                          ) : (
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, justifyContent: { sm: 'flex-end' } }}>
-                              <Typography variant="body2">{s.effectiveTeacher || <em>— unassigned —</em>}</Typography>
-                              <Chip size="small" variant="outlined"
-                                color={s.source === 'assigned' ? 'primary' : s.source === 'syllabus' ? 'default' : 'warning'}
-                                label={s.source === 'assigned' ? 'assigned' : s.source === 'syllabus' ? 'from syllabus' : 'none'} />
-                              <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={() => setEditing(key)} disabled={busy}>Change</Button>
-                              {s.source === 'assigned' && (
-                                <Tooltip title="Revert to syllabus"><Button size="small" color="inherit" onClick={() => assign(sec.classId, s.subjectCode, '')} disabled={busy}>↺</Button></Tooltip>
+                          <Box sx={{ flex: 2 }}>
+                            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" alignItems="center">
+                              {(s.syllabusTeachers || []).map((t) => (
+                                <Chip key={`syl-${t.id}`} size="small" color="default" variant="outlined" label={t.name || t.id}
+                                  title="From syllabus (live) — edit in the syllabus to change" />
+                              ))}
+                              {(s.addedTeachers || []).map((t) => (
+                                <Chip key={`add-${t.id}`} size="small" color="primary" variant="outlined" label={t.name || t.id}
+                                  onDelete={busy ? undefined : () => change(sec.classId, s.subjectCode, t.id, 'remove')} />
+                              ))}
+                              {!(s.syllabusTeachers || []).length && !(s.addedTeachers || []).length && (
+                                <Typography variant="caption" color="text.secondary"><em>— none —</em></Typography>
+                              )}
+                              {isAdding ? (
+                                <Autocomplete
+                                  size="small" sx={{ minWidth: 220 }} openOnFocus autoHighlight
+                                  options={employees.filter((e) => !taken.has(e.uuid))}
+                                  getOptionLabel={(o) => o.name || ''}
+                                  isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                                  onChange={(_, v) => v && change(sec.classId, s.subjectCode, v.uuid, 'add')}
+                                  onBlur={() => setAdding('')}
+                                  renderInput={(p) => <TextField {...p} autoFocus label="Add teacher" placeholder="Search…" />}
+                                />
+                              ) : (
+                                <Button size="small" startIcon={<AddIcon fontSize="small" />} onClick={() => setAdding(key)} disabled={busy}>Add</Button>
                               )}
                             </Stack>
-                          )}
+                          </Box>
                         </Stack>
                       );
                     })}
