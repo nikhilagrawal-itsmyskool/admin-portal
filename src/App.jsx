@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import VerifyReceipt from './pages/public/VerifyReceipt';
+import VerifyReportCard from './pages/public/VerifyReportCard';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 import DeviceLogin from './pages/DeviceLogin';
@@ -249,6 +250,7 @@ export default function App() {
       <Route path="/device-login" element={<DeviceLogin />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify/receipt/:uuid" element={<VerifyReceipt />} />
+      <Route path="/verify/report/:token" element={<VerifyReportCard />} />
 
       <Route
         path="/"
