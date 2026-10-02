@@ -259,7 +259,9 @@ export default function ReportCoscholastic() {
                   <TextField size="small" fullWidth multiline minRows={2} placeholder="Type a remark, or insert a suggestion and edit it…"
                     value={d.remark} onChange={(e) => setField(student.studentId, 'remark', e.target.value)} />
                   <Menu anchorEl={remarkAnchor} open={!!remarkAnchor} onClose={() => setRemarkAnchor(null)}
-                    slotProps={{ paper: { sx: { maxHeight: 420, maxWidth: 460 } } }}>
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    slotProps={{ paper: { sx: { maxHeight: '60vh', width: 'min(460px, calc(100vw - 32px))' } } }}>
                     {[...new Set(templates.map((t) => t.category))].flatMap((cat) => [
                       <ListSubheader key={`h-${cat}`} sx={{ fontWeight: 700, lineHeight: '30px' }}>{cat}</ListSubheader>,
                       ...templates.filter((t) => t.category === cat).map((t) => (
