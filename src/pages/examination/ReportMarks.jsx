@@ -90,14 +90,14 @@ const MarkCard = React.memo(function MarkCard({ student, components, rowVals, ro
           </Typography>
         </Stack>
         <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${components.length}, 1fr)`, gap: 0.75 }}>
-          {components.map((c) => {
+          {components.map((c, i) => {
             const isCT = c.target != null;
             const denom = isCT ? Number(rowDenoms?.[c.code] ?? c.max) : c.max;
             const sc = isCT ? scaled(rowVals?.[c.code], denom, c.target) : null;
             return (
               <Box key={c.code}>
                 <TextField
-                  fullWidth type="text" inputMode="numeric" size="small" label={isCT ? `${c.label} (raw)` : `${c.label}/${c.max}`}
+                  fullWidth type="text" inputMode="numeric" size="small" label={isCT ? `${i + 1}· raw` : `${i + 1}·/${c.max}`}
                   value={rowVals?.[c.code] ?? ''}
                   onChange={(e) => onCell(student.studentId, c.code, sanitizeMark(e.target.value, denom))}
                   inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px' } }}
@@ -306,6 +306,20 @@ export default function ReportMarks() {
                 <Alert severity="info">No students enrolled in this class.</Alert>
               ) : isMobile ? (
                 <Stack spacing={1}>
+                  {/* Legend: the mobile boxes are narrow so their labels show only a number (1·, 2·…).
+                      This card spells out what each numbered box is + its max (and which are scaled). */}
+                  <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
+                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.5 }}>Columns (boxes left → right)</Typography>
+                      <Stack spacing={0.25}>
+                        {effComps.map((c, i) => (
+                          <Typography key={c.code} variant="caption" color="text.secondary">
+                            <b>{i + 1}.</b> {c.label} — {c.target != null ? `raw mark out of its total → scaled to /${c.target}` : `out of ${c.max}`}
+                          </Typography>
+                        ))}
+                      </Stack>
+                    </CardContent>
+                  </Card>
                   {grid.students.map((s) => (
                     <MarkCard key={s.studentId} student={s} components={effComps} rowVals={vals[s.studentId]} rowDenoms={rowDenoms[s.studentId]} onCell={setCell} onDenom={setDenom} />
                   ))}
