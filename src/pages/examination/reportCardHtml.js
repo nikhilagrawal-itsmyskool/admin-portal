@@ -138,11 +138,12 @@ export function buildReportCardsHtml(data, students, bw = false) {
     /* One card per A4 page. @page margin:0 makes the card's own padding the print margin; a
        break is forced only BETWEEN cards (never after the last) so there is no trailing blank page.
        min-height is a hair under 297mm so sub-mm rounding can't spill a card onto a second page. */
-    /* Flex column so the content spreads down the full sheet: a growing spacer before the footer
-       pushes the signatures + QR to the bottom, and the rows/fonts are sized to fill A4. */
-    .card { width: 210mm; min-height: 296mm; padding: 11mm 11mm 9mm; break-inside: avoid; display: flex; flex-direction: column; }
+    /* Flex column: a growing spacer before the footer pushes the signatures + QR to the BOTTOM so
+       the sheet is used, while the row/font sizes stay at the proven one-page values (bumping them
+       overflowed the densest classes onto a 2nd page). The .grow collapses to 0 on dense cards. */
+    .card { width: 210mm; min-height: 296mm; padding: 10mm; break-inside: avoid; display: flex; flex-direction: column; }
     .card + .card { break-before: page; }
-    .grow { flex: 1 1 0; min-height: 5mm; }
+    .grow { flex: 1 1 0; }
     .mast { display: flex; align-items: stretch; gap: 6px; background: #37407e; color: #f3f2ea; border-radius: 6px; padding: 12px 12px 11px; }
     .crest-col { width: 92px; flex: 0 0 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
     .crest { width: 62px; height: 62px; border-radius: 50%; overflow: hidden; background: #fff; display: flex; align-items: center; justify-content: center; }
@@ -156,45 +157,45 @@ export function buildReportCardsHtml(data, students, bw = false) {
     .motto { font-style: italic; font-size: 14px; opacity: .95; margin: 2px 0 5px; }
     .addr { font-size: 12px; opacity: .95; line-height: 1.7; }
     .addr.small { opacity: .8; }
-    .title { text-align: center; color: #7a1420; font-weight: 800; font-size: 19px; margin: 12px 0 2px; letter-spacing: .5px; }
-    .session { text-align:center; font-size:13.5px; font-weight:700; margin-bottom:9px; }
+    .title { text-align: center; color: #7a1420; font-weight: 800; font-size: 16px; margin: 8px 0 2px; letter-spacing: .5px; }
+    .session { text-align:center; font-size:12px; font-weight:700; margin-bottom:6px; }
     .info-wrap { display: flex; gap: 8px; align-items: stretch; }
-    table.info { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-    table.info td { border: 1px solid #999; padding: 6px 8px; }
+    table.info { border-collapse: collapse; width: 100%; font-size: 11px; }
+    table.info td { border: 1px solid #999; padding: 3px 6px; }
     table.info td.k { background: #f2f2f2; font-weight: 600; white-space: nowrap; }
     table.info td.v { min-width: 120px; }
-    .photo { width: 100px; border: 1px solid #999; display: flex; align-items: center; justify-content: center; }
-    .photo img { max-width: 98px; max-height: 128px; }
-    table.marks { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 12px; }
-    table.marks th, table.marks td { border: 1px solid #999; padding: 6px 5px; text-align: center; }
-    table.marks th.term-h { background: #eceaf5; font-size: 14px; padding: 5px; }
-    table.marks th .mx { font-weight: 400; font-size: 10px; }
+    .photo { width: 90px; border: 1px solid #999; display: flex; align-items: center; justify-content: center; }
+    .photo img { max-width: 88px; max-height: 110px; }
+    table.marks { border-collapse: collapse; width: 100%; font-size: 11px; margin-top: 6px; }
+    table.marks th, table.marks td { border: 1px solid #999; padding: 3px 4px; text-align: center; }
+    table.marks th.term-h { background: #eceaf5; font-size: 12px; }
+    table.marks th .mx { font-weight: 400; font-size: 9px; }
     table.marks .subj { text-align: left; font-weight: 600; }
     table.marks td.tot { font-weight: 700; white-space: nowrap; }
     table.marks td.grd { font-weight: 700; }
-    .abs { display:inline-block; min-width:16px; height:16px; line-height:13px; padding:0 2px; border:1.5px solid #c0392b; color:#c0392b; border-radius:50%; font-weight:700; font-size:11px; box-sizing:content-box; }
-    .totals { text-align: right; font-size: 12.5px; font-weight: 700; margin: 5px 2px 0; }
-    .areas { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .abs { display:inline-block; min-width:15px; height:15px; line-height:12px; padding:0 2px; border:1.5px solid #c0392b; color:#c0392b; border-radius:50%; font-weight:700; font-size:9.5px; box-sizing:content-box; }
+    .totals { text-align: right; font-size: 11px; font-weight: 700; margin: 3px 2px 0; }
+    .areas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
     .area-block { flex: 1 1 240px; }
-    table.area { border-collapse: collapse; width: 100%; font-size: 12px; }
-    table.area th, table.area td { border: 1px solid #999; padding: 5px 8px; }
+    table.area { border-collapse: collapse; width: 100%; font-size: 10.5px; }
+    table.area th, table.area td { border: 1px solid #999; padding: 3px 6px; }
     table.area th.k, table.area td.k { text-align: left; }
     table.area th { background: #f2f2f2; }
     table.area .g { text-align: center; width: 70px; }
-    .remark { font-size: 12.5px; margin-top: 14px; border: 1px solid #999; padding: 8px 10px; }
-    .promo { font-size: 13px; font-weight: 700; margin-top: 8px; text-align: center; color: #7a1420; }
-    .legends { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+    .remark { font-size: 11px; margin-top: 6px; border: 1px solid #999; padding: 4px 6px; }
+    .promo { font-size: 11px; font-weight: 700; margin-top: 5px; text-align: center; color: #7a1420; }
+    .legends { display: flex; flex-direction: column; gap: 6px; margin-top: 7px; }
     .leg { width: 100%; }
-    .leg-t { text-align: center; font-weight: 700; font-size: 12px; margin-bottom: 3px; }
-    table.leg-tbl { border-collapse: collapse; width: 100%; font-size: 11px; }
-    table.leg-tbl td { border: 1px solid #999; padding: 4px 5px; text-align: center; }
+    .leg-t { text-align: center; font-weight: 700; font-size: 10.5px; margin-bottom: 2px; }
+    table.leg-tbl { border-collapse: collapse; width: 100%; font-size: 9.5px; }
+    table.leg-tbl td { border: 1px solid #999; padding: 2px 4px; text-align: center; }
     table.leg-tbl td.lg { font-weight: 700; background: #f2f2f2; }
-    .foot { display: flex; align-items: flex-end; gap: 16px; margin-top: 10px; }
-    .qr-box { flex: none; width: 96px; text-align: center; }
-    .qr-box .qr { width: 86px; height: 86px; image-rendering: pixelated; }
-    .qr-cap { font-size: 8.5px; color: #555; margin-top: 1px; letter-spacing: .2px; }
+    .foot { display: flex; align-items: flex-end; gap: 16px; margin-top: 6px; }
+    .qr-box { flex: none; width: 76px; text-align: center; }
+    .qr-box .qr { width: 66px; height: 66px; image-rendering: pixelated; }
+    .qr-cap { font-size: 8px; color: #555; margin-top: 1px; letter-spacing: .2px; }
     .sigs { flex: 1; display: flex; justify-content: space-around; align-items: flex-end; }
-    .sig { font-size: 12.5px; font-weight: 600; border-top: 1px solid #333; padding-top: 4px; min-width: 130px; text-align: center; }
+    .sig { font-size: 11px; font-weight: 600; border-top: 1px solid #333; padding-top: 3px; min-width: 120px; text-align: center; }
 
     /* Black & white — for mono laser printers. Drop all colour to high-contrast black on white and
        darken the hairline borders (light greys print faint/washed-out on a B&W laser). */
