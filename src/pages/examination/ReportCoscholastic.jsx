@@ -68,6 +68,9 @@ const AreaField = React.memo(function AreaField({ area, cell, effMax, scales, st
         onChange={(e) => onCell(studentId, area.id, parseMark(e.target.value, effMax))}
         inputProps={{ inputMode: 'numeric', maxLength: 4, style: { textAlign: 'center', padding: '6px 4px' } }}
       />
+      <ToggleButton value="absent" size="small" selected={absent} title="Mark Absent"
+        onChange={() => onCell(studentId, area.id, { absent: !absent, marks: null })}
+        sx={{ px: 1, py: '5px', minWidth: 0, lineHeight: 1, fontWeight: 700 }}>A</ToggleButton>
       <Chip size="small" variant="outlined" sx={{ width: 46 }}
         color={absent ? 'error' : (grade ? 'primary' : 'default')}
         label={absent ? 'Ab' : (grade || '—')} />

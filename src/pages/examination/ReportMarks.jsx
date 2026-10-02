@@ -93,7 +93,8 @@ const MarkCard = React.memo(function MarkCard({ student, components, rowVals, ro
           {components.map((c, i) => {
             const isCT = c.target != null;
             const denom = isCT ? Number(rowDenoms?.[c.code] ?? c.max) : c.max;
-            const sc = isCT ? scaled(rowVals?.[c.code], denom, c.target) : null;
+            const isA = String(rowVals?.[c.code] ?? '').trim().toUpperCase() === 'A';
+            const sc = isCT && !isA ? scaled(rowVals?.[c.code], denom, c.target) : null;
             return (
               <Box key={c.code}>
                 <TextField
@@ -103,7 +104,7 @@ const MarkCard = React.memo(function MarkCard({ student, components, rowVals, ro
                   inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px' } }}
                   InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
                 />
-                {isCT && (
+                {isCT && !isA && (
                   <TextField
                     fullWidth type="text" inputMode="numeric" size="small" label="out of" sx={{ mt: 0.5 }}
                     value={rowDenoms?.[c.code] ?? c.max}
@@ -112,6 +113,10 @@ const MarkCard = React.memo(function MarkCard({ student, components, rowVals, ro
                     InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
                   />
                 )}
+                {/* One-tap Absent — mobile numeric keypads have no letters, so A can't be typed. */}
+                <ToggleButton value="absent" size="small" fullWidth selected={isA} title="Mark Absent"
+                  onChange={() => onCell(student.studentId, c.code, isA ? '' : 'A')}
+                  sx={{ mt: 0.5, py: '1px', fontSize: 11, lineHeight: 1.3 }}>Abs</ToggleButton>
                 {isCT && (
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', minHeight: 14 }}>
                     {sc != null ? `→ ${sc}/${c.target}` : ''}
