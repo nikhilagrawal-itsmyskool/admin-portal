@@ -109,6 +109,9 @@ function card(data, s) {
   const sigs = isPre
     ? ['Class Teacher', 'Co-Ordinator', 'Principal', 'Parent']
     : ['Principal', 'Class Teacher', 'Sign. of Parent'];
+  const qr = s.qrDataUri
+    ? `<div class="qr-box"><img class="qr" src="${s.qrDataUri}" alt=""><div class="qr-cap">Scan to verify</div></div>`
+    : '';
   return `<div class="card">
     ${masthead(data.branding || {})}
     <div class="title">${title}</div>
@@ -119,7 +122,8 @@ function card(data, s) {
     ${s.remark ? `<div class="remark"><b>Class Teacher Remark:</b> ${esc(s.remark)}</div>` : ''}
     ${s.promotedTo && data.term === 2 ? `<div class="promo">CONGRATULATIONS! PROMOTED TO CLASS: ${esc(s.promotedTo)}</div>` : ''}
     ${legends(data)}
-    <div class="sigs">${sigs.map((x) => `<div class="sig">${esc(x)}</div>`).join('')}</div>
+    <div class="grow"></div>
+    <div class="foot">${qr}<div class="sigs">${sigs.map((x) => `<div class="sig">${esc(x)}</div>`).join('')}</div></div>
   </div>`;
 }
 
@@ -134,54 +138,63 @@ export function buildReportCardsHtml(data, students, bw = false) {
     /* One card per A4 page. @page margin:0 makes the card's own padding the print margin; a
        break is forced only BETWEEN cards (never after the last) so there is no trailing blank page.
        min-height is a hair under 297mm so sub-mm rounding can't spill a card onto a second page. */
-    .card { width: 210mm; min-height: 296mm; padding: 10mm; break-inside: avoid; }
+    /* Flex column so the content spreads down the full sheet: a growing spacer before the footer
+       pushes the signatures + QR to the bottom, and the rows/fonts are sized to fill A4. */
+    .card { width: 210mm; min-height: 296mm; padding: 11mm 11mm 9mm; break-inside: avoid; display: flex; flex-direction: column; }
     .card + .card { break-before: page; }
+    .grow { flex: 1 1 0; min-height: 5mm; }
     .mast { display: flex; align-items: stretch; gap: 6px; background: #37407e; color: #f3f2ea; border-radius: 6px; padding: 12px 12px 11px; }
     .crest-col { width: 92px; flex: 0 0 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
     .crest { width: 62px; height: 62px; border-radius: 50%; overflow: hidden; background: #fff; display: flex; align-items: center; justify-content: center; }
     .crest img { width: 100%; height: 100%; object-fit: contain; }
     .crest-cap { text-align: center; font-size: 9.5px; font-weight: 700; line-height: 1.25; }
     .crest-cap span { display: block; color: #e7c869; font-size: 8.5px; font-weight: 600; }
-    .mast-mid { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; }
-    .sname { font-size: 26px; font-weight: 800; letter-spacing: .2px; color:#e7c869; line-height: 1.1; white-space: nowrap; }
+    /* min-width:0 lets the centre column shrink so the (nowrap) name can never push the right crest
+       past the masthead edge; the name scales down a touch on very long school names instead. */
+    .mast-mid { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+    .sname { font-size: 26px; font-weight: 800; letter-spacing: .2px; color:#e7c869; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .motto { font-style: italic; font-size: 14px; opacity: .95; margin: 2px 0 5px; }
     .addr { font-size: 12px; opacity: .95; line-height: 1.7; }
     .addr.small { opacity: .8; }
-    .title { text-align: center; color: #7a1420; font-weight: 800; font-size: 16px; margin: 8px 0 2px; letter-spacing: .5px; }
-    .session { text-align:center; font-size:12px; font-weight:700; margin-bottom:6px; }
+    .title { text-align: center; color: #7a1420; font-weight: 800; font-size: 19px; margin: 12px 0 2px; letter-spacing: .5px; }
+    .session { text-align:center; font-size:13.5px; font-weight:700; margin-bottom:9px; }
     .info-wrap { display: flex; gap: 8px; align-items: stretch; }
-    table.info { border-collapse: collapse; width: 100%; font-size: 11px; }
-    table.info td { border: 1px solid #999; padding: 3px 6px; }
+    table.info { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+    table.info td { border: 1px solid #999; padding: 6px 8px; }
     table.info td.k { background: #f2f2f2; font-weight: 600; white-space: nowrap; }
     table.info td.v { min-width: 120px; }
-    .photo { width: 90px; border: 1px solid #999; display: flex; align-items: center; justify-content: center; }
-    .photo img { max-width: 88px; max-height: 110px; }
-    table.marks { border-collapse: collapse; width: 100%; font-size: 11px; margin-top: 8px; }
-    table.marks th, table.marks td { border: 1px solid #999; padding: 3px 4px; text-align: center; }
-    table.marks th.term-h { background: #eceaf5; font-size: 12px; }
-    table.marks th .mx { font-weight: 400; font-size: 9px; }
+    .photo { width: 100px; border: 1px solid #999; display: flex; align-items: center; justify-content: center; }
+    .photo img { max-width: 98px; max-height: 128px; }
+    table.marks { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 12px; }
+    table.marks th, table.marks td { border: 1px solid #999; padding: 6px 5px; text-align: center; }
+    table.marks th.term-h { background: #eceaf5; font-size: 14px; padding: 5px; }
+    table.marks th .mx { font-weight: 400; font-size: 10px; }
     table.marks .subj { text-align: left; font-weight: 600; }
     table.marks td.tot { font-weight: 700; white-space: nowrap; }
     table.marks td.grd { font-weight: 700; }
-    .abs { display:inline-block; min-width:15px; height:15px; line-height:12px; padding:0 2px; border:1.5px solid #c0392b; color:#c0392b; border-radius:50%; font-weight:700; font-size:9.5px; box-sizing:content-box; }
-    .totals { text-align: right; font-size: 11px; font-weight: 700; margin: 3px 2px 0; }
-    .areas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .abs { display:inline-block; min-width:16px; height:16px; line-height:13px; padding:0 2px; border:1.5px solid #c0392b; color:#c0392b; border-radius:50%; font-weight:700; font-size:11px; box-sizing:content-box; }
+    .totals { text-align: right; font-size: 12.5px; font-weight: 700; margin: 5px 2px 0; }
+    .areas { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
     .area-block { flex: 1 1 240px; }
-    table.area { border-collapse: collapse; width: 100%; font-size: 10.5px; }
-    table.area th, table.area td { border: 1px solid #999; padding: 3px 6px; }
+    table.area { border-collapse: collapse; width: 100%; font-size: 12px; }
+    table.area th, table.area td { border: 1px solid #999; padding: 5px 8px; }
     table.area th.k, table.area td.k { text-align: left; }
     table.area th { background: #f2f2f2; }
     table.area .g { text-align: center; width: 70px; }
-    .remark { font-size: 11px; margin-top: 8px; border: 1px solid #999; padding: 4px 6px; }
-    .promo { font-size: 11px; font-weight: 700; margin-top: 6px; }
-    .legends { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .remark { font-size: 12.5px; margin-top: 14px; border: 1px solid #999; padding: 8px 10px; }
+    .promo { font-size: 13px; font-weight: 700; margin-top: 8px; text-align: center; color: #7a1420; }
+    .legends { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
     .leg { width: 100%; }
-    .leg-t { text-align: center; font-weight: 700; font-size: 10.5px; margin-bottom: 2px; }
-    table.leg-tbl { border-collapse: collapse; width: 100%; font-size: 9.5px; }
-    table.leg-tbl td { border: 1px solid #999; padding: 2px 4px; text-align: center; }
+    .leg-t { text-align: center; font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+    table.leg-tbl { border-collapse: collapse; width: 100%; font-size: 11px; }
+    table.leg-tbl td { border: 1px solid #999; padding: 4px 5px; text-align: center; }
     table.leg-tbl td.lg { font-weight: 700; background: #f2f2f2; }
-    .sigs { display: flex; justify-content: space-between; margin-top: 28px; padding: 0 6px; }
-    .sig { font-size: 11px; font-weight: 600; border-top: 1px solid #333; padding-top: 3px; min-width: 120px; text-align: center; }
+    .foot { display: flex; align-items: flex-end; gap: 16px; margin-top: 10px; }
+    .qr-box { flex: none; width: 96px; text-align: center; }
+    .qr-box .qr { width: 86px; height: 86px; image-rendering: pixelated; }
+    .qr-cap { font-size: 8.5px; color: #555; margin-top: 1px; letter-spacing: .2px; }
+    .sigs { flex: 1; display: flex; justify-content: space-around; align-items: flex-end; }
+    .sig { font-size: 12.5px; font-weight: 600; border-top: 1px solid #333; padding-top: 4px; min-width: 130px; text-align: center; }
 
     /* Black & white — for mono laser printers. Drop all colour to high-contrast black on white and
        darken the hairline borders (light greys print faint/washed-out on a B&W laser). */
@@ -197,6 +210,8 @@ export function buildReportCardsHtml(data, students, bw = false) {
     body.bw table.area th, body.bw table.area td, body.bw table.leg-tbl td,
     body.bw .remark, body.bw .photo { border-color: #000; }
     body.bw table.info td.k, body.bw table.area th, body.bw table.leg-tbl td.lg { background: #ececec; }
+    body.bw .qr-cap { color: #000; }
+    body.bw .promo { color: #000; }
   </style></head><body class="${bw ? 'bw' : ''}">${cards}</body></html>`;
 }
 
