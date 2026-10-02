@@ -112,6 +112,13 @@ function card(data, s) {
   const qr = s.qrDataUri
     ? `<div class="qr-box"><img class="qr" src="${s.qrDataUri}" alt=""><div class="qr-cap">Scan to verify</div></div>`
     : '';
+  // The remark is the only variable-length block — shrink ITS font (and tighten line-height) when it
+  // runs long, so a wordy remark fits without stealing height from (or shrinking) the rest of the card.
+  const rlen = String(s.remark || '').length;
+  const rFs = rlen > 450 ? 7 : rlen > 320 ? 7.5 : rlen > 240 ? 8 : rlen > 160 ? 9 : rlen > 95 ? 10 : 11;
+  const remarkHtml = s.remark
+    ? `<div class="remark" style="font-size:${rFs}px;line-height:1.3"><b>Class Teacher Remark:</b> ${esc(s.remark)}</div>`
+    : '';
   return `<div class="card">
     ${masthead(data.branding || {})}
     <div class="title">${title}</div>
@@ -119,7 +126,7 @@ function card(data, s) {
     ${infoGrid(data, s, isPre)}
     ${marksTbl}
     ${areaSections(data, s)}
-    ${s.remark ? `<div class="remark"><b>Class Teacher Remark:</b> ${esc(s.remark)}</div>` : ''}
+    ${remarkHtml}
     ${s.promotedTo && data.term === 2 ? `<div class="promo">CONGRATULATIONS! PROMOTED TO CLASS: ${esc(s.promotedTo)}</div>` : ''}
     ${legends(data)}
     <div class="grow"></div>
