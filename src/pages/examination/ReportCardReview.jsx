@@ -105,9 +105,10 @@ export default function ReportCardReview() {
             </ToggleButtonGroup>
             <Box sx={{ flex: 1 }} />
             {!!students.length && <Chip size="small" variant="outlined" label={`${okCount}/${students.length} OK'd`} />}
-            <Button variant="contained" color="success" startIcon={<OkIcon />} disabled={busy || !pendingIds.length} onClick={() => setOk(pendingIds, true)}>
-              OK all ({pendingIds.length})
-            </Button>
+            {!!students.length && (pendingIds.length
+              ? <Button variant="contained" color="success" startIcon={<OkIcon />} disabled={busy} onClick={() => setOk(pendingIds, true)}>Mark all OK ({pendingIds.length})</Button>
+              : <Button variant="outlined" color="success" startIcon={<OkIcon />} disabled>All OK ✓</Button>
+            )}
           </Stack>
 
           {busy && !data ? <LinearProgress sx={{ mb: 2 }} /> : null}

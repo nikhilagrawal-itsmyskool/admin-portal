@@ -125,7 +125,9 @@ function card(data, s) {
 
 export function buildReportCardsHtml(data, students, bw = false) {
   const cards = students.map((s) => card(data, s)).join('');
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Report Cards</title><style>
+  // viewport width = the card's pixel width (210mm ≈ 794px) so a phone scales the whole card to fit
+  // its screen width (readable without pinch-zoom). Ignored for print, which uses the A4 @page below.
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=794, initial-scale=1"><title>Report Cards</title><style>
     * { box-sizing: border-box; }
     @page { size: A4; margin: 0; }
     body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
