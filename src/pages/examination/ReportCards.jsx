@@ -193,8 +193,8 @@ export default function ReportCards() {
                       {data.band !== 'pre-primary' && <TableCell align="right">{s.overall.total != null ? `${s.overall.total}/${s.overall.max} · ${s.overall.percentage}%` : '—'}</TableCell>}
                       <TableCell align="center">{s.printCount ? <Chip size="small" color="success" variant="outlined" label={`×${s.printCount}`} /> : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
                       <TableCell align="right">
-                        <Button size="small" variant="contained" disabled={preparing} startIcon={<PrintIcon fontSize="small" />} onClick={() => doPrint([s])} sx={{ mr: 1 }}>Print</Button>
-                        <Button size="small" disabled={preparing} startIcon={<PreviewIcon fontSize="small" />} onClick={() => preview(s)}>View</Button>
+                        <Button size="small" disabled={preparing} startIcon={<PrintIcon fontSize="small" />} onClick={() => doPrint([s])} sx={{ mr: 1 }}>Print</Button>
+                        <Button size="small" color="inherit" disabled={preparing} startIcon={<PreviewIcon fontSize="small" />} onClick={() => preview(s)} sx={{ color: 'text.secondary' }}>View</Button>
                       </TableCell>
                     </TableRow>
                   ))}
