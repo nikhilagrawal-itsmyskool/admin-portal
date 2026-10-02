@@ -173,11 +173,16 @@ export default function ReportCards() {
             </Button>
           </Stack>
 
-          {(busy && !data) || preparing ? <LinearProgress sx={{ mb: 2 }} /> : null}
+          {busy || preparing ? <LinearProgress sx={{ mb: 1 }} /> : null}
+          {busy && <Typography variant="body2" color="primary" sx={{ mb: 1, fontWeight: 600 }}>Loading {(classes.find((c) => c.classId === classId) || {}).className || 'class'}…</Typography>}
           {preparing && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Preparing photos…</Typography>}
 
           {data && (
-            <Paper variant="outlined" sx={{ overflowX: 'auto' }}>
+            <>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Showing <b>{data.className}</b> · Term {term} · {data.students.length} student{data.students.length === 1 ? '' : 's'}
+            </Typography>
+            <Paper variant="outlined" sx={{ overflowX: 'auto', opacity: busy ? 0.4 : 1, transition: 'opacity .15s', pointerEvents: busy ? 'none' : 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -213,6 +218,7 @@ export default function ReportCards() {
                 </TableBody>
               </Table>
             </Paper>
+            </>
           )}
         </>
       )}
