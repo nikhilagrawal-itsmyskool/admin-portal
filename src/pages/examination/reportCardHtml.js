@@ -127,9 +127,13 @@ export function buildReportCardsHtml(data, students) {
   const cards = students.map((s) => card(data, s)).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Report Cards</title><style>
     * { box-sizing: border-box; }
+    @page { size: A4; margin: 0; }
     body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    .card { width: 210mm; min-height: 297mm; padding: 10mm; page-break-after: always; }
-    .card:last-child { page-break-after: auto; }
+    /* One card per A4 page. @page margin:0 makes the card's own padding the print margin; a
+       break is forced only BETWEEN cards (never after the last) so there is no trailing blank page.
+       min-height is a hair under 297mm so sub-mm rounding can't spill a card onto a second page. */
+    .card { width: 210mm; min-height: 296mm; padding: 10mm; break-inside: avoid; }
+    .card + .card { break-before: page; }
     .mast { display: flex; align-items: stretch; gap: 6px; background: #37407e; color: #f3f2ea; border-radius: 6px; padding: 12px 12px 11px; }
     .crest-col { width: 92px; flex: 0 0 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
     .crest { width: 62px; height: 62px; border-radius: 50%; overflow: hidden; background: #fff; display: flex; align-items: center; justify-content: center; }
@@ -176,11 +180,13 @@ export function buildReportCardsHtml(data, students) {
     table.leg-tbl td.lg { font-weight: 700; background: #f2f2f2; }
     .sigs { display: flex; justify-content: space-between; margin-top: 28px; padding: 0 6px; }
     .sig { font-size: 11px; font-weight: 600; border-top: 1px solid #333; padding-top: 3px; min-width: 120px; text-align: center; }
-    @media print { .card { padding: 8mm; } }
   </style></head><body>${cards}</body></html>`;
 }
 
-export function printReportCards(data, students) {
+// Opens the browser print dialog for the given cards via a hidden iframe. The browser can't tell
+// us whether the user actually printed or hit Cancel (afterprint fires either way), so `onAfterPrint`
+// runs once the dialog closes — the caller uses it to ASK before recording the print (admit-card pattern).
+export function printReportCards(data, students, onAfterPrint) {
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
   document.body.appendChild(iframe);
@@ -189,10 +195,14 @@ export function printReportCards(data, students) {
   win.document.write(buildReportCardsHtml(data, students));
   win.document.close();
   let done = false;
-  const cleanup = () => { if (done) return; done = true; setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* gone */ } }, 500); };
-  win.onafterprint = cleanup;
+  const after = () => {
+    if (done) return; done = true;
+    setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* gone */ } }, 500);
+    if (onAfterPrint) onAfterPrint();
+  };
+  win.onafterprint = after;
   setTimeout(() => { win.focus(); win.print(); }, 400);
-  setTimeout(cleanup, 60000);
+  setTimeout(after, 60000); // safety: some browsers never fire onafterprint
 }
 
 // exported for the preview pane (single card)

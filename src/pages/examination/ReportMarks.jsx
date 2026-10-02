@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
   TextField, MenuItem, LinearProgress, Divider, ToggleButton, ToggleButtonGroup,
@@ -20,10 +20,19 @@ function sanitizeMark(raw, max) {
   return n;
 }
 
+// Scale a raw Class-Test mark (out of `denom`) to the component's max (`target`), round to nearest.
+// Returns null for blank/Absent/non-numeric so the hint shows nothing.
+function scaled(raw, denom, target) {
+  if (raw === '' || raw == null || String(raw).toUpperCase() === 'A') return null;
+  const n = Number(raw);
+  if (isNaN(n) || !denom) return null;
+  return Math.round((n / Number(denom)) * Number(target));
+}
+
 // One student's row of mark inputs (desktop). Memoized on its own values so a keystroke in any
 // row re-renders ONLY that row — not the whole class grid. rowVals is vals[studentId], whose
 // reference changes only for the edited student (setCell spreads the rest by reference).
-const MarkRow = React.memo(function MarkRow({ student, components, rowVals, onCell }) {
+const MarkRow = React.memo(function MarkRow({ student, components, rowVals, rowDenoms, onCell, onDenom }) {
   return (
     <TableRow hover>
       <TableCell>
@@ -32,22 +41,45 @@ const MarkRow = React.memo(function MarkRow({ student, components, rowVals, onCe
           {[student.rollNumber != null ? `Roll ${student.rollNumber}` : null, student.admissionNumber].filter(Boolean).join(' · ')}
         </Typography>
       </TableCell>
-      {components.map((c) => (
-        <TableCell key={c.code} align="center" sx={{ px: 0.5 }}>
-          <TextField
-            type="text" inputMode="numeric" size="small" variant="outlined"
-            value={rowVals?.[c.code] ?? ''}
-            onChange={(e) => onCell(student.studentId, c.code, sanitizeMark(e.target.value, c.max))}
-            inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px', width: 52 } }}
-          />
-        </TableCell>
-      ))}
+      {components.map((c) => {
+        const isCT = c.target != null;
+        const denom = isCT ? Number(rowDenoms?.[c.code] ?? c.max) : c.max; // this student's own 'out of'
+        const sc = isCT ? scaled(rowVals?.[c.code], denom, c.target) : null;
+        return (
+          <TableCell key={c.code} align="center" sx={{ px: 0.5 }}>
+            <Stack direction="row" spacing={0.25} justifyContent="center" alignItems="center">
+              <TextField
+                type="text" inputMode="numeric" size="small" variant="outlined"
+                value={rowVals?.[c.code] ?? ''}
+                onChange={(e) => onCell(student.studentId, c.code, sanitizeMark(e.target.value, denom))}
+                inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px', width: 46 } }}
+              />
+              {isCT && (
+                <>
+                  <Typography variant="caption" color="text.secondary">/</Typography>
+                  <TextField
+                    type="text" inputMode="numeric" size="small" variant="outlined"
+                    value={rowDenoms?.[c.code] ?? c.max}
+                    onChange={(e) => onDenom(student.studentId, c.code, e.target.value)}
+                    inputProps={{ maxLength: 3, style: { textAlign: 'center', padding: '6px 4px', width: 38 } }}
+                  />
+                </>
+              )}
+            </Stack>
+            {isCT && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, minHeight: 14 }}>
+                {sc != null ? `→ ${sc}/${c.target}` : ''}
+              </Typography>
+            )}
+          </TableCell>
+        );
+      })}
     </TableRow>
   );
 });
 
 // One student's card of mark inputs (mobile) — same per-row memoization.
-const MarkCard = React.memo(function MarkCard({ student, components, rowVals, onCell }) {
+const MarkCard = React.memo(function MarkCard({ student, components, rowVals, rowDenoms, onCell, onDenom }) {
   return (
     <Card variant="outlined">
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -58,15 +90,36 @@ const MarkCard = React.memo(function MarkCard({ student, components, rowVals, on
           </Typography>
         </Stack>
         <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${components.length}, 1fr)`, gap: 0.75 }}>
-          {components.map((c) => (
-            <TextField
-              key={c.code} type="text" inputMode="numeric" size="small" label={`${c.label}/${c.max}`}
-              value={rowVals?.[c.code] ?? ''}
-              onChange={(e) => onCell(student.studentId, c.code, sanitizeMark(e.target.value, c.max))}
-              inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px' } }}
-              InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
-            />
-          ))}
+          {components.map((c) => {
+            const isCT = c.target != null;
+            const denom = isCT ? Number(rowDenoms?.[c.code] ?? c.max) : c.max;
+            const sc = isCT ? scaled(rowVals?.[c.code], denom, c.target) : null;
+            return (
+              <Box key={c.code}>
+                <TextField
+                  fullWidth type="text" inputMode="numeric" size="small" label={isCT ? `${c.label} (raw)` : `${c.label}/${c.max}`}
+                  value={rowVals?.[c.code] ?? ''}
+                  onChange={(e) => onCell(student.studentId, c.code, sanitizeMark(e.target.value, denom))}
+                  inputProps={{ maxLength: 4, style: { textAlign: 'center', padding: '6px 4px' } }}
+                  InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
+                />
+                {isCT && (
+                  <TextField
+                    fullWidth type="text" inputMode="numeric" size="small" label="out of" sx={{ mt: 0.5 }}
+                    value={rowDenoms?.[c.code] ?? c.max}
+                    onChange={(e) => onDenom(student.studentId, c.code, e.target.value)}
+                    inputProps={{ maxLength: 3, style: { textAlign: 'center', padding: '6px 4px' } }}
+                    InputLabelProps={{ shrink: true, style: { fontSize: 12 } }}
+                  />
+                )}
+                {isCT && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', minHeight: 14 }}>
+                    {sc != null ? `→ ${sc}/${c.target}` : ''}
+                  </Typography>
+                )}
+              </Box>
+            );
+          })}
         </Box>
       </CardContent>
     </Card>
@@ -87,6 +140,8 @@ export default function ReportMarks() {
   const termSet = useRef(false);
   const [grid, setGrid] = useState(null);
   const [vals, setVals] = useState({}); // studentId -> { componentCode: value }
+  const [rowDenoms, setRowDenoms] = useState({}); // studentId -> { code: 'out of' } (per-student, scalable cols)
+  const [classDenoms, setClassDenoms] = useState({}); // code -> class-level default 'out of' (bulk pre-fill control)
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -118,8 +173,8 @@ export default function ReportMarks() {
     try {
       const g = await examinationService.myReportMarks(classId, subjectCode, term);
       setGrid(g);
-      const v = {}; (g.students || []).forEach((s) => { v[s.studentId] = { ...s.marks }; });
-      setVals(v); setDirty(false);
+      const v = {}, rd = {}; (g.students || []).forEach((s) => { v[s.studentId] = { ...s.marks }; rd[s.studentId] = { ...(s.denoms || {}) }; });
+      setVals(v); setRowDenoms(rd); setClassDenoms({ ...(g.defaultDenominators || {}) }); setDirty(false);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load the marks grid');
       setGrid(null);
@@ -127,20 +182,59 @@ export default function ReportMarks() {
   }, [sel, term]);
   useEffect(() => { loadGrid(); }, [loadGrid]);
 
-  // Stable callback + memoized rows (below) so a keystroke re-renders ONLY the edited student's
-  // cells, not the whole grid of ~200 inputs (that full re-render is what made entry laggy).
+  // Scalable columns carry `target` (the component max they scale to); the per-student 'out of'
+  // lives in rowDenoms. Stable across keystrokes so memoized rows don't all re-render while typing.
+  const effComps = useMemo(() => (grid?.components || []).map((c) => (
+    c.denomEditable ? { ...c, target: c.max } : c
+  )), [grid]);
+
+  // Stable callbacks + memoized rows so a keystroke re-renders ONLY the edited student's cells,
+  // not the whole grid of ~200 inputs (that full re-render is what made entry laggy).
   const setCell = useCallback((sid, code, value) => { setDirty(true); setVals((v) => ({ ...v, [sid]: { ...v[sid], [code]: value } })); }, []);
+
+  // Change ONE student's 'out of' for a scalable column; re-clamp that student's mark if it now exceeds it.
+  const setDenom = useCallback((sid, code, raw) => {
+    const n = String(raw).replace(/[^0-9]/g, '');
+    const d = n === '' ? '' : Math.max(1, Number(n));
+    setDirty(true);
+    setRowDenoms((p) => ({ ...p, [sid]: { ...p[sid], [code]: d } }));
+    if (d !== '') setVals((v) => {
+      const cur = v[sid]?.[code];
+      if (cur != null && cur !== '' && String(cur).toUpperCase() !== 'A' && Number(cur) > d) return { ...v, [sid]: { ...v[sid], [code]: String(d) } };
+      return v;
+    });
+  }, []);
+
+  // Class-level default: set EVERY student's 'out of' for a column (and re-clamp marks above it).
+  const setAllDenom = (code, raw) => {
+    const n = String(raw).replace(/[^0-9]/g, '');
+    const d = n === '' ? '' : Math.max(1, Number(n));
+    setDirty(true);
+    setClassDenoms((p) => ({ ...p, [code]: d }));
+    if (d === '') return;
+    setRowDenoms((p) => { const out = {}; for (const sid of Object.keys(p)) out[sid] = { ...p[sid], [code]: d }; return out; });
+    setVals((v) => {
+      const out = {}; let changed = false;
+      for (const sid of Object.keys(v)) {
+        const cur = v[sid]?.[code];
+        if (cur != null && cur !== '' && String(cur).toUpperCase() !== 'A' && Number(cur) > d) { out[sid] = { ...v[sid], [code]: String(d) }; changed = true; }
+        else out[sid] = v[sid];
+      }
+      return changed ? out : v;
+    });
+  };
 
   const save = async () => {
     if (!sel) return;
     const [classId, subjectCode] = sel.split('|');
     setBusy(true); setErr(''); setMsg('');
     try {
-      const entries = Object.keys(vals).map((sid) => ({ studentId: sid, marks: vals[sid] }));
+      // Each entry carries this student's own 'out of' for the scalable columns.
+      const entries = Object.keys(vals).map((sid) => ({ studentId: sid, marks: vals[sid], denominators: rowDenoms[sid] || {} }));
       const g = await examinationService.saveReportMarks(classId, subjectCode, term, entries);
       setGrid(g);
-      const v = {}; (g.students || []).forEach((s) => { v[s.studentId] = { ...s.marks }; });
-      setVals(v); setDirty(false);
+      const v = {}, rd = {}; (g.students || []).forEach((s) => { v[s.studentId] = { ...s.marks }; rd[s.studentId] = { ...(s.denoms || {}) }; });
+      setVals(v); setRowDenoms(rd); setDirty(false);
       setMsg('Marks saved.');
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save marks');
@@ -153,7 +247,8 @@ export default function ReportMarks() {
     <Box sx={{ width: '100%', maxWidth: isMobile ? 760 : '100%', mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Enter Marks</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Enter Term marks for the subjects you teach. Type <b>A</b> for Absent. Marks save per class &amp; subject.
+        Enter Term marks for the subjects you teach. Type <b>A</b> for Absent. A Class Test is entered
+        as the raw mark <b>out of</b> the total it was conducted on (per student) — it scales to the report total automatically. Marks save per class &amp; subject.
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
@@ -186,12 +281,33 @@ export default function ReportMarks() {
                 <Chip size="small" variant="outlined" label={`${grid.entered}/${grid.total} complete`} />
               </Stack>
 
+              {effComps.some((c) => c.target != null) && (
+                <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
+                  <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>Class Test — set all “out of”:</Typography>
+                    {effComps.filter((c) => c.target != null).map((c) => (
+                      <Stack key={c.code} direction="row" spacing={1} alignItems="center">
+                        <Typography variant="body2" color="text.secondary">{c.label}</Typography>
+                        <TextField
+                          type="text" inputMode="numeric" size="small"
+                          value={classDenoms[c.code] ?? c.target}
+                          onChange={(e) => setAllDenom(c.code, e.target.value)}
+                          inputProps={{ maxLength: 3, style: { width: 44, textAlign: 'center', padding: '6px 4px' } }}
+                        />
+                        <Typography variant="caption" color="text.secondary">→ scaled to /{c.target}</Typography>
+                      </Stack>
+                    ))}
+                    <Typography variant="caption" color="text.secondary">Applies to every student; override per student below.</Typography>
+                  </Stack>
+                </Paper>
+              )}
+
               {!grid.students.length ? (
                 <Alert severity="info">No students enrolled in this class.</Alert>
               ) : isMobile ? (
                 <Stack spacing={1}>
                   {grid.students.map((s) => (
-                    <MarkCard key={s.studentId} student={s} components={grid.components} rowVals={vals[s.studentId]} onCell={setCell} />
+                    <MarkCard key={s.studentId} student={s} components={effComps} rowVals={vals[s.studentId]} rowDenoms={rowDenoms[s.studentId]} onCell={setCell} onDenom={setDenom} />
                   ))}
                 </Stack>
               ) : (
@@ -201,16 +317,16 @@ export default function ReportMarks() {
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, minWidth: 220 }}>Student</TableCell>
-                        {grid.components.map((c) => (
+                        {effComps.map((c) => (
                           <TableCell key={c.code} align="center" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
-                            {c.label}<Typography variant="caption" color="text.secondary"> /{c.max}</Typography>
+                            {c.label}<Typography variant="caption" color="text.secondary"> {c.target != null ? `(raw / out of → /${c.target})` : `/${c.max}`}</Typography>
                           </TableCell>
                         ))}
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {grid.students.map((s) => (
-                        <MarkRow key={s.studentId} student={s} components={grid.components} rowVals={vals[s.studentId]} onCell={setCell} />
+                        <MarkRow key={s.studentId} student={s} components={effComps} rowVals={vals[s.studentId]} rowDenoms={rowDenoms[s.studentId]} onCell={setCell} onDenom={setDenom} />
                       ))}
                     </TableBody>
                   </Table>

@@ -3,6 +3,7 @@ import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
   TextField, MenuItem, ToggleButton, ToggleButtonGroup, Checkbox, LinearProgress,
   Table, TableHead, TableBody, TableRow, TableCell, Paper,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material';
 import { Print as PrintIcon, Visibility as PreviewIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
@@ -51,6 +52,7 @@ export default function ReportCards() {
   const [preparing, setPreparing] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [pendingPrint, setPendingPrint] = useState(null); // { studentIds, count } awaiting "did it print?" confirm
   const photoCache = useRef(new Map()); // studentId -> resized data URI (null = no photo)
 
   const loadClasses = useCallback(async () => {
@@ -103,16 +105,23 @@ export default function ReportCards() {
     return students.map((s) => ({ ...s, photoDataUri: cache.get(s.studentId) ?? s.photoDataUri ?? null }));
   };
 
+  // Print directly (hidden iframe → browser print dialog). We only record the print AFTER the user
+  // confirms it actually printed — afterprint fires on Cancel too, so an optimistic count was wrong.
   const doPrint = async (students) => {
     if (!students.length || preparing) return;
     const withPics = await withPhotos(students);
-    printReportCards(data, withPics);
+    const ids = students.map((s) => s.studentId);
+    printReportCards(data, withPics, () => setPendingPrint({ studentIds: ids, count: ids.length }));
+  };
+
+  const confirmPrinted = async () => {
+    const pp = pendingPrint; setPendingPrint(null);
+    if (!pp) return;
     try {
-      const r = await examinationService.recordReportPrint(classId, term, students.map((s) => s.studentId));
-      // reflect the new print counts locally
-      setData((d) => ({ ...d, students: d.students.map((s) => (students.find((x) => x.studentId === s.studentId) ? { ...s, printCount: (s.printCount || 0) + 1 } : s)) }));
-      setMsg(`Sent ${r.printed} card(s) to print.`);
-    } catch { /* print already opened; recording is best-effort */ }
+      const r = await examinationService.recordReportPrint(classId, term, pp.studentIds);
+      setData((d) => ({ ...d, students: d.students.map((s) => (pp.studentIds.includes(s.studentId) ? { ...s, printCount: (s.printCount || 0) + 1 } : s)) }));
+      setMsg(`Marked ${r.printed} card(s) printed.`);
+    } catch { /* best effort */ }
   };
 
   const preview = async (student) => {
@@ -171,7 +180,7 @@ export default function ReportCards() {
                     <TableCell>Admission</TableCell>
                     {data.band !== 'pre-primary' && <TableCell align="right">Overall</TableCell>}
                     <TableCell align="center">Printed</TableCell>
-                    <TableCell align="right">Preview</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -183,7 +192,10 @@ export default function ReportCards() {
                       <TableCell>{s.admissionNumber}</TableCell>
                       {data.band !== 'pre-primary' && <TableCell align="right">{s.overall.total != null ? `${s.overall.total}/${s.overall.max} · ${s.overall.percentage}%` : '—'}</TableCell>}
                       <TableCell align="center">{s.printCount ? <Chip size="small" color="success" variant="outlined" label={`×${s.printCount}`} /> : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
-                      <TableCell align="right"><Button size="small" disabled={preparing} startIcon={<PreviewIcon fontSize="small" />} onClick={() => preview(s)}>View</Button></TableCell>
+                      <TableCell align="right">
+                        <Button size="small" variant="contained" disabled={preparing} startIcon={<PrintIcon fontSize="small" />} onClick={() => doPrint([s])} sx={{ mr: 1 }}>Print</Button>
+                        <Button size="small" disabled={preparing} startIcon={<PreviewIcon fontSize="small" />} onClick={() => preview(s)}>View</Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {!data.students.length && <TableRow><TableCell colSpan={7}><Alert severity="info">No students in this class.</Alert></TableCell></TableRow>}
@@ -193,6 +205,19 @@ export default function ReportCards() {
           )}
         </>
       )}
+
+      <Dialog open={!!pendingPrint} onClose={() => setPendingPrint(null)}>
+        <DialogTitle>Did the cards print?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {pendingPrint ? `Mark ${pendingPrint.count} card${pendingPrint.count === 1 ? '' : 's'} as printed? Only confirm if they actually printed — the count and date are recorded per student.` : ''}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingPrint(null)}>Not printed</Button>
+          <Button variant="contained" onClick={confirmPrinted}>Yes, mark printed</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
