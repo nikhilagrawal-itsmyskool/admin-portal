@@ -123,7 +123,7 @@ function card(data, s) {
   </div>`;
 }
 
-export function buildReportCardsHtml(data, students) {
+export function buildReportCardsHtml(data, students, bw = false) {
   const cards = students.map((s) => card(data, s)).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Report Cards</title><style>
     * { box-sizing: border-box; }
@@ -180,19 +180,34 @@ export function buildReportCardsHtml(data, students) {
     table.leg-tbl td.lg { font-weight: 700; background: #f2f2f2; }
     .sigs { display: flex; justify-content: space-between; margin-top: 28px; padding: 0 6px; }
     .sig { font-size: 11px; font-weight: 600; border-top: 1px solid #333; padding-top: 3px; min-width: 120px; text-align: center; }
-  </style></head><body>${cards}</body></html>`;
+
+    /* Black & white — for mono laser printers. Drop all colour to high-contrast black on white and
+       darken the hairline borders (light greys print faint/washed-out on a B&W laser). */
+    body.bw .mast { background: #fff; color: #000; border: 1.5px solid #000; }
+    body.bw .sname { color: #000; }
+    body.bw .motto, body.bw .addr { color: #000; opacity: 1; }
+    body.bw .crest { border: 1px solid #000; }
+    body.bw .crest-cap, body.bw .crest-cap span { color: #000; }
+    body.bw .title { color: #000; }
+    body.bw table.marks th.term-h { background: #e6e6e6; }
+    body.bw .abs { border-color: #000; color: #000; }
+    body.bw table.info td, body.bw table.marks th, body.bw table.marks td,
+    body.bw table.area th, body.bw table.area td, body.bw table.leg-tbl td,
+    body.bw .remark, body.bw .photo { border-color: #000; }
+    body.bw table.info td.k, body.bw table.area th, body.bw table.leg-tbl td.lg { background: #ececec; }
+  </style></head><body class="${bw ? 'bw' : ''}">${cards}</body></html>`;
 }
 
 // Opens the browser print dialog for the given cards via a hidden iframe. The browser can't tell
 // us whether the user actually printed or hit Cancel (afterprint fires either way), so `onAfterPrint`
 // runs once the dialog closes — the caller uses it to ASK before recording the print (admit-card pattern).
-export function printReportCards(data, students, onAfterPrint) {
+export function printReportCards(data, students, onAfterPrint, bw = false) {
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
   document.body.appendChild(iframe);
   const win = iframe.contentWindow;
   win.document.open();
-  win.document.write(buildReportCardsHtml(data, students));
+  win.document.write(buildReportCardsHtml(data, students, bw));
   win.document.close();
   let done = false;
   const after = () => {

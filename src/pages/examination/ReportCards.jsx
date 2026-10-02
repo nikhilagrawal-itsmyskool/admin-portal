@@ -4,6 +4,7 @@ import {
   TextField, MenuItem, ToggleButton, ToggleButtonGroup, Checkbox, LinearProgress,
   Table, TableHead, TableBody, TableRow, TableCell, Paper,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+  FormControlLabel, Switch,
 } from '@mui/material';
 import { Print as PrintIcon, Visibility as PreviewIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
@@ -53,6 +54,7 @@ export default function ReportCards() {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [pendingPrint, setPendingPrint] = useState(null); // { studentIds, count } awaiting "did it print?" confirm
+  const [bw, setBw] = useState(true); // print/preview in black & white (default — the school prints on a mono laser)
   const photoCache = useRef(new Map()); // studentId -> resized data URI (null = no photo)
 
   const loadClasses = useCallback(async () => {
@@ -111,7 +113,7 @@ export default function ReportCards() {
     if (!students.length || preparing) return;
     const withPics = await withPhotos(students);
     const ids = students.map((s) => s.studentId);
-    printReportCards(data, withPics, () => setPendingPrint({ studentIds: ids, count: ids.length }));
+    printReportCards(data, withPics, () => setPendingPrint({ studentIds: ids, count: ids.length }), bw);
   };
 
   const confirmPrinted = async () => {
@@ -127,7 +129,7 @@ export default function ReportCards() {
   const preview = async (student) => {
     if (preparing) return;
     const [withPic] = await withPhotos([student]);
-    const html = buildReportCardsHtml(data, [withPic]);
+    const html = buildReportCardsHtml(data, [withPic], bw);
     const w = window.open('', '_blank');
     if (w) { w.document.write(html); w.document.close(); }
   };
@@ -158,6 +160,11 @@ export default function ReportCards() {
               <ToggleButton value={2} sx={{ px: 2 }}>Term 2</ToggleButton>
             </ToggleButtonGroup>
             <Box sx={{ flex: 1 }} />
+            <FormControlLabel
+              control={<Switch size="small" checked={bw} onChange={(e) => setBw(e.target.checked)} />}
+              label="Black & white"
+              sx={{ mr: 0.5, '& .MuiFormControlLabel-label': { fontSize: 14 } }}
+            />
             <Button variant="outlined" startIcon={<PrintIcon />} disabled={busy || preparing || !selected.length} onClick={() => doPrint(selected)}>
               Print selected ({selected.length})
             </Button>
