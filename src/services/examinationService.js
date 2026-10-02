@@ -157,6 +157,11 @@ export const examinationService = {
     (await api.get(`/examination/me/report/coscholastic/${classId}/${term}`, { params: ay ? { ay } : {} })).data,
   saveReportCoscholastic: async (classId, term, entries, ay) =>
     (await api.post(`/examination/me/report/coscholastic/${classId}/${term}`, { entries }, { params: ay ? { ay } : {} })).data,
+  // Class-teacher report-card review: view own class's cards + OK (approve) them.
+  myReportCards: async (classId, term, ay) =>
+    (await api.get(`/examination/me/report/cards/${classId}/${term}`, { params: ay ? { ay } : {} })).data,
+  approveReportCards: async (classId, term, studentIds, approve, ay) =>
+    (await api.post('/examination/me/report/approve', { classId, term, studentIds, approve }, { params: ay ? { ay } : {} })).data,
   reportProgress: async (term, ay) =>
     (await api.get(`/examination/report/progress/${term}`, { params: ay ? { ay } : {} })).data,
   reportMapping: async (classId, ay) =>

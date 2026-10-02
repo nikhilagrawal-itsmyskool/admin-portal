@@ -4,7 +4,7 @@ import {
   TextField, MenuItem, ToggleButton, ToggleButtonGroup, Checkbox, LinearProgress,
   Table, TableHead, TableBody, TableRow, TableCell, Paper,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
-  FormControlLabel, Switch,
+  FormControlLabel, Switch, Tooltip,
 } from '@mui/material';
 import { Print as PrintIcon, Visibility as PreviewIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
@@ -186,6 +186,7 @@ export default function ReportCards() {
                     <TableCell>Student</TableCell>
                     <TableCell>Admission</TableCell>
                     {data.band !== 'pre-primary' && <TableCell align="right">Overall</TableCell>}
+                    <TableCell align="center">OK'd</TableCell>
                     <TableCell align="center">Printed</TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
@@ -198,6 +199,9 @@ export default function ReportCards() {
                       <TableCell>{s.name}</TableCell>
                       <TableCell>{s.admissionNumber}</TableCell>
                       {data.band !== 'pre-primary' && <TableCell align="right">{s.overall.total != null ? `${s.overall.total}/${s.overall.max} · ${s.overall.percentage}%` : '—'}</TableCell>}
+                      <TableCell align="center">{s.approvedAt
+                        ? <Tooltip title={`OK'd ${s.approvedBy ? `by ${s.approvedBy} ` : ''}on ${s.approvedAt}`}><Chip size="small" color="success" variant="outlined" label="OK'd" /></Tooltip>
+                        : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
                       <TableCell align="center">{s.printCount ? <Chip size="small" color="success" variant="outlined" label={`×${s.printCount}`} /> : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
                       <TableCell align="right">
                         <Button size="small" disabled={preparing} startIcon={<PrintIcon fontSize="small" />} onClick={() => doPrint([s])} sx={{ mr: 1 }}>Print</Button>
@@ -205,7 +209,7 @@ export default function ReportCards() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {!data.students.length && <TableRow><TableCell colSpan={7}><Alert severity="info">No students in this class.</Alert></TableCell></TableRow>}
+                  {!data.students.length && <TableRow><TableCell colSpan={8}><Alert severity="info">No students in this class.</Alert></TableCell></TableRow>}
                 </TableBody>
               </Table>
             </Paper>
