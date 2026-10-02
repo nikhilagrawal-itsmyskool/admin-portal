@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button, IconButton,
-  TextField, MenuItem, ToggleButton, ToggleButtonGroup, Chip, LinearProgress,
+  TextField, MenuItem, ToggleButton, ToggleButtonGroup, Chip, LinearProgress, Menu, ListSubheader,
 } from '@mui/material';
-import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { ChevronLeft, ChevronRight, Add as AddIcon } from '@mui/icons-material';
 import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -97,6 +97,11 @@ export default function ReportCoscholastic() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [templates, setTemplates] = useState([]);   // remark suggestions (grouped by category below)
+  const [remarkAnchor, setRemarkAnchor] = useState(null);
+
+  // Load the remark-suggestion library once (best-effort — the picker just won't show if it fails).
+  useEffect(() => { examinationService.myRemarkTemplates().then((r) => setTemplates(r.templates || [])).catch(() => {}); }, []);
 
   const loadClasses = useCallback(async () => {
     setLoading(true); setErr('');
@@ -245,7 +250,29 @@ export default function ReportCoscholastic() {
                       <MenuItem key={hn} value={hn}>{hn}</MenuItem>
                     ))}
                   </TextField>
-                  <TextField size="small" fullWidth multiline minRows={2} label="Class teacher remark" value={d.remark} onChange={(e) => setField(student.studentId, 'remark', e.target.value)} />
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary">Class teacher remark</Typography>
+                    {templates.length > 0 && (
+                      <Button size="small" startIcon={<AddIcon fontSize="small" />} onClick={(e) => setRemarkAnchor(e.currentTarget)}>Insert suggestion</Button>
+                    )}
+                  </Stack>
+                  <TextField size="small" fullWidth multiline minRows={2} placeholder="Type a remark, or insert a suggestion and edit it…"
+                    value={d.remark} onChange={(e) => setField(student.studentId, 'remark', e.target.value)} />
+                  <Menu anchorEl={remarkAnchor} open={!!remarkAnchor} onClose={() => setRemarkAnchor(null)}
+                    slotProps={{ paper: { sx: { maxHeight: 420, maxWidth: 460 } } }}>
+                    {[...new Set(templates.map((t) => t.category))].flatMap((cat) => [
+                      <ListSubheader key={`h-${cat}`} sx={{ fontWeight: 700, lineHeight: '30px' }}>{cat}</ListSubheader>,
+                      ...templates.filter((t) => t.category === cat).map((t) => (
+                        <MenuItem key={t.id} onClick={() => {
+                          const cur = (d.remark || '').trim();
+                          setField(student.studentId, 'remark', cur ? `${cur} ${t.text}` : t.text);
+                          setRemarkAnchor(null);
+                        }} sx={{ whiteSpace: 'normal', display: 'block', py: 0.75 }}>
+                          <Typography variant="body2">{t.text}</Typography>
+                        </MenuItem>
+                      )),
+                    ])}
+                  </Menu>
                 </CardContent>
               </Card>
 

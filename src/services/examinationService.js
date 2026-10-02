@@ -168,6 +168,11 @@ export const examinationService = {
     (await api.get(`/examination/report/class-teachers/${classId}`, { params: ay ? { ay } : {} })).data,
   setReportClassTeacher: async (classId, teacherId, allSubjects, action, ay) =>
     (await api.post(`/examination/report/class-teachers/${classId}`, { teacherId, allSubjects, action }, { params: ay ? { ay } : {} })).data,
+  // Remark-suggestion library: teachers read /me (picker); admins manage via /report.
+  myRemarkTemplates: async () => (await api.get('/examination/me/report/remark-templates')).data,
+  remarkTemplates: async () => (await api.get('/examination/report/remark-templates')).data,
+  saveRemarkTemplate: async (payload) => (await api.post('/examination/report/remark-templates', { ...payload, action: 'save' })).data,
+  deleteRemarkTemplate: async (uuid) => (await api.post('/examination/report/remark-templates', { uuid, action: 'delete' })).data,
   reportClasses: async (ay) => (await api.get('/examination/report/classes', { params: ay ? { ay } : {} })).data,
   coscholasticProgress: async (term, ay) =>
     (await api.get(`/examination/report/coscholastic-progress/${term}`, { params: ay ? { ay } : {} })).data,

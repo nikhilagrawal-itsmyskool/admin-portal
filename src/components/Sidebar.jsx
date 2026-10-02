@@ -415,6 +415,7 @@ const menuItems = [
       { title: 'Class Teachers', icon: ExamIcon, path: '/exam/class-teachers', perm: 'subject-mapping.manage' },
       { title: 'Enter Marks', icon: CalendarIcon, path: '/exam/marks' },
       { title: 'Co-Scholastic', icon: CalendarIcon, path: '/exam/coscholastic' },
+      { title: 'Remark Templates', icon: TypeIcon, path: '/exam/remark-templates', perm: 'exam.manage' },
       { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.manage' },
       { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.manage' },
     ],
