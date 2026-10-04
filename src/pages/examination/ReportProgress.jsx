@@ -172,7 +172,7 @@ export default function ReportProgress() {
                                       <TableCell align="right">
                                         <Tooltip title={i.locked ? 'Unlock' : 'Lock'}>
                                           <span><IconButton size="small" color={i.locked ? 'warning' : 'default'} disabled={busyLock} onClick={() => lock(c.classId, i.code, !i.locked)}>
-                                            {i.locked ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
+                                            {i.locked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
                                           </IconButton></span>
                                         </Tooltip>
                                       </TableCell>
@@ -229,11 +229,10 @@ export default function ReportProgress() {
                         label={c.submitted ? `Submitted${c.submittedAt ? ` · ${c.submittedAt}` : ''}` : `${c.complete}/${c.total} entered`} />
                       {c.locked && <Chip size="small" color="error" variant="outlined" icon={<LockIcon sx={{ fontSize: 14 }} />} label="Locked" />}
                       <Box sx={{ flex: 1 }} />
-                      <Tooltip title={c.locked ? 'Unlock co-scholastic' : 'Lock co-scholastic'}>
-                        <span><IconButton size="small" color={c.locked ? 'warning' : 'default'} disabled={busyLock} onClick={() => lock(c.classId, '__cosch__', !c.locked)}>
-                          {c.locked ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
-                        </IconButton></span>
-                      </Tooltip>
+                      <Button size="small" color={c.locked ? 'warning' : 'inherit'} startIcon={c.locked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
+                        disabled={busyLock} onClick={() => lock(c.classId, '__cosch__', !c.locked)} sx={{ textTransform: 'none', color: c.locked ? undefined : 'text.secondary' }}>
+                        {c.locked ? 'Unlock' : 'Lock'}
+                      </Button>
                       <Button size="small" variant="outlined" endIcon={<OpenInNew fontSize="small" />}
                         onClick={() => openCoscholastic(c.classId, c.className)} sx={{ textTransform: 'none' }}>
                         {c.done ? 'Review' : 'Enter'}
