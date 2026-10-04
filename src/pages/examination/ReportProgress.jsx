@@ -161,7 +161,7 @@ export default function ReportProgress() {
                                   <TableCell sx={{ fontWeight: 700 }}>Component</TableCell>
                                   <TableCell sx={{ fontWeight: 700 }}>Submitted</TableCell>
                                   <TableCell sx={{ fontWeight: 700 }}>Locked</TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 700 }}>Lock</TableCell>
+                                  <TableCell align="right" sx={{ fontWeight: 700 }}>Action</TableCell>
                                 </TableRow></TableHead>
                                 <TableBody>
                                   {items.map((i) => (
@@ -170,11 +170,11 @@ export default function ReportProgress() {
                                       <TableCell>{i.submitted ? (i.submittedAt || '✓') : <Typography variant="caption" color="warning.main">pending</Typography>}</TableCell>
                                       <TableCell>{i.locked ? (i.lockedAt || '🔒') : '—'}</TableCell>
                                       <TableCell align="right">
-                                        <Tooltip title={i.locked ? 'Unlock' : 'Lock'}>
-                                          <span><IconButton size="small" color={i.locked ? 'warning' : 'default'} disabled={busyLock} onClick={() => lock(c.classId, i.code, !i.locked)}>
-                                            {i.locked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
-                                          </IconButton></span>
-                                        </Tooltip>
+                                        <Button size="small" color={i.locked ? 'warning' : 'inherit'} startIcon={i.locked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
+                                          disabled={busyLock} onClick={() => lock(c.classId, i.code, !i.locked)}
+                                          sx={{ textTransform: 'none', whiteSpace: 'nowrap', color: i.locked ? undefined : 'text.secondary' }}>
+                                          {i.locked ? 'Unlock' : 'Lock'}
+                                        </Button>
                                       </TableCell>
                                     </TableRow>
                                   ))}
