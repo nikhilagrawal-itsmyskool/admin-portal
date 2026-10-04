@@ -137,6 +137,10 @@ export default function ReportCards() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   const selected = (data?.students || []).filter((s) => sel.has(s.studentId));
+  // Print is gated on submission: a class prints only when every subject + co-scholastic is submitted.
+  const subItems = data?.submission?.items || [];
+  const ready = !!data?.submission?.readyToPrint;
+  const pending = subItems.filter((i) => !i.submitted).map((i) => i.label);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -165,10 +169,10 @@ export default function ReportCards() {
               label="Black & white"
               sx={{ mr: 0.5, '& .MuiFormControlLabel-label': { fontSize: 14 } }}
             />
-            <Button variant="outlined" startIcon={<PrintIcon />} disabled={busy || preparing || !selected.length} onClick={() => doPrint(selected)}>
+            <Button variant="outlined" startIcon={<PrintIcon />} disabled={busy || preparing || !ready || !selected.length} onClick={() => doPrint(selected)}>
               Print selected ({selected.length})
             </Button>
-            <Button variant="contained" startIcon={<PrintIcon />} disabled={busy || preparing || !data?.students?.length} onClick={() => doPrint(data.students)}>
+            <Button variant="contained" startIcon={<PrintIcon />} disabled={busy || preparing || !ready || !data?.students?.length} onClick={() => doPrint(data.students)}>
               Print whole class
             </Button>
           </Stack>
@@ -182,6 +186,34 @@ export default function ReportCards() {
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               Showing <b>{data.className}</b> · Term {term} · {data.students.length} student{data.students.length === 1 ? '' : 's'}
             </Typography>
+            {subItems.length > 0 && (
+              <Alert severity={ready ? 'success' : 'warning'} sx={{ mb: 1.5 }}>
+                {ready
+                  ? 'All subjects + co-scholastic submitted — report cards are ready to print.'
+                  : <>Not ready to print — <b>pending submission</b>: {pending.join(', ')}.</>}
+                <Box component="details" sx={{ mt: 0.75 }}>
+                  <Box component="summary" sx={{ cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Submission details</Box>
+                  <Box sx={{ overflowX: 'auto' }}>
+                    <Table size="small" sx={{ mt: 1, maxWidth: 560 }}>
+                      <TableHead><TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Component</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Submitted</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Locked</TableCell>
+                      </TableRow></TableHead>
+                      <TableBody>
+                        {subItems.map((i) => (
+                          <TableRow key={i.subjectCode}>
+                            <TableCell>{i.label}</TableCell>
+                            <TableCell>{i.submitted ? (i.submittedAt || '✓') : <Typography variant="caption" color="warning.main">pending</Typography>}</TableCell>
+                            <TableCell>{i.locked ? (i.lockedAt || '🔒') : '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                </Box>
+              </Alert>
+            )}
             <Paper variant="outlined" sx={{ overflowX: 'auto', opacity: busy ? 0.4 : 1, transition: 'opacity .15s', pointerEvents: busy ? 'none' : 'auto' }}>
               <Table size="small">
                 <TableHead>
@@ -209,7 +241,7 @@ export default function ReportCards() {
                         : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
                       <TableCell align="center">{s.printCount ? <Chip size="small" color="success" variant="outlined" label={`×${s.printCount}`} /> : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
                       <TableCell align="right">
-                        <Button size="small" disabled={preparing} startIcon={<PrintIcon fontSize="small" />} onClick={() => doPrint([s])} sx={{ mr: 1 }}>Print</Button>
+                        <Button size="small" disabled={preparing || !ready} startIcon={<PrintIcon fontSize="small" />} onClick={() => doPrint([s])} sx={{ mr: 1 }}>Print</Button>
                         <Button size="small" color="inherit" disabled={preparing} startIcon={<PreviewIcon fontSize="small" />} onClick={() => preview(s)} sx={{ color: 'text.secondary' }}>View</Button>
                       </TableCell>
                     </TableRow>

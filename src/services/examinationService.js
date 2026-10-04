@@ -157,6 +157,14 @@ export const examinationService = {
     (await api.get(`/examination/me/report/coscholastic/${classId}/${term}`, { params: ay ? { ay } : {} })).data,
   saveReportCoscholastic: async (classId, term, entries, ay) =>
     (await api.post(`/examination/me/report/coscholastic/${classId}/${term}`, { entries }, { params: ay ? { ay } : {} })).data,
+  // Marks/co-scholastic submit (validated complete) + admin lock/unlock.
+  submitReportMarks: async (classId, subjectCode, term, ay) =>
+    (await api.post('/examination/me/report/submit-marks', { classId, subjectCode, term }, { params: ay ? { ay } : {} })).data,
+  submitReportCoscholastic: async (classId, term, ay) =>
+    (await api.post('/examination/me/report/submit-coscholastic', { classId, term }, { params: ay ? { ay } : {} })).data,
+  // target: a subjectCode, '__cosch__', or '__all__' (whole class). admin/incharge/god.
+  setReportLock: async (classId, term, target, locked, ay) =>
+    (await api.post('/examination/report/lock', { classId, term, target, locked }, { params: ay ? { ay } : {} })).data,
   // Class-teacher report-card review: view own class's cards + OK (approve) them.
   myReportCards: async (classId, term, ay) =>
     (await api.get(`/examination/me/report/cards/${classId}/${term}`, { params: ay ? { ay } : {} })).data,

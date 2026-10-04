@@ -164,7 +164,25 @@ export default function ReportCoscholastic() {
     } finally { setBusy(false); }
   };
 
+  // Submit = validate every student has all co-scholastic grades (+ remark if required) and mark the
+  // class's co-scholastic submitted. Saves the open student first.
+  const submit = async () => {
+    if (!classId) return;
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      if (dirty && student && d) {
+        await examinationService.saveReportCoscholastic(classId, term, [{ studentId: student.studentId, cells: d.cells, denominators: denoms, remark: d.remark, attendancePresent: d.attendancePresent, attendanceTotal: d.attendanceTotal, house: d.house }]);
+        setDirty(false);
+      }
+      await examinationService.submitReportCoscholastic(classId, term);
+      setMsg('Co-scholastic submitted ✓ — this class is one step closer to report-card ready.');
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to submit co-scholastic');
+    } finally { await loadGrid(); setBusy(false); }
+  };
+
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
+  const locked = !!grid?.locked;
 
   return (
     <Box sx={{ width: '100%', maxWidth: isMobile ? 640 : '100%', mx: 'auto' }}>
@@ -191,6 +209,17 @@ export default function ReportCoscholastic() {
 
           {busy && !grid && <LinearProgress sx={{ mb: 2 }} />}
 
+          {grid && (
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
+              {grid.submitted && <Chip size="small" color="success" variant="outlined" label={`Submitted${grid.submittedAt ? ` · ${grid.submittedAt}` : ''}`} />}
+              {locked && <Chip size="small" color="error" variant="outlined" label="Locked" />}
+              <Box sx={{ flex: 1 }} />
+              {!locked && <Button size="small" variant="contained" color="success" onClick={submit} disabled={busy}>Submit co-scholastic</Button>}
+            </Stack>
+          )}
+          {locked && <Alert severity="warning" sx={{ mb: 1.5 }}>Co-scholastic is <b>locked</b> for this class — ask an admin to unlock it on the Progress screen.</Alert>}
+
+          <Box component="fieldset" disabled={locked} sx={{ border: 0, p: 0, m: 0, minInlineSize: 0, '&:disabled': { opacity: 0.6 } }}>
           {grid && denomAreas.length > 0 && (
             <Card variant="outlined" sx={{ mb: 1.5, borderColor: 'warning.light' }}>
               <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -283,6 +312,7 @@ export default function ReportCoscholastic() {
               </Box>
             </>
           )}
+          </Box>
           {grid && !grid.students?.length && <Alert severity="info">No students enrolled in this class.</Alert>}
         </>
       )}

@@ -246,14 +246,35 @@ export default function ReportMarks() {
     } finally { setBusy(false); }
   };
 
+  // Submit = validate complete (every student has a mark or A) + mark the subject submitted. Saves
+  // the latest edits first so the server validates exactly what's on screen.
+  const submit = async () => {
+    if (!sel) return;
+    const [classId, subjectCode] = sel.split('|');
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      if (dirty) {
+        const entries = Object.keys(vals).map((sid) => ({ studentId: sid, marks: vals[sid], denominators: rowDenoms[sid] || {} }));
+        await examinationService.saveReportMarks(classId, subjectCode, term, entries);
+        setDirty(false);
+      }
+      await examinationService.submitReportMarks(classId, subjectCode, term);
+      setMsg('Marks submitted ✓ — this subject is now ready for report cards.');
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Failed to submit marks');
+    } finally { await loadGrid(); setBusy(false); }
+  };
+
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
+  const locked = !!grid?.locked;
 
   return (
     <Box sx={{ width: '100%', maxWidth: isMobile ? 760 : '100%', mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Enter Marks</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Enter Term marks for the subjects you teach. Type <b>A</b> for Absent. A Class Test is entered
-        as the raw mark <b>out of</b> the total it was conducted on (per student) — it scales to the report total automatically. Marks save per class &amp; subject.
+        as the raw mark <b>out of</b> the total it was conducted on (per student) — it scales automatically.
+        <b>Save</b> keeps a draft; <b>Submit</b> checks every student has a mark (or A) and marks the subject ready for report cards.
       </Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
@@ -280,12 +301,17 @@ export default function ReportMarks() {
 
           {grid && (
             <>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
                 <Typography variant="subtitle1"><b>{grid.className}</b> · {grid.subject?.label}</Typography>
                 <Box sx={{ flex: 1 }} />
+                {grid.submitted && <Chip size="small" color="success" variant="outlined" label={`Submitted${grid.submittedAt ? ` · ${grid.submittedAt}` : ''}`} />}
+                {locked && <Chip size="small" color="error" variant="outlined" label="Locked" />}
                 <Chip size="small" variant="outlined" label={`${grid.entered}/${grid.total} complete`} />
               </Stack>
 
+              {locked && <Alert severity="warning" sx={{ mb: 1.5 }}>This subject is <b>locked</b> — marks can't be changed. Ask an admin to unlock it on the Progress screen.</Alert>}
+
+              <Box component="fieldset" disabled={locked} sx={{ border: 0, p: 0, m: 0, minInlineSize: 0, '&:disabled': { opacity: 0.6 } }}>
               {effComps.some((c) => c.target != null) && (
                 <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
                   <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
@@ -352,10 +378,13 @@ export default function ReportMarks() {
                 </Paper>
               )}
 
-              {grid.students.length > 0 && (
-                <Box sx={{ py: 2 }}>
-                  <Button fullWidth variant={dirty ? 'contained' : 'outlined'} onClick={save} disabled={busy || !dirty}>{dirty ? 'Save marks' : 'No changes'}</Button>
-                </Box>
+              </Box>
+
+              {grid.students.length > 0 && !locked && (
+                <Stack direction="row" spacing={1.5} sx={{ py: 2 }}>
+                  <Button fullWidth variant={dirty ? 'contained' : 'outlined'} onClick={save} disabled={busy || !dirty}>{dirty ? 'Save marks' : 'Saved'}</Button>
+                  <Button fullWidth variant="contained" color="success" onClick={submit} disabled={busy}>Submit marks</Button>
+                </Stack>
               )}
             </>
           )}
