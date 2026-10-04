@@ -165,6 +165,8 @@ export const examinationService = {
   // target: a subjectCode, '__cosch__', or '__all__' (whole class). admin/incharge/god.
   setReportLock: async (classId, term, target, locked, ay) =>
     (await api.post('/examination/report/lock', { classId, term, target, locked }, { params: ay ? { ay } : {} })).data,
+  setReportClassExcluded: async (classId, excluded, ay) =>
+    (await api.post('/examination/report/exclude-class', { classId, excluded }, { params: ay ? { ay } : {} })).data,
   // Class-teacher report-card review: view own class's cards + OK (approve) them.
   myReportCards: async (classId, term, ay) =>
     (await api.get(`/examination/me/report/cards/${classId}/${term}`, { params: ay ? { ay } : {} })).data,

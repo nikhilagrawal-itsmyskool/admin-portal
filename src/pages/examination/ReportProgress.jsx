@@ -58,6 +58,14 @@ export default function ReportProgress() {
     finally { setBusyLock(false); }
   };
 
+  // Exclude/include a class from the exam module (hidden from cards/entry; stays on Progress).
+  const setExcluded = async (classId, excluded) => {
+    setBusyLock(true); setErr('');
+    try { await examinationService.setReportClassExcluded(classId, excluded); await load(); }
+    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to update exclusion'); }
+    finally { setBusyLock(false); }
+  };
+
   return (
     <Box sx={{ width: '100%' }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 0.5 }}>
@@ -98,16 +106,21 @@ export default function ReportProgress() {
 
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5 }}>
               {(data.classes || []).map((c) => (
-                <Card key={c.classId} variant="outlined">
+                <Card key={c.classId} variant="outlined" sx={c.excluded ? { opacity: 0.7 } : undefined}>
                   <CardContent>
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: c.excluded ? 0 : 1 }} flexWrap="wrap" useFlexGap>
                       <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{c.className}</Typography>
-                      <Chip size="small" variant="outlined" label={`band ${c.band}`} />
+                      {c.excluded
+                        ? <Chip size="small" color="default" variant="outlined" label="Excluded from exams" />
+                        : <Chip size="small" variant="outlined" label={`band ${c.band}`} />}
                       <Box sx={{ flex: 1 }} />
-                      <Chip size="small" color={c.doneCount === c.subjectCount ? 'success' : 'default'}
-                        variant={c.doneCount === c.subjectCount ? 'filled' : 'outlined'}
-                        label={`${c.doneCount}/${c.subjectCount} subjects`} />
+                      {c.excluded
+                        ? <Button size="small" disabled={busyLock} onClick={() => setExcluded(c.classId, false)} sx={{ textTransform: 'none' }}>Include in exams</Button>
+                        : <Chip size="small" color={c.doneCount === c.subjectCount ? 'success' : 'default'}
+                            variant={c.doneCount === c.subjectCount ? 'filled' : 'outlined'}
+                            label={`${c.doneCount}/${c.subjectCount} subjects`} />}
                     </Stack>
+                    {!c.excluded && (<>
                     <Divider sx={{ mb: 1 }} />
                     <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1}>
                       {c.subjects.map((s) => (
@@ -132,6 +145,7 @@ export default function ReportProgress() {
                           <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
                             <Chip size="small" variant="outlined" color={c.readyToPrint ? 'success' : 'default'} label={c.readyToPrint ? 'Ready to print' : 'Not ready'} />
                             <Box sx={{ flex: 1 }} />
+                            <Button size="small" color="inherit" disabled={busyLock} onClick={() => setExcluded(c.classId, true)} sx={{ textTransform: 'none', color: 'text.secondary' }}>Exclude</Button>
                             <Button size="small" color={allLocked ? 'warning' : 'inherit'} startIcon={allLocked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
                               disabled={busyLock} onClick={() => lock(c.classId, '__all__', !allLocked)} sx={{ textTransform: 'none' }}>
                               {allLocked ? 'Unlock class' : 'Lock class'}
@@ -171,6 +185,7 @@ export default function ReportProgress() {
                         </>
                       );
                     })()}
+                    </>)}
                   </CardContent>
                 </Card>
               ))}
