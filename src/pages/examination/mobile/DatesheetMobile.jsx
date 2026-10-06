@@ -16,7 +16,7 @@ const dayOf = (d) => (d ? DOW[new Date(`${d}T00:00:00`).getDay()] : '');
 
 export default function DatesheetMobile() {
   const { id } = useParams();
-  const canManage = useCan()('exam.manage');
+  const canManage = useCan()('exam.schedule.manage');
 
   const [grid, setGrid] = useState(null);
   const [grade, setGrade] = useState('');

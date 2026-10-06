@@ -62,9 +62,19 @@ export const ACTIONS = {
   HOMEWORK_MANAGE: "homework.manage",
   ACADEMIC_CALENDAR_VIEW: "academic-calendar.view",
   ACADEMIC_CALENDAR_MANAGE: "academic-calendar.manage",
-  EXAM_VIEW: "exam.view",
-  EXAM_MANAGE: "exam.manage",
-  SUBJECT_MAPPING_MANAGE: "subject-mapping.manage",
+  // Examination — strict module.resource.action convention; no exam.* wildcard (explicit role lists
+  // in policy.js) so god-only leaves aren't swallowed. Mirror of backend authz-policy.ts.
+  EXAM_VIEW: "exam.schedule.view",
+  EXAM_MANAGE: "exam.schedule.manage",
+  EXAM_PROGRESS_VIEW: "exam.progress.view",
+  EXAM_REPORTCARD_MANAGE: "exam.reportcard.manage",
+  EXAM_FORMAT_MANAGE: "exam.format.manage",
+  EXAM_REMARK_MANAGE: "exam.remark.manage",
+  EXAM_MAPPING_MANAGE: "exam.mapping.manage",
+  EXAM_MARKS_OVERRIDE: "exam.marks.override",
+  EXAM_MARKS_LOCK: "exam.marks.lock",
+  EXAM_CLASS_EXCLUDE: "exam.class.exclude",
+  EXAM_DUES_OVERRIDE: "exam.dues.override",
   // God-only: edit the role→permission overrides from the Permissions grid.
   AUTHZ_MANAGE: "authz.manage",
   // Developmental programmes (Spoken English & Life Communication, …). view = the

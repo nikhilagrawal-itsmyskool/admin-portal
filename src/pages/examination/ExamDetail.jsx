@@ -25,7 +25,7 @@ const STATUS_COLOR = { draft: 'default', published: 'success', archived: 'warnin
 export default function ExamDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const canManage = useCan()('exam.manage');
+  const canManage = useCan()('exam.schedule.manage');
   const { user } = useAuth();
   const isGod = (user?.roles || []).includes('god');
   const isMobile = useIsMobile();

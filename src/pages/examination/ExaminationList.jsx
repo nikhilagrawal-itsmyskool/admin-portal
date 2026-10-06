@@ -19,7 +19,7 @@ const STATUS_COLOR = { draft: 'default', published: 'success', archived: 'warnin
 export default function ExaminationList() {
   const navigate = useNavigate();
   const { academicYearId } = useAcademicYear();
-  const canManage = useCan()('exam.manage');
+  const canManage = useCan()('exam.schedule.manage');
   const isMobile = useIsMobile();
 
   const [exams, setExams] = useState([]);

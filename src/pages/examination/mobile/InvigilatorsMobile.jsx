@@ -18,7 +18,7 @@ const initials = (n) => (n || '').split(' ').filter(Boolean).slice(-2).map((x) =
 
 export default function InvigilatorsMobile() {
   const { id } = useParams();
-  const canManage = useCan()('exam.manage');
+  const canManage = useCan()('exam.schedule.manage');
 
   const [view, setView] = useState(null);
   const [employees, setEmployees] = useState([]);

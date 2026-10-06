@@ -116,7 +116,7 @@ const menuItems = [
     title: 'Branding',
     icon: BrandingSidebarIcon,
     path: '/branding',
-    perm: 'exam.manage',
+    perm: 'exam.schedule.manage',
   },
   {
     // Director's Cockpit / School Pulse — pinned as the first nav item, above Dashboard.
@@ -409,17 +409,17 @@ const menuItems = [
     icon: ExamIcon,
     children: [
       { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
-      { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.view' },
+      { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.schedule.view' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
-      { title: 'Progress', icon: ExamIcon, path: '/exam/report-progress', perm: 'exam.manage' },
-      { title: 'Subject Mapping', icon: ExamIcon, path: '/exam/subject-mapping', perm: 'subject-mapping.manage' },
-      { title: 'Class Teachers', icon: ExamIcon, path: '/exam/class-teachers', perm: 'subject-mapping.manage' },
+      { title: 'Progress', icon: ExamIcon, path: '/exam/report-progress', perm: 'exam.progress.view' },
+      { title: 'Subject Mapping', icon: ExamIcon, path: '/exam/subject-mapping', perm: 'exam.mapping.manage' },
+      { title: 'Class Teachers', icon: ExamIcon, path: '/exam/class-teachers', perm: 'exam.mapping.manage' },
       { title: 'Enter Marks', icon: CalendarIcon, path: '/exam/marks' },
       { title: 'Co-Scholastic', icon: CalendarIcon, path: '/exam/coscholastic' },
       { title: 'Report Card Review', icon: ReportIcon, path: '/exam/report-review' },
-      { title: 'Remark Templates', icon: TypeIcon, path: '/exam/remark-templates', perm: 'exam.manage' },
-      { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.manage' },
-      { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.manage' },
+      { title: 'Remark Templates', icon: TypeIcon, path: '/exam/remark-templates', perm: 'exam.remark.manage' },
+      { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.format.manage' },
+      { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.reportcard.manage' },
       // God-only: re-wire which roles can do what in examination (authz.manage is held only via '*').
       { title: 'Permissions', icon: PermissionsIcon, path: '/exam/permissions', perm: 'authz.manage' },
     ],

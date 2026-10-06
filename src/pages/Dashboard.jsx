@@ -256,7 +256,7 @@ const modules = [
     icon: ExamIcon,
     path: "/examinations",
     color: "#5e35b1",
-    perm: "exam.view",
+    perm: "exam.schedule.view",
   },
   {
     title: "Academic Calendar",

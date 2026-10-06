@@ -11,10 +11,12 @@ import { fmtDate } from '../../utils/date';
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
 // Student 360 "Examinations" block: admit-card / dues status per published exam, with the
-// god dues-override. Only rendered for exam.view roles (gated by the parent).
+// dues-override. Only rendered for exam.schedule.view roles (gated by the parent). The override /
+// revoke controls need exam.dues.override (god-only by default, delegable via the Permissions grid).
 export default function StudentExamCard({ studentId }) {
   const { user } = useAuth();
-  const isGod = (user?.roles || []).includes('god');
+  const can = useCan();
+  const isGod = can('exam.dues.override');
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');

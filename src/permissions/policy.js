@@ -49,11 +49,16 @@ export const ROLE_PERMISSIONS = {
     "homework.manage",
     "academic-calendar.view",
     "academic-calendar.manage",
-    "exam.*",
-    "subject-mapping.manage", // report-card subject→teacher mapping (admin + god only, NOT exam-incharge)
+    // Examination (explicit, no wildcard): run exams + report cards, view progress. NOT config/scheme/
+    // remark/mapping, NOT marks-override/lock/class-exclude, NOT dues-override (god-only).
+    "exam.schedule.view",
+    "exam.schedule.manage",
+    "exam.progress.view",
+    "exam.reportcard.manage",
     "receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
     "leave.apply", // Self-service leave only; oversight (leave.manage) is god-only for now
     "documents.sign", // Read & sign own documents; authoring (documents.manage) is god-only
+    // Clubs & Activities: NONE by default (locked to god). god grants admin via the grid.
   ],
   // Standard teaching staff: view-only across the modules they can reach.
   // No transport access by default — bus attendance needs the `transport-attendance`
@@ -98,7 +103,8 @@ export const ROLE_PERMISSIONS = {
   "programme-incharge": ["programme.*"],
   "assembly-incharge": ["assembly.*"],
   // Exam incharge === admin, but scoped to the examination module.
-  "exam-incharge": ["exam.*"],
+  // Exam office: run exams + view progress, but NOT report cards, config, mapping, or god-only overrides.
+  "exam-incharge": ["exam.schedule.view", "exam.schedule.manage", "exam.progress.view"],
   // Route-scoped teacher: reach the bus-attendance screens and mark attendance,
   // but only for routes they are staffed on (accompanying teacher / helper /
   // route incharge). The route filtering is enforced in the attendance pages;

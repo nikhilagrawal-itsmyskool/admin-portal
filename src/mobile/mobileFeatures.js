@@ -126,11 +126,11 @@ export const MOBILE_FEATURES = [
   { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/marks"] },
   { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", derived: "classTeacher", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/coscholastic"] },
   { title: "Report Card Review", icon: AssemblyGradeIcon, path: "/exam/report-review", derived: "classTeacher", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/report-review"] },
-  { title: "Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
-  { title: "Subject Mapping", icon: ExamMgmtIcon, path: "/exam/subject-mapping", perm: "subject-mapping.manage", section: "manage", color: "#5e35b1", routes: ["/exam/subject-mapping"] },
+  { title: "Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.progress.view", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
+  { title: "Subject Mapping", icon: ExamMgmtIcon, path: "/exam/subject-mapping", perm: "exam.mapping.manage", section: "manage", color: "#5e35b1", routes: ["/exam/subject-mapping"] },
   // Report Cards (Phase B — printing) is desktop-only for now; intentionally not on the PWA.
-  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.view", section: "manage", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/seating", "/examinations/:id/invigilators", "/examinations/:id/room-invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/:id/room-roster/:roomId/:date", "/examinations/verify/:id"] },
-  { title: "Branding", icon: BrandingTileIcon, path: "/branding", perm: "exam.manage", section: "manage", color: "#5e35b1", routes: ["/branding"] },
+  { title: "Examinations", icon: ExamMgmtIcon, path: "/examinations", perm: "exam.schedule.view", section: "manage", color: "#5e35b1", routes: ["/examinations", "/examinations/:id", "/examinations/:id/config", "/examinations/:id/datesheet", "/examinations/:id/seating", "/examinations/:id/invigilators", "/examinations/:id/room-invigilators", "/examinations/:id/admit-cards", "/examinations/:id/roster/:paperId/:sectionId", "/examinations/:id/room-roster/:roomId/:date", "/examinations/verify/:id"] },
+  { title: "Branding", icon: BrandingTileIcon, path: "/branding", perm: "exam.schedule.manage", section: "manage", color: "#5e35b1", routes: ["/branding"] },
 
   // ── People & Staff ───────────────────────────────────────────────────────────
   // People & Staff: flat tiles (the band header is the group — no hub, one tap).

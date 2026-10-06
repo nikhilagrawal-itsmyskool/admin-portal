@@ -9,7 +9,7 @@ import SeatingTab from '../SeatingTab';
 // it reuses cleanly on mobile. This wrapper just loads the exam for the header + props.
 export default function SeatingMobile() {
   const { id } = useParams();
-  const canManage = useCan()('exam.manage');
+  const canManage = useCan()('exam.schedule.manage');
   const [exam, setExam] = useState(null);
   const [err, setErr] = useState('');
 

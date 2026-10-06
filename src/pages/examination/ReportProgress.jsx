@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { OpenInNew, Lock as LockIcon, LockOpen as LockOpenIcon, ExpandMore, ExpandLess } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
+import { useCan } from '../../permissions/can';
 
 // Exam-incharge dashboard. Two tabs sharing the Term toggle:
 //  • Marks — per class × subject entry progress; a pending subject deep-links to Enter Marks.
@@ -23,6 +24,11 @@ export default function ReportProgress() {
   const [err, setErr] = useState('');
   const [expanded, setExpanded] = useState(null); // classId whose submission/lock detail is open
   const [busyLock, setBusyLock] = useState(false);
+  // Progress is viewable by admin/exam-incharge, but lock/unlock and class-exclude are god-only
+  // actions (exam.marks.lock / exam.class.exclude) — hide those controls when the caller lacks them.
+  const can = useCan();
+  const canLock = can('exam.marks.lock');
+  const canExclude = can('exam.class.exclude');
 
   const applyTermDefault = (currentTerm) => {
     if (!termSet.current) { termSet.current = true; if (currentTerm) setTerm(currentTerm); }
@@ -115,7 +121,7 @@ export default function ReportProgress() {
                         : <Chip size="small" variant="outlined" label={`band ${c.band}`} />}
                       <Box sx={{ flex: 1 }} />
                       {c.excluded
-                        ? <Button size="small" disabled={busyLock} onClick={() => setExcluded(c.classId, false)} sx={{ textTransform: 'none' }}>Include in exams</Button>
+                        ? (canExclude && <Button size="small" disabled={busyLock} onClick={() => setExcluded(c.classId, false)} sx={{ textTransform: 'none' }}>Include in exams</Button>)
                         : <Chip size="small" color={c.doneCount === c.subjectCount ? 'success' : 'default'}
                             variant={c.doneCount === c.subjectCount ? 'filled' : 'outlined'}
                             label={`${c.doneCount}/${c.subjectCount} subjects`} />}
@@ -145,11 +151,11 @@ export default function ReportProgress() {
                           <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
                             <Chip size="small" variant="outlined" color={c.readyToPrint ? 'success' : 'default'} label={c.readyToPrint ? 'Ready to print' : 'Not ready'} />
                             <Box sx={{ flex: 1 }} />
-                            <Button size="small" color="inherit" disabled={busyLock} onClick={() => setExcluded(c.classId, true)} sx={{ textTransform: 'none', color: 'text.secondary' }}>Exclude</Button>
-                            <Button size="small" color={allLocked ? 'warning' : 'inherit'} startIcon={allLocked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
+                            {canExclude && <Button size="small" color="inherit" disabled={busyLock} onClick={() => setExcluded(c.classId, true)} sx={{ textTransform: 'none', color: 'text.secondary' }}>Exclude</Button>}
+                            {canLock && <Button size="small" color={allLocked ? 'warning' : 'inherit'} startIcon={allLocked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
                               disabled={busyLock} onClick={() => lock(c.classId, '__all__', !allLocked)} sx={{ textTransform: 'none' }}>
                               {allLocked ? 'Unlock class' : 'Lock class'}
-                            </Button>
+                            </Button>}
                             <Button size="small" color="inherit" endIcon={open ? <ExpandLess /> : <ExpandMore />} onClick={() => setExpanded(open ? null : c.classId)} sx={{ textTransform: 'none', color: 'text.secondary' }}>
                               Details
                             </Button>
@@ -170,11 +176,13 @@ export default function ReportProgress() {
                                       <TableCell>{i.submitted ? (i.submittedAt || '✓') : <Typography variant="caption" color="warning.main">pending</Typography>}</TableCell>
                                       <TableCell>{i.locked ? (i.lockedAt || '🔒') : '—'}</TableCell>
                                       <TableCell align="right">
+                                        {canLock ? (
                                         <Button size="small" color={i.locked ? 'warning' : 'inherit'} startIcon={i.locked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
                                           disabled={busyLock} onClick={() => lock(c.classId, i.code, !i.locked)}
                                           sx={{ textTransform: 'none', whiteSpace: 'nowrap', color: i.locked ? undefined : 'text.secondary' }}>
                                           {i.locked ? 'Unlock' : 'Lock'}
                                         </Button>
+                                        ) : '—'}
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -229,10 +237,10 @@ export default function ReportProgress() {
                         label={c.submitted ? `Submitted${c.submittedAt ? ` · ${c.submittedAt}` : ''}` : `${c.complete}/${c.total} entered`} />
                       {c.locked && <Chip size="small" color="error" variant="outlined" icon={<LockIcon sx={{ fontSize: 14 }} />} label="Locked" />}
                       <Box sx={{ flex: 1 }} />
-                      <Button size="small" color={c.locked ? 'warning' : 'inherit'} startIcon={c.locked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
+                      {canLock && <Button size="small" color={c.locked ? 'warning' : 'inherit'} startIcon={c.locked ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
                         disabled={busyLock} onClick={() => lock(c.classId, '__cosch__', !c.locked)} sx={{ textTransform: 'none', color: c.locked ? undefined : 'text.secondary' }}>
                         {c.locked ? 'Unlock' : 'Lock'}
-                      </Button>
+                      </Button>}
                       <Button size="small" variant="outlined" endIcon={<OpenInNew fontSize="small" />}
                         onClick={() => openCoscholastic(c.classId, c.className)} sx={{ textTransform: 'none' }}>
                         {c.done ? 'Review' : 'Enter'}

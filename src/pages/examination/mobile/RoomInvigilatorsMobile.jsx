@@ -34,7 +34,7 @@ const pickDefaultDate = (dates) => {
 export default function RoomInvigilatorsMobile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const canManage = useCan()('exam.manage');
+  const canManage = useCan()('exam.schedule.manage');
   const { user } = useAuth();
   const isGod = (user?.roles || []).some((r) => r === 'god' || r === 'exam-incharge');
 

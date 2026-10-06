@@ -22,7 +22,7 @@ const EMPTY = { schoolName: '', motto: '', address: '', affiliationNo: '', schoo
 // crests, office stamp, school name / motto / address and the report-card masthead line
 // (affiliation no, school code, contact, e-mail, website). Set once, school-wide.
 export default function BrandingPage() {
-  const canManage = useCan()('exam.manage');
+  const canManage = useCan()('exam.schedule.manage');
   const [branding, setBranding] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [dirty, setDirty] = useState(false);
