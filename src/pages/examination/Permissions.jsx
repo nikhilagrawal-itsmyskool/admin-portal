@@ -71,7 +71,7 @@ export default function Permissions() {
   const menuDefault = menu ? baseGrants(menu.role, menu.action) : false;
 
   return (
-    <Box sx={{ width: '100%', maxWidth: 1000 }}>
+    <Box sx={{ width: '100%' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Permissions</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Who can do what. The grid starts from the built-in policy; you can force-allow or force-deny any
@@ -84,7 +84,7 @@ export default function Permissions() {
 
       <Card variant="outlined">
         <CardContent sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 640 }}>
+          <Table size="small" sx={{ minWidth: 1100 }}>
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>

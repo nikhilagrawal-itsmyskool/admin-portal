@@ -408,6 +408,8 @@ const menuItems = [
     title: 'Examinations',
     icon: ExamIcon,
     children: [
+      // Convention: Permissions is the FIRST item in every module (god-only).
+      { title: 'Permissions', icon: PermissionsIcon, path: '/exam/permissions', perm: 'authz.manage' },
       { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
       { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.schedule.view' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
@@ -420,8 +422,6 @@ const menuItems = [
       { title: 'Remark Templates', icon: TypeIcon, path: '/exam/remark-templates', perm: 'exam.remark.manage' },
       { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.format.manage' },
       { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.reportcard.manage' },
-      // God-only: re-wire which roles can do what in examination (authz.manage is held only via '*').
-      { title: 'Permissions', icon: PermissionsIcon, path: '/exam/permissions', perm: 'authz.manage' },
     ],
   },
   {
