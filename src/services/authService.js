@@ -19,4 +19,15 @@ export const authService = {
     const response = await api.post(path, { currentPassword, newPassword });
     return response.data;
   },
+
+  // Permissions grid (god-only). list → catalog (rows/cols) + override rows; toggle → flip one cell
+  // to 'grant' | 'revoke' | 'default' and returns the refreshed payload.
+  getPermissions: async () => {
+    const response = await api.get('/auth/permissions');
+    return response.data;
+  },
+  togglePermission: async (role, action, desired, reason) => {
+    const response = await api.post('/auth/permissions/toggle', { role, action, desired, reason });
+    return response.data;
+  },
 };

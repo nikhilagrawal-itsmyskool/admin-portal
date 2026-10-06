@@ -84,6 +84,7 @@ import {
   ViewWeek as WeekIcon,
   CalendarMonth as CalendarIcon,
   Settings as AsmSettingsIcon,
+  AdminPanelSettings as PermissionsIcon,
   Diversity3 as HouseRotationIcon,
   EditCalendar as RosterIcon,
   FactCheck as ChecklistIcon,
@@ -419,6 +420,8 @@ const menuItems = [
       { title: 'Remark Templates', icon: TypeIcon, path: '/exam/remark-templates', perm: 'exam.manage' },
       { title: 'Report Format', icon: TypeIcon, path: '/exam/report-format', perm: 'exam.manage' },
       { title: 'Report Cards', icon: ReportIcon, path: '/exam/report-cards', perm: 'exam.manage' },
+      // God-only: re-wire which roles can do what in examination (authz.manage is held only via '*').
+      { title: 'Permissions', icon: PermissionsIcon, path: '/exam/permissions', perm: 'authz.manage' },
     ],
   },
   {

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api, { getSchoolCode } from '../config/api';
+import { setPermissionOverrides } from '../permissions/can';
 
 const AuthContext = createContext(null);
 
@@ -21,6 +22,25 @@ export function AuthProvider({ children }) {
     }
     setLoading(false);
   }, []);
+
+  // Load god's live permission overrides so can() reflects them in the UI. Fail-safe: on error we
+  // keep the static file defaults. Refetches on login/logout (user change).
+  useEffect(() => {
+    if (!user) {
+      setPermissionOverrides([]);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get('/auth/permissions/effective')
+      .then((r) => {
+        if (!cancelled) setPermissionOverrides(r.data?.overrides || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const login = async (username, password, userType = 'employee', turnstileToken = '') => {
     const endpoint = userType === 'student'

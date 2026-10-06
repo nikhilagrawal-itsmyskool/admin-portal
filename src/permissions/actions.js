@@ -65,6 +65,8 @@ export const ACTIONS = {
   EXAM_VIEW: "exam.view",
   EXAM_MANAGE: "exam.manage",
   SUBJECT_MAPPING_MANAGE: "subject-mapping.manage",
+  // God-only: edit the role→permission overrides from the Permissions grid.
+  AUTHZ_MANAGE: "authz.manage",
   // Developmental programmes (Spoken English & Life Communication, …). view = the
   // teacher Class→Month→Theme reader + catalog (teacher/admin); manage = author units
   // + re-upload source docs (admin/god/programme-incharge).

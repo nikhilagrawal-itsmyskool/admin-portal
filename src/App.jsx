@@ -221,6 +221,7 @@ import DocumentDetail from './pages/documents/DocumentDetail';
 import MyDocuments from './pages/documents/MyDocuments';
 import MyDocument from './pages/documents/MyDocument';
 import Profile from './pages/Profile';
+import Permissions from './pages/examination/Permissions';
 import MobileHome from './pages/MobileHome';
 import HubPage from './pages/HubPage';
 import ManagerDesk from './pages/ManagerDesk';
@@ -508,6 +509,7 @@ export default function App() {
         <Route path="me/documents" element={<MyDocuments />} />
         <Route path="me/documents/:id" element={<MyDocument />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="exam/permissions" element={<Permissions />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
