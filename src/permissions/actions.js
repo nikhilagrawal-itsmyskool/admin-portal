@@ -103,6 +103,19 @@ export const ACTIONS = {
   // `director` role (god's '*' covers it). Read-only; drill-downs deep-link into the real
   // screens, each gated by its own action.
   COCKPIT_VIEW: "cockpit.view",
+  // Clubs & Activities (per-school display name e.g. "Saturday Activities"). Strict
+  // module.resource.action across setup | activity | plan; no club.* wildcard. Mirror of
+  // backend authz-policy.ts.
+  CLUB_SETUP_VIEW: "club.setup.view",
+  CLUB_SETUP_MANAGE: "club.setup.manage",
+  CLUB_ACTIVITY_VIEW: "club.activity.view",
+  CLUB_ACTIVITY_MANAGE: "club.activity.manage",
+  CLUB_ACTIVITY_APPROVE: "club.activity.approve",
+  CLUB_ACTIVITY_REVIEW: "club.activity.review",
+  CLUB_PLAN_VIEW: "club.plan.view",
+  CLUB_PLAN_MANAGE: "club.plan.manage",
+  CLUB_PLAN_PUBLISH: "club.plan.publish",
+  CLUB_PLAN_CONDUCT: "club.plan.conduct",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.
@@ -374,5 +387,45 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.COCKPIT_VIEW,
     description: "See the Director's Cockpit / School Pulse heartbeat (director + god)",
+  },
+  {
+    action: ACTIONS.CLUB_SETUP_VIEW,
+    description: "See the Clubs & Activities menu, clubs and programme settings",
+  },
+  {
+    action: ACTIONS.CLUB_SETUP_MANAGE,
+    description: "Create/edit clubs, their configuration, enabled blocks & programme settings",
+  },
+  {
+    action: ACTIONS.CLUB_ACTIVITY_VIEW,
+    description: "See the activity bank (clubs' versioned activities)",
+  },
+  {
+    action: ACTIONS.CLUB_ACTIVITY_MANAGE,
+    description: "Edit activity content, create revision drafts, materials, resources & bulk import",
+  },
+  {
+    action: ACTIONS.CLUB_ACTIVITY_APPROVE,
+    description: "Release/trial/supersede an activity version and suspend/archive an activity",
+  },
+  {
+    action: ACTIONS.CLUB_ACTIVITY_REVIEW,
+    description: "Work the activity review queue — keep as is / create revision / suspend / archive",
+  },
+  {
+    action: ACTIONS.CLUB_PLAN_VIEW,
+    description: "See the weekly plan board and published plans",
+  },
+  {
+    action: ACTIONS.CLUB_PLAN_MANAGE,
+    description: "Build and edit a draft weekly plan — slots, groups, assignments, copy previous",
+  },
+  {
+    action: ACTIONS.CLUB_PLAN_PUBLISH,
+    description: "Publish a plan, make after-publish changes, cancel an assignment, close/reopen",
+  },
+  {
+    action: ACTIONS.CLUB_PLAN_CONDUCT,
+    description: "Open your own club assignment guide and submit quick closure / report a safety issue",
   },
 ];

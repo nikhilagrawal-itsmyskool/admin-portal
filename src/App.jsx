@@ -222,6 +222,17 @@ import MyDocuments from './pages/documents/MyDocuments';
 import MyDocument from './pages/documents/MyDocument';
 import Profile from './pages/Profile';
 import Permissions from './pages/examination/Permissions';
+// Clubs & Activities
+import ClubDashboard from './pages/club/ClubDashboard';
+import ClubActivityBank from './pages/club/ActivityBank';
+import ClubActivityDetail from './pages/club/ActivityDetail';
+import ClubPlanningBoard from './pages/club/PlanningBoard';
+import ClubReviewQueue from './pages/club/ReviewQueue';
+import ClubSettings from './pages/club/ClubSettings';
+import ClubPermissions from './pages/club/Permissions';
+import MyClub from './pages/club/mobile/MyClub';
+import ClubGuide from './pages/club/mobile/ClubGuide';
+import ClubClose from './pages/club/mobile/ClubClose';
 import MobileHome from './pages/MobileHome';
 import HubPage from './pages/HubPage';
 import ManagerDesk from './pages/ManagerDesk';
@@ -510,6 +521,18 @@ export default function App() {
         <Route path="me/documents/:id" element={<MyDocument />} />
         <Route path="profile" element={<Profile />} />
         <Route path="exam/permissions" element={<Permissions />} />
+        {/* Clubs & Activities */}
+        <Route path="club" element={<ClubDashboard />} />
+        <Route path="club/settings" element={<ClubSettings />} />
+        <Route path="club/permissions" element={<ClubPermissions />} />
+        <Route path="club/reviews" element={<ClubReviewQueue />} />
+        <Route path="club/clubs/:clubId/activities" element={<ClubActivityBank />} />
+        <Route path="club/activities/:id" element={<ClubActivityDetail />} />
+        <Route path="club/plans" element={<ClubPlanningBoard />} />
+        <Route path="club/plans/:id" element={<ClubPlanningBoard />} />
+        <Route path="club/me" element={<MyClub />} />
+        <Route path="club/me/a/:id" element={<ClubGuide />} />
+        <Route path="club/me/a/:id/close" element={<ClubClose />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

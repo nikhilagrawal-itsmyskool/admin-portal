@@ -22,8 +22,8 @@ export const authService = {
 
   // Permissions grid (god-only). list → catalog (rows/cols) + override rows; toggle → flip one cell
   // to 'grant' | 'revoke' | 'default' and returns the refreshed payload.
-  getPermissions: async () => {
-    const response = await api.get('/auth/permissions');
+  getPermissions: async (module) => {
+    const response = await api.get('/auth/permissions', module ? { params: { module } } : undefined);
     return response.data;
   },
   togglePermission: async (role, action, desired, reason) => {

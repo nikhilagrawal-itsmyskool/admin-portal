@@ -425,6 +425,20 @@ const menuItems = [
     ],
   },
   {
+    // Clubs & Activities (day-neutral "Saturday Activities" engine). Locked god-first;
+    // god opens roles up via Permissions. Teachers see only "My Activities" (conduct).
+    title: 'Clubs & Activities',
+    icon: AssemblyIcon,
+    children: [
+      { title: 'Permissions', icon: PermissionsIcon, path: '/club/permissions', perm: 'authz.manage' },
+      { title: 'Clubs', icon: AssemblyIcon, path: '/club', perm: 'club.setup.view' },
+      { title: 'Planning Board', icon: CalendarIcon, path: '/club/plans', perm: 'club.plan.view' },
+      { title: 'Review Queue', icon: ReportIcon, path: '/club/reviews', perm: 'club.activity.review' },
+      { title: 'My Activities', icon: DutyIcon, path: '/club/me', perm: 'club.plan.conduct' },
+      { title: 'Settings', icon: TypeIcon, path: '/club/settings', perm: 'club.setup.manage' },
+    ],
+  },
+  {
     title: 'Assembly',
     icon: AssemblyIcon,
     children: [

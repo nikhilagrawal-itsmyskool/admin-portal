@@ -83,12 +83,16 @@ export const ROLE_PERMISSIONS = {
     "feedback.view",
     "feedback.record",
     "feedback.respond",
+    "club.plan.conduct", // Run own club assignment (guide) + quick closure on the PWA
   ],
   // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
   // can cover for an absent colleague) and to POST their class's daily homework photos.
   // Finalizing attendance stays admin/god; the class→teacher homework mapping override
   // (homework.manage) stays admin/god. Additive to the `teacher` role.
   "class-teacher": ["attendance.mark", "homework.post"],
+  // Club in-charge: READ-ONLY by default across the three club resources (clubs, bank, plans).
+  // Authoring/approve/review/planning are god-first; god grants more via the Permissions grid.
+  "club-incharge": ["club.setup.view", "club.activity.view", "club.plan.view"],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
   "lab-incharge": ["lab.*"],
