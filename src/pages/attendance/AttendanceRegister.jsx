@@ -10,10 +10,11 @@ import { fmtDateLong, todayIso } from '../../utils/date';
 
 // status -> { letter, bg } — consistent with the student attendance panel.
 const CODE = {
-  present: { letter: 'P', bg: '#dcfce7', fg: '#15803d' },
-  absent: { letter: 'A', bg: '#fee2e2', fg: '#b91c1c' },
-  leave: { letter: 'L', bg: '#fef3c7', fg: '#b45309' },
-  late: { letter: 'Lt', bg: '#dbeafe', fg: '#1d4ed8' },
+  present: { letter: 'P', bg: '#dcfce7', fg: '#15803d', label: 'present' },
+  absent: { letter: 'A', bg: '#fee2e2', fg: '#b91c1c', label: 'absent' },
+  leave: { letter: 'L', bg: '#fef3c7', fg: '#b45309', label: 'leave' },
+  late: { letter: 'Lt', bg: '#dbeafe', fg: '#1d4ed8', label: 'late' },
+  half_day: { letter: 'HD', bg: '#ede9fe', fg: '#6d28d9', label: 'half day' },
 };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const todayISO = () => todayIso();
@@ -84,7 +85,7 @@ export default function AttendanceRegister() {
         <td class="rn">${s.rollNumber ?? i + 1}</td>
         <td class="nm">${s.name || ''}<div class="adm">${s.admissionNumber || ''}</div></td>
         ${cells}
-        <td class="tot">${s.present}</td><td class="tot">${s.absent}</td><td class="tot">${s.leave}</td><td class="tot pc">${s.percent}%</td>
+        <td class="tot">${s.present}</td><td class="tot">${s.absent}</td><td class="tot">${s.leave}</td><td class="tot">${s.halfDay ?? 0}</td><td class="tot pc">${s.percent}%</td>
       </tr>`;
     }).join('');
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
@@ -103,8 +104,8 @@ export default function AttendanceRegister() {
       </style></head><body>
       <h1>${title}</h1><div class="sub">${sub} · Strength ${data.students.length}</div>
       <table><thead>
-        <tr><th rowspan="2" class="rn">R#</th><th rowspan="2" class="nm">Name</th>${monthRow}<th colspan="4">Totals</th></tr>
-        <tr>${th}<th class="tot">P</th><th class="tot">A</th><th class="tot">L</th><th class="tot">%</th></tr>
+        <tr><th rowspan="2" class="rn">R#</th><th rowspan="2" class="nm">Name</th>${monthRow}<th colspan="5">Totals</th></tr>
+        <tr>${th}<th class="tot">P</th><th class="tot">A</th><th class="tot">L</th><th class="tot">HD</th><th class="tot">%</th></tr>
       </thead><tbody>${rows}</tbody></table>
       <script>window.onload=function(){window.print();}</script>
       </body></html>`;
@@ -160,7 +161,7 @@ export default function AttendanceRegister() {
               {Object.values(CODE).map((c) => (
                 <Stack key={c.letter} direction="row" spacing={0.5} alignItems="center">
                   <Box sx={{ width: 16, height: 16, borderRadius: '3px', bgcolor: c.bg, color: c.fg, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.letter}</Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{c.letter === 'Lt' ? 'late' : c.letter === 'P' ? 'present' : c.letter === 'A' ? 'absent' : 'leave'}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{c.label}</Typography>
                 </Stack>
               ))}
             </Stack>
@@ -175,11 +176,11 @@ export default function AttendanceRegister() {
                     <th rowSpan={2}>#</th>
                     <th rowSpan={2} className="nm">Name</th>
                     {monthGroups.map((g, i) => <th key={i} colSpan={g.count} style={{ background: '#f1f5f9' }}>{g.month}</th>)}
-                    <th colSpan={4} style={{ background: '#f8fafc' }}>Totals</th>
+                    <th colSpan={5} style={{ background: '#f8fafc' }}>Totals</th>
                   </tr>
                   <tr>
                     {data.dates.map((d) => <th key={d} style={{ color: '#64748b', fontWeight: 500 }}>{dayNum(d)}</th>)}
-                    <th>P</th><th>A</th><th>L</th><th>%</th>
+                    <th>P</th><th>A</th><th>L</th><th>HD</th><th>%</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -194,6 +195,7 @@ export default function AttendanceRegister() {
                       <td style={{ fontWeight: 700 }}>{s.present}</td>
                       <td style={{ fontWeight: 700 }}>{s.absent}</td>
                       <td style={{ fontWeight: 700 }}>{s.leave}</td>
+                      <td style={{ fontWeight: 700 }}>{s.halfDay ?? 0}</td>
                       <td style={{ fontWeight: 700, background: '#f8fafc' }}>{s.percent}%</td>
                     </tr>
                   ))}

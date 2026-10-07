@@ -19,6 +19,7 @@ const STATUSES = [
   { value: 'absent', label: 'A', color: 'error' },
   { value: 'late', label: 'L', color: 'warning' },
   { value: 'leave', label: 'Lv', color: 'info' },
+  { value: 'half_day', label: 'HD', color: 'secondary' },
 ];
 
 const today = () => todayIso();
@@ -41,6 +42,7 @@ export default function TakeAttendance() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [dayInfo, setDayInfo] = useState(null);
+  const [halfDayEnabled, setHalfDayEnabled] = useState(true);
   const [finalizeDialog, setFinalizeDialog] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,13 @@ export default function TakeAttendance() {
       } catch {
         setError('Failed to load classes');
       }
+    })();
+    // Attendance config drives whether the Half-day status is offered when marking.
+    (async () => {
+      try {
+        const { config } = await attendanceService.getConfig();
+        setHalfDayEnabled(config?.halfDayEnabled ?? true);
+      } catch { /* fall back to showing it */ }
     })();
   }, []);
 
@@ -71,6 +80,8 @@ export default function TakeAttendance() {
   }, [academicYearId, date]);
 
   const finalized = session?.status === 'finalized';
+  // Hide the Half-day button when the school has disabled it on the Config screen.
+  const statuses = STATUSES.filter((s) => s.value !== 'half_day' || halfDayEnabled);
 
   const load = async () => {
     if (!selectedClass || !academicYearId || !date) {
@@ -188,6 +199,7 @@ export default function TakeAttendance() {
                 <Chip label={`Absent ${counts.absent || 0}`} color="error" variant="outlined" size="small" />
                 <Chip label={`Late ${counts.late || 0}`} color="warning" variant="outlined" size="small" />
                 <Chip label={`Leave ${counts.leave || 0}`} color="info" variant="outlined" size="small" />
+                {halfDayEnabled && <Chip label={`Half-day ${counts.half_day || 0}`} color="secondary" variant="outlined" size="small" />}
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button variant="outlined" startIcon={<SaveIcon />} onClick={save} disabled={saving || finalized}>Save</Button>
@@ -224,7 +236,7 @@ export default function TakeAttendance() {
                       disabled={finalized}
                       sx={{ mb: 1 }}
                     >
-                      {STATUSES.map((st) => (
+                      {statuses.map((st) => (
                         <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
                       ))}
                     </ToggleButtonGroup>
@@ -268,7 +280,7 @@ export default function TakeAttendance() {
                             onChange={(_, v) => v && setStatus(s.studentId, v)}
                             disabled={finalized}
                           >
-                            {STATUSES.map((st) => (
+                            {statuses.map((st) => (
                               <ToggleButton key={st.value} value={st.value} color={st.color}>{st.label}</ToggleButton>
                             ))}
                           </ToggleButtonGroup>

@@ -29,6 +29,7 @@ export const ROLE_PERMISSIONS = {
     "student.contacts.view",
     "attendance.mark",
     "attendance.finalize",
+    "attendance.config.manage", // Attendance Config screen (half-day policy) — admin + god
     "communication.send",
     "communication.template.manage",
     "hiring.view",

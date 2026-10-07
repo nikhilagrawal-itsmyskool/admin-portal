@@ -10,8 +10,9 @@ import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { fmtDateTime } from '../../utils/date';
 
-const STATUS_OPTIONS = ['present', 'absent', 'late', 'leave'];
-const statusColor = (s) => ({ present: 'success', absent: 'error', late: 'warning', leave: 'info' }[s] || 'default');
+const STATUS_OPTIONS = ['present', 'absent', 'late', 'leave', 'half_day'];
+const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', leave: 'Leave', half_day: 'Half Day' };
+const statusColor = (s) => ({ present: 'success', absent: 'error', late: 'warning', leave: 'info', half_day: 'secondary' }[s] || 'default');
 
 export default function AttendanceSessionDetail() {
   const { id } = useParams();
@@ -102,10 +103,10 @@ export default function AttendanceSessionDetail() {
                               disabled={savingId === r.uuid}
                               variant="standard"
                             >
-                              {STATUS_OPTIONS.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                              {STATUS_OPTIONS.map((s) => <MenuItem key={s} value={s}>{STATUS_LABEL[s] || s}</MenuItem>)}
                             </Select>
                           ) : (
-                            <Chip size="small" label={r.status} color={statusColor(r.status)} variant="outlined" />
+                            <Chip size="small" label={STATUS_LABEL[r.status] || r.status} color={statusColor(r.status)} variant="outlined" />
                           )}
                         </TableCell>
                         <TableCell>{r.remark || '-'}</TableCell>

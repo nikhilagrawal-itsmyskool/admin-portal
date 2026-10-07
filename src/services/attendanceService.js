@@ -13,6 +13,18 @@ export const attendanceService = {
     return response.data;
   },
 
+  // Per-school attendance config (half-day policy): { config: { halfDayEnabled, halfDayWeight } }
+  getConfig: async () => {
+    const response = await api.get('/attendance/config');
+    return response.data;
+  },
+
+  // Update the half-day policy (admin + god). data = { halfDayEnabled?, halfDayWeight? }
+  updateConfig: async (data) => {
+    const response = await api.put('/attendance/config', data);
+    return response.data;
+  },
+
   // Create/open a session for class+date (idempotent). Returns the session.
   openSession: async (data) => {
     const response = await api.post('/attendance/sessions', data);

@@ -41,7 +41,11 @@ export const ACTIONS = {
   STUDENT_VIEW: "student.view",
   STUDENT_MANAGE: "student.manage",
   STUDENT_VIEW_CONTACTS: "student.contacts.view",
+  // Attendance. mark = take roll-call (roster/sessions/save + read config); finalize = finalize &
+  // edit records; config.manage = the per-school Attendance Config screen (half-day policy), admin+god.
+  ATTENDANCE_MARK: "attendance.mark",
   ATTENDANCE_FINALIZE: "attendance.finalize",
+  ATTENDANCE_CONFIG_MANAGE: "attendance.config.manage",
   COMMUNICATION_SEND: "communication.send",
   COMMUNICATION_TEMPLATE_MANAGE: "communication.template.manage",
   COMMUNICATION_TEMPLATE_DELETE: "communication.template.delete",
@@ -252,9 +256,19 @@ export const ACTION_CATALOG = [
     description: "View unmasked parent/guardian phone, WhatsApp & email",
   },
   {
+    action: ACTIONS.ATTENDANCE_MARK,
+    description:
+      "Take daily roll-call: open a session, load the roster, mark & save statuses (admin + class teachers)",
+  },
+  {
     action: ACTIONS.ATTENDANCE_FINALIZE,
     description:
       "Finalize a daily attendance session and edit records after finalize (marking & viewing are open to all staff)",
+  },
+  {
+    action: ACTIONS.ATTENDANCE_CONFIG_MANAGE,
+    description:
+      "Manage the per-school Attendance Config (how a half-day counts toward attendance %) — admin + god",
   },
   {
     action: ACTIONS.COMMUNICATION_SEND,

@@ -128,6 +128,8 @@ import StudentReports from './pages/student/StudentReports';
 import ClassStrength from './pages/student/ClassStrength';
 import HouseList from './pages/student/houses/HouseList';
 import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
+import AttendancePermissions from './pages/attendance/AttendancePermissions';
+import AttendanceConfig from './pages/attendance/AttendanceConfig';
 import TakeAttendance from './pages/attendance/TakeAttendance';
 import AttendanceSessionList from './pages/attendance/AttendanceSessionList';
 import AttendanceSessionDetail from './pages/attendance/AttendanceSessionDetail';
@@ -421,6 +423,8 @@ export default function App() {
         <Route path="timetable/seasons" element={<SeasonList />} />
         <Route path="timetable/seasons/:id" element={<SeasonEditor />} />
         <Route path="attendance" element={<AttendanceDashboard />} />
+        <Route path="attendance/permissions" element={<AttendancePermissions />} />
+        <Route path="attendance/config" element={<AttendanceConfig />} />
         <Route path="attendance/mark" element={<TakeAttendance />} />
         <Route path="attendance/sessions" element={<AttendanceSessionList />} />
         <Route path="attendance/sessions/:id" element={<AttendanceSessionDetail />} />

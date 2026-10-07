@@ -13,6 +13,7 @@ const STATUS = {
   absent: { color: '#ef4444', label: 'Absent' },
   leave: { color: '#f59e0b', label: 'Leave' },
   late: { color: '#3b82f6', label: 'Late' },
+  half_day: { color: '#8b5cf6', label: 'Half Day' },
 };
 const NONE = '#eef1f6';
 const HOLIDAY_COLOR = '#f8b4b4'; // declared full holiday
@@ -71,6 +72,7 @@ function MonthGrid({ year, month, map, nt }) {
 export default function StudentAttendancePanel({ studentId }) {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState([]);
+  const [summary, setSummary] = useState(null); // server rollup — honours the school's half-day policy
   const [nt, setNt] = useState({});
   const [yearName, setYearName] = useState('');
 
@@ -83,7 +85,7 @@ export default function StudentAttendancePanel({ studentId }) {
         if (alive) setYearName(cur?.name || '');
         const data = await attendanceService.getStudentAttendance(studentId, cur?.uuid ? { academicYearId: cur.uuid } : {});
         const rows = data.days || [];
-        if (alive) setDays(rows);
+        if (alive) { setDays(rows); setSummary(data.summary || null); }
         // Overlay the year's non-teaching days (holidays + weekly-offs) across the
         // span the heatmap covers, so they're shaded even where there's no record.
         let ntMap = {};
@@ -107,7 +109,7 @@ export default function StudentAttendancePanel({ studentId }) {
 
   const { map, totals, months } = useMemo(() => {
     const map = {};
-    const totals = { present: 0, absent: 0, leave: 0, late: 0 };
+    const totals = { present: 0, absent: 0, leave: 0, late: 0, half_day: 0 };
     const monthSet = new Set();
     for (const d of days) {
       map[d.date] = d.status;
@@ -122,8 +124,13 @@ export default function StudentAttendancePanel({ studentId }) {
     return { map, totals, months };
   }, [days, nt]);
 
-  const working = totals.present + totals.absent + totals.late;
-  const percent = working > 0 ? Math.round(((totals.present + totals.late) / working) * 100) : 0;
+  // Prefer the server rollup (it applies the school's half-day policy); fall back to a
+  // local compute (half-days weighted at 0.5, the factory default) if summary is absent.
+  const localWorking = totals.present + totals.absent + totals.late + totals.half_day;
+  const working = summary ? summary.total : localWorking;
+  const percent = summary
+    ? summary.percent
+    : (localWorking > 0 ? Math.round(((totals.present + totals.late + totals.half_day * 0.5) / localWorking) * 100) : 0);
   const pctColor = percent >= 85 ? '#22c55e' : percent >= 70 ? '#f59e0b' : '#ef4444';
 
   return (
@@ -159,6 +166,7 @@ export default function StudentAttendancePanel({ studentId }) {
                 <StatTile value={totals.present} label="Present" color={STATUS.present.color} />
                 <StatTile value={totals.absent} label="Absent" color={STATUS.absent.color} />
                 <StatTile value={totals.leave} label="Leave" color={STATUS.leave.color} />
+                {totals.half_day > 0 && <StatTile value={totals.half_day} label="Half Day" color={STATUS.half_day.color} />}
                 <StatTile value={working} label="Working days" color="#64748b" />
               </Stack>
             </Stack>
