@@ -47,6 +47,9 @@ export default function ActivityDetail() {
   if (!a) return <Alert severity="error">Not found</Alert>;
   const v = a.currentVersion || {};
   const isDraft = v.status === 'draft';
+  // The editable working copy: the current version if it's itself a draft, else a pending
+  // revision draft (a.draftVersion). Null when there's nothing editable (approved, no draft).
+  const draft = isDraft ? v : (a.draftVersion || null);
 
   return (
     <Box>
@@ -60,13 +63,19 @@ export default function ActivityDetail() {
         <Typography variant="h5" sx={{ fontWeight: 700, flex: 1 }}>{v.title || a.activityCode}</Typography>
         <Chip label={`v${v.versionNo} · ${v.status}`} color={versionColor(v.status)} />
         <Chip label={a.availability} variant="outlined" />
-        {canManage && isDraft && <Button size="small" variant="outlined" onClick={() => setEdit(true)}>Edit draft</Button>}
-        {canManage && !isDraft && <Button size="small" variant="outlined" onClick={() => act(() => clubService.createRevision(id), 'Revision created (draft)')}>Create revision</Button>}
-        {canApprove && (v.status === 'draft' || v.status === 'trial') && <Button size="small" variant="contained" color="success" onClick={() => act(() => clubService.approve(id, v.uuid), 'Released')}>Release</Button>}
+        {canManage && draft && <Button size="small" variant="outlined" onClick={() => setEdit(true)}>Edit draft (v{draft.versionNo})</Button>}
+        {canManage && !draft && <Button size="small" variant="outlined" onClick={() => act(() => clubService.createRevision(id), 'Revision created (draft)')}>Create revision</Button>}
+        {canApprove && draft && <Button size="small" variant="contained" color="success" onClick={() => act(() => clubService.approve(id, draft.uuid), `Released v${draft.versionNo}`)}>Release v{draft.versionNo}</Button>}
         {canApprove && <Button size="small" onClick={(e) => setAvailMenu(e.currentTarget)}>Availability ▾</Button>}
       </Stack>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
+      {draft && !isDraft && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          A draft <b>v{draft.versionNo}</b> is pending — use <b>Edit draft</b>, then <b>Release</b> when ready.
+          Teachers keep seeing the approved v{v.versionNo} until then.
+        </Alert>
+      )}
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={8}>
@@ -116,7 +125,7 @@ export default function ActivityDetail() {
         ))}
       </Menu>
 
-      {edit && <EditDraftDialog activity={a} onClose={() => setEdit(false)} onSaved={() => { setEdit(false); load(); }} />}
+      {edit && draft && <EditDraftDialog activityId={a.uuid} version={draft} onClose={() => setEdit(false)} onSaved={() => { setEdit(false); load(); }} />}
     </Box>
   );
 }
@@ -125,8 +134,8 @@ const Meta = ({ label, value }) => (
   <Box><Typography variant="overline" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2 }}>{label}</Typography><Typography variant="body2">{value}</Typography></Box>
 );
 
-function EditDraftDialog({ activity, onClose, onSaved }) {
-  const v = activity.currentVersion || {};
+function EditDraftDialog({ activityId, version, onClose, onSaved }) {
+  const v = version || {};
   const [form, setForm] = useState({
     title: v.title || '', gradeLevel: v.gradeLevel || '', category: v.category || '', activityMode: v.activityMode || '',
     estDuration: v.estDuration || '', learningOutcome: v.learningOutcome || '', procedure: v.procedure || '',
@@ -138,7 +147,7 @@ function EditDraftDialog({ activity, onClose, onSaved }) {
   const save = async () => {
     setBusy(true); setErr('');
     try {
-      await clubService.updateDraft(activity.uuid, { ...form, estDuration: form.estDuration ? Number(form.estDuration) : undefined });
+      await clubService.updateDraft(activityId, { ...form, estDuration: form.estDuration ? Number(form.estDuration) : undefined });
       onSaved();
     } catch (e) { setErr(e.response?.data?.error?.description || 'Save failed'); }
     finally { setBusy(false); }

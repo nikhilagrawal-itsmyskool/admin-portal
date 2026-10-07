@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Grid, Card, CardContent, CardActionArea, Button, Chip, Stack, Dialog,
-  DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Alert, CircularProgress, IconButton,
+  DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Alert, CircularProgress, IconButton, Autocomplete,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import { clubService } from '../../services/clubService';
@@ -83,11 +83,15 @@ function ClubFormDialog({ club, onClose, onSaved }) {
   const editing = !!club;
   const [form, setForm] = useState({
     clubCode: club?.clubCode || '', name: club?.name || '', displayName: club?.displayName || '',
-    status: club?.status || 'active', applicableGrades: (club?.applicableGrades || []).join(', '),
+    status: club?.status || 'active', applicableGrades: club?.applicableGrades || [],
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [gradeOptions, setGradeOptions] = useState([]);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Grade suggestions come from THIS school's class master (data-driven, no hardcoded ladder).
+  useEffect(() => { clubService.getGrades().then(setGradeOptions).catch(() => setGradeOptions([])); }, []);
 
   const save = async () => {
     setBusy(true); setErr('');
@@ -95,7 +99,7 @@ function ClubFormDialog({ club, onClose, onSaved }) {
       const body = {
         clubCode: form.clubCode.trim(), name: form.name.trim(), displayName: form.displayName.trim() || null,
         status: form.status,
-        applicableGrades: form.applicableGrades.split(',').map((s) => s.trim()).filter(Boolean),
+        applicableGrades: form.applicableGrades,
       };
       if (editing) await clubService.updateClub(club.uuid, body);
       else await clubService.createClub(body);
@@ -113,7 +117,12 @@ function ClubFormDialog({ club, onClose, onSaved }) {
           <TextField label="Club code" value={form.clubCode} onChange={set('clubCode')} size="small" required disabled={editing} helperText="Unique, human-facing (e.g. SRI)" />
           <TextField label="Name" value={form.name} onChange={set('name')} size="small" required />
           <TextField label="Display name" value={form.displayName} onChange={set('displayName')} size="small" helperText='Shown to users (e.g. "SRIJAN Craft")' />
-          <TextField label="Applicable grades" value={form.applicableGrades} onChange={set('applicableGrades')} size="small" helperText="Comma-separated, e.g. Nursery, I, II" />
+          <Autocomplete
+            multiple freeSolo options={gradeOptions} value={form.applicableGrades}
+            onChange={(_e, val) => setForm((f) => ({ ...f, applicableGrades: val }))}
+            renderTags={(value, getTagProps) => value.map((option, index) => <Chip size="small" label={option} {...getTagProps({ index })} key={option} />)}
+            renderInput={(params) => <TextField {...params} label="Applicable grades" size="small" placeholder="Pick or type…" helperText="Tap to add; type a custom one and press Enter" />}
+          />
           <TextField label="Status" value={form.status} onChange={set('status')} size="small" select>
             {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
           </TextField>

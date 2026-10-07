@@ -101,6 +101,10 @@ export const MOBILE_FEATURES = [
   },
   // My Homework — the class teacher posts the day's homework photos (pick class + date).
   { title: "Post Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.post", section: "today", color: "#d97706" },
+  // Clubs & Activities — teacher conduct only on mobile. The admin consoles (clubs, bank,
+  // planning board, review, settings, permissions) are desktop/admin-portal only, so they
+  // are deliberately NOT listed here.
+  { title: "My Activities", icon: AssemblyIcon, path: "/club/me", perm: "club.plan.conduct", section: "today", color: "#7c3aed", routes: ["/club/me", "/club/me/a/:id", "/club/me/a/:id/close"] },
   // Send Message — a daily action, pulled up out of the old "Office" hub.
   { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
   // Feedback — a teacher records a home-visit feedback (today) and acts on ones assigned

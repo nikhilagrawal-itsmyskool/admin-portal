@@ -11,6 +11,7 @@ export const clubService = {
   updateConfig: async (id, body) => (await api.put(`/club/clubs/${id}/config`, body)).data,
   getSettings: async () => (await api.get('/club/settings')).data,
   updateSettings: async (body) => (await api.put('/club/settings', body)).data,
+  getGrades: async () => (await api.get('/club/grades')).data,
 
   // ── Activity bank ────────────────────────────────────────────────────────────
   listActivities: async (params) => (await api.get('/club/activities', { params })).data,
