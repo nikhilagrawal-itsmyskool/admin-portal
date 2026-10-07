@@ -29,6 +29,7 @@ export const clubService = {
   importPreview: async (clubId, file) => (await api.post(`/club/clubs/${clubId}/activities/import/preview`, { file })).data,
   importCommit: async (clubId, file, fileName) => (await api.post(`/club/clubs/${clubId}/activities/import`, { file, fileName })).data,
   listImports: async (clubId) => (await api.get(`/club/clubs/${clubId}/imports`)).data,
+  downloadImport: async (importId) => (await api.get(`/club/imports/${importId}/file`)).data,
 
   // ── Review queue ───────────────────────────────────────────────────────────────
   listReviews: async (status = 'open') => (await api.get('/club/reviews', { params: { status } })).data,

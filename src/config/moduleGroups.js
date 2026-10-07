@@ -4,7 +4,8 @@
 // (The mobile menu uses its own model in src/mobile/mobileFeatures.js — not this.)
 export const MODULE_GROUPS = [
   { key: 'people', label: 'People & Staff', titles: ['Assistant', 'Employees', 'Hiring', 'Students', 'Transfer Certs'] },
-  { key: 'academics', label: 'Academics', titles: ['Academic Calendar', 'Assembly', 'Clubs & Activities', 'Examinations', 'Homework', 'Library', 'Programmes', 'Syllabus', 'Timetable'] },
+  { key: 'academics', label: 'Academics', titles: ['Academic Calendar', 'Examinations', 'Homework', 'Syllabus', 'Timetable'] },
+  { key: 'enrichment', label: 'Enrichment', titles: ['Assembly', 'Clubs & Activities', 'Library', 'Programmes'] },
   { key: 'operations', label: 'Operations', titles: ['Attendance', 'Communication', 'Feedback', 'Fees', 'Fines', 'Leave', 'Transport'] },
   { key: 'stores', label: 'Stores & Inventory', titles: ['Assets', 'Laboratory', 'Medical', 'Shop', 'Sports', 'Supplies', 'Uniform'] },
 ];

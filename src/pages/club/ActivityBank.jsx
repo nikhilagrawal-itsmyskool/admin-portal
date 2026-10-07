@@ -23,7 +23,20 @@ export default function ActivityBank() {
   const [filters, setFilters] = useState({ search: '', gradeLevel: '', versionStatus: '', availability: '' });
   const [newOpen, setNewOpen] = useState(false);
   const [importState, setImportState] = useState(null);
+  const [history, setHistory] = useState(null);
   const fileRef = useRef(null);
+
+  const openHistory = async () => {
+    try { setHistory(await clubService.listImports(clubId)); }
+    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load import history'); }
+  };
+  const downloadStored = async (importId) => {
+    try {
+      const out = await clubService.downloadImport(importId);
+      const a = document.createElement('a');
+      a.href = out.dataUri; a.download = out.fileName; a.click();
+    } catch (e) { setErr(e.response?.data?.error?.description || 'Download failed'); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -78,6 +91,7 @@ export default function ActivityBank() {
       </Breadcrumbs>
       <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, flex: 1 }}>Activity Bank</Typography>
+        {can('club.activity.view') && <Button sx={{ mr: 1 }} onClick={openHistory}>Import history</Button>}
         {can('club.activity.view') && <Button sx={{ mr: 1 }} startIcon={<DownloadIcon />} onClick={doExport}>Export</Button>}
         {canManage && <Button sx={{ mr: 1 }} startIcon={<UploadIcon />} onClick={() => fileRef.current?.click()}>Re-import</Button>}
         {canManage && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setNewOpen(true)}>Activity</Button>}
@@ -114,7 +128,12 @@ export default function ActivityBank() {
                   <TableCell sx={{ fontWeight: 600 }}>{r.title}</TableCell>
                   <TableCell>{r.gradeLevel || '—'}</TableCell>
                   <TableCell>{r.category || '—'}</TableCell>
-                  <TableCell>{r.currentVersionStatus ? <Chip size="small" label={`v${r.currentVersionNo} · ${r.currentVersionStatus}`} color={versionColor(r.currentVersionStatus)} /> : '—'}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      {r.currentVersionStatus ? <Chip size="small" label={`v${r.currentVersionNo} · ${r.currentVersionStatus}`} color={versionColor(r.currentVersionStatus)} /> : '—'}
+                      {r.pendingDraftNo && <Chip size="small" color="warning" variant="outlined" label={`v${r.pendingDraftNo} draft`} />}
+                    </Stack>
+                  </TableCell>
                   <TableCell><Chip size="small" label={r.availability} color={availColor(r.availability)} variant="outlined" /></TableCell>
                 </TableRow>
               ))}
@@ -150,6 +169,31 @@ export default function ActivityBank() {
             <Button onClick={() => setImportState(null)}>Cancel</Button>
             <Button variant="contained" disabled={!importState.preview.valid} onClick={commitImport}>Import {importState.preview.total} rows</Button>
           </DialogActions>
+        </Dialog>
+      )}
+
+      {history && (
+        <Dialog open onClose={() => setHistory(null)} fullWidth maxWidth="md">
+          <DialogTitle>Import history</DialogTitle>
+          <DialogContent>
+            <Table size="small">
+              <TableHead><TableRow><TableCell>When</TableCell><TableCell>File</TableCell><TableCell>Rows</TableCell><TableCell>New</TableCell><TableCell>Updated</TableCell><TableCell /></TableRow></TableHead>
+              <TableBody>
+                {history.map((h) => (
+                  <TableRow key={h.uuid}>
+                    <TableCell>{h.createdAt ? String(h.createdAt).replace('T', ' ').slice(0, 16) : '—'}</TableCell>
+                    <TableCell>{h.fileName || '—'}</TableCell>
+                    <TableCell>{h.rowCount}</TableCell>
+                    <TableCell>{h.addedCount}</TableCell>
+                    <TableCell>{h.updatedCount}</TableCell>
+                    <TableCell align="right"><Button size="small" startIcon={<DownloadIcon />} onClick={() => downloadStored(h.uuid)}>Download</Button></TableCell>
+                  </TableRow>
+                ))}
+                {!history.length && <TableRow><TableCell colSpan={6}><Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>No imports yet.</Typography></TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </DialogContent>
+          <DialogActions><Button onClick={() => setHistory(null)}>Close</Button></DialogActions>
         </Dialog>
       )}
     </Box>
