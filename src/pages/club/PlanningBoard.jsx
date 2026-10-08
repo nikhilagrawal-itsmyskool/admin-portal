@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Stack, Button, Chip, Card, CardContent, Table, TableHead, TableRow, TableCell,
   TableBody, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  MenuItem, IconButton, Breadcrumbs, Link, LinearProgress, Tooltip,
+  MenuItem, Menu, IconButton, Breadcrumbs, Link, LinearProgress, Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon, AutoFixHigh as GenIcon, Visibility as ViewIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, AutoFixHigh as GenIcon, Visibility as ViewIcon, Edit as EditIcon, MoreVert as MoreIcon, BookmarkAdd as SaveGroupIcon } from '@mui/icons-material';
 import EmployeeSearchDialog from '../../components/common/EmployeeSearchDialog';
 import { clubService } from '../../services/clubService';
 import { useCan } from '../../permissions/can';
@@ -128,6 +128,9 @@ function PlanEditor({ planId }) {
   const [msg, setMsg] = useState('');
   const [assignDialog, setAssignDialog] = useState(null); // { group, slot, current }
   const [customOpen, setCustomOpen] = useState(false);
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [editGroup, setEditGroup] = useState(null);
+  const [groupMenu, setGroupMenu] = useState(null); // { anchor, group }
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -197,6 +200,7 @@ function PlanEditor({ planId }) {
           <Button size="small" startIcon={<GenIcon />} onClick={() => act(() => clubService.generateGroups(planId), 'Groups generated from classes')}>Generate from classes</Button>
           <Button size="small" startIcon={<GenIcon />} onClick={() => act(() => clubService.generateHouses(planId), 'Groups generated from houses')}>Generate from houses</Button>
           <Button size="small" startIcon={<AddIcon />} onClick={() => setCustomOpen(true)}>Custom group</Button>
+          <Button size="small" startIcon={<SaveGroupIcon />} onClick={() => setSavedOpen(true)}>Add from saved</Button>
         </Stack>
       )}
       {customOpen && (
@@ -205,6 +209,29 @@ function PlanEditor({ planId }) {
           onCreate={(body) => { setCustomOpen(false); act(() => clubService.addGroup(planId, body), 'Custom group added'); }}
         />
       )}
+      {savedOpen && (
+        <SavedGroupsDialog
+          onClose={() => setSavedOpen(false)}
+          onAdd={(savedGroupId) => { setSavedOpen(false); act(() => clubService.addSavedToPlan(planId, savedGroupId), 'Added from saved group'); }}
+        />
+      )}
+      {editGroup && (
+        <EditGroupDialog group={editGroup}
+          onClose={() => setEditGroup(null)}
+          onSave={(body) => { setEditGroup(null); act(() => clubService.editPlanGroup(editGroup.uuid, body), 'Group updated'); }}
+        />
+      )}
+      <Menu anchorEl={groupMenu?.anchor} open={!!groupMenu} onClose={() => setGroupMenu(null)}>
+        {groupMenu && !groupMenu.group.savedGroupId && (
+          <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.promoteGroup(g.uuid), 'Promoted to a saved group'); }}>Promote to saved group</MenuItem>
+        )}
+        {groupMenu && groupMenu.group.savedGroupId && groupMenu.group.edited && (
+          <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.pushSavedGroup(g.uuid), 'Saved group updated'); }}>Update the saved group</MenuItem>
+        )}
+        {groupMenu && (
+          <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.removeGroup(planId, g.uuid), 'Group removed'); }}>Remove from plan</MenuItem>
+        )}
+      </Menu>
 
       {/* Assignment grid: rows = groups, cols = slots */}
       <Card variant="outlined"><Box sx={{ overflowX: 'auto' }}>
@@ -221,9 +248,18 @@ function PlanEditor({ planId }) {
           <TableBody>
             {plan.groups.map((g) => (
               <TableRow key={g.uuid} hover>
-                <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
-                  {g.labelSnapshot}{g.strengthSnapshot ? ` · ${g.strengthSnapshot}` : ''}
-                  {draft && canManage && <IconButton size="small" onClick={() => act(() => clubService.removeGroup(planId, g.uuid), 'Group removed')}><DeleteIcon fontSize="inherit" /></IconButton>}
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.labelSnapshot}{g.strengthSnapshot ? ` · ${g.strengthSnapshot}` : ''}</Typography>
+                    {g.savedGroupId && <Tooltip title="Linked to a saved group"><Chip size="small" variant="outlined" label="saved" /></Tooltip>}
+                    {g.edited && <Tooltip title="Edited — diverged from its source/saved snapshot"><Chip size="small" color="warning" label="edited" /></Tooltip>}
+                    {draft && canManage && (
+                      <>
+                        <Tooltip title="Edit group"><IconButton size="small" onClick={() => setEditGroup(g)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
+                        <IconButton size="small" onClick={(e) => setGroupMenu({ anchor: e.currentTarget, group: g })}><MoreIcon fontSize="inherit" /></IconButton>
+                      </>
+                    )}
+                  </Stack>
                 </TableCell>
                 {plan.slots.map((s) => {
                   const a = assignOf(g.uuid, s.uuid);
@@ -353,6 +389,59 @@ function CustomGroupDialog({ onClose, onCreate }) {
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={create}>Create group ({ids.length})</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// Pick a school-level saved group to add into this plan (or delete saved groups).
+function SavedGroupsDialog({ onClose, onAdd }) {
+  const [groups, setGroups] = useState(null);
+  const [err, setErr] = useState('');
+  const load = () => clubService.listSavedGroups().then(setGroups).catch(() => setGroups([]));
+  useEffect(() => { load(); }, []);
+  const del = async (id) => { try { await clubService.deleteSavedGroup(id); load(); } catch (e) { setErr(e.response?.data?.error?.description || 'Delete failed'); } };
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Add from saved groups</DialogTitle>
+      <DialogContent>
+        {err && <Alert severity="error" sx={{ mb: 1 }}>{err}</Alert>}
+        {groups === null ? <Box sx={{ textAlign: 'center', py: 3 }}><CircularProgress size={24} /></Box> : (
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            {groups.map((g) => (
+              <Stack key={g.uuid} direction="row" alignItems="center" spacing={1} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">{g.sourceType}{g.memberCount ? ` · ${g.memberCount} students` : (g.strengthSnapshot ? ` · ${g.strengthSnapshot}` : '')}</Typography>
+                </Box>
+                <Button size="small" variant="contained" onClick={() => onAdd(g.uuid)}>Add</Button>
+                <Tooltip title="Delete saved group"><IconButton size="small" onClick={() => del(g.uuid)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+              </Stack>
+            ))}
+            {!groups.length && <Alert severity="info">No saved groups yet. Build a group in a plan and use its ⋮ menu → “Promote to saved group”.</Alert>}
+          </Stack>
+        )}
+      </DialogContent>
+      <DialogActions><Button onClick={onClose}>Close</Button></DialogActions>
+    </Dialog>
+  );
+}
+
+// Rename a plan group / adjust its strength. Any edit marks it “edited” (diverged).
+function EditGroupDialog({ group, onClose, onSave }) {
+  const [label, setLabel] = useState(group.labelSnapshot || '');
+  const [strength, setStrength] = useState(group.strengthSnapshot ?? '');
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle>Edit group</DialogTitle>
+      <DialogContent><Stack spacing={2} sx={{ mt: 1 }}>
+        <TextField size="small" label="Name" value={label} onChange={(e) => setLabel(e.target.value)} />
+        <TextField size="small" label="Strength" value={strength} onChange={(e) => setStrength(e.target.value)} />
+        {group.savedGroupId && <Alert severity="info">Editing marks this as diverged from its saved group. Use the group’s ⋮ menu → “Update the saved group” to push changes back.</Alert>}
+      </Stack></DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" disabled={!label.trim()} onClick={() => onSave({ label: label.trim(), strength: strength === '' ? undefined : Number(strength) })}>Save</Button>
       </DialogActions>
     </Dialog>
   );
