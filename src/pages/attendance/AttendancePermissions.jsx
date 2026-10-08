@@ -69,7 +69,7 @@ export default function AttendancePermissions() {
   const menuDefault = menu ? baseGrants(menu.role, menu.action) : false;
 
   return (
-    <Box sx={{ width: '100%', maxWidth: 1100 }}>
+    <Box sx={{ width: '100%' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Permissions · Attendance</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Who can do what in this module. The grid starts from the built-in policy; force-allow or force-deny any
@@ -81,7 +81,7 @@ export default function AttendancePermissions() {
 
       <Card variant="outlined">
         <CardContent sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 720 }}>
+          <Table size="small" sx={{ width: '100%', minWidth: 720 }}>
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
