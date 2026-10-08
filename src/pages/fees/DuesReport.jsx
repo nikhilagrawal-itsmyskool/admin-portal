@@ -6,6 +6,9 @@ import {
   ToggleButtonGroup, ToggleButton, FormControlLabel, Switch, Link, Tooltip, Drawer, IconButton,
 } from '@mui/material';
 import { PersonSearch as PersonSearchIcon, Download as DownloadIcon, Clear as ClearIcon, Print as PrintIcon, Close as CloseIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
+
+const REL_LABEL = { father: 'Father', mother: 'Mother', guardian: 'Guardian' };
+const relLabel = (r) => REL_LABEL[r] || (r ? r.charAt(0).toUpperCase() + r.slice(1) : 'Contact');
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { feesService } from '../../services/feesService';
 import { classService } from '../../services/classService';
@@ -60,6 +63,7 @@ export default function DuesReport() {
   const [ledgerFull, setLedgerFull] = useState(null); // fetched full student (with enrollments) for the panel
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [family, setFamily] = useState(null); // { members: [...] } linked-sibling dues for the drawer
+  const [accum, setAccum] = useState(null); // accumulated dues (contacts + year-wise) for the drawer, reuses topDues
   const [famPrev, setFamPrev] = useState(false); // include prev-year dues in the family figures
 
   useEffect(() => {
@@ -89,8 +93,8 @@ export default function DuesReport() {
 
   // Fetch the full student (with enrollments) + family dues when the ledger drawer opens.
   useEffect(() => {
-    if (!ledgerStu) { setLedgerFull(null); setFamily(null); return; }
-    let alive = true; setLedgerLoading(true); setLedgerFull(null); setFamily(null);
+    if (!ledgerStu) { setLedgerFull(null); setFamily(null); setAccum(null); return; }
+    let alive = true; setLedgerLoading(true); setLedgerFull(null); setFamily(null); setAccum(null);
     studentService.getStudentById(ledgerStu.studentId)
       .then((s) => { if (alive) setLedgerFull(s || { uuid: ledgerStu.studentId, name: ledgerStu.name }); })
       .catch(() => { if (alive) setLedgerFull({ uuid: ledgerStu.studentId, name: ledgerStu.name }); })
@@ -98,6 +102,10 @@ export default function DuesReport() {
     feesService.getFamilyDues(ledgerStu.studentId, { academicYearId })
       .then((f) => { if (alive) setFamily(f || null); })
       .catch(() => { if (alive) setFamily(null); });
+    // accumulated dues (contacts + year-wise) — reuses the topDues engine for this one student
+    feesService.getTopDues(academicYearId, ledgerStu.studentId)
+      .then((a) => { if (alive) setAccum(a || null); })
+      .catch(() => { if (alive) setAccum(null); });
     return () => { alive = false; };
   }, [ledgerStu, academicYearId]);
 
@@ -349,6 +357,43 @@ export default function DuesReport() {
                     <Typography sx={{ fontSize: 12.5, fontWeight: 700 }}>Family due{famPrev ? ' + prev' : ' now'}</Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 800, color: FEE_COLORS.danger }}>{inr(total)}</Typography>
                   </Box>
+                </CardContent>
+              </Card>
+            );
+          })()}
+          {accum && (accum.rows || []).length > 0 && (() => {
+            const row = accum.rows[0]; const cols = accum.columns || [];
+            return (
+              <Card variant="outlined" sx={{ mb: 2, borderColor: FEE_COLORS.border }}>
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 13 }}>Accumulated dues</Typography>
+                    <Typography sx={{ fontWeight: 800, fontSize: 14, color: FEE_COLORS.danger }}>{inr(row.total)}</Typography>
+                  </Box>
+                  {(row.contacts || []).length > 0 && (
+                    <Box sx={{ mb: 1 }}>
+                      {row.contacts.map((c, i) => (
+                        <Typography key={i} sx={{ fontSize: 12, lineHeight: 1.6 }}>
+                          <span style={{ color: FEE_COLORS.muted }}>{relLabel(c.relation)}:</span> {c.name || '—'}
+                          {c.mobile && <span style={{ color: FEE_COLORS.muted }}> · {c.mobile}</span>}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+                  <Table size="small">
+                    <TableBody>
+                      {cols.map((col) => {
+                        const amt = Number(row.byYear?.[col.academicYearId] || 0);
+                        if (!(amt > 0)) return null;
+                        return (
+                          <TableRow key={col.academicYearId}>
+                            <TableCell sx={{ py: 0.4, border: 0 }}>{col.name}{col.isCurrent ? ` · ${accum.monthLabel || 'till date'}` : ''}</TableCell>
+                            <TableCell align="right" sx={{ py: 0.4, border: 0, fontWeight: 600, color: FEE_COLORS.danger }}>{inr(amt)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             );

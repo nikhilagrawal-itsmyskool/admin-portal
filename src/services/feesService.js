@@ -117,8 +117,8 @@ export const feesService = {
     (await api.get('/fees/reports/ungenerated-students', { params: { academicYearId } })).data,
   getDues: async (params = {}) =>
     (await api.get('/fees/reports/dues', { params })).data,
-  getTopDues: async (academicYearId) =>
-    (await api.get('/fees/reports/top-dues', { params: academicYearId ? { academicYearId } : {} })).data,
+  getTopDues: async (academicYearId, studentId) =>
+    (await api.get('/fees/reports/top-dues', { params: { ...(academicYearId ? { academicYearId } : {}), ...(studentId ? { studentId } : {}) } })).data,
   setFollowup: async (data) => (await api.post('/fees/reports/followup', data)).data,
   getFollowup: async (params = {}) => (await api.get('/fees/reports/followup', { params })).data,
   getFamilyDues: async (studentId, params = {}) => (await api.get(`/fees/students/${studentId}/family-dues`, { params })).data,
