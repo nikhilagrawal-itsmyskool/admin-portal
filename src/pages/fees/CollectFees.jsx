@@ -38,6 +38,7 @@ export default function CollectFees() {
   const [useAdvance, setUseAdvance] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const canWaive = useCan()(ACTIONS.FEE_MANAGE);
+  const canExempt = useCan()('*'); // fine late-fee exemption is god-only (not admins/incharges)
   const [received, setReceived] = useState(''); // cash in hand — the anchor
   const [waive, setWaive] = useState({ on: false, reason: '' });
   const [exempt, setExempt] = useState({}); // chargeId -> { on, amount, reason } — per-fine late-fee exemption
@@ -189,7 +190,7 @@ export default function CollectFees() {
           {cover === 'partial' && <Chip size="small" color="warning" label={`Partial ${inr(payNow)}/${inr(rem)}`} sx={{ ml: 1, height: 18 }} />}
           {ln.status === 'partial' && <Chip size="small" color="warning" variant="outlined" label="Part-paid" sx={{ ml: 1, height: 18 }} />}
           {ln.category && ln.category !== 'fee' && <Chip size="small" variant="outlined" label={ln.category} sx={{ ml: 1, height: 18 }} />}
-          {fine && <Chip size="small" clickable color={ex?.on ? 'info' : 'default'} variant={ex?.on ? 'filled' : 'outlined'}
+          {fine && canExempt && <Chip size="small" clickable color={ex?.on ? 'info' : 'default'} variant={ex?.on ? 'filled' : 'outlined'}
             label={ex?.on ? 'Exempted' : 'Exempt'} onClick={() => toggleExempt(ln.chargeId, ln.remaining)} sx={{ ml: 1, height: 18 }} />}
         </TableCell>
         <TableCell align="right">{inr(ln.charged)}</TableCell>
