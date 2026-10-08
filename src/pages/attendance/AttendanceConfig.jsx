@@ -15,7 +15,8 @@ const WEIGHTS = [
   { value: 'excluded', label: 'Excluded', help: "Not counted as a working day at all (like 'Leave'). Purely a record that the student left early." },
 ];
 
-// Admin + god only (attendance.config.manage). Define how a Half-day attendance is treated.
+// God-only by default (attendance.config.manage); god can grant others via the Permissions grid.
+// Define how a Half-day attendance is treated.
 export default function AttendanceConfig() {
   const can = useCan();
   const canManage = can(ACTIONS.ATTENDANCE_CONFIG_MANAGE);
@@ -57,7 +58,7 @@ export default function AttendanceConfig() {
     return (
       <Box sx={{ maxWidth: 640 }}>
         <Typography variant="h5" sx={{ mb: 1 }}>Attendance Config</Typography>
-        <Alert severity="warning">Only an admin or the super-admin (god) can manage attendance config.</Alert>
+        <Alert severity="warning">You don't have permission to manage attendance config. This is restricted to the super-admin (god) by default.</Alert>
       </Box>
     );
   }

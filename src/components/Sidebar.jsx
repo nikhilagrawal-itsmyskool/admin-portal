@@ -286,6 +286,8 @@ const menuItems = [
       // Class teachers (attendance.mark, no finalize) get only Take Attendance;
       // the review surfaces (Overview/Register/History) are admin/god (attendance.finalize).
       { title: 'Overview', icon: OverviewIcon, path: '/attendance', perm: 'attendance.finalize' },
+      // Permissions + Config are god-only by default (authz.manage / attendance.config.manage,
+      // the latter not granted to admin in policy); god can open Config to admin via the grid.
       { title: 'Permissions', icon: PermissionsIcon, path: '/attendance/permissions', perm: 'authz.manage' },
       { title: 'Config', icon: AsmSettingsIcon, path: '/attendance/config', perm: 'attendance.config.manage' },
       { title: 'Take Attendance', icon: MarkIcon, path: '/attendance/mark' },

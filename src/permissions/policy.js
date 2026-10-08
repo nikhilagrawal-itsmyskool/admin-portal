@@ -29,7 +29,8 @@ export const ROLE_PERMISSIONS = {
     "student.contacts.view",
     "attendance.mark",
     "attendance.finalize",
-    "attendance.config.manage", // Attendance Config screen (half-day policy) — admin + god
+    // attendance.config.manage is god-only by default (not here); god grants admin via the
+    // Permissions grid if a school wants it. Mirrors the god-first convention.
     "communication.send",
     "communication.template.manage",
     "hiring.view",

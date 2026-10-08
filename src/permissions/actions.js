@@ -42,7 +42,8 @@ export const ACTIONS = {
   STUDENT_MANAGE: "student.manage",
   STUDENT_VIEW_CONTACTS: "student.contacts.view",
   // Attendance. mark = take roll-call (roster/sessions/save + read config); finalize = finalize &
-  // edit records; config.manage = the per-school Attendance Config screen (half-day policy), admin+god.
+  // edit records; config.manage = the per-school Attendance Config screen (half-day policy),
+  // god-only by default (god grants admin via the Permissions grid if wanted).
   ATTENDANCE_MARK: "attendance.mark",
   ATTENDANCE_FINALIZE: "attendance.finalize",
   ATTENDANCE_CONFIG_MANAGE: "attendance.config.manage",
@@ -268,7 +269,7 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.ATTENDANCE_CONFIG_MANAGE,
     description:
-      "Manage the per-school Attendance Config (how a half-day counts toward attendance %) — admin + god",
+      "Manage the per-school Attendance Config (how a half-day counts toward attendance %) — god-only by default",
   },
   {
     action: ACTIONS.COMMUNICATION_SEND,
