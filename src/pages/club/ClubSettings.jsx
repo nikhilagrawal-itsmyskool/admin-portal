@@ -39,7 +39,7 @@ export default function ClubSettings() {
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ maxWidth: 640 }}>
+    <Box sx={{ width: '100%' }}>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>Programme Settings</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Admin-only. These shape how Clubs &amp; Activities appears school-wide.</Typography>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}

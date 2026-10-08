@@ -68,7 +68,7 @@ export default function ClubPermissions() {
   const menuDefault = menu ? baseGrants(menu.role, menu.action) : false;
 
   return (
-    <Box sx={{ width: '100%', maxWidth: 1100 }}>
+    <Box sx={{ width: '100%' }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Permissions · Clubs &amp; Activities</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Who can do what in this module. The grid starts from the built-in policy; force-allow or force-deny any

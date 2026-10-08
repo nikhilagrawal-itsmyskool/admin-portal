@@ -5,7 +5,7 @@ import {
   TableBody, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   MenuItem, IconButton, Breadcrumbs, Link, LinearProgress, Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon, AutoFixHigh as GenIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, AutoFixHigh as GenIcon, Visibility as ViewIcon, Edit as EditIcon } from '@mui/icons-material';
 import EmployeeSearchDialog from '../../components/common/EmployeeSearchDialog';
 import { clubService } from '../../services/clubService';
 import { useCan } from '../../permissions/can';
@@ -22,7 +22,7 @@ function PlanList() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [newOpen, setNewOpen] = useState(false);
+  const [dialog, setDialog] = useState(null); // null | { plan? }  (new if no plan, edit if plan)
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,12 +37,12 @@ function PlanList() {
     <Box>
       <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, flex: 1 }}>Planning Board</Typography>
-        {can('club.plan.manage') && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setNewOpen(true)}>New plan</Button>}
+        {can('club.plan.manage') && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialog({})}>New plan</Button>}
       </Stack>
       {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
       <Card variant="outlined"><Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
-          <TableHead><TableRow><TableCell>Date</TableCell><TableCell>Title</TableCell><TableCell>Scope</TableCell><TableCell>Coverage</TableCell><TableCell>Assignments</TableCell><TableCell>Status</TableCell></TableRow></TableHead>
+          <TableHead><TableRow><TableCell>Date</TableCell><TableCell>Title</TableCell><TableCell>Scope</TableCell><TableCell>Coverage</TableCell><TableCell>Assignments</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
           <TableBody>
             {plans.map((p) => (
               <TableRow key={p.uuid} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/club/plans/${p.uuid}`)}>
@@ -50,43 +50,66 @@ function PlanList() {
                 <TableCell>{p.participationScope}</TableCell><TableCell>{p.coverage}</TableCell>
                 <TableCell>{p.assignmentCount}</TableCell>
                 <TableCell><Chip size="small" label={p.status} color={p.status === 'published' ? 'success' : p.status === 'closed' ? 'default' : p.status === 'cancelled' ? 'error' : 'warning'} /></TableCell>
+                <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                  <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/club/plans/${p.uuid}`)}><ViewIcon fontSize="small" /></IconButton></Tooltip>
+                  {can('club.plan.manage') && p.status !== 'cancelled' && (
+                    <Tooltip title="Edit"><IconButton size="small" onClick={() => setDialog({ plan: p })}><EditIcon fontSize="small" /></IconButton></Tooltip>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
-            {!plans.length && <TableRow><TableCell colSpan={6}><Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>No plans yet.</Typography></TableCell></TableRow>}
+            {!plans.length && <TableRow><TableCell colSpan={7}><Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>No plans yet.</Typography></TableCell></TableRow>}
           </TableBody>
         </Table>
       </Box></Card>
-      {newOpen && <NewPlanDialog onClose={() => setNewOpen(false)} onSaved={(pid) => navigate(`/club/plans/${pid}`)} />}
+      {dialog && <PlanDialog plan={dialog.plan} onClose={() => setDialog(null)} onSaved={(pid, created) => { setDialog(null); if (created) navigate(`/club/plans/${pid}`); else load(); }} />}
     </Box>
   );
 }
 
-function NewPlanDialog({ onClose, onSaved }) {
-  const [form, setForm] = useState({ planDate: '', title: '', participationScope: 'whole', coverage: 'selective' });
+function PlanDialog({ plan, onClose, onSaved }) {
+  const editing = !!plan;
+  const structuralLocked = editing && plan.status !== 'draft'; // date/scope/coverage frozen after draft
+  const [form, setForm] = useState({
+    planDate: plan?.planDate || '', title: plan?.title || '',
+    participationScope: plan?.participationScope || 'whole', coverage: plan?.coverage || 'selective',
+  });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const save = async () => {
     setBusy(true); setErr('');
-    try { const r = await clubService.createPlan(form); onSaved(r.uuid); }
-    catch (e) { setErr(e.response?.data?.error?.description || 'Create failed'); }
+    try {
+      if (editing) {
+        await clubService.updatePlan(plan.uuid, {
+          title: form.title, planDate: form.planDate,
+          participationScope: form.participationScope, coverage: form.coverage, rowVersion: plan.rowVersion,
+        });
+        onSaved(plan.uuid, false);
+      } else {
+        const r = await clubService.createPlan(form);
+        onSaved(r.uuid, true);
+      }
+    } catch (e) { setErr(e.response?.data?.error?.description || 'Save failed'); }
     finally { setBusy(false); }
   };
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>New plan</DialogTitle>
+      <DialogTitle>{editing ? 'Edit plan' : 'New plan'}</DialogTitle>
       <DialogContent><Stack spacing={2} sx={{ mt: 1 }}>
         {err && <Alert severity="error">{err}</Alert>}
-        <TextField type="date" label="Date" InputLabelProps={{ shrink: true }} value={form.planDate} onChange={set('planDate')} size="small" />
+        <TextField type="date" label="Date" InputLabelProps={{ shrink: true }} value={form.planDate} onChange={set('planDate')} size="small"
+          disabled={structuralLocked} helperText={structuralLocked ? 'Date is fixed after publish' : undefined} />
         <TextField label="Title" value={form.title} onChange={set('title')} size="small" />
-        <TextField label="Scope" select value={form.participationScope} onChange={set('participationScope')} size="small">
+        <TextField label="Scope" select value={form.participationScope} onChange={set('participationScope')} size="small" disabled={structuralLocked}>
           {['whole', 'grades', 'groups'].map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
         </TextField>
-        <TextField label="Coverage" select value={form.coverage} onChange={set('coverage')} size="small" helperText="Complete = every group must be assigned before publish">
+        <TextField label="Coverage" select value={form.coverage} onChange={set('coverage')} size="small" disabled={structuralLocked}
+          helperText={structuralLocked ? 'Scope / coverage are fixed after publish' : 'Complete = every group must be assigned before publish'}>
           {['selective', 'complete'].map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
         </TextField>
       </Stack></DialogContent>
-      <DialogActions><Button onClick={onClose}>Cancel</Button><Button variant="contained" disabled={busy || !form.planDate} onClick={save}>Create</Button></DialogActions>
+      <DialogActions><Button onClick={onClose}>Cancel</Button><Button variant="contained" disabled={busy || !form.planDate} onClick={save}>{editing ? 'Save' : 'Create'}</Button></DialogActions>
     </Dialog>
   );
 }
@@ -320,7 +343,7 @@ function CustomGroupDialog({ onClose, onCreate }) {
             <Box>
               <Typography variant="caption" color="text.secondary">Picked ({ids.length}):</Typography>
               <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                {ids.slice(0, 30).map((id) => <Chip key={id} size="small" label={picked[id].name} onDelete={() => setPicked((p) => { const n = { ...p }; delete n[id]; return n; })} />)}
+                {ids.slice(0, 30).map((id) => <Chip key={id} size="small" label={`${picked[id].name}${picked[id].className ? ` · ${picked[id].className}` : ''}`} onDelete={() => setPicked((p) => { const n = { ...p }; delete n[id]; return n; })} />)}
                 {ids.length > 30 && <Chip size="small" label={`+${ids.length - 30} more`} />}
               </Stack>
             </Box>

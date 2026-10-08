@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Stack, Button, TextField, MenuItem, Chip, Table, TableHead, TableRow, TableCell,
-  TableBody, Card, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Breadcrumbs, Link,
+  TableBody, Card, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Breadcrumbs, Link, IconButton, Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Download as DownloadIcon, Upload as UploadIcon } from '@mui/icons-material';
+import { Add as AddIcon, Download as DownloadIcon, Upload as UploadIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import { clubService } from '../../services/clubService';
 import { useCan } from '../../permissions/can';
 
@@ -119,6 +119,7 @@ export default function ActivityBank() {
               <TableRow>
                 <TableCell>Code</TableCell><TableCell>Activity</TableCell><TableCell>Level</TableCell>
                 <TableCell>Category</TableCell><TableCell>Version</TableCell><TableCell>Availability</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -135,9 +136,12 @@ export default function ActivityBank() {
                     </Stack>
                   </TableCell>
                   <TableCell><Chip size="small" label={r.availability} color={availColor(r.availability)} variant="outlined" /></TableCell>
+                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/club/activities/${r.uuid}`)}><ViewIcon fontSize="small" /></IconButton></Tooltip>
+                  </TableCell>
                 </TableRow>
               ))}
-              {!rows.length && <TableRow><TableCell colSpan={6}><Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>No activities match.</Typography></TableCell></TableRow>}
+              {!rows.length && <TableRow><TableCell colSpan={7}><Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>No activities match.</Typography></TableCell></TableRow>}
             </TableBody>
           </Table>
         </Box>
