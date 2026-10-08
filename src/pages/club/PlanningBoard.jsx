@@ -104,6 +104,7 @@ function PlanEditor({ planId }) {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [assignDialog, setAssignDialog] = useState(null); // { group, slot, current }
+  const [customOpen, setCustomOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -170,9 +171,16 @@ function PlanEditor({ planId }) {
       {draft && canManage && (
         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
           <SlotAdder onAdd={(b) => act(() => clubService.addSlot(planId, b), 'Slot added')} />
-          <Button size="small" startIcon={<GenIcon />} onClick={() => act(() => clubService.generateGroups(planId), 'Groups generated from classes')}>Generate groups from classes</Button>
-          <GroupAdder onAdd={(b) => act(() => clubService.addGroup(planId, b), 'Group added')} />
+          <Button size="small" startIcon={<GenIcon />} onClick={() => act(() => clubService.generateGroups(planId), 'Groups generated from classes')}>Generate from classes</Button>
+          <Button size="small" startIcon={<GenIcon />} onClick={() => act(() => clubService.generateHouses(planId), 'Groups generated from houses')}>Generate from houses</Button>
+          <Button size="small" startIcon={<AddIcon />} onClick={() => setCustomOpen(true)}>Custom group</Button>
         </Stack>
+      )}
+      {customOpen && (
+        <CustomGroupDialog
+          onClose={() => setCustomOpen(false)}
+          onCreate={(body) => { setCustomOpen(false); act(() => clubService.addGroup(planId, body), 'Custom group added'); }}
+        />
       )}
 
       {/* Assignment grid: rows = groups, cols = slots */}
@@ -250,25 +258,80 @@ function SlotAdder({ onAdd }) {
   );
 }
 
-function GroupAdder({ onAdd }) {
-  const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ sourceType: 'class', label: '', strength: '' });
+// Build a custom group by picking students from one or more classes. Selections accumulate
+// across classes; name it and create. Stored as a 'selected' group with a member roster.
+function CustomGroupDialog({ onClose, onCreate }) {
+  const [classes, setClasses] = useState([]);
+  const [classId, setClassId] = useState('');
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [picked, setPicked] = useState({}); // studentId -> { name, className }
+  const [label, setLabel] = useState('');
+  const [err, setErr] = useState('');
+
+  useEffect(() => { clubService.pickerClasses().then(setClasses).catch(() => setClasses([])); }, []);
+  useEffect(() => {
+    if (!classId) { setStudents([]); return; }
+    setLoadingStudents(true);
+    clubService.pickerClassStudents(classId).then(setStudents).catch(() => setStudents([])).finally(() => setLoadingStudents(false));
+  }, [classId]);
+
+  const className = classes.find((c) => c.uuid === classId)?.name || '';
+  const toggle = (s) => setPicked((p) => {
+    const next = { ...p };
+    if (next[s.uuid]) delete next[s.uuid]; else next[s.uuid] = { name: s.name, className };
+    return next;
+  });
+  const ids = Object.keys(picked);
+
+  const create = () => {
+    if (!label.trim()) { setErr('Give the group a name'); return; }
+    if (!ids.length) { setErr('Pick at least one student'); return; }
+    onCreate({
+      sourceType: 'selected',
+      label: label.trim(),
+      strength: ids.length,
+      members: ids.map((id) => ({ studentId: id, studentName: picked[id].name })),
+    });
+  };
+
   return (
-    <>
-      <Button size="small" startIcon={<AddIcon />} onClick={() => setOpen(true)}>Add group</Button>
-      {open && (
-        <Dialog open onClose={() => setOpen(false)}><DialogTitle>Add group</DialogTitle>
-          <DialogContent><Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField size="small" label="Label" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} helperText="e.g. VI-A" />
-            <TextField size="small" label="Strength" value={f.strength} onChange={(e) => setF({ ...f, strength: e.target.value })} />
-            <TextField size="small" label="Source" select value={f.sourceType} onChange={(e) => setF({ ...f, sourceType: e.target.value })}>
-              {['class', 'house', 'club', 'mixed', 'selected'].map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-            </TextField>
-          </Stack></DialogContent>
-          <DialogActions><Button onClick={() => setOpen(false)}>Cancel</Button><Button variant="contained" disabled={!f.label} onClick={() => { onAdd({ ...f, strength: f.strength ? Number(f.strength) : undefined }); setOpen(false); }}>Add</Button></DialogActions>
-        </Dialog>
-      )}
-    </>
+    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Custom group</DialogTitle>
+      <DialogContent>
+        {err && <Alert severity="warning" sx={{ mb: 1 }}>{err}</Alert>}
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <TextField size="small" label="Group name" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Diorama team" />
+          <TextField size="small" select label="Add students from class" value={classId} onChange={(e) => setClassId(e.target.value)}>
+            {classes.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}{c.strength ? ` (${c.strength})` : ''}</MenuItem>)}
+          </TextField>
+          {classId && (
+            <Box sx={{ maxHeight: 220, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+              {loadingStudents ? <Box sx={{ textAlign: 'center', py: 2 }}><CircularProgress size={22} /></Box> : students.map((s) => (
+                <Stack key={s.uuid} direction="row" alignItems="center" spacing={1} sx={{ py: 0.3 }}>
+                  <input type="checkbox" checked={!!picked[s.uuid]} onChange={() => toggle(s)} />
+                  <Typography variant="body2">{s.name}{s.admissionNumber ? ` · ${s.admissionNumber}` : ''}</Typography>
+                </Stack>
+              ))}
+              {!loadingStudents && !students.length && <Typography variant="caption" color="text.secondary">No students in this class.</Typography>}
+            </Box>
+          )}
+          {ids.length > 0 && (
+            <Box>
+              <Typography variant="caption" color="text.secondary">Picked ({ids.length}):</Typography>
+              <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                {ids.slice(0, 30).map((id) => <Chip key={id} size="small" label={picked[id].name} onDelete={() => setPicked((p) => { const n = { ...p }; delete n[id]; return n; })} />)}
+                {ids.length > 30 && <Chip size="small" label={`+${ids.length - 30} more`} />}
+              </Stack>
+            </Box>
+          )}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={create}>Create group ({ids.length})</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

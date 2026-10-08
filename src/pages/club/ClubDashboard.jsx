@@ -16,14 +16,18 @@ export default function ClubDashboard() {
   const can = useCan();
   const canManage = can('club.setup.manage');
   const [clubs, setClubs] = useState([]);
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [dialog, setDialog] = useState(null); // null | {} (new) | club (edit)
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
-    try { setClubs(await clubService.listClubs()); }
-    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load clubs'); }
+    try {
+      const [clubList, settings] = await Promise.all([clubService.listClubs(), clubService.getSettings().catch(() => ({}))]);
+      setClubs(clubList);
+      setDisplayName(settings?.displayName || '');
+    } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load clubs'); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -34,7 +38,7 @@ export default function ClubDashboard() {
     <Box>
       <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Clubs &amp; Activities</Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>{displayName || 'Clubs & Activities'}</Typography>
           <Typography variant="body2" color="text.secondary">One engine for every club — build the bank, plan the week, conduct & close.</Typography>
         </Box>
         <Button variant="outlined" startIcon={<SettingsIcon />} sx={{ mr: 1 }} onClick={() => navigate('/club/settings')}>Settings</Button>
