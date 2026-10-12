@@ -230,6 +230,7 @@ import ClubActivityBank from './pages/club/ActivityBank';
 import ClubActivityDetail from './pages/club/ActivityDetail';
 import ClubPlanningBoard from './pages/club/PlanningBoard';
 import ClubReviewQueue from './pages/club/ReviewQueue';
+import ClubSavedGroups from './pages/club/SavedGroups';
 import ClubSettings from './pages/club/ClubSettings';
 import ClubPermissions from './pages/club/Permissions';
 import MyClub from './pages/club/mobile/MyClub';
@@ -530,6 +531,7 @@ export default function App() {
         <Route path="club/settings" element={<ClubSettings />} />
         <Route path="club/permissions" element={<ClubPermissions />} />
         <Route path="club/reviews" element={<ClubReviewQueue />} />
+        <Route path="club/saved-groups" element={<ClubSavedGroups />} />
         <Route path="club/clubs/:clubId/activities" element={<ClubActivityBank />} />
         <Route path="club/activities/:id" element={<ClubActivityDetail />} />
         <Route path="club/plans" element={<ClubPlanningBoard />} />

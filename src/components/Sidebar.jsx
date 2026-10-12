@@ -438,6 +438,7 @@ const menuItems = [
       { title: 'Permissions', icon: PermissionsIcon, path: '/club/permissions', perm: 'authz.manage' },
       { title: 'Clubs', icon: AssemblyIcon, path: '/club', perm: 'club.setup.view' },
       { title: 'Planning Board', icon: CalendarIcon, path: '/club/plans', perm: 'club.plan.view' },
+      { title: 'Saved Groups', icon: PeopleIcon, path: '/club/saved-groups', perm: 'club.plan.view' },
       { title: 'Review Queue', icon: ReportIcon, path: '/club/reviews', perm: 'club.activity.review' },
       { title: 'My Activities', icon: DutyIcon, path: '/club/me', perm: 'club.plan.conduct' },
       { title: 'Settings', icon: TypeIcon, path: '/club/settings', perm: 'club.setup.manage' },

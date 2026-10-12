@@ -10,6 +10,10 @@ import EmployeeSearchDialog from '../../components/common/EmployeeSearchDialog';
 import { clubService } from '../../services/clubService';
 import { useCan } from '../../permissions/can';
 
+// A plan group is editable only if it's a materialised custom group (not a live class/house/
+// saved reference). Live groups are cloned to produce an editable copy.
+const isCustomGroup = (g) => !g.savedGroupId && (g.sourceType === 'selected' || g.sourceType === 'mixed');
+
 export default function PlanningBoard() {
   const { id } = useParams();
   return id ? <PlanEditor planId={id} /> : <PlanList />;
@@ -222,11 +226,11 @@ function PlanEditor({ planId }) {
         />
       )}
       <Menu anchorEl={groupMenu?.anchor} open={!!groupMenu} onClose={() => setGroupMenu(null)}>
-        {groupMenu && !groupMenu.group.savedGroupId && (
-          <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.promoteGroup(g.uuid), 'Promoted to a saved group'); }}>Promote to saved group</MenuItem>
+        {groupMenu && !isCustomGroup(groupMenu.group) && (
+          <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.cloneGroup(g.uuid), 'Cloned into an editable group'); }}>Clone to edit</MenuItem>
         )}
-        {groupMenu && groupMenu.group.savedGroupId && groupMenu.group.edited && (
-          <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.pushSavedGroup(g.uuid), 'Saved group updated'); }}>Update the saved group</MenuItem>
+        {groupMenu && isCustomGroup(groupMenu.group) && (
+          <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.promoteGroup(g.uuid), 'Promoted to a saved group'); }}>Promote to saved group</MenuItem>
         )}
         {groupMenu && (
           <MenuItem onClick={() => { const g = groupMenu.group; setGroupMenu(null); act(() => clubService.removeGroup(planId, g.uuid), 'Group removed'); }}>Remove from plan</MenuItem>
@@ -250,12 +254,12 @@ function PlanEditor({ planId }) {
               <TableRow key={g.uuid} hover>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>
                   <Stack direction="row" alignItems="center" spacing={0.5}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.labelSnapshot}{g.strengthSnapshot ? ` · ${g.strengthSnapshot}` : ''}</Typography>
-                    {g.savedGroupId && <Tooltip title="Linked to a saved group"><Chip size="small" variant="outlined" label="saved" /></Tooltip>}
-                    {g.edited && <Tooltip title="Edited — diverged from its source/saved snapshot"><Chip size="small" color="warning" label="edited" /></Tooltip>}
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.labelSnapshot}{(g.liveStrength ?? g.strengthSnapshot) != null ? ` · ${g.liveStrength ?? g.strengthSnapshot}` : ''}</Typography>
+                    {g.savedGroupId && <Tooltip title="Reusable saved group (live, read-only here)"><Chip size="small" variant="outlined" label="saved" /></Tooltip>}
+                    {!g.savedGroupId && (g.sourceType === 'class' || g.sourceType === 'house') && <Tooltip title={`Live ${g.sourceType} — read-only; clone to edit`}><Chip size="small" variant="outlined" label={g.sourceType} /></Tooltip>}
                     {draft && canManage && (
                       <>
-                        <Tooltip title="Edit group"><IconButton size="small" onClick={() => setEditGroup(g)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
+                        {isCustomGroup(g) && <Tooltip title="Edit group"><IconButton size="small" onClick={() => setEditGroup(g)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>}
                         <IconButton size="small" onClick={(e) => setGroupMenu({ anchor: e.currentTarget, group: g })}><MoreIcon fontSize="inherit" /></IconButton>
                       </>
                     )}
@@ -317,15 +321,19 @@ function SlotAdder({ onAdd }) {
   );
 }
 
-// Build a custom group by picking students from one or more classes. Selections accumulate
-// across classes; name it and create. Stored as a 'selected' group with a member roster.
-function CustomGroupDialog({ onClose, onCreate }) {
+// Shared student-roster builder: name + pick students from one or more classes (selections
+// accumulate). Used to create a custom group and to edit an existing one. onSubmit(name, members).
+export function GroupBuilderDialog({ title, submitLabel, initialName = '', initialMembers = [], onClose, onSubmit }) {
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState('');
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
-  const [picked, setPicked] = useState({}); // studentId -> { name, className }
-  const [label, setLabel] = useState('');
+  const [picked, setPicked] = useState(() => {
+    const init = {};
+    (initialMembers || []).forEach((m) => { init[m.studentId] = { name: m.name, className: m.className || '' }; });
+    return init;
+  });
+  const [label, setLabel] = useState(initialName);
   const [err, setErr] = useState('');
 
   useEffect(() => { clubService.pickerClasses().then(setClasses).catch(() => setClasses([])); }, []);
@@ -343,20 +351,15 @@ function CustomGroupDialog({ onClose, onCreate }) {
   });
   const ids = Object.keys(picked);
 
-  const create = () => {
+  const submit = () => {
     if (!label.trim()) { setErr('Give the group a name'); return; }
     if (!ids.length) { setErr('Pick at least one student'); return; }
-    onCreate({
-      sourceType: 'selected',
-      label: label.trim(),
-      strength: ids.length,
-      members: ids.map((id) => ({ studentId: id, studentName: picked[id].name })),
-    });
+    onSubmit(label.trim(), ids.map((id) => ({ studentId: id, studentName: picked[id].name })));
   };
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Custom group</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         {err && <Alert severity="warning" sx={{ mb: 1 }}>{err}</Alert>}
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -379,8 +382,8 @@ function CustomGroupDialog({ onClose, onCreate }) {
             <Box>
               <Typography variant="caption" color="text.secondary">Picked ({ids.length}):</Typography>
               <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                {ids.slice(0, 30).map((id) => <Chip key={id} size="small" label={`${picked[id].name}${picked[id].className ? ` · ${picked[id].className}` : ''}`} onDelete={() => setPicked((p) => { const n = { ...p }; delete n[id]; return n; })} />)}
-                {ids.length > 30 && <Chip size="small" label={`+${ids.length - 30} more`} />}
+                {ids.slice(0, 40).map((id) => <Chip key={id} size="small" label={`${picked[id].name}${picked[id].className ? ` · ${picked[id].className}` : ''}`} onDelete={() => setPicked((p) => { const n = { ...p }; delete n[id]; return n; })} />)}
+                {ids.length > 40 && <Chip size="small" label={`+${ids.length - 40} more`} />}
               </Stack>
             </Box>
           )}
@@ -388,9 +391,19 @@ function CustomGroupDialog({ onClose, onCreate }) {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={create}>Create group ({ids.length})</Button>
+        <Button variant="contained" onClick={submit}>{submitLabel} ({ids.length})</Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function CustomGroupDialog({ onClose, onCreate }) {
+  return (
+    <GroupBuilderDialog
+      title="Custom group" submitLabel="Create group"
+      onClose={onClose}
+      onSubmit={(name, members) => onCreate({ sourceType: 'selected', label: name, strength: members.length, members })}
+    />
   );
 }
 
@@ -427,23 +440,16 @@ function SavedGroupsDialog({ onClose, onAdd }) {
   );
 }
 
-// Rename a plan group / adjust its strength. Any edit marks it “edited” (diverged).
+// Edit a CUSTOM group: rename + re-pick members (via the shared builder).
 function EditGroupDialog({ group, onClose, onSave }) {
-  const [label, setLabel] = useState(group.labelSnapshot || '');
-  const [strength, setStrength] = useState(group.strengthSnapshot ?? '');
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Edit group</DialogTitle>
-      <DialogContent><Stack spacing={2} sx={{ mt: 1 }}>
-        <TextField size="small" label="Name" value={label} onChange={(e) => setLabel(e.target.value)} />
-        <TextField size="small" label="Strength" value={strength} onChange={(e) => setStrength(e.target.value)} />
-        {group.savedGroupId && <Alert severity="info">Editing marks this as diverged from its saved group. Use the group’s ⋮ menu → “Update the saved group” to push changes back.</Alert>}
-      </Stack></DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" disabled={!label.trim()} onClick={() => onSave({ label: label.trim(), strength: strength === '' ? undefined : Number(strength) })}>Save</Button>
-      </DialogActions>
-    </Dialog>
+    <GroupBuilderDialog
+      title="Edit group" submitLabel="Save group"
+      initialName={group.labelSnapshot || ''}
+      initialMembers={group.members || []}
+      onClose={onClose}
+      onSubmit={(name, members) => onSave({ label: name, members })}
+    />
   );
 }
 

@@ -53,13 +53,17 @@ export const clubService = {
   saveAssignment: async (id, body) => (await api.post(`/club/plans/${id}/assignments`, body)).data,
   changeAssignment: async (id, body) => (await api.post(`/club/plans/${id}/assignments/change`, body)).data,
   cancelAssignment: async (assignmentId, reason) => (await api.post(`/club/assignments/${assignmentId}/cancel`, { reason })).data,
-  // Reusable saved groups
+  // Reusable saved groups (live; managed in the Saved Groups screen)
   listSavedGroups: async () => (await api.get('/club/saved-groups')).data,
+  getSavedGroup: async (id) => (await api.get(`/club/saved-groups/${id}`)).data,
+  createSavedGroup: async (body) => (await api.post('/club/saved-groups', body)).data,
+  updateSavedGroup: async (id, body) => (await api.put(`/club/saved-groups/${id}`, body)).data,
   deleteSavedGroup: async (id) => (await api.delete(`/club/saved-groups/${id}`)).data,
+  // Plan-group operations
   promoteGroup: async (planGroupId) => (await api.post(`/club/plan-groups/${planGroupId}/promote`, {})).data,
+  cloneGroup: async (planGroupId) => (await api.post(`/club/plan-groups/${planGroupId}/clone`, {})).data,
   addSavedToPlan: async (planId, savedGroupId) => (await api.post(`/club/plans/${planId}/groups/add-saved`, { savedGroupId })).data,
   editPlanGroup: async (planGroupId, body) => (await api.put(`/club/plan-groups/${planGroupId}`, body)).data,
-  pushSavedGroup: async (planGroupId) => (await api.post(`/club/plan-groups/${planGroupId}/push-saved`, {})).data,
   adminComplete: async (assignmentId, body) => (await api.post(`/club/assignments/${assignmentId}/complete`, body)).data,
   publishPlan: async (id, rowVersion) => (await api.post(`/club/plans/${id}/publish`, { rowVersion })).data,
   closePlan: async (id) => (await api.post(`/club/plans/${id}/close`, {})).data,
