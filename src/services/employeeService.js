@@ -54,4 +54,11 @@ export const employeeService = {
     const response = await api.post(`/employees/${id}/reset-password`);
     return response.data;
   },
+
+  // Force an employee to sign out and back in (god only — gated in the UI). Bumps the login's
+  // session version so their live tokens are rejected within ~60s and they must log in again.
+  forceReLogin: async (id) => {
+    const response = await api.post(`/employees/${id}/force-logout`);
+    return response.data;
+  },
 };

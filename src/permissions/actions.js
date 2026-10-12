@@ -36,6 +36,9 @@ export const ACTIONS = {
   EMPLOYEE_VIEW: "employee.view",
   EMPLOYEE_MANAGE: "employee.manage",
   EMPLOYEE_RESTORE: "employee.restore",
+  // Force an employee to sign out and back in (bumps the login's session version). God-only by
+  // default (listed on no role; god's '*' covers it) — grant to admin from the Permissions grid.
+  EMPLOYEE_SESSION_RESET: "employee.session.reset",
   PURCHASE_LOG_EDIT: "purchaseLog.edit",
   PURCHASE_LOG_RESTORE: "purchaseLog.restore",
   STUDENT_VIEW: "student.view",
@@ -233,6 +236,10 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.EMPLOYEE_RESTORE,
     description: "Restore a deleted employee",
+  },
+  {
+    action: ACTIONS.EMPLOYEE_SESSION_RESET,
+    description: "Force an employee to sign out and back in (e.g. after a role change) — god-only by default",
   },
   {
     action: ACTIONS.PURCHASE_LOG_EDIT,

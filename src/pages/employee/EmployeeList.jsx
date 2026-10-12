@@ -25,6 +25,7 @@ import {
   VpnKey as VpnKeyIcon,
   Restore as RestoreIcon,
   Visibility as ViewIcon,
+  Logout as LogoutIcon,
 } from "@mui/icons-material";
 import { employeeService } from "../../services/employeeService";
 import { useAuth } from "../../context/AuthContext";
@@ -40,6 +41,8 @@ export default function EmployeeList() {
   const can = useCan();
   const isAdmin = can(ACTIONS.EMPLOYEE_MANAGE);
   const isGod = can(ACTIONS.EMPLOYEE_RESTORE);
+  // Force re-login is god-only by default (grantable to admin via the Permissions grid).
+  const canForceReLogin = can(ACTIONS.EMPLOYEE_SESSION_RESET);
 
   // Managers can open anyone's detail; view-only staff (teachers) may open
   // only their own row. user.employeeId is the logged-in employee's uuid.
@@ -60,6 +63,8 @@ export default function EmployeeList() {
     item: null,
   });
   const [restoring, setRestoring] = useState(false);
+  const [reloginDialog, setReloginDialog] = useState({ open: false, item: null });
+  const [reloggingIn, setReloggingIn] = useState(false);
   const [credentialsDialog, setCredentialsDialog] = useState({
     open: false,
     item: null,
@@ -122,6 +127,18 @@ export default function EmployeeList() {
       setError("Failed to restore employee");
     } finally {
       setRestoring(false);
+    }
+  };
+
+  const handleForceReLogin = async () => {
+    setReloggingIn(true);
+    try {
+      await employeeService.forceReLogin(reloginDialog.item.uuid);
+      setReloginDialog({ open: false, item: null });
+    } catch (err) {
+      setError("Failed to force re-login");
+    } finally {
+      setReloggingIn(false);
     }
   };
 
@@ -249,6 +266,18 @@ export default function EmployeeList() {
                   <DeleteIcon fontSize="small" />
                 </IconButton>
               </>
+            )}
+            {/* Force re-login — god-only by default. Use after changing someone's role so the
+                change takes effect on their next (forced) login. */}
+            {canForceReLogin && !isDeleted && (
+              <IconButton
+                size="small"
+                color="warning"
+                onClick={() => setReloginDialog({ open: true, item: params.row })}
+                title="Force re-login"
+              >
+                <LogoutIcon fontSize="small" />
+              </IconButton>
             )}
           </Box>
         );
@@ -414,6 +443,18 @@ export default function EmployeeList() {
         onConfirm={handleRestore}
         onCancel={() => setRestoreDialog({ open: false, item: null })}
         loading={restoring}
+      />
+
+      <ConfirmDialog
+        open={reloginDialog.open}
+        title="Force re-login"
+        message={`"${reloginDialog.item?.name}" will be signed out within about a minute and must log in again. Their roles/permissions are refreshed on that next login. Continue?`}
+        confirmLabel="Force re-login"
+        loadingLabel="Applying..."
+        confirmColor="warning"
+        onConfirm={handleForceReLogin}
+        onCancel={() => setReloginDialog({ open: false, item: null })}
+        loading={reloggingIn}
       />
 
       <CredentialsDialog

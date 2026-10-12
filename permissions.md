@@ -35,12 +35,15 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `employee.view` | See the Employees menu, search the list, open a read-only detail (incl. self) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `employee.manage` | Add, edit, delete employees; view & reset passwords | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `employee.restore` | Restore a deleted employee | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `employee.session.reset` | Force an employee to sign out and back in (e.g. after a role change) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `purchaseLog.edit` | Edit a purchase log entry (medical, lab, sports, supplies, …) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `purchaseLog.restore` | Restore a deleted purchase log entry | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `student.view` | See the Students menu and view/search the student list | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `student.manage` | Admit/edit/delete students, manage guardians & houses, assign house, promote/graduate | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `student.contacts.view` | View unmasked parent/guardian phone, WhatsApp & email | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `attendance.mark` | Take daily roll-call: open a session, load the roster, mark & save statuses (admin + class teachers) | ✓ | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — |
 | `attendance.finalize` | Finalize a daily attendance session and edit records after finalize (marking & viewing are open to all staff) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `attendance.config.manage` | Manage the per-school Attendance Config (how a half-day counts toward attendance %) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.send` | Compose, schedule, preview, send and cancel SMS/WhatsApp messages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.template.manage` | Create, edit and activate message templates | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.template.delete` | Delete or restore a message template | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
@@ -61,8 +64,8 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `homework.manage` | Override which teacher is the homework class-teacher for a class | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `academic-calendar.view` | See the Academic Calendar menu and read the year's entries & holidays | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `academic-calendar.manage` | Add/edit/delete calendar entries, holidays & columns, and import from Excel | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
-| `exam.view` | See the Examinations menu and read exam schedules, datesheets & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
-| `exam.manage` | Create/edit/delete/publish examinations, datesheet papers & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `exam.schedule.view` | See the Examinations menu and read exam schedules, datesheets & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `exam.schedule.manage` | Create/edit/delete/publish examinations, datesheet papers & invigilator assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `programme.view` | See the Programmes menu and read a programme's monthly units (Class → Month → Theme) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `programme.manage` | Author programme units and re-upload class-module source documents | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `assistant.use` | Use the voice/LLM student assistant (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
@@ -72,5 +75,16 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `feedback.record` | Record a home-visit feedback for a student and assign it to a teacher (teachers) | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `feedback.respond` | See feedback assigned to you and add your response comment (teachers, own items only) | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `feedback.review` | Open the feedback dashboard, see the teacher-wise breakup, and complete/reopen feedback (education director; god-only for now) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `cockpit.view` | See the Director's Cockpit / School Pulse heartbeat (director + god) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.setup.view` | See the Clubs & Activities menu, clubs and programme settings | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.setup.manage` | Create/edit clubs, their configuration, enabled blocks & programme settings | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.activity.view` | See the activity bank (clubs' versioned activities) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.activity.manage` | Edit activity content, create revision drafts, materials, resources & bulk import | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.activity.approve` | Release/trial/supersede an activity version and suspend/archive an activity | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.activity.review` | Work the activity review queue — keep as is / create revision / suspend / archive | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.plan.view` | See the weekly plan board and published plans | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.plan.manage` | Build and edit a draft weekly plan — slots, groups, assignments, copy previous | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.plan.publish` | Publish a plan, make after-publish changes, cancel an assignment, close/reopen | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `club.plan.conduct` | Open your own club assignment guide and submit quick closure / report a safety issue | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — | — |
 
 _`god` has `*` (all actions). Anything not granted to a role is denied — so restore (employee & purchase log), purchase-log edit, and timetable management are god-only._
