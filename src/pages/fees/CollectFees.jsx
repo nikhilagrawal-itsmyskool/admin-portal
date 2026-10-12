@@ -104,6 +104,28 @@ export default function CollectFees() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [academicYearId]);
 
+  // Rule A — late fines are mandatory. When a cycle's (non-fine) charge is ticked, force its late
+  // fine ticked + full-amount so it's always collected. Non-god only; god can still untick/exempt.
+  // Self-contained (reads ledger, not the derived consts below) to keep hook order stable.
+  useEffect(() => {
+    if (canExempt) return; // god — no forcing
+    const lines = (ledger?.lines || []).filter((l) => l.remaining > 0);
+    const fineRe = /late\s*fee/i;
+    setSel((prev) => {
+      let changed = false; const next = { ...prev };
+      lines.forEach((ln) => {
+        if (!fineRe.test(ln.headLabel || '')) return;
+        const mand = lines.some((o) => o.chargeId !== ln.chargeId && !fineRe.test(o.headLabel || '')
+          && (o.cycleLabel || '') === (ln.cycleLabel || '') && prev[o.chargeId]?.checked);
+        if (mand && (!prev[ln.chargeId]?.checked || Number(prev[ln.chargeId]?.amount) !== Number(ln.remaining))) {
+          next[ln.chargeId] = { checked: true, amount: String(ln.remaining) }; changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sel, ledger, canExempt]);
+
   const dueLines = (ledger?.lines || []).filter((ln) => ln.remaining > 0);
   const dueNowLines = dueLines.filter((ln) => (ln.bucket ? ln.bucket === 'due' : ln.due));
   const quarterLines = dueLines.filter((ln) => ln.bucket === 'quarter');
@@ -140,6 +162,11 @@ export default function CollectFees() {
 
   // ---- late-fee exemption (a waiver on a Late Fee Fine charge; distinct from a general write-off) ----
   const isFine = (ln) => /late\s*fee/i.test(ln.headLabel || '');
+  // Rule A: a late fine is locked (mandatory) when its cycle's non-fine charge is being paid — clerks
+  // can't untick or reduce it; god ('*' → canExempt) can override.
+  const fineMandatory = (ln) => isFine(ln) && !canExempt && dueLines.some(
+    (o) => o.chargeId !== ln.chargeId && !isFine(o) && (o.cycleLabel || '') === (ln.cycleLabel || '') && sel[o.chargeId]?.checked
+  );
   const toggleExempt = (id, rem) => {
     setExempt((p) => {
       if (p[id]?.on) { const { [id]: _drop, ...rest } = p; return rest; }
@@ -178,11 +205,12 @@ export default function CollectFees() {
     const rem = Number(ln.remaining) || 0;
     const cover = e.checked && payNow > 0 ? (payNow >= rem - 0.01 ? 'full' : 'partial') : null; // this payment's coverage of the row
     const fine = isFine(ln);
+    const locked = fineMandatory(ln); // Rule A: mandatory fine — can't untick/reduce (non-god)
     const border = ex?.on ? FEE_COLORS.primary : cover === 'full' ? FEE_COLORS.success : cover === 'partial' ? FEE_COLORS.warning : 'transparent';
     return (
       <TableRow key={ln.chargeId} hover selected={!!e.checked}
         sx={{ ...(upcoming ? { opacity: 0.75 } : {}), borderLeft: `3px solid ${border}` }}>
-        <TableCell padding="checkbox"><Checkbox size="small" checked={!!e.checked} disabled={ex?.on} onChange={(ev) => toggle(ln.chargeId, ev.target.checked)} /></TableCell>
+        <TableCell padding="checkbox"><Checkbox size="small" checked={locked ? true : !!e.checked} disabled={ex?.on || locked} onChange={(ev) => toggle(ln.chargeId, ev.target.checked)} /></TableCell>
         <TableCell>{ln.cycleLabel || '—'}</TableCell>
         <TableCell>
           {ln.headLabel}
@@ -192,6 +220,7 @@ export default function CollectFees() {
           {ln.category && ln.category !== 'fee' && <Chip size="small" variant="outlined" label={ln.category} sx={{ ml: 1, height: 18 }} />}
           {fine && canExempt && <Chip size="small" clickable color={ex?.on ? 'info' : 'default'} variant={ex?.on ? 'filled' : 'outlined'}
             label={ex?.on ? 'Exempted' : 'Exempt'} onClick={() => toggleExempt(ln.chargeId, ln.remaining)} sx={{ ml: 1, height: 18 }} />}
+          {fine && locked && <Chip size="small" color="warning" variant="outlined" label="required" sx={{ ml: 1, height: 18 }} />}
         </TableCell>
         <TableCell align="right">{inr(ln.charged)}</TableCell>
         <TableCell align="right">{ln.concession ? '−' + inr(ln.concession) : '0'}</TableCell>
@@ -206,8 +235,8 @@ export default function CollectFees() {
                 inputProps={{ style: { fontSize: 11, width: 110 } }} />
             </Box>
           ) : (
-            <TextField size="small" variant="standard" type="number" disabled={!e.checked}
-              value={e.amount ?? ''} onChange={(ev) => setAmt(ln.chargeId, ev.target.value)}
+            <TextField size="small" variant="standard" type="number" disabled={!e.checked || locked}
+              value={locked ? String(rem) : (e.amount ?? '')} onChange={(ev) => setAmt(ln.chargeId, ev.target.value)}
               inputProps={{ style: { textAlign: 'right', width: 78 }, max: ln.remaining }} />
           )}
         </TableCell>
