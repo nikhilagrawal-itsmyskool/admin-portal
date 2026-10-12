@@ -148,18 +148,18 @@ export default function ManagerDesk() {
   };
   const closeFind = () => { setFind(false); setPicked(null); setQ(''); setDq(''); setResults(null); };
 
-  // One-tap late-fine exemption (manager + god only)
+  // Per-cycle late-fine exemption (manager + god only)
   const canExempt = useCan()('latefine.exempt');
-  const [exemptConfirm, setExemptConfirm] = useState(false);
+  const [exemptConfirm, setExemptConfirm] = useState(null); // the fine row being confirmed {chargeId, cycleLabel, amount}
   const [exempting, setExempting] = useState(false);
   const [ok, setOk] = useState('');
   const doExemptFine = () => {
-    if (!picked) return;
+    if (!picked || !exemptConfirm) return;
     setExempting(true); setError('');
-    feesService.managerExemptFine(picked.studentId)
+    feesService.managerExemptFine(picked.studentId, exemptConfirm.chargeId)
       .then((r) => {
-        setExemptConfirm(false); setOk(`Late fine waived — ${inr(r.amount || 0)}.`);
-        feesService.getManagerStudentDues(picked.studentId).then(setStudentDues).catch(() => {}); // refresh so the card clears
+        setOk(`${exemptConfirm.cycleLabel} late fine waived — ${inr(r.amount || 0)}.`); setExemptConfirm(null);
+        feesService.getManagerStudentDues(picked.studentId).then(setStudentDues).catch(() => {}); // refresh so the row clears
       })
       .catch((e) => setError(errMsg(e, 'Could not exempt the fine')))
       .finally(() => setExempting(false));
@@ -362,17 +362,18 @@ export default function ManagerDesk() {
                 </Box>
               </CardContent>
             </Card>
-            {canExempt && Number(studentDues.lateFine || 0) > 0 && (
+            {canExempt && (studentDues.lateFines || []).length > 0 && (
               <Card sx={{ borderRadius: 3, mb: 2, border: '1px solid #fca5a5', bgcolor: '#fff5f5' }}>
                 <CardContent sx={{ py: 1.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: C.due }}>⚠ Late fine on this account</Typography>
-                    <Typography sx={{ fontSize: 16, fontWeight: 800, color: C.due }}>{inr(studentDues.lateFine)}</Typography>
-                  </Box>
-                  <Button fullWidth variant="contained" color="error" onClick={() => setExemptConfirm(true)}
-                    sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2 }}>
-                    Exempt late fine  {inr(studentDues.lateFine)}
-                  </Button>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: C.due, mb: 0.5 }}>⚠ Late fines — exempt a cycle</Typography>
+                  {studentDues.lateFines.map((f, i) => (
+                    <Box key={f.chargeId} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.9, borderTop: i > 0 ? `1px solid ${C.line}` : 'none' }}>
+                      <Typography sx={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: C.ink }}>{f.cycleLabel}</Typography>
+                      <Typography sx={{ fontSize: 14.5, fontWeight: 800, color: C.due, minWidth: 60, textAlign: 'right' }}>{inr(f.amount)}</Typography>
+                      <Button size="small" variant="outlined" color="error" onClick={() => setExemptConfirm(f)}
+                        sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, minWidth: 74 }}>Exempt</Button>
+                    </Box>
+                  ))}
                 </CardContent>
               </Card>
             )}
@@ -394,16 +395,16 @@ export default function ManagerDesk() {
           </>
         )}
 
-        <Dialog open={exemptConfirm} onClose={() => !exempting && setExemptConfirm(false)} maxWidth="xs" fullWidth>
+        <Dialog open={!!exemptConfirm} onClose={() => !exempting && setExemptConfirm(null)} maxWidth="xs" fullWidth>
           <DialogTitle sx={{ fontWeight: 800 }}>Waive late fine?</DialogTitle>
           <DialogContent>
             <Typography sx={{ fontSize: 15 }}>
-              Waive <b style={{ color: C.due }}>{inr(studentDues?.lateFine || 0)}</b> late fine for <b>{st.name}</b>?
+              Waive the <b>{exemptConfirm?.cycleLabel}</b> late fine of <b style={{ color: C.due }}>{inr(exemptConfirm?.amount || 0)}</b> for <b>{st.name}</b>?
             </Typography>
-            <Typography sx={{ fontSize: 12.5, color: C.muted, mt: 1 }}>This forgives the fine so it can be collected without it. It’s recorded against your login.</Typography>
+            <Typography sx={{ fontSize: 12.5, color: C.muted, mt: 1 }}>Forgives this cycle’s fine so it can be collected without it. Recorded against your login.</Typography>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setExemptConfirm(false)} disabled={exempting} sx={{ textTransform: 'none' }}>Cancel</Button>
+            <Button onClick={() => setExemptConfirm(null)} disabled={exempting} sx={{ textTransform: 'none' }}>Cancel</Button>
             <Button onClick={doExemptFine} disabled={exempting} variant="contained" color="error" sx={{ textTransform: 'none', fontWeight: 700 }}>
               {exempting ? 'Waiving…' : 'Yes, waive'}
             </Button>
