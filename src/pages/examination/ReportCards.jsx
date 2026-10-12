@@ -301,7 +301,16 @@ export default function ReportCards() {
                       <TableCell>{s.rollNumber ?? ''}</TableCell>
                       <TableCell>{s.name}</TableCell>
                       <TableCell>{s.admissionNumber}</TableCell>
-                      {data.band !== 'pre-primary' && <TableCell align="right">{s.overall.total != null ? `${s.overall.total}/${s.overall.max} · ${s.overall.percentage}%` : '—'}</TableCell>}
+                      {data.band !== 'pre-primary' && (
+                        <TableCell align="right">
+                          {s.overall.total != null ? (
+                            <Box sx={{ lineHeight: 1.25 }}>
+                              <Typography component="span" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{s.overall.percentage}%</Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontVariantNumeric: 'tabular-nums' }}>{s.overall.total} / {s.overall.max}</Typography>
+                            </Box>
+                          ) : <Typography variant="caption" color="text.secondary">—</Typography>}
+                        </TableCell>
+                      )}
                       <TableCell align="center">{s.approvedAt
                         ? <Tooltip title={`OK'd ${s.approvedBy ? `by ${s.approvedBy} ` : ''}on ${s.approvedAt}`}><Chip size="small" color="success" variant="outlined" label="OK'd" /></Tooltip>
                         : <Typography variant="caption" color="text.secondary">—</Typography>}</TableCell>
