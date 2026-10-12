@@ -18,6 +18,9 @@ export const ACTIONS = {
   // Outside the fee.* namespace on purpose → fee incharges/clerks DON'T inherit it; only
   // the admin role (explicit grant) + god ('*'). Powers the Scan & Verify tile.
   RECEIPT_VERIFY: "receipt.verify",
+  // Outside BOTH fee.* and fine.* → admins/clerks DON'T inherit; only `manager` + god.
+  // Powers the one-tap late-fine exempt on the Collection Desk.
+  LATEFINE_EXEMPT: "latefine.exempt",
   UNIFORM_VIEW: "uniform.view",
   UNIFORM_MANAGE: "uniform.manage",
   SHOP_VIEW: "shop.view",

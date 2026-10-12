@@ -331,6 +331,7 @@ export default function App() {
         <Route path="fees" element={<FeesDashboard />} />
         <Route path="fees/dues" element={<DuesReport />} />
         <Route path="fees/accumulated-dues" element={<AccumulatedDues />} />
+        <Route path="fees/collection-desk" element={<ManagerDesk />} />
         <Route path="fees/collect" element={<CollectFees />} />
         <Route path="fees/receipts" element={<ReceiptsSearch />} />
         <Route path="fees/setup" element={<FeesSetup />} />

@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, CircularProgress, Alert, Avatar,
   IconButton, Divider, Button, TextField, InputAdornment, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
+import { useCan } from '../permissions/can';
 import {
   ChevronRight, ChevronLeft, ArrowBack, Payments as FeesIcon, DirectionsBus as BusIcon,
   OpenInNew, Refresh, Search as SearchIcon, Clear as ClearIcon, ReceiptLong as ReportIcon,
@@ -145,6 +147,23 @@ export default function ManagerDesk() {
       .finally(() => setDuesLoading(false));
   };
   const closeFind = () => { setFind(false); setPicked(null); setQ(''); setDq(''); setResults(null); };
+
+  // One-tap late-fine exemption (manager + god only)
+  const canExempt = useCan()('latefine.exempt');
+  const [exemptConfirm, setExemptConfirm] = useState(false);
+  const [exempting, setExempting] = useState(false);
+  const [ok, setOk] = useState('');
+  const doExemptFine = () => {
+    if (!picked) return;
+    setExempting(true); setError('');
+    feesService.managerExemptFine(picked.studentId)
+      .then((r) => {
+        setExemptConfirm(false); setOk(`Late fine waived — ${inr(r.amount || 0)}.`);
+        feesService.getManagerStudentDues(picked.studentId).then(setStudentDues).catch(() => {}); // refresh so the card clears
+      })
+      .catch((e) => setError(errMsg(e, 'Could not exempt the fine')))
+      .finally(() => setExempting(false));
+  };
 
   const loadSummary = () => {
     setLoading(true); setError('');
@@ -309,6 +328,7 @@ export default function ManagerDesk() {
           <Typography sx={{ fontSize: 20, fontWeight: 800, color: C.ink }}>Student dues</Typography>
         </Box>
         {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+        {ok && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setOk('')}>{ok}</Alert>}
 
         <Card sx={{ borderRadius: 4, mb: 2 }}>
           <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
@@ -342,6 +362,20 @@ export default function ManagerDesk() {
                 </Box>
               </CardContent>
             </Card>
+            {canExempt && Number(studentDues.lateFine || 0) > 0 && (
+              <Card sx={{ borderRadius: 3, mb: 2, border: '1px solid #fca5a5', bgcolor: '#fff5f5' }}>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: C.due }}>⚠ Late fine on this account</Typography>
+                    <Typography sx={{ fontSize: 16, fontWeight: 800, color: C.due }}>{inr(studentDues.lateFine)}</Typography>
+                  </Box>
+                  <Button fullWidth variant="contained" color="error" onClick={() => setExemptConfirm(true)}
+                    sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2 }}>
+                    Exempt late fine  {inr(studentDues.lateFine)}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
             <Typography sx={{ fontSize: 13, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700, px: 0.5, mb: 1 }}>Year by year</Typography>
             <Card sx={{ borderRadius: 4 }}>
               {yrs.map((y, i) => (
@@ -359,6 +393,22 @@ export default function ManagerDesk() {
             </Card>
           </>
         )}
+
+        <Dialog open={exemptConfirm} onClose={() => !exempting && setExemptConfirm(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800 }}>Waive late fine?</DialogTitle>
+          <DialogContent>
+            <Typography sx={{ fontSize: 15 }}>
+              Waive <b style={{ color: C.due }}>{inr(studentDues?.lateFine || 0)}</b> late fine for <b>{st.name}</b>?
+            </Typography>
+            <Typography sx={{ fontSize: 12.5, color: C.muted, mt: 1 }}>This forgives the fine so it can be collected without it. It’s recorded against your login.</Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setExemptConfirm(false)} disabled={exempting} sx={{ textTransform: 'none' }}>Cancel</Button>
+            <Button onClick={doExemptFine} disabled={exempting} variant="contained" color="error" sx={{ textTransform: 'none', fontWeight: 700 }}>
+              {exempting ? 'Waiving…' : 'Yes, waive'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Shell>
     );
   }

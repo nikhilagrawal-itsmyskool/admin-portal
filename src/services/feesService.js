@@ -103,6 +103,7 @@ export const feesService = {
   getManagerSearch: async (q, signal) => (await api.get('/fees/manager/search', { params: { q }, signal })).data,
   getManagerStudentDues: async (studentId) => (await api.get('/fees/manager/student-dues', { params: { studentId } })).data,
   getManagerTopDues: async (academicYearId) => (await api.get('/fees/manager/top-dues', { params: academicYearId ? { academicYearId } : {} })).data,
+  managerExemptFine: async (studentId) => (await api.post('/fees/manager/exempt-fine', { studentId })).data,
 
   // ---- Refunds ----
   getRefunds: async (params = {}) => (await api.get('/fees/refunds', { params })).data,

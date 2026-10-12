@@ -172,6 +172,9 @@ const menuItems = [
       { title: 'Overview', icon: OverviewIcon, path: '/fees' },
       { title: 'Dues Report', icon: DuesIcon, path: '/fees/dues', perm: 'fee.view' },
       { title: 'Accumulated Dues', icon: DuesIcon, path: '/fees/accumulated-dues', perm: 'fee.view' },
+      // Collection Desk — the manager's phone-first view; also opened by god/director here. Gated
+      // latefine.exempt so only god + manager see the link (admins/clerks don't).
+      { title: 'Collection Desk', icon: CollectIcon, path: '/fees/collection-desk', perm: 'latefine.exempt' },
       { title: 'Collect Fees', icon: CollectIcon, path: '/fees/collect', perm: 'fee.collect' },
       { title: 'Receipts', icon: ReceiptIcon, path: '/fees/receipts', perm: 'fee.view' },
       { title: 'Setup', icon: TypeIcon, path: '/fees/setup', perm: 'fee.manage' },

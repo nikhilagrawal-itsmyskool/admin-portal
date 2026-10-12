@@ -116,8 +116,9 @@ export const ROLE_PERMISSIONS = {
   // route incharge). The route filtering is enforced in the attendance pages;
   // finalize stays admin/god/transport-incharge only.
   "transport-attendance": ["transport.attendance.mark"],
-  // Collection-desk manager: a locked, read-only fee-collection view and nothing else.
-  manager: ["fee.manager.view"],
+  // Collection-desk manager: a locked, read-only fee-collection view, plus the one-tap
+  // late-fine exemption (the counter escape hatch — clerks can't skip/forgive fines).
+  manager: ["fee.manager.view", "latefine.exempt"],
   // Education director: lands on the Cockpit / School Pulse and reviews the school's
   // heartbeat. Read-oriented oversight across the pulse domains (feedback review, assembly,
   // syllabus, students/houses, leave, calendar). Additive — a person can also hold `god`.
