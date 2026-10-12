@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
   TextField, MenuItem, ToggleButton, ToggleButtonGroup, Checkbox, LinearProgress,
-  Table, TableHead, TableBody, TableRow, TableCell, Paper,
+  Table, TableHead, TableBody, TableRow, TableCell, Paper, Slider,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
   FormControlLabel, Switch, Tooltip,
 } from '@mui/material';
-import { Print as PrintIcon, Visibility as PreviewIcon } from '@mui/icons-material';
+import { Print as PrintIcon, Visibility as PreviewIcon, FileDownload as CsvIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { printReportCards, buildReportCardsHtml } from './reportCardHtml';
 
@@ -55,6 +55,8 @@ export default function ReportCards() {
   const [msg, setMsg] = useState('');
   const [pendingPrint, setPendingPrint] = useState(null); // { studentIds, count } awaiting "did it print?" confirm
   const [bw, setBw] = useState(true); // print/preview in black & white (default — the school prints on a mono laser)
+  const [sortBy, setSortBy] = useState('roll'); // 'roll' | 'pctDesc' | 'pctAsc'
+  const [pctRange, setPctRange] = useState([0, 100]); // overall-% filter window (bands with marks only)
   const photoCache = useRef(new Map()); // studentId -> resized data URI (null = no photo)
 
   const loadClasses = useCallback(async () => {
@@ -75,7 +77,7 @@ export default function ReportCards() {
     setBusy(true); setErr(''); setMsg('');
     try {
       const d = await examinationService.reportCards(classId, term);
-      setData(d); setSel(new Set());
+      setData(d); setSel(new Set()); setSortBy('roll'); setPctRange([0, 100]);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load report cards');
       setData(null);
@@ -84,8 +86,47 @@ export default function ReportCards() {
   useEffect(() => { load(); }, [load]);
 
   const toggle = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const allIds = (data?.students || []).map((s) => s.studentId);
-  const toggleAll = () => setSel((s) => (s.size === allIds.length ? new Set() : new Set(allIds)));
+
+  // Bands below the primary (pre-primary) have no overall % — the % filter/sort are hidden for them.
+  const hasPct = !!data && data.band !== 'pre-primary';
+  const pctOf = (s) => (s.overall && s.overall.percentage != null ? Number(s.overall.percentage) : null);
+
+  // The rows actually shown: filtered by the overall-% window, then sorted. Default order (roll) is
+  // the server order. Drives the table, select-all, and the CSV export.
+  const displayed = useMemo(() => {
+    let rows = [...(data?.students || [])];
+    if (hasPct) {
+      const [lo, hi] = pctRange;
+      if (lo > 0 || hi < 100) rows = rows.filter((s) => { const p = pctOf(s); return p == null || (p >= lo && p <= hi); });
+      if (sortBy === 'pctDesc') rows.sort((a, b) => (pctOf(b) ?? -1) - (pctOf(a) ?? -1));
+      else if (sortBy === 'pctAsc') rows.sort((a, b) => (pctOf(a) ?? 1e9) - (pctOf(b) ?? 1e9));
+    }
+    return rows;
+  }, [data, hasPct, pctRange, sortBy]);
+
+  const allIds = displayed.map((s) => s.studentId);
+  const toggleAll = () => setSel((s) => (allIds.every((id) => s.has(id)) ? new Set() : new Set(allIds)));
+
+  // Export the shown rows (respecting filter + sort) as a CSV the office can open in Excel.
+  const exportCsv = () => {
+    if (!data) return;
+    const cell = (v) => { const t = String(v ?? ''); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+    const head = hasPct
+      ? ['Roll', 'Student', 'Admission', 'Total', 'Max', 'Percentage', "OK'd on", 'Printed']
+      : ['Roll', 'Student', 'Admission', "OK'd on", 'Printed'];
+    const body = displayed.map((s) => {
+      const base = [s.rollNumber ?? '', s.name, s.admissionNumber];
+      const marks = hasPct ? [s.overall?.total ?? '', s.overall?.max ?? '', pctOf(s) ?? ''] : [];
+      return [...base, ...marks, s.approvedAt || '', s.printCount || 0];
+    });
+    const csv = [head, ...body].map((r) => r.map(cell).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM so Excel reads UTF-8
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(data.className || 'class').replace(/[^\w-]+/g, '_')}-Term${term}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
 
   // Pre-primary cards carry a photo; fetch it per student (kept off the class payload) and resize
   // to a print-sized JPEG, cached so a re-print doesn't refetch. Other bands have no photo.
@@ -184,8 +225,33 @@ export default function ReportCards() {
           {data && (
             <>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Showing <b>{data.className}</b> · Term {term} · {data.students.length} student{data.students.length === 1 ? '' : 's'}
+              Showing <b>{data.className}</b> · Term {term} · {displayed.length === data.students.length
+                ? `${data.students.length} student${data.students.length === 1 ? '' : 's'}`
+                : `${displayed.length} of ${data.students.length} students`}
             </Typography>
+
+            {data.students.length > 0 && (
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }} sx={{ mb: 1.5 }} useFlexGap flexWrap="wrap">
+                {hasPct && (
+                  <TextField select size="small" label="Sort by" value={sortBy} onChange={(e) => setSortBy(e.target.value)} sx={{ minWidth: 180 }}>
+                    <MenuItem value="roll">Roll number</MenuItem>
+                    <MenuItem value="pctDesc">Percentage · high → low</MenuItem>
+                    <MenuItem value="pctAsc">Percentage · low → high</MenuItem>
+                  </TextField>
+                )}
+                {hasPct && (
+                  <Box sx={{ minWidth: 240, px: 1 }}>
+                    <Typography variant="caption" color="text.secondary">Percentage {pctRange[0]}%–{pctRange[1]}%</Typography>
+                    <Slider size="small" value={pctRange} onChange={(_, v) => setPctRange(v)} min={0} max={100}
+                      valueLabelDisplay="auto" valueLabelFormat={(v) => `${v}%`} disableSwap sx={{ mt: -0.5 }} />
+                  </Box>
+                )}
+                <Box sx={{ flex: 1 }} />
+                <Button variant="outlined" size="small" startIcon={<CsvIcon />} onClick={exportCsv} disabled={!displayed.length}>
+                  Export CSV
+                </Button>
+              </Stack>
+            )}
             {subItems.length > 0 && (
               <Alert severity={ready ? 'success' : 'warning'} sx={{ mb: 1.5 }}>
                 {ready
@@ -218,7 +284,7 @@ export default function ReportCards() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell padding="checkbox"><Checkbox size="small" checked={sel.size > 0 && sel.size === allIds.length} indeterminate={sel.size > 0 && sel.size < allIds.length} onChange={toggleAll} /></TableCell>
+                    <TableCell padding="checkbox"><Checkbox size="small" checked={allIds.length > 0 && allIds.every((id) => sel.has(id))} indeterminate={allIds.some((id) => sel.has(id)) && !allIds.every((id) => sel.has(id))} onChange={toggleAll} /></TableCell>
                     <TableCell>Roll</TableCell>
                     <TableCell>Student</TableCell>
                     <TableCell>Admission</TableCell>
@@ -229,7 +295,7 @@ export default function ReportCards() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {data.students.map((s) => (
+                  {displayed.map((s) => (
                     <TableRow key={s.studentId} hover selected={sel.has(s.studentId)}>
                       <TableCell padding="checkbox"><Checkbox size="small" checked={sel.has(s.studentId)} onChange={() => toggle(s.studentId)} /></TableCell>
                       <TableCell>{s.rollNumber ?? ''}</TableCell>
@@ -246,7 +312,7 @@ export default function ReportCards() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {!data.students.length && <TableRow><TableCell colSpan={8}><Alert severity="info">No students in this class.</Alert></TableCell></TableRow>}
+                  {!displayed.length && <TableRow><TableCell colSpan={8}><Alert severity="info">{data.students.length ? 'No students match the current percentage filter.' : 'No students in this class.'}</Alert></TableCell></TableRow>}
                 </TableBody>
               </Table>
             </Paper>
