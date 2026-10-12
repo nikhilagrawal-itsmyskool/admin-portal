@@ -207,7 +207,7 @@ export default function EmployeeList() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 150,
+      width: 200,
       sortable: false,
       renderCell: (params) => {
         const isDeleted = params.row.status === "deleted";
