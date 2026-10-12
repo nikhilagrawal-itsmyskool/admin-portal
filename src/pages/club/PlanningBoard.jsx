@@ -350,6 +350,9 @@ export function GroupBuilderDialog({ title, submitLabel, initialName = '', initi
     return next;
   });
   const ids = Object.keys(picked);
+  const selectAll = () => setPicked((p) => { const n = { ...p }; students.forEach((s) => { n[s.uuid] = { name: s.name, className }; }); return n; });
+  const clearClass = () => setPicked((p) => { const n = { ...p }; students.forEach((s) => { delete n[s.uuid]; }); return n; });
+  const allPicked = students.length > 0 && students.every((s) => picked[s.uuid]);
 
   const submit = () => {
     if (!label.trim()) { setErr('Give the group a name'); return; }
@@ -367,6 +370,11 @@ export function GroupBuilderDialog({ title, submitLabel, initialName = '', initi
           <TextField size="small" select label="Add students from class" value={classId} onChange={(e) => setClassId(e.target.value)}>
             {classes.map((c) => <MenuItem key={c.uuid} value={c.uuid}>{c.name}{c.strength ? ` (${c.strength})` : ''}</MenuItem>)}
           </TextField>
+          {classId && !loadingStudents && students.length > 0 && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button size="small" onClick={allPicked ? clearClass : selectAll}>{allPicked ? 'Deselect all' : `Select all (${students.length})`}</Button>
+            </Stack>
+          )}
           {classId && (
             <Box sx={{ maxHeight: 220, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
               {loadingStudents ? <Box sx={{ textAlign: 'center', py: 2 }}><CircularProgress size={22} /></Box> : students.map((s) => (
