@@ -83,10 +83,10 @@ export default function ExamOnlyStudents() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Fee Exempt (studying elsewhere)</Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>Fee Exempt (exam-only &amp; RTE)</Typography>
           <Typography sx={{ color: FEE_COLORS.muted, fontSize: 13 }}>
-            Students flagged <b>exam only</b> on their record — registered here but studying at another school, so they pay no fees.
-            Set the flag in the student's edit form; roll back their demands here.
+            Students who pay no fees: flagged <b>exam only</b> (registered here but studying elsewhere) or <b>RTE</b>
+            (Right-to-Education, govt-funded). Charge generation skips both. Set the flag in the student's edit form / search grid; roll back any existing demands here.
           </Typography>
         </Box>
         <Button startIcon={<RefreshIcon />} onClick={load} sx={{ textTransform: 'none' }}>Refresh</Button>
@@ -97,6 +97,8 @@ export default function ExamOnlyStudents() {
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <Chip label={`${data.totalStudents} flagged`} color="default" variant="outlined" />
+        <Chip label={`${data.examOnlyCount ?? 0} exam-only`} color="info" variant="outlined" />
+        <Chip label={`${data.rteCount ?? 0} RTE`} color="secondary" variant="outlined" />
         <Chip label={`${data.totalOpenCharges} open charges`} color={data.totalOpenCharges ? 'warning' : 'success'} variant="outlined" />
         <Chip label={`${inr(data.totalOpenDemand)} open demand`} color={data.totalOpenDemand ? 'warning' : 'success'} variant="outlined" />
       </Box>
@@ -124,6 +126,7 @@ export default function ExamOnlyStudents() {
                   <Checkbox size="small" checked={allSelected} indeterminate={someSelected && !allSelected} onChange={toggleAll} disabled={withCharges.length === 0} />
                 </TableCell>
                 <TableCell>Class</TableCell>
+                <TableCell>Type</TableCell>
                 <TableCell>Adm#</TableCell>
                 <TableCell>Student</TableCell>
                 <TableCell>Reason / other school</TableCell>
@@ -133,8 +136,8 @@ export default function ExamOnlyStudents() {
             </TableHead>
             <TableBody>
               {rows.length === 0 && (
-                <TableRow><TableCell colSpan={7} align="center" sx={{ color: FEE_COLORS.muted, py: 3 }}>
-                  No students are flagged exam-only. Set the flag from a student's edit form.
+                <TableRow><TableCell colSpan={8} align="center" sx={{ color: FEE_COLORS.muted, py: 3 }}>
+                  No students are flagged exam-only or RTE. Set the flag from a student's edit form / search grid.
                 </TableCell></TableRow>
               )}
               {rows.map((r) => {
@@ -145,6 +148,9 @@ export default function ExamOnlyStudents() {
                       <Checkbox size="small" checked={sel.has(r.studentId)} onChange={() => toggle(r.studentId)} disabled={clean} />
                     </TableCell>
                     <TableCell>{r.className || '—'}</TableCell>
+                    <TableCell>
+                      <Chip size="small" variant="outlined" color={r.type === 'rte' ? 'secondary' : 'info'} label={r.type === 'rte' ? 'RTE' : 'Exam-only'} />
+                    </TableCell>
                     <TableCell>{r.admissionNumber || '—'}</TableCell>
                     <TableCell>
                       <Link component="button" underline="hover" onClick={() => navigate(`/students/${r.studentId}`)} sx={{ textAlign: 'left' }}>
