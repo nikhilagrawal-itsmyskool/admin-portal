@@ -59,7 +59,7 @@ Names below are the live titles. `·` separates a hub's children.
   - Fees `[hub]` · Overview · Dues Report · Receipts — `godpwa.fee.*`
   - Scan & Verify — `receipt.verify`
   - Syllabus Overview — `godpwa.syllabus.overview`
-  - Leave Approvals — `leave.manage` · Staff Attendance — `leave.manage`
+  - Leave Approvals — `leave.application.approve` · Staff Attendance — `leave.attendance.view`
 - **Now**
   - Take Attendance `attendance.session.mark` · Bus Attendance `transport.attendance.mark`
   - Post Homework `homework.post` · Send Message `communication.send` · Record Feedback `feedback.record` · My Activities `club.plan.conduct` (club conduct; admin club consoles are desktop-only)
@@ -68,7 +68,7 @@ Names below are the live titles. `·` separates a hub's children.
   - My Timetable `timetable.view` · My Syllabus `syllabus.view` · Academic Calendar `academic-calendar.view`
   - Exam Schedule *(all staff)* · My Exam Duties *(all staff)* · Enter Marks *(all staff)* · Co-Scholastic *(all staff)*
   - My Feedback `feedback.respond` / not `feedback.review` · My Documents `documents.sign` / not `documents.manage`
-  - Leave `[hub]` · My Leave `leave.apply` / not `leave.manage` · Leave Calendar `leave.apply` · My Attendance · My Penalty
+  - Leave `[hub]` · My Leave `leave.application.apply` / not `leave.application.approve` · Leave Calendar `leave.calendar.view` · My Attendance · My Penalty
 - **Programmes** `[hub: programmes]`
   - Spoken English `programme.view` — Class → Month → Theme reader (links straight through while it's the only programme; becomes a hub when Scout etc. are added)
 - **Manage**

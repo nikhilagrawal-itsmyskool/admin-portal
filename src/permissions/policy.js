@@ -64,7 +64,8 @@ export const ROLE_PERMISSIONS = {
     "exam.progress.view",
     "exam.reportcard.manage",
     "fee.receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
-    "leave.apply", // Self-service leave only; oversight (leave.manage) is god-only for now
+    "leave.calendar.view", // See the shared who's-on-leave calendar
+    "leave.application.apply", // Self-service own leave; oversight/config/biometric/deduction are god-only for now
     "documents.sign", // Read & sign own documents; authoring (documents.manage) is god-only
     // Clubs & Activities: NONE by default (locked to god). god grants admin via the grid.
   ],
@@ -85,7 +86,8 @@ export const ROLE_PERMISSIONS = {
     "programme.view", // Read the Spoken English & Life Communication monthly units
     "assembly.view", // Read the assembly plan for their wing
     "academic-calendar.view", // Read the school's academic calendar
-    "leave.apply", // Apply for own leave; see own attendance & penalty
+    "leave.calendar.view", // See the shared who's-on-leave calendar
+    "leave.application.apply", // Apply for own leave; see own attendance & penalty
     "documents.sign", // Read & sign the staff policies shared with them
     // Feedback/complaints: any teacher may record + assign, and respond to items
     // assigned to them. Reviewing/completing (feedback.review) is god-only.
@@ -141,8 +143,8 @@ export const ROLE_PERMISSIONS = {
     "academic-calendar.view",
     "timetable.view",
     "transport.view",
-    "leave.apply",
-    "leave.manage",
+    "leave.calendar.view",
+    "leave.application.apply",
   ],
 };
 

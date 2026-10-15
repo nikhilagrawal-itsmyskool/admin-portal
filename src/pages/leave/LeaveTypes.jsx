@@ -16,7 +16,7 @@ const num = (v) => (v === null || v === undefined || v === '' ? '' : String(v));
 export default function LeaveTypes() {
   const isMobile = useIsMobile();
   const can = useCan();
-  const canManage = can('leave.manage');
+  const canManage = can('leave.config.manage');
   const [config, setConfig] = useState(null);
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);

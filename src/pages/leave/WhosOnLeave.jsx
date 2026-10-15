@@ -35,7 +35,7 @@ export default function WhosOnLeave() {
   const [detail, setDetail] = useState({ loading: false, handover: null, attachment: null });
   // The calendar (who's on leave) is visible to all staff, but the detail drawer reveals the
   // reason, supporting document (e.g. medical certificate) and handover — approver-only.
-  const canManage = useCan()('leave.manage');
+  const canManage = useCan()('leave.calendar.view');
 
   const openDrawer = async (person) => {
     setDrawer(person);

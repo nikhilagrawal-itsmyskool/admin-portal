@@ -51,7 +51,7 @@ export function useMobileVisibility(enabled = true) {
       if (f.perm && !can(f.perm)) return false;
       // Negative gate (mirrors the desktop sidebar): hide a tile from anyone who HAS
       // this action — e.g. hide the self-service "Leave" hub from an oversight user
-      // (leave.manage) who never applies for their own leave.
+      // (leave.application.approve) who never applies for their own leave.
       if (f.notPerm && can(f.notPerm)) return false;
       // Class-teacher tile (Co-Scholastic): only actual class teachers; NOT bypassed by
       // assembly.manage. Hidden until /me/report/classes resolves.

@@ -99,12 +99,20 @@ export const ACTIONS = {
   PROGRAMME_MANAGE: "programme.manage",
   // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
   ASSISTANT_USE: "assistant.use",
-  // Staff leave. `apply` = self-service (own leave/attendance/penalty), granted to
-  // teacher + admin. `manage` = oversight (approve, staff records, config, biometric
-  // import, deduction report) — GOD ONLY for now (god's '*' covers it; grant to admin
-  // here + in policy.js to let office admins in later).
-  LEAVE_APPLY: "leave.apply",
-  LEAVE_MANAGE: "leave.manage",
+  // Staff leave (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // calendar.view (shared who's-on-leave) + application.apply (self-service) are teacher/admin;
+  // all oversight/config/biometric/deduction are GOD ONLY for now (god opens cells per-role
+  // via the Permissions grid — no live "director" role yet).
+  LEAVE_CALENDAR_VIEW: "leave.calendar.view",
+  LEAVE_APPLICATION_APPLY: "leave.application.apply",
+  LEAVE_APPLICATION_VIEW: "leave.application.view",
+  LEAVE_APPLICATION_APPROVE: "leave.application.approve",
+  LEAVE_CONFIG_VIEW: "leave.config.view",
+  LEAVE_CONFIG_MANAGE: "leave.config.manage",
+  LEAVE_ATTENDANCE_VIEW: "leave.attendance.view",
+  LEAVE_ATTENDANCE_MANAGE: "leave.attendance.manage",
+  LEAVE_DEDUCTION_VIEW: "leave.deduction.view",
+  LEAVE_DEDUCTION_MANAGE: "leave.deduction.manage",
   // Home-visit feedback / complaints. view = read category lookup (teachers, to record);
   // record = log + assign to a teacher (teachers); respond = the assigned teacher's reply
   // (teachers, own items only); review = director dashboard + complete/reopen. `review` is
@@ -431,12 +439,44 @@ export const ACTION_CATALOG = [
     description: "Use the voice/LLM student assistant (god-only)",
   },
   {
-    action: ACTIONS.LEAVE_APPLY,
-    description: "Apply for your own leave and see your own attendance & penalty (teacher/office/admin)",
+    action: ACTIONS.LEAVE_CALENDAR_VIEW,
+    description: "See the shared who's-on-leave calendar + a listed person's coverage handover (teacher/admin)",
   },
   {
-    action: ACTIONS.LEAVE_MANAGE,
-    description: "Approve/reject leave, view any staff member's records, set policy, import biometric attendance & run the deduction report (god-only for now)",
+    action: ACTIONS.LEAVE_APPLICATION_APPLY,
+    description: "Apply for / cancel your own leave and see your own attendance & penalty (teacher/admin)",
+  },
+  {
+    action: ACTIONS.LEAVE_APPLICATION_VIEW,
+    description: "Oversight read: one application's full detail, audit, uploaded attachment, balance & summary (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_APPLICATION_APPROVE,
+    description: "Approve / reject leave applications (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_CONFIG_VIEW,
+    description: "Read the leave policy config + leave-type master (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_CONFIG_MANAGE,
+    description: "Edit the leave policy config + leave types (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_ATTENDANCE_VIEW,
+    description: "View biometric attendance, the day view & employee↔device mapping (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_ATTENDANCE_MANAGE,
+    description: "Mark & import biometric attendance (file / TimeWatch) and enroll device mappings (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_DEDUCTION_VIEW,
+    description: "View deduction (LOP) runs and an employee's deductions (god-only)",
+  },
+  {
+    action: ACTIONS.LEAVE_DEDUCTION_MANAGE,
+    description: "Run / finalize deduction (LOP) batches (god-only)",
   },
   {
     action: ACTIONS.FEEDBACK_VIEW,

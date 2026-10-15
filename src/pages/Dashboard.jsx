@@ -248,7 +248,7 @@ const modules = [
     icon: LeaveIcon,
     path: "/leave/day",
     color: "#3d5afe",
-    perm: "leave.manage",
+    perm: "leave.calendar.view",
   },
   {
     title: "Examinations",

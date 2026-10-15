@@ -484,22 +484,23 @@ const menuItems = [
     ],
   },
   {
-    // No parent perm: staff (leave.apply) see the "My *" children; the Director
-    // (leave.manage) sees the oversight children instead. notPerm hides the personal
-    // screens from an oversight user — the Syllabus "My Plans" pattern. Oversight is
-    // god-only for now (leave.manage is granted to no role, so god's '*' covers it).
+    // No parent perm: staff (leave.application.apply) see the "My *" children; approvers
+    // see the oversight children. notPerm:leave.application.approve hides the personal
+    // screens from an oversight user (god) — the Syllabus "My Plans" pattern. Permissions +
+    // Config lead the list (admin:true → hidden behind the header reveal toggle).
     title: 'Leave',
     icon: LeaveNavIcon,
     children: [
-      { title: 'My Attendance', icon: AttendanceIcon, path: '/leave/me/attendance', perm: 'leave.apply', notPerm: 'leave.manage' },
-      { title: 'Apply / My Requests', icon: MarkIcon, path: '/leave/me', perm: 'leave.apply', notPerm: 'leave.manage' },
-      { title: 'My Penalty', icon: WaiverIcon, path: '/leave/me/penalty', perm: 'leave.apply', notPerm: 'leave.manage' },
-      { title: 'Approvals', icon: DutyIcon, path: '/leave/approvals', perm: 'leave.manage' },
-      { title: 'Staff Attendance', icon: PeopleIcon, path: '/leave/staff', perm: 'leave.manage' },
-      { title: 'Leave Calendar', icon: CalendarIcon, path: '/leave/day', perm: 'leave.apply' },
-      { title: 'Types & Policy', icon: AsmSettingsIcon, path: '/leave/types', perm: 'leave.manage' },
-      { title: 'Biometric Import', icon: BioImportIcon, path: '/leave/import', perm: 'leave.manage' },
-      { title: 'Deduction Report', icon: StructureIcon, path: '/leave/deductions', perm: 'leave.manage' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/leave/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/leave/types', perm: 'leave.config.view', admin: true },
+      { title: 'Apply / My Requests', icon: MarkIcon, path: '/leave/me', perm: 'leave.application.apply', notPerm: 'leave.application.approve' },
+      { title: 'My Attendance', icon: AttendanceIcon, path: '/leave/me/attendance', perm: 'leave.application.apply', notPerm: 'leave.application.approve' },
+      { title: 'My Penalty', icon: WaiverIcon, path: '/leave/me/penalty', perm: 'leave.application.apply', notPerm: 'leave.application.approve' },
+      { title: 'Leave Calendar', icon: CalendarIcon, path: '/leave/day', perm: 'leave.calendar.view' },
+      { title: 'Approvals', icon: DutyIcon, path: '/leave/approvals', perm: 'leave.application.approve' },
+      { title: 'Staff Attendance', icon: PeopleIcon, path: '/leave/staff', perm: 'leave.attendance.view' },
+      { title: 'Biometric Import', icon: BioImportIcon, path: '/leave/import', perm: 'leave.attendance.manage' },
+      { title: 'Deduction Report', icon: StructureIcon, path: '/leave/deductions', perm: 'leave.deduction.view' },
     ],
   },
   {

@@ -169,19 +169,19 @@ export const MOBILE_FEATURES = [
   // ── Office — god only. The godpwa.* perms are granted to NO role, so only god ('*')
   // sees these; admins on a phone won't. Read-only checking on the go.
   { title: "Syllabus Overview", icon: SyllabusIcon, path: "/syllabus/overview", perm: "godpwa.syllabus.overview", section: "office", color: "#8e24aa", routes: ["/syllabus/overview"] },
-  // Leave — Director oversight (leave.manage = god only for now). Read/act on the go.
-  { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
+  // Leave — oversight (god only for now). Read/act on the go.
+  { title: "Leave Approvals", icon: LeaveApprovalIcon, path: "/leave/approvals", perm: "leave.application.approve", section: "office", color: "#3d5afe", routes: ["/leave/approvals"] },
   // Leave Calendar — month view of who's on leave, inside the Leave hub with the other
   // leave options so staff can plan before applying (no notPerm so god sees it too).
-  { title: "Leave Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.apply", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/day"] },
-  { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.manage", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
+  { title: "Leave Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.calendar.view", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/day"] },
+  { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.attendance.view", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
   // Feedback dashboard — reviewer oversight (feedback.review = god only for now); Manage band.
   { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "manage", color: "#0097a7", routes: ["/feedback", "/feedback/t/:id"] },
   // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
-  // notPerm hides it from an oversight user (god / leave.manage) who never applies.
-  { title: "Request", icon: LeaveIcon, path: "/leave/me", perm: "leave.apply", notPerm: "leave.manage", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me"] },
-  { title: "My Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.apply", notPerm: "leave.manage", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/attendance"] },
-  { title: "Penalties", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.apply", notPerm: "leave.manage", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/penalty"] },
+  // notPerm hides it from an oversight user (god) who never applies for their own leave.
+  { title: "Request", icon: LeaveIcon, path: "/leave/me", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me"] },
+  { title: "My Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/attendance"] },
+  { title: "Penalties", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/penalty"] },
   // Staff documents — self-service (read & sign own policies). Hidden from the managing
   // user (god) who reads compliance via the office tile below instead.
   { title: "My Documents", icon: DocumentIcon, path: "/me/documents", perm: "documents.sign", notPerm: "documents.manage", section: "mine", color: "#3f51b5", routes: ["/me/documents", "/me/documents/:id"] },

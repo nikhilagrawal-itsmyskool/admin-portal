@@ -1,7 +1,7 @@
 import api from '../config/api';
 
 // Staff leave & attendance. Self-service (/me/*) is scoped to the logged-in employee;
-// the admin/oversight calls need the leave.manage permission (god only for now). Mirrors
+// the admin/oversight calls need the leave.* oversight permissions (god only for now). Mirrors
 // the core-api `leave` module.
 export const leaveService = {
   // ── Config + types ──────────────────────────────────────────────────────────
