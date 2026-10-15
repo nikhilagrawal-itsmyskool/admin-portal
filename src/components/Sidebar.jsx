@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCan } from '../permissions/can';
+import { useAdminReveal } from '../context/AdminRevealContext';
 import { buildMobileTiles } from '../mobile/mobileFeatures';
 import { useMobileVisibility } from '../mobile/useMobileVisibility';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -16,6 +17,8 @@ import {
   Divider,
   Box,
   Typography,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import { groupByModule } from '../config/moduleGroups';
 import {
@@ -105,9 +108,14 @@ import {
   EventBusy as LeaveNavIcon,
   Feedback as FeedbackNavIcon,
   UploadFile as BioImportIcon,
+  ChevronLeft as CollapseIcon,
+  ChevronRight as ExpandIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
+// Collapsed "icon rail" width — icons only, labels on hover. Only applies to the
+// permanent (desktop >= md) drawer; the temporary tablet/mobile drawer ignores it.
+const COLLAPSED_WIDTH = 72;
 
 const menuItems = [
   {
@@ -170,7 +178,7 @@ const menuItems = [
     perm: 'fee.report.view',
     children: [
       // Permissions is the FIRST item in every module (god-only) — the convention.
-      { title: 'Permissions', icon: PermissionsIcon, path: '/fees/permissions', perm: 'authz.manage' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/fees/permissions', perm: 'authz.manage', admin: true },
       { title: 'Overview', icon: OverviewIcon, path: '/fees' },
       { title: 'Dues Report', icon: DuesIcon, path: '/fees/dues', perm: 'fee.report.view' },
       { title: 'Accumulated Dues', icon: DuesIcon, path: '/fees/accumulated-dues', perm: 'fee.report.view' },
@@ -293,8 +301,8 @@ const menuItems = [
       { title: 'Overview', icon: OverviewIcon, path: '/attendance', perm: 'attendance.session.finalize' },
       // Permissions + Config are god-only by default (authz.manage / attendance.config.manage,
       // the latter not granted to admin in policy); god can open Config to admin via the grid.
-      { title: 'Permissions', icon: PermissionsIcon, path: '/attendance/permissions', perm: 'authz.manage' },
-      { title: 'Config', icon: AsmSettingsIcon, path: '/attendance/config', perm: 'attendance.config.manage' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/attendance/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/attendance/config', perm: 'attendance.config.manage', admin: true },
       { title: 'Take Attendance', icon: MarkIcon, path: '/attendance/mark' },
       { title: 'Register', icon: MenuBookIcon, path: '/attendance/register', perm: 'attendance.session.finalize' },
       { title: 'History', icon: HistoryIcon, path: '/attendance/sessions', perm: 'attendance.session.finalize' },
@@ -419,7 +427,7 @@ const menuItems = [
     icon: ExamIcon,
     children: [
       // Convention: Permissions is the FIRST item in every module (god-only).
-      { title: 'Permissions', icon: PermissionsIcon, path: '/exam/permissions', perm: 'authz.manage' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/exam/permissions', perm: 'authz.manage', admin: true },
       { title: 'Exam Schedule', icon: CalendarIcon, path: '/exam/schedule' },
       { title: 'Exams', icon: ExamIcon, path: '/examinations', perm: 'exam.schedule.view' },
       { title: 'My Duties', icon: DutyIcon, path: '/exam/my-invigilations' },
@@ -440,7 +448,7 @@ const menuItems = [
     title: 'Clubs & Activities',
     icon: AssemblyIcon,
     children: [
-      { title: 'Permissions', icon: PermissionsIcon, path: '/club/permissions', perm: 'authz.manage' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/club/permissions', perm: 'authz.manage', admin: true },
       { title: 'Clubs', icon: AssemblyIcon, path: '/club', perm: 'club.setup.view' },
       { title: 'Planning Board', icon: CalendarIcon, path: '/club/plans', perm: 'club.plan.view' },
       { title: 'Saved Groups', icon: PeopleIcon, path: '/club/saved-groups', perm: 'club.plan.view' },
@@ -509,10 +517,22 @@ const menuItems = [
   },
 ];
 
-export default function Sidebar({ open, onClose, isDesktop }) {
+// Admin screens (Permissions / Config) are marked admin:true on their menu child.
+// The top-right reveal toggle only appears when the user can actually see at least
+// one of them — god (authz.manage) for Permissions, or anyone holding the relevant
+// *.config.manage grant for Config. Derived from the menu so it stays correct as
+// modules are added.
+export function hasAdminScreens(can) {
+  return menuItems.some((item) =>
+    (item.children || []).some((c) => c.admin && can(c.perm ?? item.perm))
+  );
+}
+
+export default function Sidebar({ open, onClose, isDesktop, collapsed = false, onToggleCollapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
   const can = useCan();
+  const { reveal } = useAdminReveal();
   const isMobile = useIsMobile();
   // Enabled on mobile (home tiles) and, on desktop, for anyone with assembly.view so
   // the derived "My Roster/Checklist/Grading" sidebar entries can resolve house roles.
@@ -531,6 +551,9 @@ export default function Sidebar({ open, onClose, isDesktop }) {
       const children = item.children.filter((c) => {
         const perm = c.perm ?? item.perm;
         if (perm && !can(perm)) return false;
+        // Admin screens (Permissions / Config) stay hidden until the top-right
+        // reveal toggle is on — purely a visibility declutter, never a grant.
+        if (c.admin && !reveal) return false;
         // Negative gate: hide from anyone who HAS this action (e.g. show the scoped
         // "My Plans" to teachers but not to managers, who use the full "Plans" list).
         if (c.notPerm && can(c.notPerm)) return false;
@@ -563,8 +586,10 @@ export default function Sidebar({ open, onClose, isDesktop }) {
   // hub tiles collapsing to /hub/:key (same buildMobileTiles model + derived gating).
   const mobileSections = buildMobileTiles(mobileVisible);
 
+  // Accordion: opening one module tree collapses the others, so at most one is
+  // expanded at a time — the biggest single declutter of a long menu.
   const handleToggle = (title) => {
-    setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }));
+    setOpenMenus((prev) => (prev[title] ? {} : { [title]: true }));
   };
 
   const isActive = (path) => {
@@ -572,10 +597,29 @@ export default function Sidebar({ open, onClose, isDesktop }) {
     return location.pathname.startsWith(path);
   };
 
+  // A module is "active" if its own path or any of its children's paths match.
+  const isItemActive = (item) =>
+    item.path ? isActive(item.path) : (item.children || []).some((c) => isActive(c.path));
+
   const handleNavigate = (path) => {
     navigate(path);
     if (!isDesktop) {
       onClose();
+    }
+  };
+
+  // Icon rail only applies to the permanent desktop drawer; tablet/mobile use a
+  // temporary overlay where an icon rail makes no sense.
+  const railCollapsed = isDesktop && collapsed;
+
+  // In the collapsed rail a parent has nowhere to show its submenu, so clicking it
+  // re-expands the sidebar and opens that tree; a leaf just navigates.
+  const handleRailClick = (item) => {
+    if (item.children) {
+      setOpenMenus({ [item.title]: true });
+      onToggleCollapsed?.();
+    } else {
+      handleNavigate(item.path);
     }
   };
 
@@ -612,19 +656,72 @@ export default function Sidebar({ open, onClose, isDesktop }) {
 
   const drawerContent = (
     <>
-      <Box sx={{ p: 3, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <Typography
-          variant="h6"
-          sx={{ color: '#fff', fontWeight: 700, letterSpacing: 1 }}
-        >
-          ItsMySkool
-        </Typography>
-        <Typography variant="caption" sx={{ color: sidebarStyles.text }}>
-          Staff Portal
-        </Typography>
+      <Box
+        sx={{
+          px: railCollapsed ? 1 : 3,
+          py: 2.25,
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: railCollapsed ? 'center' : 'space-between',
+        }}
+      >
+        {!railCollapsed && (
+          <Box>
+            <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700, letterSpacing: 1 }}>
+              ItsMySkool
+            </Typography>
+            <Typography variant="caption" sx={{ color: sidebarStyles.text }}>
+              Staff Portal
+            </Typography>
+          </Box>
+        )}
+        {/* Collapse toggle — permanent desktop drawer only. */}
+        {isDesktop && onToggleCollapsed && (
+          <Tooltip title={collapsed ? 'Expand menu' : 'Collapse menu'} placement="right">
+            <IconButton
+              onClick={onToggleCollapsed}
+              size="small"
+              aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+              sx={{ color: sidebarStyles.text, '&:hover': { color: '#fff' } }}
+            >
+              {collapsed ? <ExpandIcon /> : <CollapseIcon />}
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
-      {!isMobile ? (
+      {railCollapsed ? (
+        <List sx={{ pt: 2 }}>
+          {desktopEntries
+            .filter((e) => e.type === 'item')
+            .map(({ item }) => {
+              const active = isItemActive(item);
+              return (
+                <ListItem key={item.title} disablePadding sx={{ justifyContent: 'center' }}>
+                  <Tooltip title={item.title} placement="right">
+                    <ListItemButton
+                      onClick={() => handleRailClick(item)}
+                      sx={{
+                        justifyContent: 'center',
+                        py: 1.5,
+                        backgroundColor: active ? 'rgba(51, 102, 255, 0.2)' : 'transparent',
+                        borderLeft: active ? '3px solid #3366ff' : '3px solid transparent',
+                        '&:hover': { backgroundColor: sidebarStyles.hover },
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{ color: active ? sidebarStyles.textActive : sidebarStyles.text, minWidth: 0 }}
+                      >
+                        <item.icon />
+                      </ListItemIcon>
+                    </ListItemButton>
+                  </Tooltip>
+                </ListItem>
+              );
+            })}
+        </List>
+      ) : !isMobile ? (
       <List sx={{ pt: 2 }}>
         {desktopEntries.map((entry) => {
           if (entry.type === 'divider') {
@@ -815,13 +912,15 @@ export default function Sidebar({ open, onClose, isDesktop }) {
       onClose={onClose}
       ModalProps={{ keepMounted: true }}
       sx={{
-        width: DRAWER_WIDTH,
+        width: railCollapsed ? COLLAPSED_WIDTH : DRAWER_WIDTH,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
-          width: DRAWER_WIDTH,
+          width: railCollapsed ? COLLAPSED_WIDTH : DRAWER_WIDTH,
           boxSizing: 'border-box',
           backgroundColor: sidebarStyles.background,
           borderRight: 'none',
+          overflowX: 'hidden',
+          transition: 'width 180ms ease',
         },
       }}
     >
@@ -830,4 +929,4 @@ export default function Sidebar({ open, onClose, isDesktop }) {
   );
 }
 
-export { DRAWER_WIDTH };
+export { DRAWER_WIDTH, COLLAPSED_WIDTH };

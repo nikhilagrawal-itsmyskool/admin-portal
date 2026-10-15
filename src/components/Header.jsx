@@ -12,6 +12,7 @@ import {
   Divider,
   FormControl,
   Select,
+  Tooltip,
 } from '@mui/material';
 import {
   AccountCircle,
@@ -20,19 +21,32 @@ import {
   Menu as MenuIcon,
   Search as SearchIcon,
   ArrowBack as BackIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useAcademicYear } from '../context/AcademicYearContext';
+import { useAdminReveal } from '../context/AdminRevealContext';
+import { useCan } from '../permissions/can';
+import { useIsMobile } from '../hooks/useIsMobile';
 import NotificationBell from './NotificationBell';
-import { DRAWER_WIDTH } from './Sidebar';
+import { DRAWER_WIDTH, hasAdminScreens } from './Sidebar';
+// Fixed AppBar must track the live drawer width so it reflows when the sidebar collapses.
 import { getShortDisplayName, getFirstNameInitial } from '../utils/userDisplay';
 
-export default function Header({ onMenuClick, isDesktop }) {
+export default function Header({ onMenuClick, isDesktop, drawerWidth = DRAWER_WIDTH }) {
   const { user, logout, schoolCode } = useAuth();
   const { years, academicYearId, setAcademicYearId } = useAcademicYear();
+  const { reveal, toggle } = useAdminReveal();
+  const can = useCan();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
+
+  // The reveal toggle only appears to users who have an admin screen to reveal
+  // (god for Permissions, or a *.config.manage holder for Config) and never on
+  // phones — Permissions/Config are desktop/tablet-only.
+  const showAdminToggle = !isMobile && hasAdminScreens(can);
 
   const shortDisplayName = getShortDisplayName(user?.displayName) || user?.loginName;
   const avatarInitial = getFirstNameInitial(user?.displayName) || user?.loginName?.charAt(0).toUpperCase();
@@ -61,10 +75,11 @@ export default function Header({ onMenuClick, isDesktop }) {
       position="fixed"
       elevation={0}
       sx={{
-        width: isDesktop ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%',
-        ml: isDesktop ? `${DRAWER_WIDTH}px` : 0,
+        width: isDesktop ? `calc(100% - ${drawerWidth}px)` : '100%',
+        ml: isDesktop ? `${drawerWidth}px` : 0,
         backgroundColor: '#fff',
         borderBottom: '1px solid #e4e9f2',
+        transition: 'width 180ms ease, margin 180ms ease',
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
@@ -140,6 +155,19 @@ export default function Header({ onMenuClick, isDesktop }) {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {showAdminToggle && (
+            <Tooltip title={reveal ? 'Hide admin screens (Permissions & Config)' : 'Show admin screens (Permissions & Config)'}>
+              <IconButton
+                onClick={toggle}
+                size="small"
+                aria-label="Toggle admin screens"
+                aria-pressed={reveal}
+                sx={{ color: reveal ? '#3366ff' : '#8f9bb3' }}
+              >
+                <AdminPanelSettingsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <NotificationBell />
           <Typography variant="body2" sx={{ color: '#222b45' }}>
             {shortDisplayName}

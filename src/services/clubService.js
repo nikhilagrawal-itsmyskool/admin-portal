@@ -42,6 +42,7 @@ export const clubService = {
   createPlan: async (body) => (await api.post('/club/plans', body)).data,
   updatePlan: async (id, body) => (await api.put(`/club/plans/${id}`, body)).data,
   cancelPlan: async (id, reason) => (await api.post(`/club/plans/${id}/cancel`, { reason })).data,
+  deletePlan: async (id) => (await api.delete(`/club/plans/${id}`)).data,
   addSlot: async (id, body) => (await api.post(`/club/plans/${id}/slots`, body)).data,
   removeSlot: async (id, slotId) => (await api.delete(`/club/plans/${id}/slots/${slotId}`)).data,
   addGroup: async (id, body) => (await api.post(`/club/plans/${id}/groups`, body)).data,
