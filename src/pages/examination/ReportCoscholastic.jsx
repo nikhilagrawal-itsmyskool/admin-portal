@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button, IconButton,
-  TextField, MenuItem, ToggleButton, ToggleButtonGroup, Chip, LinearProgress, Menu, ListSubheader,
+  TextField, MenuItem, ToggleButton, ToggleButtonGroup, Chip, LinearProgress, Menu, ListSubheader, Tooltip,
 } from '@mui/material';
 import { ChevronLeft, ChevronRight, Add as AddIcon } from '@mui/icons-material';
 import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useCan } from '../../permissions/can';
 
 // Compute a co-scholastic grade from marks (client-side preview; the card recomputes server-side).
 // /10 areas grade the raw mark; /100 areas grade the percent (marks ÷ effMax × 100).
@@ -87,6 +88,9 @@ export default function ReportCoscholastic() {
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState(qClass || '');
   const [term, setTerm] = useState(qTerm === '2' ? 2 : 1);
+  const [currentTerm, setCurrentTerm] = useState(1); // from the server (derived from term2_starts_on)
+  const can = useCan();
+  const term2Open = currentTerm >= 2 || can('exam.marks.override'); // override may enter early (god default)
   const termSet = useRef(false);
   const [grid, setGrid] = useState(null);
   const [idx, setIdx] = useState(0);
@@ -110,6 +114,7 @@ export default function ReportCoscholastic() {
       let list = r.classes || [];
       if (qClass && !list.some((c) => c.classId === qClass)) list = [{ classId: qClass, className: qClassName || 'Selected class' }, ...list];
       setClasses(list);
+      if (r.currentTerm) setCurrentTerm(r.currentTerm);
       if (!termSet.current) { termSet.current = true; if (!qTerm && r.currentTerm) setTerm(r.currentTerm); }
       setClassId((prev) => prev || (list[0]?.classId || ''));
     } catch (e) {
@@ -201,9 +206,11 @@ export default function ReportCoscholastic() {
             <TextField select size="small" fullWidth label="Class" value={classId} onChange={(e) => setClassId(e.target.value)}>
               {classes.map((c) => <MenuItem key={c.classId} value={c.classId}>{c.className}</MenuItem>)}
             </TextField>
-            <ToggleButtonGroup exclusive size="small" value={term} onChange={(_, v) => v && setTerm(v)}>
+            <ToggleButtonGroup exclusive size="small" value={term} onChange={(_, v) => v && term2Open && setTerm(v)}>
               <ToggleButton value={1} sx={{ px: 2 }}>Term 1</ToggleButton>
-              <ToggleButton value={2} sx={{ px: 2 }}>Term 2</ToggleButton>
+              <Tooltip title={term2Open ? '' : 'Term 2 is not open for entry yet'}>
+                <span><ToggleButton value={2} sx={{ px: 2 }} disabled={!term2Open}>Term 2</ToggleButton></span>
+              </Tooltip>
             </ToggleButtonGroup>
           </Stack>
 

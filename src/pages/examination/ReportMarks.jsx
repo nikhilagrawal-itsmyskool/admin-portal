@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Chip, Button,
-  TextField, MenuItem, LinearProgress, Divider, ToggleButton, ToggleButtonGroup,
+  TextField, MenuItem, LinearProgress, Divider, ToggleButton, ToggleButtonGroup, Tooltip,
   Table, TableHead, TableBody, TableRow, TableCell, Paper,
 } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useCan } from '../../permissions/can';
 
 // Keep a box to a valid mark: '' (blank), 'A' (Absent — a/A only), or a number clamped to 0..max.
 // Any other character is dropped as typed, so an invalid value can never be entered.
@@ -142,6 +143,10 @@ export default function ReportMarks() {
   const [subjects, setSubjects] = useState([]);
   const [sel, setSel] = useState(qClass && qSubject ? `${qClass}|${qSubject}` : ''); // "classId|subjectCode"
   const [term, setTerm] = useState(qTerm === '2' ? 2 : 1);
+  const [currentTerm, setCurrentTerm] = useState(1); // from the server (derived from term2_starts_on)
+  const can = useCan();
+  const canOverride = can('exam.marks.override'); // may enter a not-yet-open term early (god by default)
+  const term2Open = currentTerm >= 2 || canOverride;
   const termSet = useRef(false);
   const [grid, setGrid] = useState(null);
   const [vals, setVals] = useState({}); // studentId -> { componentCode: value }
@@ -163,6 +168,7 @@ export default function ReportMarks() {
         subs = [{ classId: qClass, subjectCode: qSubject, className: qClassName || 'Selected class', reportLabel: qSubjectLabel || qSubject }, ...subs];
       }
       setSubjects(subs);
+      if (r.currentTerm) setCurrentTerm(r.currentTerm);
       if (!termSet.current) { termSet.current = true; if (!qTerm && r.currentTerm) setTerm(r.currentTerm); }
       setSel((prev) => prev || (subs[0] ? `${subs[0].classId}|${subs[0].subjectCode}` : ''));
     } catch (e) {
@@ -291,9 +297,13 @@ export default function ReportMarks() {
                 </MenuItem>
               ))}
             </TextField>
-            <ToggleButtonGroup exclusive size="small" value={term} onChange={(_, v) => v && setTerm(v)}>
+            <ToggleButtonGroup exclusive size="small" value={term} onChange={(_, v) => v && term2Open && setTerm(v)}>
               <ToggleButton value={1} sx={{ px: 2 }}>Term 1</ToggleButton>
-              <ToggleButton value={2} sx={{ px: 2 }}>Term 2</ToggleButton>
+              <Tooltip title={term2Open ? '' : 'Term 2 is not open for entry yet'}>
+                <span>
+                  <ToggleButton value={2} sx={{ px: 2 }} disabled={!term2Open}>Term 2</ToggleButton>
+                </span>
+              </Tooltip>
             </ToggleButtonGroup>
           </Stack>
 
