@@ -14,6 +14,17 @@ import { useCan } from '../../permissions/can';
 // saved reference). Live groups are cloned to produce an editable copy.
 const isCustomGroup = (g) => !g.savedGroupId && (g.sourceType === 'selected' || g.sourceType === 'mixed');
 
+// Date helpers for the activity-day default (parse YYYY-MM-DD as a LOCAL date, not UTC).
+const localDate = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
+const toIso = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+const nextActivityDate = (days) => {
+  if (!days || !days.length) return '';
+  const dt = new Date();
+  for (let i = 0; i < 14; i++) { if (days.includes(dt.getDay())) return toIso(dt); dt.setDate(dt.getDate() + 1); }
+  return '';
+};
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 export default function PlanningBoard() {
   const { id } = useParams();
   return id ? <PlanEditor planId={id} /> : <PlanList />;
@@ -78,9 +89,25 @@ function PlanDialog({ plan, onClose, onSaved }) {
     planDate: plan?.planDate || '', title: plan?.title || '',
     participationScope: plan?.participationScope || 'whole', coverage: plan?.coverage || 'selective',
   });
+  const [activityDays, setActivityDays] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // New plan: seed date/scope/coverage from programme settings.
+  useEffect(() => {
+    if (editing) return;
+    clubService.getSettings().then((d) => {
+      setActivityDays(d.activityDays || []);
+      setForm((f) => ({
+        ...f,
+        planDate: f.planDate || nextActivityDate(d.activityDays || []),
+        participationScope: d.defaultScope || f.participationScope,
+        coverage: d.defaultCoverage || f.coverage,
+      }));
+    }).catch(() => {});
+  }, [editing]);
+  const offDay = !editing && activityDays.length > 0 && form.planDate && !activityDays.includes(localDate(form.planDate).getDay());
   const save = async () => {
     setBusy(true); setErr('');
     try {
@@ -104,6 +131,7 @@ function PlanDialog({ plan, onClose, onSaved }) {
         {err && <Alert severity="error">{err}</Alert>}
         <TextField type="date" label="Date" InputLabelProps={{ shrink: true }} value={form.planDate} onChange={set('planDate')} size="small"
           disabled={structuralLocked} helperText={structuralLocked ? 'Date is fixed after publish' : undefined} />
+        {offDay && <Alert severity="warning">{DAY_NAMES[localDate(form.planDate).getDay()]} isn't a usual activity day — you can still continue.</Alert>}
         <TextField label="Title" value={form.title} onChange={set('title')} size="small" />
         <TextField label="Scope" select value={form.participationScope} onChange={set('participationScope')} size="small" disabled={structuralLocked}>
           {['whole', 'grades', 'groups'].map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}

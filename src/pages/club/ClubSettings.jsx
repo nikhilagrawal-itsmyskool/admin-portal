@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Stack, Card, CardContent, TextField, Button, Alert, CircularProgress, Divider, IconButton,
+  Box, Typography, Stack, Card, CardContent, TextField, Button, Alert, CircularProgress, Divider, IconButton, MenuItem,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { clubService } from '../../services/clubService';
@@ -18,11 +18,18 @@ export default function ClubSettings() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { const d = await clubService.getSettings(); setS({ displayName: d.displayName || '', parallelClubLimit: d.parallelClubLimit ?? '', defaultSlots: d.defaultSlots || [] }); }
-    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load'); }
+    try {
+      const d = await clubService.getSettings();
+      setS({
+        displayName: d.displayName || '', parallelClubLimit: d.parallelClubLimit ?? '', defaultSlots: d.defaultSlots || [],
+        activityDays: d.activityDays || [], defaultScope: d.defaultScope || 'whole', defaultCoverage: d.defaultCoverage || 'selective',
+      });
+    } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load'); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const toggleDay = (d) => setS((cur) => ({ ...cur, activityDays: cur.activityDays.includes(d) ? cur.activityDays.filter((x) => x !== d) : [...cur.activityDays, d].sort() }));
 
   const save = async () => {
     setErr(''); setMsg('');
@@ -31,10 +38,15 @@ export default function ClubSettings() {
         displayName: s.displayName || null,
         parallelClubLimit: s.parallelClubLimit === '' ? null : Number(s.parallelClubLimit),
         defaultSlots: s.defaultSlots,
+        activityDays: s.activityDays,
+        defaultScope: s.defaultScope,
+        defaultCoverage: s.defaultCoverage,
       });
       setMsg('Settings saved.');
     } catch (e) { setErr(e.response?.data?.error?.description || 'Save failed'); }
   };
+
+  const DOW = [['Sun', 0], ['Mon', 1], ['Tue', 2], ['Wed', 3], ['Thu', 4], ['Fri', 5], ['Sat', 6]];
 
   if (loading) return <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress /></Box>;
 
@@ -49,6 +61,26 @@ export default function ClubSettings() {
           size="small" disabled={!canManage} helperText='What users see this programme called, e.g. "Saturday Activities"' />
         <TextField label="Parallel-club limit (soft)" value={s.parallelClubLimit} onChange={(e) => setS({ ...s, parallelClubLimit: e.target.value })}
           size="small" disabled={!canManage} helperText="Warn when more than this many clubs run at once. Blank = no limit." />
+        <Divider />
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Activity day(s)</Typography>
+          <Typography variant="caption" color="text.secondary">New plans default to the next activity day; off-day dates get a warning.</Typography>
+          <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
+            {DOW.map(([label, d]) => (
+              <Button key={d} size="small" variant={s.activityDays.includes(d) ? 'contained' : 'outlined'} disabled={!canManage} onClick={() => toggleDay(d)}>{label}</Button>
+            ))}
+          </Stack>
+        </Box>
+        <Stack direction="row" spacing={2}>
+          <TextField label="Default scope" select size="small" value={s.defaultScope} disabled={!canManage} sx={{ minWidth: 160 }}
+            onChange={(e) => setS({ ...s, defaultScope: e.target.value })}>
+            {['whole', 'grades', 'groups'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}
+          </TextField>
+          <TextField label="Default coverage" select size="small" value={s.defaultCoverage} disabled={!canManage} sx={{ minWidth: 160 }}
+            onChange={(e) => setS({ ...s, defaultCoverage: e.target.value })}>
+            {['selective', 'complete'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}
+          </TextField>
+        </Stack>
         <Divider />
         <Typography variant="subtitle2">Default slots</Typography>
         {s.defaultSlots.map((slot, i) => (
