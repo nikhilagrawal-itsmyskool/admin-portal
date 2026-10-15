@@ -12,18 +12,21 @@ export default function ClubSettings() {
   const can = useCan();
   const canManage = can('club.setup.manage');
   const [s, setS] = useState(null);
+  const [baseline, setBaseline] = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const dirty = s && JSON.stringify(s) !== baseline;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const d = await clubService.getSettings();
-      setS({
+      const obj = {
         displayName: d.displayName || '', parallelClubLimit: d.parallelClubLimit ?? '', defaultSlots: d.defaultSlots || [],
         activityDays: d.activityDays || [], defaultScope: d.defaultScope || 'whole', defaultCoverage: d.defaultCoverage || 'selective',
-      });
+      };
+      setS(obj); setBaseline(JSON.stringify(obj));
     } catch (e) { setErr(e.response?.data?.error?.description || 'Failed to load'); }
     finally { setLoading(false); }
   }, []);
@@ -42,6 +45,7 @@ export default function ClubSettings() {
         defaultScope: s.defaultScope,
         defaultCoverage: s.defaultCoverage,
       });
+      setBaseline(JSON.stringify(s));
       setMsg('Settings saved.');
     } catch (e) { setErr(e.response?.data?.error?.description || 'Save failed'); }
   };
@@ -95,7 +99,7 @@ export default function ClubSettings() {
           </Stack>
         ))}
         {canManage && <Button size="small" startIcon={<AddIcon />} onClick={() => setS({ ...s, defaultSlots: [...s.defaultSlots, { start: '09:00', end: '10:00', label: `Slot ${s.defaultSlots.length + 1}` }] })}>Add slot</Button>}
-        {canManage && <Box><Button variant="contained" onClick={save}>Save settings</Button></Box>}
+        {canManage && <Box><Button variant="contained" onClick={save} disabled={!dirty}>{dirty ? 'Save settings' : 'Saved'}</Button></Box>}
       </Stack></CardContent></Card>
     </Box>
   );

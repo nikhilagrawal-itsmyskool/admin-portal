@@ -70,6 +70,12 @@ function PlanList() {
                   {can('club.plan.manage') && p.status !== 'cancelled' && (
                     <Tooltip title="Edit"><IconButton size="small" onClick={() => setDialog({ plan: p })}><EditIcon fontSize="small" /></IconButton></Tooltip>
                   )}
+                  {can('club.plan.manage') && (p.status === 'draft' || p.status === 'cancelled') && (
+                    <Tooltip title="Delete"><IconButton size="small" onClick={async () => {
+                      if (!window.confirm(`Delete the plan for ${p.planDate}? This can't be undone.`)) return;
+                      try { await clubService.deletePlan(p.uuid); load(); } catch (e) { setErr(e.response?.data?.error?.description || 'Delete failed'); }
+                    }}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -271,8 +277,14 @@ function PlanEditor({ planId }) {
           <TableHead><TableRow>
             <TableCell>Group</TableCell>
             {plan.slots.map((s) => (
-              <TableCell key={s.uuid}>{s.label || `${s.startTime}–${s.endTime}`}
-                {draft && canManage && <IconButton size="small" onClick={() => act(() => clubService.removeSlot(planId, s.uuid), 'Slot removed')}><DeleteIcon fontSize="inherit" /></IconButton>}
+              <TableCell key={s.uuid}>
+                <Stack direction="row" alignItems="flex-start" spacing={0.5}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.label || 'Slot'}</Typography>
+                    <Typography variant="caption" color="text.secondary">{s.startTime}–{s.endTime}</Typography>
+                  </Box>
+                  {draft && canManage && <IconButton size="small" onClick={() => act(() => clubService.removeSlot(planId, s.uuid), 'Slot removed')}><DeleteIcon fontSize="inherit" /></IconButton>}
+                </Stack>
               </TableCell>
             ))}
             {!plan.slots.length && <TableCell><Typography variant="caption" color="text.secondary">Add a slot →</Typography></TableCell>}
