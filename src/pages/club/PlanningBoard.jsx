@@ -212,6 +212,19 @@ function PlanEditor({ planId }) {
         {draft && canPublish && <Button variant="contained" disabled={!validation?.ready} onClick={() => act(() => clubService.publishPlan(planId, plan.rowVersion), 'Published')}>Publish ▸</Button>}
         {published && canPublish && <Button variant="outlined" onClick={() => act(() => clubService.closePlan(planId), 'Closed')}>Close</Button>}
         {plan.status === 'closed' && canPublish && <Button variant="outlined" onClick={() => act(() => clubService.reopenPlan(planId), 'Reopened')}>Reopen</Button>}
+        {(published || plan.status === 'closed') && canPublish && (
+          <Button variant="outlined" color="error" onClick={() => {
+            const r = window.prompt('Cancel this plan? Enter a reason (it stays in history; you can then delete it):');
+            if (r === null) return;
+            act(() => clubService.cancelPlan(planId, r || 'Cancelled'), 'Plan cancelled');
+          }}>Cancel plan</Button>
+        )}
+        {(draft || plan.status === 'cancelled') && canManage && (
+          <Button variant="outlined" color="error" onClick={async () => {
+            if (!window.confirm(`Delete this ${plan.status} plan? This can't be undone.`)) return;
+            try { await clubService.deletePlan(planId); navigate('/club/plans'); } catch (e) { setErr(e.response?.data?.error?.description || 'Delete failed'); }
+          }}>Delete</Button>
+        )}
       </Stack>
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMsg('')}>{msg}</Alert>}
