@@ -32,8 +32,9 @@ export const ROLE_PERMISSIONS = {
     "student.view",
     "student.manage",
     "student.contacts.view",
-    "attendance.mark",
-    "attendance.finalize",
+    "attendance.session.mark",
+    "attendance.session.finalize",
+    "attendance.record.view",
     // attendance.config.manage is god-only by default (not here); god grants admin via the
     // Permissions grid if a school wants it. Mirrors the god-first convention.
     "communication.send",
@@ -77,6 +78,7 @@ export const ROLE_PERMISSIONS = {
     "timetable.view", // Published timetable only (menu gates the rest)
     "student.view",
     "student.contacts.view", // Teachers may see un-masked parent/student & staff numbers
+    "attendance.record.view", // Read a student's attendance history on the 360 view
     "employee.view",
     "syllabus.view", // Read plans; class teachers also mark coverage for their section
     "syllabus.progress.mark",
@@ -96,7 +98,7 @@ export const ROLE_PERMISSIONS = {
   // can cover for an absent colleague) and to POST their class's daily homework photos.
   // Finalizing attendance stays admin/god; the class→teacher homework mapping override
   // (homework.manage) stays admin/god. Additive to the `teacher` role.
-  "class-teacher": ["attendance.mark", "homework.post"],
+  "class-teacher": ["attendance.session.mark", "homework.post"],
   // Club in-charge: READ-ONLY by default across the three club resources (clubs, bank, plans).
   // Authoring/approve/review/planning are god-first; god grants more via the Permissions grid.
   "club-incharge": ["club.setup.view", "club.activity.view", "club.plan.view"],

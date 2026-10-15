@@ -14,9 +14,18 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `lab.manage` | Add/edit/delete labs, items, purchases, issues & breakages | ✓ | ✓ | — | — | — | ✓ | — | — | — | — | — | — | — |
 | `fine.view` | See the Fines menu and read its pages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `fine.manage` | Add/edit/delete fine incidents | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
-| `fee.view` | See the Fees menu, read the overview, structure, concessions & a student's fee ledger | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
-| `fee.manage` | Add/edit/delete fee heads, cycles, structure, concessions, waivers & transport slabs | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
-| `fee.collect` | Collect fees, issue/cancel receipts, apply advance & record refunds | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.report.view` | See the Fees menu, read dues/reports/receipts & a student's fee ledger | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.collect.collect` | Collect fees, issue/cancel receipts, apply advance & record refunds | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.structure.manage` | Add/edit fee heads, cycles, structure & run charge generation | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.concession.manage` | Create/edit/delete concession schemes (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.concession.assign` | Add/remove students to a concession & mid-year concession changes | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.waiver.manage` | Create/remove waivers, incl. the Collect write-off (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.latefee.manage` | Create/edit late-fee rules & apply fines (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.transport.manage` | Add/edit transport fee slabs (god-only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.student.manage` | Withdraw a student & mark exam-only | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.manager.view` | Read-only Collection Desk (simplified manager view) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.fine.exempt` | Exempt a student's late fine (manager + god only) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `fee.receipt.verify` | Scan & Verify receipts (admin + god only) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `uniform.view` | See the Uniform menu and read its pages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `uniform.manage` | Add/edit/delete uniform catalog, purchases, sets & sales | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `shop.view` | See the Shop menu and read its pages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
@@ -41,8 +50,9 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `student.view` | See the Students menu and view/search the student list | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
 | `student.manage` | Admit/edit/delete students, manage guardians & houses, assign house, promote/graduate | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `student.contacts.view` | View unmasked parent/guardian phone, WhatsApp & email | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
-| `attendance.mark` | Take daily roll-call: open a session, load the roster, mark & save statuses (admin + class teachers) | ✓ | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — |
-| `attendance.finalize` | Finalize a daily attendance session and edit records after finalize (marking & viewing are open to all staff) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `attendance.record.view` | View a single student's attendance history on the 360 view (teachers + admin) | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — |
+| `attendance.session.mark` | Take daily roll-call: open a session, load the roster, mark & save statuses (admin + class teachers) | ✓ | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — |
+| `attendance.session.finalize` | Finalize a daily attendance session and edit records after finalize (marking & viewing are open to all staff) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `attendance.config.manage` | Manage the per-school Attendance Config (how a half-day counts toward attendance %) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.send` | Compose, schedule, preview, send and cancel SMS/WhatsApp messages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.template.manage` | Create, edit and activate message templates | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |

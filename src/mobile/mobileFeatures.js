@@ -62,7 +62,7 @@ export const MOBILE_FEATURES = [
     title: "Take Attendance",
     icon: AttendanceIcon,
     path: "/attendance/mark",
-    perm: "attendance.mark", // class teachers (+ admin/god); marking only, finalize is admin
+    perm: "attendance.session.mark", // class teachers (+ admin/god); marking only, finalize is admin
     section: "today",
     color: "#43a047",
     routes: ["/attendance/mark", "/attendance/sessions", "/attendance/sessions/:id"],

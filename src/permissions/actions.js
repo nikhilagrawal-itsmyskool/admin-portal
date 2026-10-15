@@ -49,11 +49,13 @@ export const ACTIONS = {
   STUDENT_VIEW: "student.view",
   STUDENT_MANAGE: "student.manage",
   STUDENT_VIEW_CONTACTS: "student.contacts.view",
-  // Attendance. mark = take roll-call (roster/sessions/save + read config); finalize = finalize &
-  // edit records; config.manage = the per-school Attendance Config screen (half-day policy),
-  // god-only by default (god grants admin via the Permissions grid if wanted).
-  ATTENDANCE_MARK: "attendance.mark",
-  ATTENDANCE_FINALIZE: "attendance.finalize",
+  // Attendance (module.resource.action). session.mark = take roll-call (roster/sessions/save +
+  // read config); session.finalize = finalize & edit records; record.view = read a student's own
+  // attendance history (the 360 card — teachers + admin); config.manage = the per-school Attendance
+  // Config screen (half-day policy), god-only by default (god grants admin via the grid if wanted).
+  ATTENDANCE_MARK: "attendance.session.mark",
+  ATTENDANCE_FINALIZE: "attendance.session.finalize",
+  ATTENDANCE_RECORD_VIEW: "attendance.record.view",
   ATTENDANCE_CONFIG_MANAGE: "attendance.config.manage",
   COMMUNICATION_SEND: "communication.send",
   COMMUNICATION_TEMPLATE_MANAGE: "communication.template.manage",
@@ -303,6 +305,11 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.STUDENT_VIEW_CONTACTS,
     description: "View unmasked parent/guardian phone, WhatsApp & email",
+  },
+  {
+    action: ACTIONS.ATTENDANCE_RECORD_VIEW,
+    description:
+      "View a single student's attendance history on the 360 view (teachers + admin)",
   },
   {
     action: ACTIONS.ATTENDANCE_MARK,

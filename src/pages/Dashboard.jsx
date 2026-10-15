@@ -136,7 +136,7 @@ const modules = [
     icon: AttendanceIcon,
     path: "/attendance",
     color: "#43a047",
-    perm: "attendance.mark",
+    perm: "attendance.session.mark",
   },
   {
     title: "Communication",

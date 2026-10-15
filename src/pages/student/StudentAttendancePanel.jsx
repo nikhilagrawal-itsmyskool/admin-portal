@@ -6,6 +6,7 @@ import { EventAvailable as AttIcon } from '@mui/icons-material';
 import { attendanceService } from '../../services/attendanceService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { activityCalendarService } from '../../services/activityCalendarService';
+import { useCan } from '../../permissions/can';
 
 // Semantic status palette (consistent everywhere attendance is shown).
 const STATUS = {
@@ -70,16 +71,22 @@ function MonthGrid({ year, month, map, nt }) {
 }
 
 export default function StudentAttendancePanel({ studentId }) {
+  // Read-only attendance view, gated by attendance.record.view (teachers + admin + god).
+  // Roles without it don't see the card at all — no confusing empty shell.
+  const canView = useCan()('attendance.record.view');
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState([]);
   const [summary, setSummary] = useState(null); // server rollup — honours the school's half-day policy
   const [nt, setNt] = useState({});
   const [yearName, setYearName] = useState('');
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (!canView) { setLoading(false); return; }
     let alive = true;
     (async () => {
       setLoading(true);
+      setError(false);
       try {
         const cur = await academicCalendarService.getCurrentAcademicYear();
         if (alive) setYearName(cur?.name || '');
@@ -99,13 +106,13 @@ export default function StudentAttendancePanel({ studentId }) {
         }
         if (alive) setNt(ntMap);
       } catch {
-        if (alive) { setDays([]); setNt({}); }
+        if (alive) { setDays([]); setNt({}); setError(true); }
       } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
-  }, [studentId]);
+  }, [studentId, canView]);
 
   const { map, totals, months } = useMemo(() => {
     const map = {};
@@ -133,6 +140,8 @@ export default function StudentAttendancePanel({ studentId }) {
     : (localWorking > 0 ? Math.round(((totals.present + totals.late + totals.half_day * 0.5) / localWorking) * 100) : 0);
   const pctColor = percent >= 85 ? '#22c55e' : percent >= 70 ? '#f59e0b' : '#ef4444';
 
+  if (!canView) return null;
+
   return (
     <Card>
       <CardContent>
@@ -144,6 +153,10 @@ export default function StudentAttendancePanel({ studentId }) {
 
         {loading ? (
           <Skeleton variant="rounded" height={160} />
+        ) : error ? (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+            Couldn't load attendance right now. Please try again later.
+          </Typography>
         ) : working === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
             No attendance recorded for this session yet.
