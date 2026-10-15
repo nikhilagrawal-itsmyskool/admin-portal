@@ -232,7 +232,7 @@ const modules = [
     icon: FeesIcon,
     path: "/fees",
     color: "#00897b",
-    perm: "fee.view",
+    perm: "fee.report.view",
   },
   {
     title: "Feedback",

@@ -9,18 +9,20 @@ export const ACTIONS = {
   LAB_MANAGE: "lab.manage",
   FINE_VIEW: "fine.view",
   FINE_MANAGE: "fine.manage",
-  FEE_VIEW: "fee.view",
-  FEE_MANAGE: "fee.manage",
-  FEE_COLLECT: "fee.collect",
-  // Read-only "Collection Desk" (simplified manager view). Under fee.* so admin/god inherit;
-  // the locked `manager` role gets ONLY this.
-  FEE_MANAGER_VIEW: "fee.manager.view",
-  // Outside the fee.* namespace on purpose → fee incharges/clerks DON'T inherit it; only
-  // the admin role (explicit grant) + god ('*'). Powers the Scan & Verify tile.
-  RECEIPT_VERIFY: "receipt.verify",
-  // Outside BOTH fee.* and fine.* → admins/clerks DON'T inherit; only `manager` + god.
-  // Powers the one-tap late-fine exempt on the Collection Desk.
-  LATEFINE_EXEMPT: "latefine.exempt",
+  // Fees — module.resource.action, NO fee.* wildcard (mirrors shared/lib/authz-policy.ts).
+  FEE_REPORT_VIEW: "fee.report.view",
+  FEE_COLLECT: "fee.collect.collect",
+  FEE_STRUCTURE_MANAGE: "fee.structure.manage",
+  FEE_CONCESSION_MANAGE: "fee.concession.manage", // create/edit/delete concession schemes (god-only)
+  FEE_CONCESSION_ASSIGN: "fee.concession.assign", // add/remove students to a concession
+  FEE_WAIVER_MANAGE: "fee.waiver.manage",         // god-only
+  FEE_LATEFEE_MANAGE: "fee.latefee.manage",       // god-only
+  FEE_TRANSPORT_MANAGE: "fee.transport.manage",   // god-only
+  FEE_STUDENT_MANAGE: "fee.student.manage",       // withdraw / exam-only
+  FEE_MANAGER_VIEW: "fee.manager.view",           // Collection Desk (manager gets this + exempt only)
+  FEE_FINE_EXEMPT: "fee.fine.exempt",             // exempt a late fine (manager + god)
+  FEE_RECEIPT_VERIFY: "fee.receipt.verify",       // Scan & Verify (admin + god)
+  FEE_MIGRATION_IMPORT: "fee.migration.import",   // bulk import (god-only)
   UNIFORM_VIEW: "uniform.view",
   UNIFORM_MANAGE: "uniform.manage",
   SHOP_VIEW: "shop.view",
@@ -156,16 +158,52 @@ export const ACTION_CATALOG = [
     description: "Add/edit/delete fine incidents",
   },
   {
-    action: ACTIONS.FEE_VIEW,
-    description: "See the Fees menu, read the overview, structure, concessions & a student's fee ledger",
-  },
-  {
-    action: ACTIONS.FEE_MANAGE,
-    description: "Add/edit/delete fee heads, cycles, structure, concessions, waivers & transport slabs",
+    action: ACTIONS.FEE_REPORT_VIEW,
+    description: "See the Fees menu, read dues/reports/receipts & a student's fee ledger",
   },
   {
     action: ACTIONS.FEE_COLLECT,
     description: "Collect fees, issue/cancel receipts, apply advance & record refunds",
+  },
+  {
+    action: ACTIONS.FEE_STRUCTURE_MANAGE,
+    description: "Add/edit fee heads, cycles, structure & run charge generation",
+  },
+  {
+    action: ACTIONS.FEE_CONCESSION_MANAGE,
+    description: "Create/edit/delete concession schemes (god-only)",
+  },
+  {
+    action: ACTIONS.FEE_CONCESSION_ASSIGN,
+    description: "Add/remove students to a concession & mid-year concession changes",
+  },
+  {
+    action: ACTIONS.FEE_WAIVER_MANAGE,
+    description: "Create/remove waivers, incl. the Collect write-off (god-only)",
+  },
+  {
+    action: ACTIONS.FEE_LATEFEE_MANAGE,
+    description: "Create/edit late-fee rules & apply fines (god-only)",
+  },
+  {
+    action: ACTIONS.FEE_TRANSPORT_MANAGE,
+    description: "Add/edit transport fee slabs (god-only)",
+  },
+  {
+    action: ACTIONS.FEE_STUDENT_MANAGE,
+    description: "Withdraw a student & mark exam-only",
+  },
+  {
+    action: ACTIONS.FEE_MANAGER_VIEW,
+    description: "Read-only Collection Desk (simplified manager view)",
+  },
+  {
+    action: ACTIONS.FEE_FINE_EXEMPT,
+    description: "Exempt a student's late fine (manager + god only)",
+  },
+  {
+    action: ACTIONS.FEE_RECEIPT_VERIFY,
+    description: "Scan & Verify receipts (admin + god only)",
   },
   {
     action: ACTIONS.UNIFORM_VIEW,

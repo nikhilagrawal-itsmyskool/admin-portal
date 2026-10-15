@@ -20,7 +20,7 @@ export default function ExamOnlyStudents() {
   const { academicYearId } = useAcademicYear();
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.FEE_MANAGE);
+  const canManage = can(ACTIONS.FEE_STUDENT_MANAGE);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

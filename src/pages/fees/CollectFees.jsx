@@ -37,7 +37,7 @@ export default function CollectFees() {
   const [pay, setPay] = useState({ mode: 'cash', receivedFrom: 'father', date: today(), remarks: '', notify: true });
   const [useAdvance, setUseAdvance] = useState(false);
   const [collecting, setCollecting] = useState(false);
-  const canWaive = useCan()(ACTIONS.FEE_MANAGE);
+  const canWaive = useCan()(ACTIONS.FEE_WAIVER_MANAGE);
   const canExempt = useCan()('*'); // fine late-fee exemption is god-only (not admins/incharges)
   const [received, setReceived] = useState(''); // cash in hand — the anchor
   const [waive, setWaive] = useState({ on: false, reason: '' });

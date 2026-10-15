@@ -34,7 +34,7 @@ const COMMANDS = [
   { label: 'Assembly · Grading', path: '/assembly/grading', perm: ACTIONS.ASSEMBLY_MANAGE, keywords: 'evaluators grade' },
   { label: 'Assembly · Checklist', path: '/assembly/checklist', perm: ACTIONS.ASSEMBLY_MANAGE, keywords: 'signoff' },
   { label: 'Syllabus · Overview', path: '/syllabus/overview', perm: ACTIONS.SYLLABUS_VIEW, keywords: 'coverage plans' },
-  { label: 'Fees · Overview', path: '/fees', perm: ACTIONS.FEE_VIEW, keywords: 'dues collection money' },
+  { label: 'Fees · Overview', path: '/fees', perm: ACTIONS.FEE_REPORT_VIEW, keywords: 'dues collection money' },
 ];
 
 // Global "type anything, get the student" palette. Open with Ctrl/⌘+K (or the

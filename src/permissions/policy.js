@@ -13,7 +13,12 @@ export const ROLE_PERMISSIONS = {
     "medical.*",
     "lab.*",
     "fine.*",
-    "fee.*",
+    "fee.report.view",
+    "fee.collect.collect",
+    "fee.structure.manage",
+    "fee.concession.assign",
+    "fee.student.manage",
+    "fee.manager.view",
     "uniform.*",
     "shop.*",
     "sports.*",
@@ -57,7 +62,7 @@ export const ROLE_PERMISSIONS = {
     "exam.schedule.manage",
     "exam.progress.view",
     "exam.reportcard.manage",
-    "receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
+    "fee.receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
     "leave.apply", // Self-service leave only; oversight (leave.manage) is god-only for now
     "documents.sign", // Read & sign own documents; authoring (documents.manage) is god-only
     // Clubs & Activities: NONE by default (locked to god). god grants admin via the grid.
@@ -98,7 +103,7 @@ export const ROLE_PERMISSIONS = {
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
   "lab-incharge": ["lab.*"],
-  "fees-incharge": ["fee.*"],
+  "fees-incharge": ["fee.report.view", "fee.collect.collect", "fee.structure.manage", "fee.concession.assign", "fee.student.manage", "fee.manager.view"],
   "sports-incharge": ["sports.*"],
   "assets-incharge": ["asset.*"],
   "library-incharge": ["library.*"],
@@ -118,7 +123,7 @@ export const ROLE_PERMISSIONS = {
   "transport-attendance": ["transport.attendance.mark"],
   // Collection-desk manager: a locked, read-only fee-collection view, plus the one-tap
   // late-fine exemption (the counter escape hatch — clerks can't skip/forgive fines).
-  manager: ["fee.manager.view", "latefine.exempt"],
+  manager: ["fee.manager.view", "fee.fine.exempt"],
   // Education director: lands on the Cockpit / School Pulse and reviews the school's
   // heartbeat. Read-oriented oversight across the pulse domains (feedback review, assembly,
   // syllabus, students/houses, leave, calendar). Additive — a person can also hold `god`.

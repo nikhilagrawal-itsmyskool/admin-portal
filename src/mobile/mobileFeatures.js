@@ -193,7 +193,7 @@ export const MOBILE_FEATURES = [
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },
   // Scan a receipt QR to confirm it's genuine (works for any type incl transport). admin + god
   // (receipt.verify) — camera-based, so meaningful on a phone only.
-  { title: "Scan & Verify", icon: ScanIcon, path: "/verify/scan", perm: "receipt.verify", section: "office", color: "#00897b", routes: ["/verify/scan"] },
+  { title: "Scan & Verify", icon: ScanIcon, path: "/verify/scan", perm: "fee.receipt.verify", section: "office", color: "#00897b", routes: ["/verify/scan"] },
 
   // ── Tools — pinned last. Assistant is god-only (assistant.use granted to no role).
   { title: "Assistant", icon: AssistantIcon, path: "/assistant", perm: "assistant.use", section: "tools", color: "#3366ff" },

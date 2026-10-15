@@ -980,7 +980,7 @@ export default function StudentDetail() {
           </Box>
 
           {/* 360° — Fees & Dues (admin/god only) */}
-          {can('fee.view') && <StudentFeesPanel studentId={student.uuid} student={student} />}
+          {can('fee.report.view') && <StudentFeesPanel studentId={student.uuid} student={student} />}
 
           {/* 360° — Examinations (admit-card dues / override) */}
           {can('exam.schedule.view') && (

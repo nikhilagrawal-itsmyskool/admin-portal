@@ -42,7 +42,11 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [cancelConfirm, setCancelConfirm] = useState(''); // type-to-confirm speed-bump
   const [cancelBusy, setCancelBusy] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // bump to reload after a cancel
-  const canManage = useCan()(ACTIONS.FEE_MANAGE);
+  const can = useCan();
+  const canWithdraw = can(ACTIONS.FEE_STUDENT_MANAGE);   // mark withdrawn / leaving date
+  const canWaive = can(ACTIONS.FEE_WAIVER_MANAGE);        // "Waive all" write-off (god-only)
+  const canAssignConc = can(ACTIONS.FEE_CONCESSION_ASSIGN); // mid-year concession change
+  const canCancelReceipt = can(ACTIONS.FEE_COLLECT);      // cancel a receipt
   const [followup, setFollowup] = useState([]); // follow-up timeline entries
   const [followOpen, setFollowOpen] = useState(false);
 
@@ -295,12 +299,12 @@ export default function StudentFeesPanel({ studentId, student }) {
             <ToggleButton value="transport" sx={{ textTransform: 'none', py: 0.25 }}>Transport</ToggleButton>
           </ToggleButtonGroup>
           {isCurrent && !isMobile && <Button size="small" variant="outlined" onClick={goCollect}>Collect →</Button>}
-          {canManage && (student?.status || 'active') !== 'deleted' && (
+          {canWithdraw && (student?.status || 'active') !== 'deleted' && (
             <Button size="small" color="warning" onClick={() => setWd({ date: student?.withdrawalDate || todayIso(), reason: '', busy: false })}>
               {student?.status === 'inactive' ? 'Set leaving date' : 'Mark withdrawn'}
             </Button>
           )}
-          {canManage && isCurrent && !isMobile && tot.remaining > 0 && (
+          {canWaive && isCurrent && !isMobile && tot.remaining > 0 && (
             <Button size="small" color="error" variant="outlined" onClick={() => setWaiveAll({ open: true, reason: '', confirm: '', busy: false, done: null })}>Waive all</Button>
           )}
         </Box>
@@ -409,7 +413,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                 {showCancelledLedger && <CancelledLedger rows={cancelledEntries} />}
               </>
             ) : view === 'concession' ? (
-              <ConcessionTimeline studentId={effStudentId} academicYearId={selYear} canManage={canManage && isCurrent} studentName={student?.name} />
+              <ConcessionTimeline studentId={effStudentId} academicYearId={selYear} canManage={canAssignConc && isCurrent} studentName={student?.name} />
             ) : view === 'transport' ? (
               <Box sx={{ overflowX: 'auto' }}>
                 {transport === null ? (
@@ -482,7 +486,7 @@ export default function StudentFeesPanel({ studentId, student }) {
                           <TableCell align="right" sx={{ fontWeight: 600, ...(cancelled ? { textDecoration: 'line-through', color: FEE_COLORS.muted } : {}) }}>{inr(r.totalPaid)}</TableCell>
                           <TableCell align="right">
                             <ReceiptPrintButton receiptId={r.uuid} />
-                            {!cancelled && canManage && !isMobile && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); setCancelConfirm(''); }}>Cancel</Button>}
+                            {!cancelled && canCancelReceipt && !isMobile && <Button size="small" color="error" onClick={() => { setCancelTarget(r); setCancelReason(''); setCancelConfirm(''); }}>Cancel</Button>}
                           </TableCell>
                         </TableRow>
                         );

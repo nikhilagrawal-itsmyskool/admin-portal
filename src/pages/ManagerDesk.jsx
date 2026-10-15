@@ -149,7 +149,7 @@ export default function ManagerDesk() {
   const closeFind = () => { setFind(false); setPicked(null); setQ(''); setDq(''); setResults(null); };
 
   // Per-cycle late-fine exemption (manager + god only)
-  const canExempt = useCan()('latefine.exempt');
+  const canExempt = useCan()('fee.fine.exempt');
   const [exemptConfirm, setExemptConfirm] = useState(null); // the fine row being confirmed {chargeId, cycleLabel, amount}
   const [exempting, setExempting] = useState(false);
   const [ok, setOk] = useState('');

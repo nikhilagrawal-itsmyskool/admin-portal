@@ -81,7 +81,7 @@ export default function StudentDetailModern({ ctx }) {
 
   const [attn, setAttn] = useState(null); // { percent, present, absent }
   const [fees, setFees] = useState(null); // { dueNow, paid, outstanding, monthEndLabel }
-  const canFees = can && can('fee.view');
+  const canFees = can && can('fee.report.view');
 
   // Light reads for the KPI tiles only (child panels are untouched).
   useEffect(() => {
