@@ -11,6 +11,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { can, baseGrants, setPermissionOverrides } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import TemporaryAccessPanel from '../../components/common/TemporaryAccessPanel';
 
 // God-only Permissions grid for the Leave module. Identical mechanics to the other module
 // grids — file policy is the default; god layers GLOBAL grant/revoke overrides. Fetches the
@@ -127,6 +128,8 @@ export default function LabPermissions() {
           </Table>
         </CardContent>
       </Card>
+
+      {actions.length > 0 && <TemporaryAccessPanel module="lab" actions={actions} />}
 
       <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}>
         <MenuItem onClick={() => choose(menu.role, menu.action, 'default')}>

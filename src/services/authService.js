@@ -30,4 +30,17 @@ export const authService = {
     const response = await api.post('/auth/permissions/toggle', { role, action, desired, reason });
     return response.data;
   },
+  // Temporary per-employee grants (god-only). List is narrowed to one module's actions.
+  listGrants: async (module) => {
+    const response = await api.get('/auth/permissions/grants', module ? { params: { module } } : undefined);
+    return response.data;
+  },
+  createGrants: async (employeeId, actions, durationHours, reason) => {
+    const response = await api.post('/auth/permissions/grants', { employeeId, actions, durationHours, reason });
+    return response.data;
+  },
+  revokeGrant: async (id) => {
+    const response = await api.delete(`/auth/permissions/grants/${id}`);
+    return response.data;
+  },
 };

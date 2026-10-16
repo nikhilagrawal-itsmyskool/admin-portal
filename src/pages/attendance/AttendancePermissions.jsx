@@ -11,6 +11,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { can, baseGrants, setPermissionOverrides } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import TemporaryAccessPanel from '../../components/common/TemporaryAccessPanel';
 
 // God-only Permissions grid for the Attendance module. Identical mechanics to the Examinations
 // and Clubs grids — the file policy is the default; god layers GLOBAL grant/revoke overrides.
@@ -127,6 +128,8 @@ export default function AttendancePermissions() {
           </Table>
         </CardContent>
       </Card>
+
+      {actions.length > 0 && <TemporaryAccessPanel module="attendance" actions={actions} />}
 
       <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}>
         <MenuItem onClick={() => choose(menu.role, menu.action, 'default')}>

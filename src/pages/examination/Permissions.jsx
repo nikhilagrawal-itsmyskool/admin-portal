@@ -11,6 +11,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { can, baseGrants, setPermissionOverrides } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+import TemporaryAccessPanel from '../../components/common/TemporaryAccessPanel';
 
 // God-only Permissions grid. Rows = roles, columns = actions. The FILE policy is the factory
 // default; god layers GLOBAL grant/revoke overrides on top. Each cell shows the EFFECTIVE state
@@ -130,6 +131,8 @@ export default function Permissions() {
           </Table>
         </CardContent>
       </Card>
+
+      {actions.length > 0 && <TemporaryAccessPanel module="examination" actions={actions} />}
 
       <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}>
         <MenuItem onClick={() => choose(menu.role, menu.action, 'default')}>
