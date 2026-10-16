@@ -87,6 +87,7 @@ import ShopSaleForm from './pages/shop/sales/ShopSaleForm';
 import ShopAssignForm from './pages/shop/sales/ShopAssignForm';
 import ShopSaleDetail from './pages/shop/sales/ShopSaleDetail';
 import AssetDashboard from './pages/asset/AssetDashboard';
+import AssetPermissions from './pages/asset/Permissions';
 import AssetTree from './pages/asset/tree/AssetTree';
 import AssetTypeList from './pages/asset/types/AssetTypeList';
 import AssetCounts from './pages/asset/AssetCounts';
@@ -381,6 +382,7 @@ export default function App() {
         <Route path="shop/sales" element={<ShopSaleList />} />
         <Route path="shop/sales/new" element={<ShopSaleForm />} />
         <Route path="shop/sales/:id" element={<ShopSaleDetail />} />
+        <Route path="asset/permissions" element={<AssetPermissions />} />
         <Route path="asset" element={<AssetDashboard />} />
         <Route path="asset/tree" element={<AssetTree />} />
         <Route path="asset/types" element={<AssetTypeList />} />

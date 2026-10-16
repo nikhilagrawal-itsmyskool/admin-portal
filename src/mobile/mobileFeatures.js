@@ -163,8 +163,8 @@ export const MOBILE_FEATURES = [
   { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.view", section: "stores", hub: "supplies" },
   { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.manage", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },
 
-  // Physical stock-count is the assets-incharge's job (asset.manage), not every teacher's.
-  { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.manage", section: "stores", color: "#8d6e63" },
+  // Physical stock-count is the assets-incharge's job (asset.register.*), not every teacher's.
+  { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.register.view", section: "stores", color: "#8d6e63" },
 
   // ── Office — god only. The godpwa.* perms are granted to NO role, so only god ('*')
   // sees these; admins on a phone won't. Read-only checking on the go.

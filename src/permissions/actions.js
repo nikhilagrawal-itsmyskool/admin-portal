@@ -55,8 +55,12 @@ export const ACTIONS = {
   SPORTS_ISSUE_MANAGE: "sports.issue.manage",
   SPORTS_BREAKAGE_VIEW: "sports.breakage.view",
   SPORTS_BREAKAGE_MANAGE: "sports.breakage.manage",
-  ASSET_VIEW: "asset.view",
-  ASSET_MANAGE: "asset.manage",
+  // Physical asset register (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin + assets-incharge hold the asset.* wildcard; no teacher access.
+  ASSET_REGISTER_VIEW: "asset.register.view",
+  ASSET_REGISTER_MANAGE: "asset.register.manage",
+  ASSET_TYPE_VIEW: "asset.type.view",
+  ASSET_TYPE_MANAGE: "asset.type.manage",
   LIBRARY_VIEW: "library.view",
   LIBRARY_MANAGE: "library.manage",
   SUPPLIES_VIEW: "supplies.view",
@@ -346,12 +350,20 @@ export const ACTION_CATALOG = [
     description: "Record / edit / delete sports breakages",
   },
   {
-    action: ACTIONS.ASSET_VIEW,
-    description: "See the Assets menu and read its pages",
+    action: ACTIONS.ASSET_REGISTER_VIEW,
+    description: "View the asset register (tree), counts, responsibility & movements",
   },
   {
-    action: ACTIONS.ASSET_MANAGE,
-    description: "Add/edit/delete asset register, counts & types",
+    action: ACTIONS.ASSET_REGISTER_MANAGE,
+    description: "Add / edit / delete / move / individualize assets & set responsibility",
+  },
+  {
+    action: ACTIONS.ASSET_TYPE_VIEW,
+    description: "View the per-school asset-type master",
+  },
+  {
+    action: ACTIONS.ASSET_TYPE_MANAGE,
+    description: "Create / edit / delete asset types",
   },
   {
     action: ACTIONS.LIBRARY_VIEW,

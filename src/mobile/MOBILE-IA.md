@@ -81,7 +81,7 @@ Names below are the live titles. `·` separates a hub's children.
   - Medical · Items `medical.inventory.view` / Issues `medical.issue.view`
   - Sports · Items `sports.inventory.view` / Issues `sports.issue.view`
   - Supplies · Items `supplies.view` / Issues `supplies.manage`
-  - Asset Counts `asset.manage`
+  - Asset Counts `asset.register.view`
 - **Tools** · Assistant `assistant.use` *(god)*
 
 ---

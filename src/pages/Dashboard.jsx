@@ -101,7 +101,7 @@ const modules = [
     icon: AssetIcon,
     path: "/asset",
     color: "#8d6e63",
-    perm: "asset.view",
+    perm: "asset.register.view",
   },
   {
     title: "Library",

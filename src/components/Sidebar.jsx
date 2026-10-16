@@ -247,12 +247,13 @@ const menuItems = [
   {
     title: 'Assets',
     icon: AssetIcon,
-    perm: 'asset.view',
+    perm: 'asset.register.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/asset' },
-      { title: 'Asset Register', icon: AssetTreeIcon, path: '/asset/tree' },
-      { title: 'Counts', icon: CountsIcon, path: '/asset/counts' },
-      { title: 'Asset Types', icon: TypeIcon, path: '/asset/types' },
+      { title: 'Overview', icon: OverviewIcon, path: '/asset', perm: 'asset.register.view' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/asset/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Asset Register', icon: AssetTreeIcon, path: '/asset/tree', perm: 'asset.register.view' },
+      { title: 'Counts', icon: CountsIcon, path: '/asset/counts', perm: 'asset.register.view' },
+      { title: 'Asset Types', icon: TypeIcon, path: '/asset/types', perm: 'asset.type.view' },
     ],
   },
   {

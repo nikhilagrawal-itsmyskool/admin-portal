@@ -174,7 +174,7 @@ function AssetNode({ node, depth, onAction, canManage }) {
 export default function AssetTree() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.ASSET_MANAGE);
+  const canManage = can(ACTIONS.ASSET_REGISTER_MANAGE);
   const [tree, setTree] = useState([]);
   const [types, setTypes] = useState([]);
   const [conditions, setConditions] = useState([]);

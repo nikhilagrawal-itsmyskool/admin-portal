@@ -147,7 +147,7 @@ function TypeFormDialog({ open, onClose, onSaved, type }) {
 export default function AssetTypeList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.ASSET_MANAGE);
+  const canManage = can(ACTIONS.ASSET_TYPE_MANAGE);
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
