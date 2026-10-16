@@ -144,10 +144,11 @@ const menuItems = [
     icon: MedicalIcon,
     perm: 'medical.inventory.view',
     children: [
-      { title: 'Permissions', icon: PermissionsIcon, path: '/medical/permissions', perm: 'authz.manage', admin: true },
+      // Convention: Overview first (when present), then Permissions, then Config, then the rest.
       // Overview is a mixed dashboard (stock + expiring purchases), so it rides purchase.view
       // (admin/incharge). Teachers get the clean single-resource Inventory Items + Issue Log.
       { title: 'Overview', icon: OverviewIcon, path: '/medical', perm: 'medical.purchase.view' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/medical/permissions', perm: 'authz.manage', admin: true },
       { title: 'Inventory Items', icon: InventoryIcon, path: '/medical/items', perm: 'medical.inventory.view' },
       { title: 'Purchase Log', icon: PurchaseIcon, path: '/medical/purchases', perm: 'medical.purchase.view' },
       { title: 'Issue Log', icon: IssueIcon, path: '/medical/issues', perm: 'medical.issue.view' },
@@ -158,9 +159,10 @@ const menuItems = [
     icon: ScienceIcon,
     perm: 'lab.inventory.view',
     children: [
-      { title: 'Permissions', icon: PermissionsIcon, path: '/lab/permissions', perm: 'authz.manage', admin: true },
+      // Convention: Overview first (when present), then Permissions, then the rest.
       // Overview is a mixed dashboard; teachers get the clean Inventory Items + Issue Log.
       { title: 'Overview', icon: OverviewIcon, path: '/lab', perm: 'lab.purchase.view' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/lab/permissions', perm: 'authz.manage', admin: true },
       { title: 'Labs', icon: ScienceIcon, path: '/lab/labs', perm: 'lab.setup.view' },
       { title: 'Inventory Items', icon: InventoryIcon, path: '/lab/items', perm: 'lab.inventory.view' },
       { title: 'Purchase Log', icon: PurchaseIcon, path: '/lab/purchases', perm: 'lab.purchase.view' },
