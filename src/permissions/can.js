@@ -14,12 +14,16 @@ export function getPermissionOverrides() {
 }
 
 // Does the FILE default (ignoring overrides) grant `action` to this single role?
+// Null-safe: a missing/invalid action is simply "not granted" — never throws (a single
+// undefined perm must not white-screen the app).
 export function baseGrants(role, action) {
+  if (typeof action !== "string") return false;
   return (ROLE_PERMISSIONS[role] || []).some(
     (p) =>
-      p === "*" ||
-      p === action ||
-      (p.endsWith(".*") && action.startsWith(p.slice(0, -1))),
+      typeof p === "string" &&
+      (p === "*" ||
+        p === action ||
+        (p.endsWith(".*") && action.startsWith(p.slice(0, -1)))),
   );
 }
 const hasOverride = (role, action, effect) =>
@@ -31,6 +35,7 @@ const hasOverride = (role, action, effect) =>
 export function can(user, action) {
   const rs = user?.roles || [];
   if (rs.some((r) => (ROLE_PERMISSIONS[r] || []).includes("*"))) return true; // god — never overridable
+  if (typeof action !== "string") return false; // null-safe: unknown/missing action is not granted
   if (rs.some((r) => hasOverride(r, action, "grant"))) return true; // explicit grant wins
   return rs.some((r) => !hasOverride(r, action, "revoke") && baseGrants(r, action)); // default, unless revoked
 }

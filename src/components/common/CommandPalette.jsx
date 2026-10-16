@@ -27,8 +27,8 @@ import { ACTIONS } from '../../permissions/actions';
 const COMMANDS = [
   { label: 'Cockpit · School Pulse', path: '/cockpit', perm: ACTIONS.COCKPIT_VIEW, keywords: 'pulse heartbeat director' },
   { label: 'Feedback · Dashboard', path: '/feedback', perm: ACTIONS.FEEDBACK_REVIEW, keywords: 'complaints tickets' },
-  { label: "Leave · Who's on leave", path: '/leave/day', perm: ACTIONS.LEAVE_MANAGE, keywords: 'staff absent out' },
-  { label: 'Leave · Approvals', path: '/leave/approvals', perm: ACTIONS.LEAVE_MANAGE, keywords: 'approve pending' },
+  { label: "Leave · Who's on leave", path: '/leave/day', perm: ACTIONS.LEAVE_CALENDAR_VIEW, keywords: 'staff absent out' },
+  { label: 'Leave · Approvals', path: '/leave/approvals', perm: ACTIONS.LEAVE_APPLICATION_APPROVE, keywords: 'approve pending' },
   { label: 'House balance', path: '/students/houses', perm: ACTIONS.STUDENT_VIEW, keywords: 'houses gender' },
   { label: 'Assembly · Leaderboard', path: '/assembly/leaderboard', perm: ACTIONS.ASSEMBLY_VIEW, keywords: 'house points standings' },
   { label: 'Assembly · Grading', path: '/assembly/grading', perm: ACTIONS.ASSEMBLY_MANAGE, keywords: 'evaluators grade' },
