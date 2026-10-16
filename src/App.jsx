@@ -257,9 +257,9 @@ function HomeScreen() {
   // hatch to the normal home (for a user who also holds broader roles — a plain manager sees
   // an empty home there, which is the intended "just in case").
   if ((user?.roles || []).includes('manager') && !full) return <ManagerDesk />;
-  // The education `director` lands straight on the Cockpit / School Pulse (desktop + mobile).
+  // The education-director lands straight on the Cockpit / School Pulse (desktop + mobile).
   // `?full=1` is the escape hatch to the normal home for a director who also holds god/admin.
-  if ((user?.roles || []).includes('director') && !full) return <Cockpit />;
+  if ((user?.roles || []).includes('education-director') && !full) return <Cockpit />;
   return mobile ? <MobileHome /> : <Dashboard />;
 }
 

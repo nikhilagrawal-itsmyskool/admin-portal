@@ -136,7 +136,7 @@ export const ROLE_PERMISSIONS = {
   // Education director: lands on the Cockpit / School Pulse and reviews the school's
   // heartbeat. Read-oriented oversight across the pulse domains (feedback review, assembly,
   // syllabus, students/houses, leave, calendar). Additive — a person can also hold `god`.
-  director: [
+  'education-director': [
     "cockpit.view",
     "feedback.view",
     "feedback.review",
