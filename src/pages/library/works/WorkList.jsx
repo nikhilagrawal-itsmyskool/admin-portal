@@ -27,7 +27,7 @@ import { ACTIONS } from '../../../permissions/actions';
 export default function WorkList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.LIBRARY_MANAGE);
+  const canManage = can(ACTIONS.LIBRARY_CATALOG_MANAGE);
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

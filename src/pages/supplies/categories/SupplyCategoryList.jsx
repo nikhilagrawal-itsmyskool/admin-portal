@@ -84,7 +84,7 @@ function CategoryDialog({ open, category, onClose, onSaved }) {
 export default function SupplyCategoryList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
+  const canManage = can(ACTIONS.SUPPLIES_CATEGORY_MANAGE);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

@@ -27,7 +27,7 @@ import { ACTIONS } from '../../permissions/actions';
 export default function LibraryDashboard() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.LIBRARY_MANAGE);
+  const canManage = can(ACTIONS.LIBRARY_CATALOG_MANAGE);
   const [stats, setStats] = useState({ works: 0, copies: 0, available: 0, issued: 0, pendingFines: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

@@ -13,7 +13,7 @@ const STATUS_COLORS = { pending: 'warning', paid: 'success', waived: 'default' }
 
 export default function FineList() {
   const can = useCan();
-  const canManage = can(ACTIONS.LIBRARY_MANAGE);
+  const canManage = can(ACTIONS.LIBRARY_FINE_MANAGE);
   const [fines, setFines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

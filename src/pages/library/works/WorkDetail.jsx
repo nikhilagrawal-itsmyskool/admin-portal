@@ -19,7 +19,7 @@ export default function WorkDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.LIBRARY_MANAGE);
+  const canManage = can(ACTIONS.LIBRARY_CATALOG_MANAGE);
   const [work, setWork] = useState(null);
   const [copiesByTitle, setCopiesByTitle] = useState({});
   const [languages, setLanguages] = useState([]);

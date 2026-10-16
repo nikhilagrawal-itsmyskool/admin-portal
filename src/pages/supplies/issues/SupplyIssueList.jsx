@@ -86,7 +86,7 @@ function ReturnDialog({ open, issue, onClose, onSuccess }) {
 export default function SupplyIssueList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
+  const canManage = can(ACTIONS.SUPPLIES_ISSUE_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [issues, setIssues] = useState([]);
   const [items, setItems] = useState([]);

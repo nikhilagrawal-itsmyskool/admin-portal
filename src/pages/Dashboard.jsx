@@ -77,7 +77,7 @@ const modules = [
     icon: CheckroomIcon,
     path: "/uniform",
     color: "#7b5ea7",
-    perm: "uniform.view",
+    perm: "uniform.inventory.view",
   },
   {
     title: "Shop",
@@ -85,7 +85,7 @@ const modules = [
     icon: MenuBookIcon,
     path: "/shop",
     color: "#ff9f43",
-    perm: "shop.view",
+    perm: "shop.inventory.view",
   },
   {
     title: "Sports",
@@ -109,7 +109,7 @@ const modules = [
     icon: LibraryIcon,
     path: "/library",
     color: "#5e35b1",
-    perm: "library.view",
+    perm: "library.catalog.view",
   },
   {
     title: "Supplies",
@@ -118,7 +118,7 @@ const modules = [
     icon: SuppliesIcon,
     path: "/supplies",
     color: "#00acc1",
-    perm: "supplies.view",
+    perm: "supplies.inventory.view",
   },
   {
     title: "Timetable",

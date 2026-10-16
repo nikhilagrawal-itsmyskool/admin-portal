@@ -36,7 +36,7 @@ const reasonColors = { spoiled: 'warning', expired: 'warning', damaged: 'error',
 export default function SupplyWastageList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
+  const canManage = can(ACTIONS.SUPPLIES_WASTAGE_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [wastages, setWastages] = useState([]);
   const [items, setItems] = useState([]);

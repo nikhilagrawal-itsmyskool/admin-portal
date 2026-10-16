@@ -146,8 +146,8 @@ export const MOBILE_FEATURES = [
   { title: "Transfer Certificate", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", color: "#3d5afe", routes: ["/transfer"] },
 
   // ── Stores & Inventory ───────────────────────────────────────────────────────
-  { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.view", section: "stores", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
-  { title: "Library Circulation", hubLabel: "Circulation", icon: CirculationIcon, path: "/library/circulation", perm: "library.view", section: "stores", hub: "library" },
+  { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.catalog.view", section: "stores", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
+  { title: "Library Circulation", hubLabel: "Circulation", icon: CirculationIcon, path: "/library/circulation", perm: "library.circulation.view", section: "stores", hub: "library" },
 
   { title: "Lab Items", hubLabel: "Items", icon: ScienceIcon, path: "/lab/items", perm: "lab.inventory.view", section: "stores", hub: "lab" },
   { title: "Lab Issues", hubLabel: "Issues", icon: ScienceIcon, path: "/lab/issues", perm: "lab.issue.view", section: "stores", hub: "lab", routes: ["/lab/issues", "/lab/issues/add"] },
@@ -160,8 +160,8 @@ export const MOBILE_FEATURES = [
   // gated sports.issue.manage inside the page.
   { title: "Sports Issues", hubLabel: "Issues", icon: SportsIcon, path: "/sports/issues", perm: "sports.issue.view", section: "stores", hub: "sports", routes: ["/sports/issues", "/sports/issues/add"] },
 
-  { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.view", section: "stores", hub: "supplies" },
-  { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.manage", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },
+  { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.inventory.view", section: "stores", hub: "supplies" },
+  { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.issue.view", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },
 
   // Physical stock-count is the assets-incharge's job (asset.register.*), not every teacher's.
   { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.register.view", section: "stores", color: "#8d6e63" },

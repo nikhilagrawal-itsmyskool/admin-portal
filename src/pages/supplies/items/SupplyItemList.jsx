@@ -94,7 +94,7 @@ function MergeDialog({ open, source, allItems, onClose, onSuccess }) {
 export default function SupplyItemList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SUPPLIES_MANAGE);
+  const canManage = can(ACTIONS.SUPPLIES_INVENTORY_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);

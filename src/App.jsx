@@ -67,6 +67,7 @@ import HiringCandidateForm from './pages/hiring/HiringCandidateForm';
 import HiringCandidateDetail from './pages/hiring/HiringCandidateDetail';
 import TransferList from './pages/transfer/TransferList';
 import UniformDashboard from './pages/uniform/UniformDashboard';
+import UniformPermissions from './pages/uniform/Permissions';
 import UniformCatalog from './pages/uniform/catalog/UniformCatalog';
 import UniformPurchaseList from './pages/uniform/purchases/UniformPurchaseList';
 import UniformPurchaseForm from './pages/uniform/purchases/UniformPurchaseForm';
@@ -76,6 +77,7 @@ import UniformSaleList from './pages/uniform/sales/UniformSaleList';
 import UniformSaleForm from './pages/uniform/sales/UniformSaleForm';
 import UniformSaleDetail from './pages/uniform/sales/UniformSaleDetail';
 import ShopDashboard from './pages/shop/ShopDashboard';
+import ShopPermissions from './pages/shop/Permissions';
 import ShopCatalog from './pages/shop/catalog/ShopCatalog';
 import ShopPurchaseList from './pages/shop/purchases/ShopPurchaseList';
 import ShopPurchaseForm from './pages/shop/purchases/ShopPurchaseForm';
@@ -94,6 +96,7 @@ import AssetCounts from './pages/asset/AssetCounts';
 import EmployeeList from './pages/employee/EmployeeList';
 import EmployeeForm from './pages/employee/EmployeeForm';
 import LibraryDashboard from './pages/library/LibraryDashboard';
+import LibraryPermissions from './pages/library/Permissions';
 import WorkList from './pages/library/works/WorkList';
 import CatalogForm from './pages/library/works/CatalogForm';
 import WorkDetail from './pages/library/works/WorkDetail';
@@ -101,6 +104,7 @@ import Circulation from './pages/library/circulation/Circulation';
 import FineList from './pages/library/fines/FineList';
 import LibrarySettings from './pages/library/settings/LibrarySettings';
 import SuppliesDashboard from './pages/supplies/SuppliesDashboard';
+import SuppliesPermissions from './pages/supplies/Permissions';
 import SupplyCategoryList from './pages/supplies/categories/SupplyCategoryList';
 import SupplyItemList from './pages/supplies/items/SupplyItemList';
 import SupplyItemForm from './pages/supplies/items/SupplyItemForm';
@@ -358,6 +362,7 @@ export default function App() {
         <Route path="hiring/new" element={<HiringCandidateForm />} />
         <Route path="hiring/:id" element={<HiringCandidateDetail />} />
         <Route path="hiring/:id/edit" element={<HiringCandidateForm />} />
+        <Route path="uniform/permissions" element={<UniformPermissions />} />
         <Route path="uniform" element={<UniformDashboard />} />
         <Route path="uniform/catalog" element={<UniformCatalog />} />
         <Route path="uniform/purchases" element={<UniformPurchaseList />} />
@@ -369,6 +374,7 @@ export default function App() {
         <Route path="uniform/sales" element={<UniformSaleList />} />
         <Route path="uniform/sales/new" element={<UniformSaleForm />} />
         <Route path="uniform/sales/:id" element={<UniformSaleDetail />} />
+        <Route path="shop/permissions" element={<ShopPermissions />} />
         <Route path="shop" element={<ShopDashboard />} />
         <Route path="shop/catalog" element={<ShopCatalog />} />
         <Route path="shop/purchases" element={<ShopPurchaseList />} />
@@ -400,6 +406,7 @@ export default function App() {
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/add" element={<EmployeeForm />} />
         <Route path="employees/:id/edit" element={<EmployeeForm />} />
+        <Route path="library/permissions" element={<LibraryPermissions />} />
         <Route path="library" element={<LibraryDashboard />} />
         <Route path="library/catalog" element={<WorkList />} />
         <Route path="library/catalog/new" element={<CatalogForm />} />
@@ -407,6 +414,7 @@ export default function App() {
         <Route path="library/circulation" element={<Circulation />} />
         <Route path="library/fines" element={<FineList />} />
         <Route path="library/settings" element={<LibrarySettings />} />
+        <Route path="supplies/permissions" element={<SuppliesPermissions />} />
         <Route path="supplies" element={<SuppliesDashboard />} />
         <Route path="supplies/categories" element={<SupplyCategoryList />} />
         <Route path="supplies/items" element={<SupplyItemList />} />

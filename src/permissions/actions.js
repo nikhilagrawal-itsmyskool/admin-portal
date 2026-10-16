@@ -39,10 +39,24 @@ export const ACTIONS = {
   FEE_FINE_EXEMPT: "fee.fine.exempt",             // exempt a late fine (manager + god)
   FEE_RECEIPT_VERIFY: "fee.receipt.verify",       // Scan & Verify (admin + god)
   FEE_MIGRATION_IMPORT: "fee.migration.import",   // bulk import (god-only)
-  UNIFORM_VIEW: "uniform.view",
-  UNIFORM_MANAGE: "uniform.manage",
-  SHOP_VIEW: "shop.view",
-  SHOP_MANAGE: "shop.manage",
+  // Uniform store (strict module.resource.action). Mirror of backend authz-policy.ts. admin wildcard; no teacher.
+  UNIFORM_INVENTORY_VIEW: "uniform.inventory.view",
+  UNIFORM_INVENTORY_MANAGE: "uniform.inventory.manage",
+  UNIFORM_PURCHASE_VIEW: "uniform.purchase.view",
+  UNIFORM_PURCHASE_MANAGE: "uniform.purchase.manage",
+  UNIFORM_SET_VIEW: "uniform.set.view",
+  UNIFORM_SET_MANAGE: "uniform.set.manage",
+  UNIFORM_SALE_VIEW: "uniform.sale.view",
+  UNIFORM_SALE_MANAGE: "uniform.sale.manage",
+  // Shop / sets store (strict module.resource.action). admin wildcard; no teacher.
+  SHOP_INVENTORY_VIEW: "shop.inventory.view",
+  SHOP_INVENTORY_MANAGE: "shop.inventory.manage",
+  SHOP_PURCHASE_VIEW: "shop.purchase.view",
+  SHOP_PURCHASE_MANAGE: "shop.purchase.manage",
+  SHOP_SET_VIEW: "shop.set.view",
+  SHOP_SET_MANAGE: "shop.set.manage",
+  SHOP_SALE_VIEW: "shop.sale.view",
+  SHOP_SALE_MANAGE: "shop.sale.manage",
   // Sports equipment (strict module.resource.action). Mirror of backend authz-policy.ts.
   // admin + sports-incharge hold the sports.* wildcard; teachers get the two read leaves.
   SPORTS_SETUP_VIEW: "sports.setup.view",
@@ -61,10 +75,28 @@ export const ACTIONS = {
   ASSET_REGISTER_MANAGE: "asset.register.manage",
   ASSET_TYPE_VIEW: "asset.type.view",
   ASSET_TYPE_MANAGE: "asset.type.manage",
-  LIBRARY_VIEW: "library.view",
-  LIBRARY_MANAGE: "library.manage",
-  SUPPLIES_VIEW: "supplies.view",
-  SUPPLIES_MANAGE: "supplies.manage",
+  // Library (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin + library-incharge hold the library.* wildcard; teachers get catalog.view (browse).
+  LIBRARY_CATALOG_VIEW: "library.catalog.view",
+  LIBRARY_CATALOG_MANAGE: "library.catalog.manage",
+  LIBRARY_CIRCULATION_VIEW: "library.circulation.view",
+  LIBRARY_CIRCULATION_MANAGE: "library.circulation.manage",
+  LIBRARY_FINE_VIEW: "library.fine.view",
+  LIBRARY_FINE_MANAGE: "library.fine.manage",
+  LIBRARY_CONFIG_VIEW: "library.config.view",
+  LIBRARY_CONFIG_MANAGE: "library.config.manage",
+  // School supplies / consumables (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin + supplies-incharge hold the supplies.* wildcard; teachers get inventory.view + issue.view.
+  SUPPLIES_CATEGORY_VIEW: "supplies.category.view",
+  SUPPLIES_CATEGORY_MANAGE: "supplies.category.manage",
+  SUPPLIES_INVENTORY_VIEW: "supplies.inventory.view",
+  SUPPLIES_INVENTORY_MANAGE: "supplies.inventory.manage",
+  SUPPLIES_PURCHASE_VIEW: "supplies.purchase.view",
+  SUPPLIES_PURCHASE_MANAGE: "supplies.purchase.manage",
+  SUPPLIES_ISSUE_VIEW: "supplies.issue.view",
+  SUPPLIES_ISSUE_MANAGE: "supplies.issue.manage",
+  SUPPLIES_WASTAGE_VIEW: "supplies.wastage.view",
+  SUPPLIES_WASTAGE_MANAGE: "supplies.wastage.manage",
   TIMETABLE_VIEW: "timetable.view",
   TIMETABLE_PRINT: "timetable.print",
   TIMETABLE_MANAGE: "timetable.manage",
@@ -293,22 +325,22 @@ export const ACTION_CATALOG = [
     action: ACTIONS.FEE_RECEIPT_VERIFY,
     description: "Scan & Verify receipts (admin + god only)",
   },
-  {
-    action: ACTIONS.UNIFORM_VIEW,
-    description: "See the Uniform menu and read its pages",
-  },
-  {
-    action: ACTIONS.UNIFORM_MANAGE,
-    description: "Add/edit/delete uniform catalog, purchases, sets & sales",
-  },
-  {
-    action: ACTIONS.SHOP_VIEW,
-    description: "See the Shop menu and read its pages",
-  },
-  {
-    action: ACTIONS.SHOP_MANAGE,
-    description: "Add/edit/delete shop catalog, purchases, sets & sales",
-  },
+  { action: ACTIONS.UNIFORM_INVENTORY_VIEW, description: "View uniform items & stock" },
+  { action: ACTIONS.UNIFORM_INVENTORY_MANAGE, description: "Add / edit / delete uniform items & sizes" },
+  { action: ACTIONS.UNIFORM_PURCHASE_VIEW, description: "View uniform purchases & bills" },
+  { action: ACTIONS.UNIFORM_PURCHASE_MANAGE, description: "Record / edit / delete uniform purchases & bills" },
+  { action: ACTIONS.UNIFORM_SET_VIEW, description: "View uniform sets" },
+  { action: ACTIONS.UNIFORM_SET_MANAGE, description: "Create / edit / delete uniform sets" },
+  { action: ACTIONS.UNIFORM_SALE_VIEW, description: "View uniform sales & returns" },
+  { action: ACTIONS.UNIFORM_SALE_MANAGE, description: "Record sales, payments & returns" },
+  { action: ACTIONS.SHOP_INVENTORY_VIEW, description: "View shop items & stock" },
+  { action: ACTIONS.SHOP_INVENTORY_MANAGE, description: "Add / edit / delete shop items" },
+  { action: ACTIONS.SHOP_PURCHASE_VIEW, description: "View shop purchases, intake & bills" },
+  { action: ACTIONS.SHOP_PURCHASE_MANAGE, description: "Record / edit / delete shop purchases, intake & bills" },
+  { action: ACTIONS.SHOP_SET_VIEW, description: "View shop sets & stock" },
+  { action: ACTIONS.SHOP_SET_MANAGE, description: "Create / edit / delete shop sets" },
+  { action: ACTIONS.SHOP_SALE_VIEW, description: "View shop sales & assignments" },
+  { action: ACTIONS.SHOP_SALE_MANAGE, description: "Record / assign shop sales" },
   {
     action: ACTIONS.SPORTS_SETUP_VIEW,
     description: "View sport in-charges & lookups",
@@ -366,20 +398,76 @@ export const ACTION_CATALOG = [
     description: "Create / edit / delete asset types",
   },
   {
-    action: ACTIONS.LIBRARY_VIEW,
-    description: "See the Library menu and read its pages",
+    action: ACTIONS.LIBRARY_CATALOG_VIEW,
+    description: "Browse the catalog — works, titles, copies, labels (teacher/admin/library-incharge)",
   },
   {
-    action: ACTIONS.LIBRARY_MANAGE,
-    description: "Add/edit/delete catalog, circulation, fines & settings",
+    action: ACTIONS.LIBRARY_CATALOG_MANAGE,
+    description: "Create / edit catalog works, titles, copies; print labels",
   },
   {
-    action: ACTIONS.SUPPLIES_VIEW,
-    description: "See the Supplies menu and read its pages",
+    action: ACTIONS.LIBRARY_CIRCULATION_VIEW,
+    description: "View issues / returns / renewals (loans)",
   },
   {
-    action: ACTIONS.SUPPLIES_MANAGE,
-    description: "Add/edit/delete supplies categories, items, issues & wastage",
+    action: ACTIONS.LIBRARY_CIRCULATION_MANAGE,
+    description: "Issue / return / renew books",
+  },
+  {
+    action: ACTIONS.LIBRARY_FINE_VIEW,
+    description: "View overdue / lost library fines",
+  },
+  {
+    action: ACTIONS.LIBRARY_FINE_MANAGE,
+    description: "Collect / waive library fines",
+  },
+  {
+    action: ACTIONS.LIBRARY_CONFIG_VIEW,
+    description: "Read circulation policy + per-school lookups",
+  },
+  {
+    action: ACTIONS.LIBRARY_CONFIG_MANAGE,
+    description: "Edit circulation policy + lookups (the Settings screen)",
+  },
+  {
+    action: ACTIONS.SUPPLIES_CATEGORY_VIEW,
+    description: "View supply categories",
+  },
+  {
+    action: ACTIONS.SUPPLIES_CATEGORY_MANAGE,
+    description: "Create / edit / delete supply categories",
+  },
+  {
+    action: ACTIONS.SUPPLIES_INVENTORY_VIEW,
+    description: "View supply items & stock (teacher/admin/supplies-incharge)",
+  },
+  {
+    action: ACTIONS.SUPPLIES_INVENTORY_MANAGE,
+    description: "Add / edit / delete / merge supply items",
+  },
+  {
+    action: ACTIONS.SUPPLIES_PURCHASE_VIEW,
+    description: "View supply purchases, batches & bills",
+  },
+  {
+    action: ACTIONS.SUPPLIES_PURCHASE_MANAGE,
+    description: "Record / edit / delete supply purchases, batches & bills",
+  },
+  {
+    action: ACTIONS.SUPPLIES_ISSUE_VIEW,
+    description: "View the supply issue log (what has been issued)",
+  },
+  {
+    action: ACTIONS.SUPPLIES_ISSUE_MANAGE,
+    description: "Record / edit / delete / return supply issues",
+  },
+  {
+    action: ACTIONS.SUPPLIES_WASTAGE_VIEW,
+    description: "View the supply wastage log",
+  },
+  {
+    action: ACTIONS.SUPPLIES_WASTAGE_MANAGE,
+    description: "Record / edit / delete supply wastage",
   },
   {
     action: ACTIONS.TIMETABLE_VIEW,

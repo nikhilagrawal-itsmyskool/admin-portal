@@ -79,8 +79,9 @@ export const ROLE_PERMISSIONS = {
     "lab.issue.view", // See what lab items have been issued
     "sports.inventory.view", // See sports equipment stock
     "sports.issue.view", // See what sports items have been issued
-    "library.view",
-    "supplies.view",
+    "library.catalog.view", // Browse the library catalog
+    "supplies.inventory.view", // See supply stock
+    "supplies.issue.view", // See what supplies have been issued
     "timetable.view", // Published timetable only (menu gates the rest)
     "student.view",
     "student.contacts.view", // Teachers may see un-masked parent/student & staff numbers

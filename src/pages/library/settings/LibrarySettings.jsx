@@ -20,7 +20,7 @@ const LOOKUP_TYPES = [
 
 export default function LibrarySettings() {
   const can = useCan();
-  const canManage = can(ACTIONS.LIBRARY_MANAGE);
+  const canManage = can(ACTIONS.LIBRARY_CONFIG_MANAGE);
   const [tab, setTab] = useState(0);
   const [notice, setNotice] = useState(null);
 

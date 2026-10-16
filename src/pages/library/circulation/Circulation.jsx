@@ -59,7 +59,7 @@ function BookChip({ book }) {
 
 export default function Circulation() {
   const can = useCan();
-  const canManage = can(ACTIONS.LIBRARY_MANAGE);
+  const canManage = can(ACTIONS.LIBRARY_CIRCULATION_MANAGE);
   const [tab, setTab] = useState(0);
   const [issued, setIssued] = useState([]);
   const [loading, setLoading] = useState(true);
