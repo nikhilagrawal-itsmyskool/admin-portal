@@ -30,9 +30,11 @@ import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import StudentSearchDialog from '../../../components/common/StudentSearchDialog';
 import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialog';
 import { fmtDate } from '../../../utils/date';
+import { useCan } from '../../../permissions/can';
 
 export default function IssueList() {
   const navigate = useNavigate();
+  const canManage = useCan()('medical.issue.manage');
   const [searchParams, setSearchParams] = useSearchParams();
   const [issues, setIssues] = useState([]);
   const [items, setItems] = useState([]);
@@ -198,7 +200,7 @@ export default function IssueList() {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
-            {!isDeleted && (
+            {canManage && !isDeleted && (
               <IconButton
                 size="small"
                 color="error"
@@ -217,6 +219,7 @@ export default function IssueList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Issue Log</Typography>
+        {canManage && (
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -224,6 +227,7 @@ export default function IssueList() {
         >
           Add Issue
         </Button>
+        )}
       </Box>
 
       {error && (

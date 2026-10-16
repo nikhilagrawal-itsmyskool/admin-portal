@@ -53,7 +53,7 @@ const modules = [
     icon: MedicalIcon,
     path: "/medical",
     color: "#3366ff",
-    perm: "medical.view",
+    perm: "medical.purchase.view",
   },
   {
     title: "Laboratory",

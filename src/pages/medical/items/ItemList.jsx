@@ -28,9 +28,11 @@ import {
 } from '@mui/icons-material';
 import { medicalService } from '../../../services/medicalService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { useCan } from '../../../permissions/can';
 
 export default function ItemList() {
   const navigate = useNavigate();
+  const canManage = useCan()('medical.inventory.manage');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [items, setItems] = useState([]);
@@ -120,6 +122,7 @@ export default function ItemList() {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
+            {canManage && (
             <IconButton
               size="small"
               onClick={() => navigate(`/medical/items/${params.row.uuid}/edit`)}
@@ -127,6 +130,7 @@ export default function ItemList() {
             >
               <EditIcon fontSize="small" />
             </IconButton>
+            )}
             <IconButton
               size="small"
               color="primary"
@@ -143,7 +147,7 @@ export default function ItemList() {
             >
               <IssueIcon fontSize="small" />
             </IconButton>
-            {!isDeleted && (
+            {canManage && !isDeleted && (
               <IconButton
                 size="small"
                 color="error"
@@ -163,6 +167,7 @@ export default function ItemList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">Inventory Items</Typography>
+        {canManage && (
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -171,6 +176,7 @@ export default function ItemList() {
         >
           Add Item
         </Button>
+        )}
       </Box>
 
       {error && (

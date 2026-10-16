@@ -152,8 +152,8 @@ export const MOBILE_FEATURES = [
   { title: "Lab Items", hubLabel: "Items", icon: ScienceIcon, path: "/lab/items", perm: "lab.view", section: "stores", hub: "lab" },
   { title: "Lab Issues", hubLabel: "Issues", icon: ScienceIcon, path: "/lab/issues", perm: "lab.view", section: "stores", hub: "lab", routes: ["/lab/issues", "/lab/issues/add"] },
 
-  { title: "Medical Items", hubLabel: "Items", icon: MedicalIcon, path: "/medical/items", perm: "medical.view", section: "stores", hub: "medical" },
-  { title: "Medical Issues", hubLabel: "Issues", icon: MedicalIcon, path: "/medical/issues", perm: "medical.view", section: "stores", hub: "medical", routes: ["/medical/issues", "/medical/issues/add"] },
+  { title: "Medical Items", hubLabel: "Items", icon: MedicalIcon, path: "/medical/items", perm: "medical.inventory.view", section: "stores", hub: "medical" },
+  { title: "Medical Issues", hubLabel: "Issues", icon: MedicalIcon, path: "/medical/issues", perm: "medical.issue.view", section: "stores", hub: "medical", routes: ["/medical/issues", "/medical/issues/add"] },
 
   { title: "Sports Items", hubLabel: "Items", icon: SportsIcon, path: "/sports/items", perm: "sports.view", section: "stores", hub: "sports" },
   // Issuing/wastage is a write op → the in-charge's action (sports.manage), not every

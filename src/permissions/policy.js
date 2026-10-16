@@ -73,6 +73,8 @@ export const ROLE_PERMISSIONS = {
   // No transport access by default — bus attendance needs the `transport-attendance`
   // role below (and route assignment), not plain `teacher`.
   teacher: [
+    "medical.inventory.view", // See medicine stock
+    "medical.issue.view", // See what has been issued
     "sports.view",
     "library.view",
     "supplies.view",

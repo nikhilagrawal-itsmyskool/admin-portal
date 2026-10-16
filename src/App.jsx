@@ -10,6 +10,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Cockpit from './pages/Cockpit';
 import MedicalDashboard from './pages/medical/MedicalDashboard';
+import MedicalPermissions from './pages/medical/Permissions';
 import ItemList from './pages/medical/items/ItemList';
 import ItemForm from './pages/medical/items/ItemForm';
 import PurchaseList from './pages/medical/purchases/PurchaseList';
@@ -280,6 +281,7 @@ export default function App() {
         <Route index element={<HomeScreen />} />
         <Route path="cockpit" element={<Cockpit />} />
         <Route path="hub/:key" element={<HubPage />} />
+        <Route path="medical/permissions" element={<MedicalPermissions />} />
         <Route path="medical" element={<MedicalDashboard />} />
         <Route path="medical/items" element={<ItemList />} />
         <Route path="medical/items/add" element={<ItemForm />} />

@@ -78,7 +78,7 @@ Names below are the live titles. `·` separates a hub's children.
 - **Stores & Inventory** *(per-module `[hub]`)*
   - Library · Catalog/Circulation `library.view`
   - Lab · Items/Issues `lab.view`
-  - Medical · Items/Issues `medical.view`
+  - Medical · Items `medical.inventory.view` / Issues `medical.issue.view`
   - Sports · Items `sports.view` / Issues `sports.manage`
   - Supplies · Items `supplies.view` / Issues `supplies.manage`
   - Asset Counts `asset.manage`

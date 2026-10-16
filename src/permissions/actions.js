@@ -3,8 +3,14 @@
 // actually needs to branch on it; wildcards in policy.js cover breadth.
 export const ACTIONS = {
   // Per-module view (see menu + read pages) / manage (add/edit/delete).
-  MEDICAL_VIEW: "medical.view",
-  MEDICAL_MANAGE: "medical.manage",
+  // Medical inventory (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin + medical-incharge hold the medical.* wildcard; teachers get the two read leaves.
+  MEDICAL_INVENTORY_VIEW: "medical.inventory.view",
+  MEDICAL_INVENTORY_MANAGE: "medical.inventory.manage",
+  MEDICAL_PURCHASE_VIEW: "medical.purchase.view",
+  MEDICAL_PURCHASE_MANAGE: "medical.purchase.manage",
+  MEDICAL_ISSUE_VIEW: "medical.issue.view",
+  MEDICAL_ISSUE_MANAGE: "medical.issue.manage",
   LAB_VIEW: "lab.view",
   LAB_MANAGE: "lab.manage",
   FINE_VIEW: "fine.view",
@@ -144,12 +150,28 @@ export const ACTIONS = {
 // Catalog drives the generated permissions.md matrix. One line per action.
 export const ACTION_CATALOG = [
   {
-    action: ACTIONS.MEDICAL_VIEW,
-    description: "See the Medical menu and read its pages",
+    action: ACTIONS.MEDICAL_INVENTORY_VIEW,
+    description: "View medical inventory items & stock (teacher/admin/medical-incharge)",
   },
   {
-    action: ACTIONS.MEDICAL_MANAGE,
-    description: "Add/edit/delete medical items, purchases & issues",
+    action: ACTIONS.MEDICAL_INVENTORY_MANAGE,
+    description: "Add / edit / delete medical inventory items",
+  },
+  {
+    action: ACTIONS.MEDICAL_PURCHASE_VIEW,
+    description: "View medical purchases, batches, expiring stock & bills",
+  },
+  {
+    action: ACTIONS.MEDICAL_PURCHASE_MANAGE,
+    description: "Record / edit / delete medical purchases, batches & bills",
+  },
+  {
+    action: ACTIONS.MEDICAL_ISSUE_VIEW,
+    description: "View the medical issue log (what has been issued)",
+  },
+  {
+    action: ACTIONS.MEDICAL_ISSUE_MANAGE,
+    description: "Record / edit / delete medical issues",
   },
   {
     action: ACTIONS.LAB_VIEW,

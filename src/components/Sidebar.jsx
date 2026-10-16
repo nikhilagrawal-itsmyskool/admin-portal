@@ -142,12 +142,15 @@ const menuItems = [
   {
     title: 'Medical',
     icon: MedicalIcon,
-    perm: 'medical.view',
+    perm: 'medical.inventory.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/medical' },
-      { title: 'Inventory Items', icon: InventoryIcon, path: '/medical/items' },
-      { title: 'Purchase Log', icon: PurchaseIcon, path: '/medical/purchases' },
-      { title: 'Issue Log', icon: IssueIcon, path: '/medical/issues' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/medical/permissions', perm: 'authz.manage', admin: true },
+      // Overview is a mixed dashboard (stock + expiring purchases), so it rides purchase.view
+      // (admin/incharge). Teachers get the clean single-resource Inventory Items + Issue Log.
+      { title: 'Overview', icon: OverviewIcon, path: '/medical', perm: 'medical.purchase.view' },
+      { title: 'Inventory Items', icon: InventoryIcon, path: '/medical/items', perm: 'medical.inventory.view' },
+      { title: 'Purchase Log', icon: PurchaseIcon, path: '/medical/purchases', perm: 'medical.purchase.view' },
+      { title: 'Issue Log', icon: IssueIcon, path: '/medical/issues', perm: 'medical.issue.view' },
     ],
   },
   {
