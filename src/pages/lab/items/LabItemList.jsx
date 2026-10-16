@@ -31,9 +31,11 @@ import {
 import { labService } from '../../../services/labService';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import CopyItemsDialog from './CopyItemsDialog';
+import { useCan } from '../../../permissions/can';
 
 export default function LabItemList() {
   const navigate = useNavigate();
+  const canManage = useCan()('lab.inventory.manage');
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [labs, setLabs] = useState([]);
@@ -235,6 +237,7 @@ export default function LabItemList() {
         const isDeleted = params.row.status === 'deleted';
         return (
           <Box>
+            {canManage && (
             <IconButton
               size="small"
               onClick={() => navigate(`/lab/items/${params.row.uuid}/edit`)}
@@ -242,6 +245,7 @@ export default function LabItemList() {
             >
               <EditIcon fontSize="small" />
             </IconButton>
+            )}
             <IconButton
               size="small"
               color="primary"
@@ -258,7 +262,7 @@ export default function LabItemList() {
             >
               <IssueIcon fontSize="small" />
             </IconButton>
-            {!isDeleted && (
+            {canManage && !isDeleted && (
               <IconButton
                 size="small"
                 color="error"
@@ -278,6 +282,7 @@ export default function LabItemList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Lab Inventory Items</Typography>
+        {canManage && (
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
@@ -296,6 +301,7 @@ export default function LabItemList() {
             Add Item
           </Button>
         </Box>
+        )}
       </Box>
 
       {error && (

@@ -11,8 +11,18 @@ export const ACTIONS = {
   MEDICAL_PURCHASE_MANAGE: "medical.purchase.manage",
   MEDICAL_ISSUE_VIEW: "medical.issue.view",
   MEDICAL_ISSUE_MANAGE: "medical.issue.manage",
-  LAB_VIEW: "lab.view",
-  LAB_MANAGE: "lab.manage",
+  // Lab inventory (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin + lab-incharge hold the lab.* wildcard; teachers get the two read leaves.
+  LAB_SETUP_VIEW: "lab.setup.view",
+  LAB_SETUP_MANAGE: "lab.setup.manage",
+  LAB_INVENTORY_VIEW: "lab.inventory.view",
+  LAB_INVENTORY_MANAGE: "lab.inventory.manage",
+  LAB_PURCHASE_VIEW: "lab.purchase.view",
+  LAB_PURCHASE_MANAGE: "lab.purchase.manage",
+  LAB_ISSUE_VIEW: "lab.issue.view",
+  LAB_ISSUE_MANAGE: "lab.issue.manage",
+  LAB_BREAKAGE_VIEW: "lab.breakage.view",
+  LAB_BREAKAGE_MANAGE: "lab.breakage.manage",
   FINE_VIEW: "fine.view",
   FINE_MANAGE: "fine.manage",
   // Fees — module.resource.action, NO fee.* wildcard (mirrors shared/lib/authz-policy.ts).
@@ -174,12 +184,44 @@ export const ACTION_CATALOG = [
     description: "Record / edit / delete medical issues",
   },
   {
-    action: ACTIONS.LAB_VIEW,
-    description: "See the Laboratory menu and read its pages",
+    action: ACTIONS.LAB_SETUP_VIEW,
+    description: "View the Labs registry & lookups",
   },
   {
-    action: ACTIONS.LAB_MANAGE,
-    description: "Add/edit/delete labs, items, purchases, issues & breakages",
+    action: ACTIONS.LAB_SETUP_MANAGE,
+    description: "Create / edit / delete labs (the Labs registry)",
+  },
+  {
+    action: ACTIONS.LAB_INVENTORY_VIEW,
+    description: "View lab inventory items & stock (teacher/admin/lab-incharge)",
+  },
+  {
+    action: ACTIONS.LAB_INVENTORY_MANAGE,
+    description: "Add / edit / delete lab inventory items",
+  },
+  {
+    action: ACTIONS.LAB_PURCHASE_VIEW,
+    description: "View lab purchases, batches, alerts & bills",
+  },
+  {
+    action: ACTIONS.LAB_PURCHASE_MANAGE,
+    description: "Record / edit / delete lab purchases, batches & bills",
+  },
+  {
+    action: ACTIONS.LAB_ISSUE_VIEW,
+    description: "View the lab issue log (what has been issued)",
+  },
+  {
+    action: ACTIONS.LAB_ISSUE_MANAGE,
+    description: "Record / edit / delete / return lab issues",
+  },
+  {
+    action: ACTIONS.LAB_BREAKAGE_VIEW,
+    description: "View the lab breakage log",
+  },
+  {
+    action: ACTIONS.LAB_BREAKAGE_MANAGE,
+    description: "Record / edit / delete lab breakages",
   },
   {
     action: ACTIONS.FINE_VIEW,

@@ -156,14 +156,16 @@ const menuItems = [
   {
     title: 'Laboratory',
     icon: ScienceIcon,
-    perm: 'lab.view',
+    perm: 'lab.inventory.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/lab' },
-      { title: 'Labs', icon: ScienceIcon, path: '/lab/labs' },
-      { title: 'Inventory Items', icon: InventoryIcon, path: '/lab/items' },
-      { title: 'Purchase Log', icon: PurchaseIcon, path: '/lab/purchases' },
-      { title: 'Issue Log', icon: IssueIcon, path: '/lab/issues' },
-      { title: 'Breakage Log', icon: BrokenImageIcon, path: '/lab/breakages' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/lab/permissions', perm: 'authz.manage', admin: true },
+      // Overview is a mixed dashboard; teachers get the clean Inventory Items + Issue Log.
+      { title: 'Overview', icon: OverviewIcon, path: '/lab', perm: 'lab.purchase.view' },
+      { title: 'Labs', icon: ScienceIcon, path: '/lab/labs', perm: 'lab.setup.view' },
+      { title: 'Inventory Items', icon: InventoryIcon, path: '/lab/items', perm: 'lab.inventory.view' },
+      { title: 'Purchase Log', icon: PurchaseIcon, path: '/lab/purchases', perm: 'lab.purchase.view' },
+      { title: 'Issue Log', icon: IssueIcon, path: '/lab/issues', perm: 'lab.issue.view' },
+      { title: 'Breakage Log', icon: BrokenImageIcon, path: '/lab/breakages', perm: 'lab.breakage.view' },
     ],
   },
   {

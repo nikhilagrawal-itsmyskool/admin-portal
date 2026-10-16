@@ -61,7 +61,7 @@ const modules = [
     icon: ScienceIcon,
     path: "/lab",
     color: "#00b887",
-    perm: "lab.view",
+    perm: "lab.purchase.view",
   },
   {
     title: "Fines",

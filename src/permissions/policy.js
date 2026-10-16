@@ -75,6 +75,8 @@ export const ROLE_PERMISSIONS = {
   teacher: [
     "medical.inventory.view", // See medicine stock
     "medical.issue.view", // See what has been issued
+    "lab.inventory.view", // See lab stock
+    "lab.issue.view", // See what lab items have been issued
     "sports.view",
     "library.view",
     "supplies.view",

@@ -29,6 +29,7 @@ import {
   KeyboardReturn as ReturnIcon,
 } from '@mui/icons-material';
 import { labService } from '../../../services/labService';
+import { useCan } from '../../../permissions/can';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { fmtDate, todayIso } from '../../../utils/date';
 
@@ -130,6 +131,7 @@ function ReturnDialog({ open, issue, onClose, onSuccess }) {
 
 export default function LabIssueList() {
   const navigate = useNavigate();
+  const canManage = useCan()('lab.issue.manage');
   const [searchParams, setSearchParams] = useSearchParams();
   const [issues, setIssues] = useState([]);
   const [labs, setLabs] = useState([]);
@@ -352,7 +354,7 @@ export default function LabIssueList() {
           (params.row.issueType === 'individual' || params.row.issueType === 'class_use');
         return (
           <Box>
-            {canReturn && (
+            {canManage && canReturn && (
               <IconButton
                 size="small"
                 color="primary"
@@ -362,7 +364,7 @@ export default function LabIssueList() {
                 <ReturnIcon fontSize="small" />
               </IconButton>
             )}
-            {!isDeleted && (
+            {canManage && !isDeleted && (
               <IconButton
                 size="small"
                 color="error"
@@ -382,6 +384,7 @@ export default function LabIssueList() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Lab Issue Log</Typography>
+        {canManage && (
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -389,6 +392,7 @@ export default function LabIssueList() {
         >
           Add Issue
         </Button>
+        )}
       </Box>
 
       {error && (

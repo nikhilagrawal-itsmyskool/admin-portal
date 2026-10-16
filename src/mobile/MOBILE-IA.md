@@ -77,7 +77,7 @@ Names below are the live titles. `·` separates a hub's children.
   - Students `student.view` · Employees `employee.view` · Hiring `hiring.view` · Transfer Certificate `transfer.view`
 - **Stores & Inventory** *(per-module `[hub]`)*
   - Library · Catalog/Circulation `library.view`
-  - Lab · Items/Issues `lab.view`
+  - Lab · Items `lab.inventory.view` / Issues `lab.issue.view`
   - Medical · Items `medical.inventory.view` / Issues `medical.issue.view`
   - Sports · Items `sports.view` / Issues `sports.manage`
   - Supplies · Items `supplies.view` / Issues `supplies.manage`

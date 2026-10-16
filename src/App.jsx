@@ -18,6 +18,7 @@ import PurchaseForm from './pages/medical/purchases/PurchaseForm';
 import IssueList from './pages/medical/issues/IssueList';
 import IssueForm from './pages/medical/issues/IssueForm';
 import LabDashboard from './pages/lab/LabDashboard';
+import LabPermissions from './pages/lab/Permissions';
 import LabList from './pages/lab/labs/LabList';
 import LabForm from './pages/lab/labs/LabForm';
 import LabItemList from './pages/lab/items/LabItemList';
@@ -293,6 +294,7 @@ export default function App() {
         <Route path="medical/issues" element={<IssueList />} />
         <Route path="medical/issues/add" element={<IssueForm />} />
         <Route path="medical/issues/:id/edit" element={<IssueForm />} />
+        <Route path="lab/permissions" element={<LabPermissions />} />
         <Route path="lab" element={<LabDashboard />} />
         <Route path="lab/labs" element={<LabList />} />
         <Route path="lab/labs/add" element={<LabForm />} />

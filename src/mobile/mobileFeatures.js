@@ -149,8 +149,8 @@ export const MOBILE_FEATURES = [
   { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.view", section: "stores", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
   { title: "Library Circulation", hubLabel: "Circulation", icon: CirculationIcon, path: "/library/circulation", perm: "library.view", section: "stores", hub: "library" },
 
-  { title: "Lab Items", hubLabel: "Items", icon: ScienceIcon, path: "/lab/items", perm: "lab.view", section: "stores", hub: "lab" },
-  { title: "Lab Issues", hubLabel: "Issues", icon: ScienceIcon, path: "/lab/issues", perm: "lab.view", section: "stores", hub: "lab", routes: ["/lab/issues", "/lab/issues/add"] },
+  { title: "Lab Items", hubLabel: "Items", icon: ScienceIcon, path: "/lab/items", perm: "lab.inventory.view", section: "stores", hub: "lab" },
+  { title: "Lab Issues", hubLabel: "Issues", icon: ScienceIcon, path: "/lab/issues", perm: "lab.issue.view", section: "stores", hub: "lab", routes: ["/lab/issues", "/lab/issues/add"] },
 
   { title: "Medical Items", hubLabel: "Items", icon: MedicalIcon, path: "/medical/items", perm: "medical.inventory.view", section: "stores", hub: "medical" },
   { title: "Medical Issues", hubLabel: "Issues", icon: MedicalIcon, path: "/medical/issues", perm: "medical.issue.view", section: "stores", hub: "medical", routes: ["/medical/issues", "/medical/issues/add"] },
