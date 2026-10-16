@@ -37,7 +37,7 @@ import { fmtDate } from '../../../utils/date';
 export default function SportBreakageList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SPORTS_MANAGE);
+  const canManage = can(ACTIONS.SPORTS_BREAKAGE_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [breakages, setBreakages] = useState([]);
   const [sportTypes, setSportTypes] = useState([]);

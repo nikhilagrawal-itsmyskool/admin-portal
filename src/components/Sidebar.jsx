@@ -232,14 +232,16 @@ const menuItems = [
   {
     title: 'Sports',
     icon: SportsIcon,
-    perm: 'sports.view',
+    perm: 'sports.inventory.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/sports', perm: 'sports.manage' },
-      { title: 'In-charges', icon: SportsIcon, path: '/sports/incharges', perm: 'sports.manage' },
-      { title: 'Inventory Items', icon: InventoryIcon, path: '/sports/items' },
-      { title: 'Purchase Log', icon: PurchaseIcon, path: '/sports/purchases', perm: 'sports.manage' },
-      { title: 'Issue Log', icon: IssueIcon, path: '/sports/issues', perm: 'sports.manage' },
-      { title: 'Breakage Log', icon: BrokenImageIcon, path: '/sports/breakages', perm: 'sports.manage' },
+      // Convention: Overview first, then Permissions, then the rest.
+      { title: 'Overview', icon: OverviewIcon, path: '/sports', perm: 'sports.purchase.view' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/sports/permissions', perm: 'authz.manage', admin: true },
+      { title: 'In-charges', icon: SportsIcon, path: '/sports/incharges', perm: 'sports.setup.view' },
+      { title: 'Inventory Items', icon: InventoryIcon, path: '/sports/items', perm: 'sports.inventory.view' },
+      { title: 'Purchase Log', icon: PurchaseIcon, path: '/sports/purchases', perm: 'sports.purchase.view' },
+      { title: 'Issue Log', icon: IssueIcon, path: '/sports/issues', perm: 'sports.issue.view' },
+      { title: 'Breakage Log', icon: BrokenImageIcon, path: '/sports/breakages', perm: 'sports.breakage.view' },
     ],
   },
   {

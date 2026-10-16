@@ -77,7 +77,8 @@ export const ROLE_PERMISSIONS = {
     "medical.issue.view", // See what has been issued
     "lab.inventory.view", // See lab stock
     "lab.issue.view", // See what lab items have been issued
-    "sports.view",
+    "sports.inventory.view", // See sports equipment stock
+    "sports.issue.view", // See what sports items have been issued
     "library.view",
     "supplies.view",
     "timetable.view", // Published timetable only (menu gates the rest)

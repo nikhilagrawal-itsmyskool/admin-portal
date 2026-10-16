@@ -35,7 +35,7 @@ import ConfirmDialog from '../../../components/common/ConfirmDialog';
 export default function SportItemList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SPORTS_MANAGE);
+  const canManage = can(ACTIONS.SPORTS_INVENTORY_MANAGE);
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [sportTypes, setSportTypes] = useState([]);

@@ -93,7 +93,7 @@ const modules = [
     icon: SportsIcon,
     path: "/sports",
     color: "#0095ff",
-    perm: "sports.view",
+    perm: "sports.purchase.view",
   },
   {
     title: "Assets",

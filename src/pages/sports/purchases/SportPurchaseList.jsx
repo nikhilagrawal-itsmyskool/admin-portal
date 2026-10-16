@@ -50,7 +50,7 @@ const formatCurrency = (v) =>
 export default function SportPurchaseList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SPORTS_MANAGE);
+  const canManage = can(ACTIONS.SPORTS_PURCHASE_MANAGE);
   const canEditPurchase = can(ACTIONS.PURCHASE_LOG_EDIT);
   const canRestorePurchase = can(ACTIONS.PURCHASE_LOG_RESTORE);
   const [searchParams, setSearchParams] = useSearchParams();

@@ -35,7 +35,7 @@ const DAY_OPTIONS = [30, 60, 90];
 export default function SportDashboard() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can(ACTIONS.SPORTS_MANAGE);
+  const canManage = can(ACTIONS.SPORTS_INVENTORY_MANAGE);
   const [stats, setStats] = useState({
     totalSports: 0,
     totalItems: 0,

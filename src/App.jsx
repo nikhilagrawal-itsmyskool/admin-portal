@@ -31,6 +31,7 @@ import LabIssueForm from './pages/lab/issues/LabIssueForm';
 import LabBreakageList from './pages/lab/breakages/LabBreakageList';
 import LabBreakageForm from './pages/lab/breakages/LabBreakageForm';
 import SportDashboard from './pages/sports/SportDashboard';
+import SportsPermissions from './pages/sports/Permissions';
 import SportInchargeList from './pages/sports/incharges/SportInchargeList';
 import SportItemList from './pages/sports/items/SportItemList';
 import SportItemForm from './pages/sports/items/SportItemForm';
@@ -313,6 +314,7 @@ export default function App() {
         <Route path="lab/breakages" element={<LabBreakageList />} />
         <Route path="lab/breakages/add" element={<LabBreakageForm />} />
         <Route path="lab/breakages/:id/edit" element={<LabBreakageForm />} />
+        <Route path="sports/permissions" element={<SportsPermissions />} />
         <Route path="sports" element={<SportDashboard />} />
         <Route path="sports/incharges" element={<SportInchargeList />} />
         <Route path="sports/items" element={<SportItemList />} />

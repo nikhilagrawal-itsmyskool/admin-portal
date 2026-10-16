@@ -79,7 +79,7 @@ Names below are the live titles. `·` separates a hub's children.
   - Library · Catalog/Circulation `library.view`
   - Lab · Items `lab.inventory.view` / Issues `lab.issue.view`
   - Medical · Items `medical.inventory.view` / Issues `medical.issue.view`
-  - Sports · Items `sports.view` / Issues `sports.manage`
+  - Sports · Items `sports.inventory.view` / Issues `sports.issue.view`
   - Supplies · Items `supplies.view` / Issues `supplies.manage`
   - Asset Counts `asset.manage`
 - **Tools** · Assistant `assistant.use` *(god)*

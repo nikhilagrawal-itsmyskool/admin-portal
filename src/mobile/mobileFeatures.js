@@ -155,10 +155,10 @@ export const MOBILE_FEATURES = [
   { title: "Medical Items", hubLabel: "Items", icon: MedicalIcon, path: "/medical/items", perm: "medical.inventory.view", section: "stores", hub: "medical" },
   { title: "Medical Issues", hubLabel: "Issues", icon: MedicalIcon, path: "/medical/issues", perm: "medical.issue.view", section: "stores", hub: "medical", routes: ["/medical/issues", "/medical/issues/add"] },
 
-  { title: "Sports Items", hubLabel: "Items", icon: SportsIcon, path: "/sports/items", perm: "sports.view", section: "stores", hub: "sports" },
-  // Issuing/wastage is a write op → the in-charge's action (sports.manage), not every
-  // teacher's. Plain teachers keep read-only "Items" (sports.view).
-  { title: "Sports Issues", hubLabel: "Issues", icon: SportsIcon, path: "/sports/issues", perm: "sports.manage", section: "stores", hub: "sports", routes: ["/sports/issues", "/sports/issues/add"] },
+  { title: "Sports Items", hubLabel: "Items", icon: SportsIcon, path: "/sports/items", perm: "sports.inventory.view", section: "stores", hub: "sports" },
+  // The issue LOG is a read (teachers hold sports.issue.view); recording an issue is a write
+  // gated sports.issue.manage inside the page.
+  { title: "Sports Issues", hubLabel: "Issues", icon: SportsIcon, path: "/sports/issues", perm: "sports.issue.view", section: "stores", hub: "sports", routes: ["/sports/issues", "/sports/issues/add"] },
 
   { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.view", section: "stores", hub: "supplies" },
   { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.manage", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },

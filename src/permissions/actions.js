@@ -43,8 +43,18 @@ export const ACTIONS = {
   UNIFORM_MANAGE: "uniform.manage",
   SHOP_VIEW: "shop.view",
   SHOP_MANAGE: "shop.manage",
-  SPORTS_VIEW: "sports.view",
-  SPORTS_MANAGE: "sports.manage",
+  // Sports equipment (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin + sports-incharge hold the sports.* wildcard; teachers get the two read leaves.
+  SPORTS_SETUP_VIEW: "sports.setup.view",
+  SPORTS_SETUP_MANAGE: "sports.setup.manage",
+  SPORTS_INVENTORY_VIEW: "sports.inventory.view",
+  SPORTS_INVENTORY_MANAGE: "sports.inventory.manage",
+  SPORTS_PURCHASE_VIEW: "sports.purchase.view",
+  SPORTS_PURCHASE_MANAGE: "sports.purchase.manage",
+  SPORTS_ISSUE_VIEW: "sports.issue.view",
+  SPORTS_ISSUE_MANAGE: "sports.issue.manage",
+  SPORTS_BREAKAGE_VIEW: "sports.breakage.view",
+  SPORTS_BREAKAGE_MANAGE: "sports.breakage.manage",
   ASSET_VIEW: "asset.view",
   ASSET_MANAGE: "asset.manage",
   LIBRARY_VIEW: "library.view",
@@ -296,12 +306,44 @@ export const ACTION_CATALOG = [
     description: "Add/edit/delete shop catalog, purchases, sets & sales",
   },
   {
-    action: ACTIONS.SPORTS_VIEW,
-    description: "See the Sports menu and read its pages",
+    action: ACTIONS.SPORTS_SETUP_VIEW,
+    description: "View sport in-charges & lookups",
   },
   {
-    action: ACTIONS.SPORTS_MANAGE,
-    description: "Add/edit/delete sports items, in-charges, issues & breakages",
+    action: ACTIONS.SPORTS_SETUP_MANAGE,
+    description: "Set sport in-charges",
+  },
+  {
+    action: ACTIONS.SPORTS_INVENTORY_VIEW,
+    description: "View sports equipment items & stock (teacher/admin/sports-incharge)",
+  },
+  {
+    action: ACTIONS.SPORTS_INVENTORY_MANAGE,
+    description: "Add / edit / delete sports equipment items",
+  },
+  {
+    action: ACTIONS.SPORTS_PURCHASE_VIEW,
+    description: "View sports purchases, batches & bills",
+  },
+  {
+    action: ACTIONS.SPORTS_PURCHASE_MANAGE,
+    description: "Record / edit / delete sports purchases, batches & bills",
+  },
+  {
+    action: ACTIONS.SPORTS_ISSUE_VIEW,
+    description: "View the sports issue log (what has been issued)",
+  },
+  {
+    action: ACTIONS.SPORTS_ISSUE_MANAGE,
+    description: "Record / edit / delete / return sports issues",
+  },
+  {
+    action: ACTIONS.SPORTS_BREAKAGE_VIEW,
+    description: "View the sports breakage log",
+  },
+  {
+    action: ACTIONS.SPORTS_BREAKAGE_MANAGE,
+    description: "Record / edit / delete sports breakages",
   },
   {
     action: ACTIONS.ASSET_VIEW,

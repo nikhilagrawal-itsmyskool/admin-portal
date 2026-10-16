@@ -31,7 +31,7 @@ import EmployeeSearchDialog from '../../../components/common/EmployeeSearchDialo
 
 export default function SportInchargeList() {
   const can = useCan();
-  const canManage = can(ACTIONS.SPORTS_MANAGE);
+  const canManage = can(ACTIONS.SPORTS_SETUP_MANAGE);
   const [sportTypes, setSportTypes] = useState([]);
   const [inchargesByType, setInchargesByType] = useState({});
   const [loading, setLoading] = useState(true);
