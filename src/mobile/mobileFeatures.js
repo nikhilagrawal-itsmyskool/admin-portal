@@ -100,7 +100,7 @@ export const MOBILE_FEATURES = [
     routes: ["/transport/attendance/mark", "/transport/attendance/sessions"],
   },
   // My Homework — the class teacher posts the day's homework photos (pick class + date).
-  { title: "Post Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.post", section: "today", color: "#d97706" },
+  { title: "Post Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.day.post", section: "today", color: "#d97706" },
   // Clubs & Activities — teacher conduct only on mobile. The admin consoles (clubs, bank,
   // planning board, review, settings, permissions) are desktop/admin-portal only, so they
   // are deliberately NOT listed here.

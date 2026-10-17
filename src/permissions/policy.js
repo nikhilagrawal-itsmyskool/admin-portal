@@ -53,8 +53,9 @@ export const ROLE_PERMISSIONS = {
     "programme.view",
     "assembly.view",
     "assembly.manage",
-    "homework.post",
-    "homework.manage",
+    "homework.day.view",
+    "homework.day.post",
+    "homework.day.manage",
     "academic-calendar.view",
     "academic-calendar.manage",
     // Examination (explicit, no wildcard): run exams + report cards, view progress. NOT config/scheme/
@@ -105,8 +106,8 @@ export const ROLE_PERMISSIONS = {
   // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
   // can cover for an absent colleague) and to POST their class's daily homework photos.
   // Finalizing attendance stays admin/god; the class→teacher homework mapping override
-  // (homework.manage) stays admin/god. Additive to the `teacher` role.
-  "class-teacher": ["attendance.session.mark", "homework.post"],
+  // (homework.day.manage) stays admin/god. Additive to the `teacher` role.
+  "class-teacher": ["attendance.session.mark", "homework.day.post"],
   // Club in-charge: READ-ONLY by default across the three club resources (clubs, bank, plans).
   // Authoring/approve/review/planning are god-first; god grants more via the Permissions grid.
   "club-incharge": ["club.setup.view", "club.activity.view", "club.plan.view"],

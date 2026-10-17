@@ -141,8 +141,10 @@ export const ACTIONS = {
   SYLLABUS_PROGRESS_MARK: "syllabus.progress.mark",
   ASSEMBLY_VIEW: "assembly.view",
   ASSEMBLY_MANAGE: "assembly.manage",
-  HOMEWORK_POST: "homework.post",
-  HOMEWORK_MANAGE: "homework.manage",
+  // Daily homework (strict module.resource.action). Mirror of backend authz-policy.ts.
+  HOMEWORK_DAY_VIEW: "homework.day.view",
+  HOMEWORK_DAY_POST: "homework.day.post",
+  HOMEWORK_DAY_MANAGE: "homework.day.manage",
   ACADEMIC_CALENDAR_VIEW: "academic-calendar.view",
   ACADEMIC_CALENDAR_MANAGE: "academic-calendar.manage",
   // Examination — strict module.resource.action convention; no exam.* wildcard (explicit role lists
@@ -623,12 +625,16 @@ export const ACTION_CATALOG = [
     description: "Add/edit/delete/publish assembly plans, nodes, special assemblies & themes",
   },
   {
-    action: ACTIONS.HOMEWORK_POST,
+    action: ACTIONS.HOMEWORK_DAY_VIEW,
+    description: "View any class's homework days + the class-teacher mapping & audit (oversight)",
+  },
+  {
+    action: ACTIONS.HOMEWORK_DAY_POST,
     description: "Post, edit, remove and publish/unpublish a class's daily homework photos",
   },
   {
-    action: ACTIONS.HOMEWORK_MANAGE,
-    description: "Override which teacher is the homework class-teacher for a class",
+    action: ACTIONS.HOMEWORK_DAY_MANAGE,
+    description: "Oversight edits + override which teacher is the homework class-teacher",
   },
   {
     action: ACTIONS.ACADEMIC_CALENDAR_VIEW,

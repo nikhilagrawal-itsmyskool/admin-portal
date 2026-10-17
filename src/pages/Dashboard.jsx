@@ -224,7 +224,7 @@ const modules = [
     icon: HomeworkIcon,
     path: "/homework",
     color: "#d97706",
-    perm: "homework.post",
+    perm: "homework.day.post",
   },
   {
     title: "Fees",

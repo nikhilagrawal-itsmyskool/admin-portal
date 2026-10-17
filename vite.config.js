@@ -45,9 +45,10 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
-        // Main bundle is ~2.1 MB — above Workbox's 2 MB default — so raise the cap to
-        // ensure it gets precached (otherwise the app wouldn't work offline).
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // Main bundle is ~4.2 MB — above Workbox's 2 MB default — so raise the cap to
+        // ensure it gets precached (otherwise the app wouldn't work offline). Headroom
+        // over the current size so module additions don't trip the precache build.
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
       },
     }),
   ],

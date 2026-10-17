@@ -424,13 +424,15 @@ const menuItems = [
     ],
   },
   {
-    // No parent perm: class teachers (homework.post) see Post Homework; admins also
-    // see Class Teachers (the mapping override, gated by homework.manage).
+    // No parent perm: class teachers (homework.day.post) see Post Homework; admins also
+    // see Class Teachers (the mapping override, gated by homework.day.manage). Permissions
+    // is god-only (admin:true → behind the reveal toggle).
     title: 'Homework',
     icon: HomeworkIcon,
     children: [
-      { title: 'Post Homework', icon: HomeworkIcon, path: '/homework', perm: 'homework.post' },
-      { title: 'Class Teachers', icon: PeopleIcon, path: '/homework/class-teachers', perm: 'homework.manage' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/homework/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Post Homework', icon: HomeworkIcon, path: '/homework', perm: 'homework.day.post' },
+      { title: 'Class Teachers', icon: PeopleIcon, path: '/homework/class-teachers', perm: 'homework.day.manage' },
     ],
   },
   {

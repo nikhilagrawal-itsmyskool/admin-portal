@@ -174,6 +174,7 @@ import SelcReader from './pages/programmes/SelcReader';
 import SelcEditor from './pages/programmes/SelcEditor';
 import SelcSettings from './pages/programmes/SelcSettings';
 import HomeworkPage from './pages/homework/HomeworkPage';
+import HomeworkPermissions from './pages/homework/Permissions';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
 import AcademicCalendarPage from './pages/academic-calendar/AcademicCalendarPage';
 import ExaminationList from './pages/examination/ExaminationList';
@@ -486,6 +487,7 @@ export default function App() {
         <Route path="programmes/selc/settings" element={<SelcSettings />} />
         <Route path="programmes/selc" element={<SelcReader />} />
         <Route path="programmes/selc/:grade/:month" element={<SelcReader />} />
+        <Route path="homework/permissions" element={<HomeworkPermissions />} />
         <Route path="homework" element={<HomeworkPage />} />
         <Route path="homework/class-teachers" element={<HomeworkMappingPage />} />
         <Route path="academic-calendar" element={<AcademicCalendarPage />} />
