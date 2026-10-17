@@ -147,6 +147,7 @@ export const ACTIONS = {
   HOMEWORK_DAY_MANAGE: "homework.day.manage",
   ACADEMIC_CALENDAR_VIEW: "academic-calendar.view",
   ACADEMIC_CALENDAR_MANAGE: "academic-calendar.manage",
+  ACADEMIC_CALENDAR_CONFIG_MANAGE: "academic-calendar.config.manage",
   // Examination — strict module.resource.action convention; no exam.* wildcard (explicit role lists
   // in policy.js) so god-only leaves aren't swallowed. Mirror of backend authz-policy.ts.
   EXAM_VIEW: "exam.schedule.view",
@@ -643,6 +644,10 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.ACADEMIC_CALENDAR_MANAGE,
     description: "Add/edit/delete calendar entries, holidays & columns, and import from Excel",
+  },
+  {
+    action: ACTIONS.ACADEMIC_CALENDAR_CONFIG_MANAGE,
+    description: "Edit Academic Calendar settings (non-teaching/weekly-off configuration)",
   },
   {
     action: ACTIONS.EXAM_VIEW,

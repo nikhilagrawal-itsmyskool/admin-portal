@@ -41,7 +41,7 @@ function ayRange(name) {
 // The Holidays tab: one full-year list over the SAME calendar_holiday data the month
 // view edits (so both are always in sync — no separate store), plus the weekly-off
 // choice (stored on the academic year). Both feed attendance & the 360 view.
-export default function HolidaysTab({ canManage }) {
+export default function HolidaysTab({ canManage, canConfig }) {
   const { academicYearId, years } = useAcademicYear();
   const isMobile = useIsMobile();
   const ayName = years.find((y) => y.uuid === academicYearId)?.name || '';
@@ -129,7 +129,7 @@ export default function HolidaysTab({ canManage }) {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Weekly off</Typography>
-          {canManage ? (
+          {canConfig ? (
             <FormGroup row>
               {WEEKDAYS.map((d) => (
                 <FormControlLabel key={d.n}

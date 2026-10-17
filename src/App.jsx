@@ -177,6 +177,7 @@ import HomeworkPage from './pages/homework/HomeworkPage';
 import HomeworkPermissions from './pages/homework/Permissions';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
 import AcademicCalendarPage from './pages/academic-calendar/AcademicCalendarPage';
+import AcademicCalendarPermissions from './pages/academic-calendar/Permissions';
 import ExaminationList from './pages/examination/ExaminationList';
 import ExamDetail from './pages/examination/ExamDetail';
 import VerifyAdmitCard from './pages/examination/VerifyAdmitCard';
@@ -491,6 +492,7 @@ export default function App() {
         <Route path="homework" element={<HomeworkPage />} />
         <Route path="homework/class-teachers" element={<HomeworkMappingPage />} />
         <Route path="academic-calendar" element={<AcademicCalendarPage />} />
+        <Route path="academic-calendar/permissions" element={<AcademicCalendarPermissions />} />
         <Route path="examinations" element={<ExaminationList />} />
         <Route path="examinations/verify/:id" element={<VerifyAdmitCard />} />
         <Route path="examinations/:id/roster/:paperId/:sectionId" element={<InvigilatorRoster mode="admin" />} />

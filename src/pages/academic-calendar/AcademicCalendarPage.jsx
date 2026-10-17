@@ -34,6 +34,8 @@ export default function AcademicCalendarPage() {
   const isMobile = useIsMobile();
   // PWA (small screen) is strictly read-only — no operations for anyone, incl. admins.
   const canManage = useCan()('academic-calendar.manage') && !isMobile;
+  // Weekly-off is module config (affects attendance school-wide) → god-first config.manage.
+  const canConfig = useCan()('academic-calendar.config.manage') && !isMobile;
   const today = todayIso();
 
   const [tab, setTab] = useState('month');
@@ -187,7 +189,7 @@ export default function AcademicCalendarPage() {
         </>
       )}
 
-      {effectiveTab === 'holidays' && <HolidaysTab canManage={canManage} />}
+      {effectiveTab === 'holidays' && <HolidaysTab canManage={canManage} canConfig={canConfig} />}
       {effectiveTab === 'import' && <ImportTab academicYearId={academicYearId} canManage={canManage} onApplied={load} />}
       {effectiveTab === 'types' && <ColumnsTab types={types} canManage={canManage} onChanged={load} />}
 

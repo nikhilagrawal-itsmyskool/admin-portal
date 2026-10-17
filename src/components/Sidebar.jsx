@@ -436,10 +436,14 @@ const menuItems = [
     ],
   },
   {
+    // No parent perm: teachers (academic-calendar.view) see the Calendar; Permissions is
+    // god-only (admin:true → behind the reveal toggle). Convention: Permissions first.
     title: 'Academic Calendar',
     icon: CalendarIcon,
-    path: '/academic-calendar',
-    perm: 'academic-calendar.view',
+    children: [
+      { title: 'Permissions', icon: PermissionsIcon, path: '/academic-calendar/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Calendar', icon: CalendarIcon, path: '/academic-calendar', perm: 'academic-calendar.view' },
+    ],
   },
   {
     // No parent perm: invigilators (teachers) see "My Duties"; admins also see "Exams".
