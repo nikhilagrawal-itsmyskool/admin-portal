@@ -39,8 +39,8 @@ export const ROLE_PERMISSIONS = {
     // Permissions grid if a school wants it. Mirrors the god-first convention.
     "communication.send",
     "communication.template.manage",
-    "hiring.view",
-    "hiring.manage",
+    "hiring.candidate.view",
+    "hiring.candidate.manage",
     "transport.view",
     "transport.manage",
     "transport.attendance.mark",

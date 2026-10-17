@@ -140,7 +140,7 @@ export const MOBILE_FEATURES = [
   // People & Staff: flat tiles (the band header is the group — no hub, one tap).
   { title: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", color: "#3d5afe", routes: ["/students", "/students/:id"] },
   { title: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view", section: "people", color: "#3d5afe" },
-  { title: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.view", section: "people", color: "#3d5afe", routes: ["/hiring", "/hiring/new", "/hiring/:id", "/hiring/:id/edit"] },
+  { title: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.candidate.view", section: "people", color: "#3d5afe", routes: ["/hiring", "/hiring/new", "/hiring/:id", "/hiring/:id/edit"] },
   // Read-only TC search/list on mobile; tapping a row opens the student detail
   // (permitted via the Students feature). Apply/issue stays desktop-only.
   { title: "Transfer Certificate", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", color: "#3d5afe", routes: ["/transfer"] },

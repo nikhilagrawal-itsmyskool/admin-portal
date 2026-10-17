@@ -51,7 +51,7 @@ const toLabelMap = (arr) =>
 export default function HiringCandidateList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can('hiring.manage');
+  const canManage = can('hiring.candidate.manage');
 
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);

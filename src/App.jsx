@@ -64,6 +64,7 @@ import ScanVerify from './pages/fees/ScanVerify';
 import WaiverList from './pages/fees/WaiverList';
 import RefundList from './pages/fees/RefundList';
 import HiringCandidateList from './pages/hiring/HiringCandidateList';
+import HiringPermissions from './pages/hiring/Permissions';
 import HiringCandidateForm from './pages/hiring/HiringCandidateForm';
 import HiringCandidateDetail from './pages/hiring/HiringCandidateDetail';
 import TransferList from './pages/transfer/TransferList';
@@ -360,6 +361,7 @@ export default function App() {
         <Route path="verify/scan" element={<ScanVerify />} />
         <Route path="fees/waivers" element={<WaiverList />} />
         <Route path="fees/refunds" element={<RefundList />} />
+        <Route path="hiring/permissions" element={<HiringPermissions />} />
         <Route path="hiring" element={<HiringCandidateList />} />
         <Route path="hiring/new" element={<HiringCandidateForm />} />
         <Route path="hiring/:id" element={<HiringCandidateDetail />} />

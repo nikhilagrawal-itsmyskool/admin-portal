@@ -74,7 +74,7 @@ Names below are the live titles. `·` separates a hub's children.
 - **Manage**
   - Examinations `exam.view` · Subject Mapping `exam.manage` · Marks Progress `exam.manage` · Branding `exam.manage` · Feedback `feedback.review` · Staff Documents `documents.manage`
 - **People & Staff** `[hub: people]`
-  - Students `student.view` · Employees `employee.view` · Hiring `hiring.view` · Transfer Certificate `transfer.view`
+  - Students `student.view` · Employees `employee.view` · Hiring `hiring.candidate.view` · Transfer Certificate `transfer.view`
 - **Stores & Inventory** *(per-module `[hub]`)*
   - Library · Catalog `library.catalog.view` / Circulation `library.circulation.view`
   - Lab · Items `lab.inventory.view` / Issues `lab.issue.view`

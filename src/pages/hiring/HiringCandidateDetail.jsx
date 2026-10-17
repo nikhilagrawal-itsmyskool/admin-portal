@@ -65,7 +65,7 @@ export default function HiringCandidateDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const can = useCan();
-  const canManage = can('hiring.manage');
+  const canManage = can('hiring.candidate.manage');
 
   const [candidate, setCandidate] = useState(null);
   const [lookups, setLookups] = useState({

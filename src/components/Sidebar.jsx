@@ -373,8 +373,11 @@ const menuItems = [
   {
     title: 'Hiring',
     icon: HiringIcon,
-    path: '/hiring',
-    perm: 'hiring.view',
+    perm: 'hiring.candidate.view',
+    children: [
+      { title: 'Candidates', icon: HiringIcon, path: '/hiring', perm: 'hiring.candidate.view' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/hiring/permissions', perm: 'authz.manage', admin: true },
+    ],
   },
   {
     // No parent perm: managers (transport.view) see all children; a

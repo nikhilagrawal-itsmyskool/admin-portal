@@ -160,7 +160,7 @@ const modules = [
     icon: HiringIcon,
     path: "/hiring",
     color: "#795548",
-    perm: "hiring.view",
+    perm: "hiring.candidate.view",
   },
   {
     title: "Transport",

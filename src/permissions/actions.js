@@ -126,8 +126,10 @@ export const ACTIONS = {
   COMMUNICATION_SEND: "communication.send",
   COMMUNICATION_TEMPLATE_MANAGE: "communication.template.manage",
   COMMUNICATION_TEMPLATE_DELETE: "communication.template.delete",
-  HIRING_VIEW: "hiring.view",
-  HIRING_MANAGE: "hiring.manage",
+  // Recruitment/hiring (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin + hiring-incharge; no teacher.
+  HIRING_CANDIDATE_VIEW: "hiring.candidate.view",
+  HIRING_CANDIDATE_MANAGE: "hiring.candidate.manage",
   TRANSPORT_VIEW: "transport.view",
   TRANSPORT_MANAGE: "transport.manage",
   TRANSPORT_ATTENDANCE_MARK: "transport.attendance.mark",
@@ -565,11 +567,11 @@ export const ACTION_CATALOG = [
     description: "Delete or restore a message template",
   },
   {
-    action: ACTIONS.HIRING_VIEW,
-    description: "See the Hiring menu and read candidate records",
+    action: ACTIONS.HIRING_CANDIDATE_VIEW,
+    description: "View candidates, stages, files & lookups",
   },
   {
-    action: ACTIONS.HIRING_MANAGE,
+    action: ACTIONS.HIRING_CANDIDATE_MANAGE,
     description:
       "Add/edit/delete candidates, interview stages, files & final decisions",
   },
