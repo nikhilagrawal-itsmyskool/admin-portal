@@ -23,8 +23,12 @@ export const ACTIONS = {
   LAB_ISSUE_MANAGE: "lab.issue.manage",
   LAB_BREAKAGE_VIEW: "lab.breakage.view",
   LAB_BREAKAGE_MANAGE: "lab.breakage.manage",
-  FINE_VIEW: "fine.view",
-  FINE_MANAGE: "fine.manage",
+  // Disciplinary fines (strict module.resource.action). Mirror of backend authz-policy.ts.
+  // admin holds the fine.* wildcard; no teacher access.
+  FINE_INCIDENT_VIEW: "fine.incident.view",
+  FINE_INCIDENT_MANAGE: "fine.incident.manage",
+  FINE_COLLECTION_VIEW: "fine.collection.view",
+  FINE_COLLECTION_MANAGE: "fine.collection.manage",
   // Fees — module.resource.action, NO fee.* wildcard (mirrors shared/lib/authz-policy.ts).
   FEE_REPORT_VIEW: "fee.report.view",
   FEE_COLLECT: "fee.collect.collect",
@@ -270,12 +274,20 @@ export const ACTION_CATALOG = [
     description: "Record / edit / delete lab breakages",
   },
   {
-    action: ACTIONS.FINE_VIEW,
-    description: "See the Fines menu and read its pages",
+    action: ACTIONS.FINE_INCIDENT_VIEW,
+    description: "View fine incidents, evidence, notes & lookups",
   },
   {
-    action: ACTIONS.FINE_MANAGE,
-    description: "Add/edit/delete fine incidents",
+    action: ACTIONS.FINE_INCIDENT_MANAGE,
+    description: "Create / edit / delete fine incidents, evidence & notes",
+  },
+  {
+    action: ACTIONS.FINE_COLLECTION_VIEW,
+    description: "View fine collections & receipts",
+  },
+  {
+    action: ACTIONS.FINE_COLLECTION_MANAGE,
+    description: "Record fine collection",
   },
   {
     action: ACTIONS.FEE_REPORT_VIEW,

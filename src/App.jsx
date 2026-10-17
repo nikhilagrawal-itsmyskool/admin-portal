@@ -43,6 +43,7 @@ import SportIssueForm from './pages/sports/issues/SportIssueForm';
 import SportBreakageList from './pages/sports/breakages/SportBreakageList';
 import SportBreakageForm from './pages/sports/breakages/SportBreakageForm';
 import FineDashboard from './pages/fine/FineDashboard';
+import FinePermissions from './pages/fine/Permissions';
 import FineIncidentList from './pages/fine/incidents/FineIncidentList';
 import FineIncidentForm from './pages/fine/incidents/FineIncidentForm';
 import FineIncidentDetail from './pages/fine/incidents/FineIncidentDetail';
@@ -336,6 +337,7 @@ export default function App() {
         <Route path="sports/breakages" element={<SportBreakageList />} />
         <Route path="sports/breakages/add" element={<SportBreakageForm />} />
         <Route path="sports/breakages/:id/edit" element={<SportBreakageForm />} />
+        <Route path="fine/permissions" element={<FinePermissions />} />
         <Route path="fine" element={<FineDashboard />} />
         <Route path="fine/incidents" element={<FineIncidentList />} />
         <Route path="fine/incidents/new" element={<FineIncidentForm />} />

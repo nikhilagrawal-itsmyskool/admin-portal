@@ -69,7 +69,7 @@ const modules = [
     icon: GavelIcon,
     path: "/fine",
     color: "#ff3d71",
-    perm: "fine.view",
+    perm: "fine.incident.view",
   },
   {
     title: "Uniform",

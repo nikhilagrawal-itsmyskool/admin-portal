@@ -173,10 +173,11 @@ const menuItems = [
   {
     title: 'Fines',
     icon: GavelIcon,
-    perm: 'fine.view',
+    perm: 'fine.incident.view',
     children: [
-      { title: 'Overview', icon: OverviewIcon, path: '/fine' },
-      { title: 'Incidents', icon: GavelIcon, path: '/fine/incidents' },
+      { title: 'Overview', icon: OverviewIcon, path: '/fine', perm: 'fine.incident.view' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/fine/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Incidents', icon: GavelIcon, path: '/fine/incidents', perm: 'fine.incident.view' },
     ],
   },
   {
