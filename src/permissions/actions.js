@@ -130,8 +130,8 @@ export const ACTIONS = {
   // admin + hiring-incharge; no teacher.
   HIRING_CANDIDATE_VIEW: "hiring.candidate.view",
   HIRING_CANDIDATE_MANAGE: "hiring.candidate.manage",
-  TRANSPORT_VIEW: "transport.view",
-  TRANSPORT_MANAGE: "transport.manage",
+  TRANSPORT_VIEW: "transport.setup.view",
+  TRANSPORT_MANAGE: "transport.setup.manage",
   TRANSPORT_ATTENDANCE_MARK: "transport.attendance.mark",
   TRANSPORT_ATTENDANCE_FINALIZE: "transport.attendance.finalize",
   TRANSFER_VIEW: "transfer.view",
@@ -188,11 +188,11 @@ export const ACTIONS = {
   // record = log + assign to a teacher (teachers); respond = the assigned teacher's reply
   // (teachers, own items only); review = director dashboard + complete/reopen. `review` is
   // deliberately OUTSIDE any namespace admin inherits, so it is god-only until a real
-  // `education-director` role is introduced (grant it feedback.review then).
-  FEEDBACK_VIEW: "feedback.view",
-  FEEDBACK_RECORD: "feedback.record",
-  FEEDBACK_RESPOND: "feedback.respond",
-  FEEDBACK_REVIEW: "feedback.review",
+  // `education-director` role is introduced (grant it feedback.ticket.review then).
+  FEEDBACK_VIEW: "feedback.ticket.view",
+  FEEDBACK_RECORD: "feedback.ticket.record",
+  FEEDBACK_RESPOND: "feedback.ticket.respond",
+  FEEDBACK_REVIEW: "feedback.ticket.review",
   // Director's Cockpit / School Pulse — the at-a-glance heartbeat landing. Granted to the
   // `director` role (god's '*' covers it). Read-only; drill-downs deep-link into the real
   // screens, each gated by its own action.

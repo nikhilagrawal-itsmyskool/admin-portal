@@ -14,7 +14,7 @@ import { useCan } from '../../../permissions/can';
 export default function RouteList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can('transport.manage');
+  const canManage = can('transport.setup.manage');
 
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);

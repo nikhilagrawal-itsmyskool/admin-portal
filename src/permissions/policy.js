@@ -41,8 +41,8 @@ export const ROLE_PERMISSIONS = {
     "communication.template.manage",
     "hiring.candidate.view",
     "hiring.candidate.manage",
-    "transport.view",
-    "transport.manage",
+    "transport.setup.view",
+    "transport.setup.manage",
     "transport.attendance.mark",
     "transport.attendance.finalize",
     "transfer.view",
@@ -97,10 +97,10 @@ export const ROLE_PERMISSIONS = {
     "leave.application.apply", // Apply for own leave; see own attendance & penalty
     "documents.sign", // Read & sign the staff policies shared with them
     // Feedback/complaints: any teacher may record + assign, and respond to items
-    // assigned to them. Reviewing/completing (feedback.review) is god-only.
-    "feedback.view",
-    "feedback.record",
-    "feedback.respond",
+    // assigned to them. Reviewing/completing (feedback.ticket.review) is god-only.
+    "feedback.ticket.view",
+    "feedback.ticket.record",
+    "feedback.ticket.respond",
     "club.plan.conduct", // Run own club assignment (guide) + quick closure on the PWA
   ],
   // Class teacher: a teacher additionally allowed to MARK attendance (any class, so they
@@ -140,8 +140,8 @@ export const ROLE_PERMISSIONS = {
   // syllabus, students/houses, leave, calendar). Additive — a person can also hold `god`.
   'education-director': [
     "cockpit.view",
-    "feedback.view",
-    "feedback.review",
+    "feedback.ticket.view",
+    "feedback.ticket.review",
     "assembly.view",
     "assembly.manage",
     "syllabus.view",
@@ -149,7 +149,7 @@ export const ROLE_PERMISSIONS = {
     "student.contacts.view",
     "academic-calendar.view",
     "timetable.view",
-    "transport.view",
+    "transport.setup.view",
     "leave.calendar.view",
     "leave.application.apply",
   ],

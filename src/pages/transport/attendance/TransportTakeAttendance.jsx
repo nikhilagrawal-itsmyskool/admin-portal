@@ -53,7 +53,7 @@ export default function TransportTakeAttendance() {
   }, []);
 
   // A transport-attendance teacher only picks from routes they're staffed on.
-  const routeOptions = visibleTransportRoutes(routes, { user, canViewAll: can('transport.view') });
+  const routeOptions = visibleTransportRoutes(routes, { user, canViewAll: can('transport.setup.view') });
 
   const finalized = session?.status === 'finalized';
 

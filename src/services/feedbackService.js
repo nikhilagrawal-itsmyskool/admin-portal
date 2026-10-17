@@ -1,7 +1,7 @@
 import api from '../config/api';
 
 // Home-visit feedback / complaints — open-routing ticket model. Recording + the teacher
-// /me surface are open to teachers; the dashboard + director actions need feedback.review
+// /me surface are open to teachers; the dashboard + director actions need feedback.ticket.review
 // (god only for now). Mirrors the core-api `feedback` module.
 export const feedbackService = {
   // ── Shared lookups ────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ export const feedbackService = {
   seenMine: async (id) => (await api.post(`/feedback/me/${id}/seen`)).data,
   attachmentMine: async (fileId) => (await api.get(`/feedback/me/attachment/${fileId}`)).data,
 
-  // ── Director / oversight (feedback.review) ────────────────────────────────────
+  // ── Director / oversight (feedback.ticket.review) ────────────────────────────────────
   list: async (params = {}) => (await api.get('/feedback', { params })).data,
   // params: { by: student|class|teacher|date, academicYearId? }
   grouped: async (params = {}) => (await api.get('/feedback/grouped', { params })).data,

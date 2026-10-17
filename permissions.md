@@ -59,8 +59,8 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `communication.template.delete` | Delete or restore a message template | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `hiring.view` | See the Hiring menu and read candidate records | ✓ | ✓ | — | — | — | — | — | — | — | — | ✓ | — | — |
 | `hiring.manage` | Add/edit/delete candidates, interview stages, files & final decisions | ✓ | ✓ | — | — | — | — | — | — | — | — | ✓ | — | — |
-| `transport.view` | See the Transport menu and read its pages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | ✓ | — |
-| `transport.manage` | Add/edit/delete stops, vehicles, routes, route stops & student assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | ✓ | — |
+| `transport.setup.view` | See the Transport menu and read its pages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | ✓ | — |
+| `transport.setup.manage` | Add/edit/delete stops, vehicles, routes, route stops & student assignments | ✓ | ✓ | — | — | — | — | — | — | — | — | — | ✓ | — |
 | `transport.attendance.mark` | Reach the bus-attendance screens and mark attendance — for admin/god/transport-incharge on any route, and a transport-attendance teacher only on routes they're staffed on | ✓ | ✓ | — | — | — | — | — | — | — | — | — | ✓ | ✓ |
 | `transport.attendance.finalize` | Finalize a transport (bus) attendance session and edit records after finalize (admin/god/transport-incharge only) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | ✓ | — |
 | `transfer.view` | See the Transfer menu and search/read transfer certificate records | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |

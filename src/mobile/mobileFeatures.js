@@ -108,9 +108,9 @@ export const MOBILE_FEATURES = [
   // Send Message — a daily action, pulled up out of the old "Office" hub.
   { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
   // Feedback — a teacher records a home-visit feedback (today) and acts on ones assigned
-  // to them (mine). The reviewer's dashboard is an office tile (feedback.review = god).
-  { title: "Record Feedback", icon: FeedbackIcon, path: "/feedback/record", perm: "feedback.record", section: "today", color: "#0097a7" },
-  { title: "My Feedback", icon: FeedbackIcon, path: "/feedback/me", perm: "feedback.respond", notPerm: "feedback.review", section: "mine", color: "#0097a7", routes: ["/feedback/me", "/feedback/t/:id"] },
+  // to them (mine). The reviewer's dashboard is an office tile (feedback.ticket.review = god).
+  { title: "Record Feedback", icon: FeedbackIcon, path: "/feedback/record", perm: "feedback.ticket.record", section: "today", color: "#0097a7" },
+  { title: "My Feedback", icon: FeedbackIcon, path: "/feedback/me", perm: "feedback.ticket.respond", notPerm: "feedback.ticket.review", section: "mine", color: "#0097a7", routes: ["/feedback/me", "/feedback/t/:id"] },
 
   // ── Programmes ─────────────────────────────────────────────────────────────────
   // Developmental programmes (Spoken English & Life Communication, later Scout, ...) collapse
@@ -175,8 +175,8 @@ export const MOBILE_FEATURES = [
   // leave options so staff can plan before applying (no notPerm so god sees it too).
   { title: "Leave Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.calendar.view", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/day"] },
   { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.attendance.view", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
-  // Feedback dashboard — reviewer oversight (feedback.review = god only for now); Manage band.
-  { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.review", section: "manage", color: "#0097a7", routes: ["/feedback", "/feedback/t/:id"] },
+  // Feedback dashboard — reviewer oversight (feedback.ticket.review = god only for now); Manage band.
+  { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.ticket.review", section: "manage", color: "#0097a7", routes: ["/feedback", "/feedback/t/:id"] },
   // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
   // notPerm hides it from an oversight user (god) who never applies for their own leave.
   { title: "Request", icon: LeaveIcon, path: "/leave/me", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me"] },

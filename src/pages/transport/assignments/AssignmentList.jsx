@@ -14,7 +14,7 @@ import { useCan } from '../../../permissions/can';
 
 export default function AssignmentList() {
   const can = useCan();
-  const canManage = can('transport.manage');
+  const canManage = can('transport.setup.manage');
   const { academicYearId } = useAcademicYear();
 
   const [assignments, setAssignments] = useState([]);

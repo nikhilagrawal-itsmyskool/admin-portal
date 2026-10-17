@@ -28,7 +28,7 @@ export default function FeedbackThread() {
   const { user } = useAuth();
   const can = useCan();
   const isMobile = useIsMobile();
-  const isReviewer = can('feedback.review');
+  const isReviewer = can('feedback.ticket.review');
   const api = isReviewer
     ? { get: feedbackService.getById, comment: feedbackService.comment, assign: feedbackService.assign, seen: feedbackService.seen, attachment: feedbackService.attachment }
     : { get: feedbackService.getMine, comment: feedbackService.commentMine, assign: feedbackService.assignMine, seen: feedbackService.seenMine, attachment: feedbackService.attachmentMine };

@@ -62,17 +62,17 @@ Names below are the live titles. `·` separates a hub's children.
   - Leave Approvals — `leave.application.approve` · Staff Attendance — `leave.attendance.view`
 - **Now**
   - Take Attendance `attendance.session.mark` · Bus Attendance `transport.attendance.mark`
-  - Post Homework `homework.day.post` · Send Message `communication.send` · Record Feedback `feedback.record` · My Activities `club.plan.conduct` (club conduct; admin club consoles are desktop-only)
+  - Post Homework `homework.day.post` · Send Message `communication.send` · Record Feedback `feedback.ticket.record` · My Activities `club.plan.conduct` (club conduct; admin club consoles are desktop-only)
   - Assembly `[hub]` · Today's assembly `assembly.view` · My Roster / My Checklist `+derived houseMember` · Grade Assembly `+derived evaluator` · Leaderboard `assembly.view`
 - **Mine**
   - My Timetable `timetable.view` · My Syllabus `syllabus.view` · Academic Calendar `academic-calendar.view`
   - Exam Schedule *(all staff)* · My Exam Duties *(all staff)* · Enter Marks *(all staff)* · Co-Scholastic *(all staff)*
-  - My Feedback `feedback.respond` / not `feedback.review` · My Documents `documents.sign` / not `documents.manage`
+  - My Feedback `feedback.ticket.respond` / not `feedback.ticket.review` · My Documents `documents.sign` / not `documents.manage`
   - Leave `[hub]` · My Leave `leave.application.apply` / not `leave.application.approve` · Leave Calendar `leave.calendar.view` · My Attendance · My Penalty
 - **Programmes** `[hub: programmes]`
   - Spoken English `programme.view` — Class → Month → Theme reader (links straight through while it's the only programme; becomes a hub when Scout etc. are added)
 - **Manage**
-  - Examinations `exam.view` · Subject Mapping `exam.manage` · Marks Progress `exam.manage` · Branding `exam.manage` · Feedback `feedback.review` · Staff Documents `documents.manage`
+  - Examinations `exam.view` · Subject Mapping `exam.manage` · Marks Progress `exam.manage` · Branding `exam.manage` · Feedback `feedback.ticket.review` · Staff Documents `documents.manage`
 - **People & Staff** `[hub: people]`
   - Students `student.view` · Employees `employee.view` · Hiring `hiring.candidate.view` · Transfer Certificate `transfer.view`
 - **Stores & Inventory** *(per-module `[hub]`)*

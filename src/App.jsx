@@ -152,6 +152,7 @@ import ComposeMessage from './pages/communication/messages/ComposeMessage';
 import MessageJobList from './pages/communication/messages/MessageJobList';
 import MessageJobDetail from './pages/communication/messages/MessageJobDetail';
 import TransportDashboard from './pages/transport/TransportDashboard';
+import TransportPermissions from './pages/transport/Permissions';
 import StopList from './pages/transport/stops/StopList';
 import VehicleList from './pages/transport/vehicles/VehicleList';
 import VehicleForm from './pages/transport/vehicles/VehicleForm';
@@ -232,6 +233,7 @@ import RecordFeedback from './pages/feedback/RecordFeedback';
 import MyFeedback from './pages/feedback/MyFeedback';
 import FeedbackDashboard from './pages/feedback/FeedbackDashboard';
 import FeedbackThread from './pages/feedback/FeedbackThread';
+import FeedbackPermissions from './pages/feedback/Permissions';
 import StaffDocuments from './pages/documents/StaffDocuments';
 import DocumentDetail from './pages/documents/DocumentDetail';
 import MyDocuments from './pages/documents/MyDocuments';
@@ -463,6 +465,7 @@ export default function App() {
         <Route path="communication/compose" element={<ComposeMessage />} />
         <Route path="communication/messages" element={<MessageJobList />} />
         <Route path="communication/messages/:id" element={<MessageJobDetail />} />
+        <Route path="transport/permissions" element={<TransportPermissions />} />
         <Route path="transport" element={<TransportDashboard />} />
         <Route path="transport/stops" element={<StopList />} />
         <Route path="transport/vehicles" element={<VehicleList />} />
@@ -545,6 +548,7 @@ export default function App() {
         <Route path="leave/types" element={<LeaveTypes />} />
         <Route path="leave/import" element={<BiometricImport />} />
         <Route path="leave/deductions" element={<DeductionReport />} />
+        <Route path="feedback/permissions" element={<FeedbackPermissions />} />
         <Route path="feedback" element={<FeedbackDashboard />} />
         <Route path="feedback/record" element={<RecordFeedback />} />
         <Route path="feedback/me" element={<MyFeedback />} />

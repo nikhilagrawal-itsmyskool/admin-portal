@@ -17,7 +17,7 @@ export default function RouteForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const can = useCan();
-  const canManage = can('transport.manage');
+  const canManage = can('transport.setup.manage');
 
   const [form, setForm] = useState({
     name: '', direction: 'morning', vehicleId: '',

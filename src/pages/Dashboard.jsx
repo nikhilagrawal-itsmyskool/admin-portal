@@ -168,7 +168,7 @@ const modules = [
     icon: TransportIcon,
     path: "/transport",
     color: "#ff6f00",
-    perm: "transport.view",
+    perm: "transport.setup.view",
   },
   {
     title: "Assistant",
@@ -240,7 +240,7 @@ const modules = [
     icon: FeedbackIcon,
     path: "/feedback",
     color: "#0097a7",
-    perm: "feedback.review",
+    perm: "feedback.ticket.review",
   },
   {
     title: "Leave",

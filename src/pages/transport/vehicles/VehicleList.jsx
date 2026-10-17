@@ -17,7 +17,7 @@ const OWNERSHIP_LABELS = { owned: 'School Owned', contract: 'On Contract' };
 export default function VehicleList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can('transport.manage');
+  const canManage = can('transport.setup.manage');
 
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);

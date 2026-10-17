@@ -30,7 +30,7 @@ export default function TransportSessionList() {
     }
   };
 
-  const canViewAll = can('transport.view');
+  const canViewAll = can('transport.setup.view');
 
   useEffect(() => {
     (async () => {

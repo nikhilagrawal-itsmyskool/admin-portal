@@ -17,7 +17,7 @@ const emptyRow = () => ({ name: '', km: '', landmark: '' });
 
 export default function StopList() {
   const can = useCan();
-  const canManage = can('transport.manage');
+  const canManage = can('transport.setup.manage');
 
   const [stops, setStops] = useState([]);
   const [loading, setLoading] = useState(true);
