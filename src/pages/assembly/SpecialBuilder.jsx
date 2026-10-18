@@ -28,7 +28,7 @@ export default function SpecialBuilder() {
   const { id } = useParams();
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can('assembly.manage');
+  const canManage = can('assembly.plan.manage');
 
   const [special, setSpecial] = useState(null);
   const [tree, setTree] = useState([]);

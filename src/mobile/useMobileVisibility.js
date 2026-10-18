@@ -11,7 +11,7 @@ import { MOBILE_FEATURES } from "./mobileFeatures";
 // isEvaluator), fetched once here. Plain teachers resolve to both-false cheaply.
 export function useMobileVisibility(enabled = true) {
   const can = useCan();
-  const isAdmin = can("assembly.manage");
+  const isAdmin = can("assembly.week.manage");
   // Assembly duty tiles (houseMember / evaluator): assembly.manage admins bypass the gate.
   const needsRoles =
     enabled && !isAdmin && MOBILE_FEATURES.some((f) => f.derived === "houseMember" || f.derived === "evaluator");

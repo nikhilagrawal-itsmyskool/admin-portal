@@ -54,7 +54,7 @@ function EmployeePicker({ label, value, onChange }) {
 
 export default function HousesRotation() {
   const can = useCan();
-  const canManage = can('assembly.manage');
+  const canManage = can('assembly.house.manage');
   const { academicYearId } = useAcademicYear();
 
   const [houses, setHouses] = useState([]);

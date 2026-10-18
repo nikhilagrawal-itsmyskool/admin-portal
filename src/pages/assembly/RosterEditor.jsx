@@ -23,7 +23,7 @@ const STATUS_COLOR = { draft: 'default', submitted: 'warning', approved: 'succes
 
 export default function RosterEditor() {
   const can = useCan();
-  const canManage = can('assembly.manage'); // approve/unlock (god/assembly-incharge)
+  const canManage = can('assembly.week.manage'); // approve/unlock (god/assembly-incharge)
   const { academicYearId } = useAcademicYear();
 
   const [plans, setPlans] = useState([]);

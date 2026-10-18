@@ -139,8 +139,17 @@ export const ACTIONS = {
   SYLLABUS_VIEW: "syllabus.view",
   SYLLABUS_MANAGE: "syllabus.manage",
   SYLLABUS_PROGRESS_MARK: "syllabus.progress.mark",
-  ASSEMBLY_VIEW: "assembly.view",
-  ASSEMBLY_MANAGE: "assembly.manage",
+  // Morning-assembly planning — strict module.resource.action. Mirror of backend authz-policy.ts.
+  ASSEMBLY_PLAN_VIEW: "assembly.plan.view",
+  ASSEMBLY_PLAN_MANAGE: "assembly.plan.manage",
+  ASSEMBLY_WEEK_VIEW: "assembly.week.view",
+  ASSEMBLY_WEEK_MANAGE: "assembly.week.manage",
+  ASSEMBLY_WEEK_CONDUCT: "assembly.week.conduct",
+  ASSEMBLY_GRADING_VIEW: "assembly.grading.view",
+  ASSEMBLY_GRADING_MANAGE: "assembly.grading.manage",
+  ASSEMBLY_HOUSE_VIEW: "assembly.house.view",
+  ASSEMBLY_HOUSE_MANAGE: "assembly.house.manage",
+  ASSEMBLY_CONFIG_MANAGE: "assembly.config.manage",
   // Daily homework (strict module.resource.action). Mirror of backend authz-policy.ts.
   HOMEWORK_DAY_VIEW: "homework.day.view",
   HOMEWORK_DAY_POST: "homework.day.post",
@@ -621,12 +630,44 @@ export const ACTION_CATALOG = [
     description: "Mark syllabus topics covered/pending for a class section",
   },
   {
-    action: ACTIONS.ASSEMBLY_VIEW,
-    description: "See the Assembly menu and read plans, special assemblies and themes",
+    action: ACTIONS.ASSEMBLY_PLAN_VIEW,
+    description: "Read plans, nodes, special assemblies, themes, live view & pulse",
   },
   {
-    action: ACTIONS.ASSEMBLY_MANAGE,
-    description: "Add/edit/delete/publish assembly plans, nodes, special assemblies & themes",
+    action: ACTIONS.ASSEMBLY_PLAN_MANAGE,
+    description: "Author plans, nodes, special assemblies, themes, references & documents",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_WEEK_VIEW,
+    description: "Read the weekly roster",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_WEEK_MANAGE,
+    description: "Manage the weekly roster: ensure, save, submit, approve, lock/unlock",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_WEEK_CONDUCT,
+    description: "Run my assigned assembly week (/me duties; scoped to my house/evaluator)",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_GRADING_VIEW,
+    description: "Read the rubric, evaluators, grades & leaderboard",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_GRADING_MANAGE,
+    description: "Manage rubric/metrics/penalties/evaluators, grades & conduct checklist",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_HOUSE_VIEW,
+    description: "Read house mode + rotation",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_HOUSE_MANAGE,
+    description: "Manage house rotation & week-house assignment",
+  },
+  {
+    action: ACTIONS.ASSEMBLY_CONFIG_MANAGE,
+    description: "Edit assembly config (house/grading setup) — god-first",
   },
   {
     action: ACTIONS.HOMEWORK_DAY_VIEW,

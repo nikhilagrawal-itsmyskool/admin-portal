@@ -15,7 +15,7 @@ const todayIso = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().sl
 // Admin/god → the full checklist page (config + any week, incl. reopen); teacher → this week.
 export default function MyChecklist() {
   const can = useCan();
-  return can('assembly.manage') ? <ChecklistPage /> : <TeacherChecklist />;
+  return can('assembly.grading.manage') ? <ChecklistPage /> : <TeacherChecklist />;
 }
 
 // Teacher (house rep on duty): submit the WEEKLY checks (once, before the week) and

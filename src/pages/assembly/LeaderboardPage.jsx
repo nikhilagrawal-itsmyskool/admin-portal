@@ -133,7 +133,7 @@ function RationaleDrawer({ house, onClose }) {
 export default function LeaderboardPage() {
   const isMobile = useIsMobile();
   const can = useCan();
-  const canDrill = can('assembly.manage') && !isMobile; // breakup: God/Admin, desktop only
+  const canDrill = can('assembly.grading.view') && !isMobile; // breakup: God/Admin, desktop only
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(lastOfMonth());
   const [board, setBoard] = useState(null);

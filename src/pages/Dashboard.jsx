@@ -216,7 +216,7 @@ const modules = [
     icon: AssemblyIcon,
     path: "/assembly/week",
     color: "#1e88e5",
-    perm: "assembly.view",
+    perm: "assembly.plan.view",
   },
   {
     title: "Homework",

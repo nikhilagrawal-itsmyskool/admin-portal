@@ -55,8 +55,16 @@ export const ROLE_PERMISSIONS = {
     "programme.source.view",
     // programme.unit.manage + programme.source.manage are god-only (authoring stays god-first);
     // god grants admin/incharge via the Permissions grid.
-    "assembly.view",
-    "assembly.manage",
+    "assembly.plan.view",
+    "assembly.plan.manage",
+    "assembly.week.view",
+    "assembly.week.manage",
+    "assembly.week.conduct",
+    "assembly.grading.view",
+    "assembly.grading.manage",
+    "assembly.house.view",
+    "assembly.house.manage",
+    // assembly.config.manage is god-only (house/grading setConfig).
     "homework.day.view",
     "homework.day.post",
     "homework.day.manage",
@@ -97,7 +105,8 @@ export const ROLE_PERMISSIONS = {
     "programme.unit.view", // Read the Spoken English & Life Communication monthly units
     "programme.unit.teach", // Mark a unit taught while conducting the programme
     "programme.source.view", // Download the class-module reference docs
-    "assembly.view", // Read the assembly plan for their wing
+    "assembly.plan.view", // Read the assembly plan for their wing
+    "assembly.week.conduct", // Run their assigned assembly week (/me; scoped in-handler by house/evaluator)
     "academic-calendar.view", // Read the school's academic calendar
     "leave.calendar.view", // See the shared who's-on-leave calendar
     "leave.application.apply", // Apply for own leave; see own attendance & penalty
@@ -130,7 +139,8 @@ export const ROLE_PERMISSIONS = {
   "syllabus-incharge": ["syllabus.*"],
   // Explicit (not programme.*) so authoring (unit.manage/source.manage) + config.manage stay god-first.
   "programme-incharge": ["programme.unit.view", "programme.unit.teach", "programme.source.view"],
-  "assembly-incharge": ["assembly.*"],
+  // Explicit (not assembly.*) so assembly.config.manage stays god-first.
+  "assembly-incharge": ["assembly.plan.view", "assembly.plan.manage", "assembly.week.view", "assembly.week.manage", "assembly.week.conduct", "assembly.grading.view", "assembly.grading.manage", "assembly.house.view", "assembly.house.manage"],
   // Exam incharge === admin, but scoped to the examination module.
   // Exam office: run exams + view progress, but NOT report cards, config, mapping, or god-only overrides.
   "exam-incharge": ["exam.schedule.view", "exam.schedule.manage", "exam.progress.view"],
@@ -149,8 +159,14 @@ export const ROLE_PERMISSIONS = {
     "cockpit.view",
     "feedback.ticket.view",
     "feedback.ticket.review",
-    "assembly.view",
-    "assembly.manage",
+    "assembly.plan.view",
+    "assembly.plan.manage",
+    "assembly.week.view",
+    "assembly.week.manage",
+    "assembly.grading.view",
+    "assembly.grading.manage",
+    "assembly.house.view",
+    "assembly.house.manage",
     "syllabus.view",
     "student.view",
     "student.contacts.view",

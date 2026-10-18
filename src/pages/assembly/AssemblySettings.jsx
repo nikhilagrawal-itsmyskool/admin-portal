@@ -11,7 +11,7 @@ import { useCan } from '../../permissions/can';
 // grading (their menu items appear only when mode === 'house').
 export default function AssemblySettings() {
   const can = useCan();
-  const canManage = can('assembly.manage');
+  const canManage = can('assembly.config.manage');
 
   const [form, setForm] = useState({ mode: 'template', title: '', subtitle: '', checklistDueTime: '' });
   const [loading, setLoading] = useState(true);

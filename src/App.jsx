@@ -204,6 +204,7 @@ import RoomInvigilatorsMobile from './pages/examination/mobile/RoomInvigilatorsM
 import SeatingMobile from './pages/examination/mobile/SeatingMobile';
 import AdmitCardsMobile from './pages/examination/mobile/AdmitCardsMobile';
 import AssemblyList from './pages/assembly/AssemblyList';
+import AssemblyPermissions from './pages/assembly/Permissions';
 import PlanBuilder from './pages/assembly/PlanBuilder';
 import SpecialBuilder from './pages/assembly/SpecialBuilder';
 import ThemesPage from './pages/assembly/ThemesPage';
@@ -523,6 +524,7 @@ export default function App() {
         <Route path="exam/report-cards" element={<ReportCards />} />
         <Route path="exam/report-format" element={<ReportFormat />} />
         <Route path="branding" element={<BrandingPage />} />
+        <Route path="assembly/permissions" element={<AssemblyPermissions />} />
         <Route path="assembly" element={<AssemblyList />} />
         <Route path="assembly/day" element={<ScheduleDay />} />
         <Route path="assembly/week" element={<ScheduleWeek />} />

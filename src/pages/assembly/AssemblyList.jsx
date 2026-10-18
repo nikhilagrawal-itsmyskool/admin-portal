@@ -19,7 +19,7 @@ const emptyForm = { name: '', scopeLabel: '', days: [] };
 export default function AssemblyList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can('assembly.manage');
+  const canManage = can('assembly.plan.manage');
 
   const { academicYearId } = useAcademicYear();
   const [weekdays, setWeekdays] = useState([]);

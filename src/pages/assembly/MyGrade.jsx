@@ -26,7 +26,7 @@ const formFromGrade = (g) => ({
 // any wing/week/date); evaluator → today's self-grade (no dropdown, no future).
 export default function MyGrade() {
   const can = useCan();
-  return can('assembly.manage') ? <GradingPage /> : <EvaluatorGrade />;
+  return can('assembly.grading.manage') ? <GradingPage /> : <EvaluatorGrade />;
 }
 
 // Neutral evaluator: tap "Grade" → straight into TODAY's grade entry. Evaluator =

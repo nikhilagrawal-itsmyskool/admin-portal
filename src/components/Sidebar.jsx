@@ -489,26 +489,27 @@ const menuItems = [
     title: 'Assembly',
     icon: AssemblyIcon,
     children: [
+      { title: 'Permissions', icon: PermissionsIcon, path: '/assembly/permissions', perm: 'authz.manage', admin: true },
       // 'Day' is a mobile-only view (wired via MOBILE_FEATURES → /assembly/day);
       // on desktop 'This Week' already covers it, so it's intentionally omitted here.
-      { title: 'This Week', icon: WeekIcon, path: '/assembly/week', perm: 'assembly.view' },
-      { title: 'Calendar', icon: CalendarIcon, path: '/assembly/calendar', perm: 'assembly.view' },
-      // House-duty screens for teachers — shown only to the relevant house member /
-      // evaluator (derived via /me/assembly/duties), hidden from admins who use the
+      { title: 'This Week', icon: WeekIcon, path: '/assembly/week', perm: 'assembly.plan.view' },
+      { title: 'Calendar', icon: CalendarIcon, path: '/assembly/calendar', perm: 'assembly.plan.view' },
+      // House-duty screens for teachers — the conduct surface, shown only to the relevant house
+      // member / evaluator (derived via /me/assembly/duties), hidden from admins who use the
       // authoring entries below. Mirrors the mobile "my" tiles onto desktop.
-      { title: 'My Roster', icon: RosterIcon, path: '/assembly/my-roster', perm: 'assembly.view', derived: 'houseMember' },
-      { title: 'My Checklist', icon: ChecklistIcon, path: '/assembly/my-checklist', perm: 'assembly.view', derived: 'houseMember' },
-      { title: 'My Grading', icon: GradingIcon, path: '/assembly/my-grade', perm: 'assembly.view', derived: 'evaluator' },
-      // Authoring — admin/god only (assembly.manage) and desktop-only (absent from MOBILE_FEATURES).
-      { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.manage' },
-      { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.manage' },
-      // House mode — authoring (admin/god only). Harmless in template mode.
-      { title: 'Houses & Rotation', icon: HouseRotationIcon, path: '/assembly/houses', perm: 'assembly.manage' },
-      { title: 'Roster', icon: RosterIcon, path: '/assembly/roster', perm: 'assembly.manage' },
-      { title: 'Checklist', icon: ChecklistIcon, path: '/assembly/checklist', perm: 'assembly.manage' },
-      { title: 'Grading', icon: GradingIcon, path: '/assembly/grading', perm: 'assembly.manage' },
-      { title: 'Leaderboard', icon: LeaderboardIcon, path: '/assembly/leaderboard', perm: 'assembly.view' },
-      { title: 'Settings', icon: AsmSettingsIcon, path: '/assembly/settings', perm: 'assembly.manage' },
+      { title: 'My Roster', icon: RosterIcon, path: '/assembly/my-roster', perm: 'assembly.week.conduct', derived: 'houseMember' },
+      { title: 'My Checklist', icon: ChecklistIcon, path: '/assembly/my-checklist', perm: 'assembly.week.conduct', derived: 'houseMember' },
+      { title: 'My Grading', icon: GradingIcon, path: '/assembly/my-grade', perm: 'assembly.week.conduct', derived: 'evaluator' },
+      // Authoring — desktop-only (absent from MOBILE_FEATURES).
+      { title: 'Plans', icon: PlanIcon, path: '/assembly', perm: 'assembly.plan.manage' },
+      { title: 'Themes', icon: ThemeIcon, path: '/assembly/themes', perm: 'assembly.plan.manage' },
+      // House mode — authoring. Harmless in template mode.
+      { title: 'Houses & Rotation', icon: HouseRotationIcon, path: '/assembly/houses', perm: 'assembly.house.manage' },
+      { title: 'Roster', icon: RosterIcon, path: '/assembly/roster', perm: 'assembly.week.manage' },
+      { title: 'Checklist', icon: ChecklistIcon, path: '/assembly/checklist', perm: 'assembly.grading.manage' },
+      { title: 'Grading', icon: GradingIcon, path: '/assembly/grading', perm: 'assembly.grading.manage' },
+      { title: 'Leaderboard', icon: LeaderboardIcon, path: '/assembly/leaderboard', perm: 'assembly.plan.view' },
+      { title: 'Settings', icon: AsmSettingsIcon, path: '/assembly/settings', perm: 'assembly.config.manage', admin: true },
     ],
   },
   {
@@ -566,7 +567,7 @@ export default function Sidebar({ open, onClose, isDesktop, collapsed = false, o
   const isMobile = useIsMobile();
   // Enabled on mobile (home tiles) and, on desktop, for anyone with assembly.view so
   // the derived "My Roster/Checklist/Grading" sidebar entries can resolve house roles.
-  const { visible: mobileVisible } = useMobileVisibility(isMobile || can('assembly.view'));
+  const { visible: mobileVisible } = useMobileVisibility(isMobile || can('assembly.plan.view'));
   const [openMenus, setOpenMenus] = useState({ Medical: true, Laboratory: false, Fines: false, Uniform: false, Shop: false, Sports: false, Assets: false, Library: false, Supplies: false, Timetable: false, Attendance: false, Communication: false });
 
   // Filter the static menu by the user's permissions: a parent with its own `perm`
@@ -589,7 +590,7 @@ export default function Sidebar({ open, onClose, isDesktop, collapsed = false, o
         if (c.notPerm && can(c.notPerm)) return false;
         // Derived "my" entries (house member / evaluator): shown to the matching
         // teacher only; admins use the authoring entries instead.
-        if (c.derived) return !can('assembly.manage') && mobileVisible(c);
+        if (c.derived) return !can('assembly.week.manage') && mobileVisible(c);
         return true;
       });
       return children.length ? { ...item, children } : null;

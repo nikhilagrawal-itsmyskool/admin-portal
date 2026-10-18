@@ -38,7 +38,7 @@ function EmployeePicker({ label, value, onChange }) {
 
 export default function GradingPage() {
   const can = useCan();
-  const canManage = can('assembly.manage');
+  const canManage = can('assembly.grading.manage');
   const isMobile = useIsMobile(); // PWA hides the rubric reference (metrics/penalties/doc), keeps grade entry
   const { academicYearId } = useAcademicYear();
 

@@ -14,7 +14,7 @@ const blank = { title: '', description: '', planId: '', startDate: '', endDate: 
 
 export default function ThemesPage() {
   const can = useCan();
-  const canManage = can('assembly.manage');
+  const canManage = can('assembly.plan.manage');
 
   const { academicYearId } = useAcademicYear();
   const [plans, setPlans] = useState([]);

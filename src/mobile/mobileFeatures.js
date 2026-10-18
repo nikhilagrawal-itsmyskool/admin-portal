@@ -85,11 +85,11 @@ export const MOBILE_FEATURES = [
   // Assembly: "Today's assembly" + Leaderboard are the shared views (loose in Now). The house
   // member's Roster/Checklist and the evaluator's Grading are personal duty → Mine, grouped
   // under an "Assembly" subheading, still gated by the runtime `derived` house/evaluator role.
-  { title: "Today's assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.view", section: "today", color: "#1e88e5" },
-  { title: "Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.view", derived: "houseMember", section: "mine", group: "Assembly", color: "#1e88e5" },
-  { title: "Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.view", derived: "houseMember", section: "mine", group: "Assembly", color: "#1e88e5" },
-  { title: "Grading", icon: AssemblyGradeIcon, path: "/assembly/my-grade", perm: "assembly.view", derived: "evaluator", section: "mine", group: "Assembly", color: "#1e88e5" },
-  { title: "Leaderboard", icon: AssemblyLeaderboardIcon, path: "/assembly/leaderboard", perm: "assembly.view", section: "today", color: "#1e88e5" },
+  { title: "Today's assembly", icon: AssemblyIcon, path: "/assembly/day", perm: "assembly.plan.view", section: "today", color: "#1e88e5" },
+  { title: "Roster", icon: AssemblyRosterIcon, path: "/assembly/my-roster", perm: "assembly.week.conduct", derived: "houseMember", section: "mine", group: "Assembly", color: "#1e88e5" },
+  { title: "Checklist", icon: AssemblyChecklistIcon, path: "/assembly/my-checklist", perm: "assembly.week.conduct", derived: "houseMember", section: "mine", group: "Assembly", color: "#1e88e5" },
+  { title: "Grading", icon: AssemblyGradeIcon, path: "/assembly/my-grade", perm: "assembly.week.conduct", derived: "evaluator", section: "mine", group: "Assembly", color: "#1e88e5" },
+  { title: "Leaderboard", icon: AssemblyLeaderboardIcon, path: "/assembly/leaderboard", perm: "assembly.plan.view", section: "today", color: "#1e88e5" },
   {
     title: "Bus Attendance",
     icon: TransportIcon,

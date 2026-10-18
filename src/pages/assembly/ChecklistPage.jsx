@@ -21,7 +21,7 @@ const key = (itemId, date) => `${itemId}|${date || ''}`;
 
 export default function ChecklistPage() {
   const can = useCan();
-  const canManage = can('assembly.manage');
+  const canManage = can('assembly.grading.manage');
   const isMobile = useIsMobile(); // PWA hides the item config + doc, keeps the tickable list
   const { academicYearId } = useAcademicYear();
 

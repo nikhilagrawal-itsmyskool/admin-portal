@@ -16,7 +16,7 @@ const STATUS_COLOR = { draft: 'default', submitted: 'warning', approved: 'succes
 // week + next 4), tap a week to open it.
 export default function MyRoster() {
   const can = useCan();
-  return can('assembly.manage') ? <RosterEditor /> : <TeacherRoster />;
+  return can('assembly.week.manage') ? <RosterEditor /> : <TeacherRoster />;
 }
 
 // Teacher: the roster for each week their house is on duty over the next 5 weeks.
