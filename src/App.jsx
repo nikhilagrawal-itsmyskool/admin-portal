@@ -136,6 +136,7 @@ import StudentForm from './pages/student/StudentForm';
 import StudentDetail from './pages/student/StudentDetail';
 import BulkEditClass from './pages/student/BulkEditClass';
 import StudentReports from './pages/student/StudentReports';
+import AppLogins from './pages/student/AppLogins';
 import ClassStrength from './pages/student/ClassStrength';
 import HouseList from './pages/student/houses/HouseList';
 import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
@@ -419,6 +420,7 @@ export default function App() {
         <Route path="students/houses" element={<HouseList />} />
         <Route path="students/bulk-edit" element={<BulkEditClass />} />
         <Route path="students/reports" element={<StudentReports />} />
+        <Route path="students/app-logins" element={<AppLogins />} />
         <Route path="students/:id" element={<StudentDetail />} />
         <Route path="students/:id/edit" element={<StudentForm />} />
         <Route path="transfer/permissions" element={<TransferPermissions />} />

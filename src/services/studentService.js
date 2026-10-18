@@ -37,6 +37,20 @@ export const studentService = {
     return response.data; // { academicYearId, classes: [...] }
   },
 
+  // ---- App Access (parent-app family logins) ----
+
+  // Every family app login + the children each covers. Optional search (mobile / student name).
+  getAppLogins: async (search) => {
+    const response = await api.get('/students/app-logins', { params: search ? { search } : {} });
+    return response.data; // { logins: [{ username, password, displayName, students:[{id,name,className}] }] }
+  },
+
+  // Reset a family login's password. mode: 'auto' (generate) | 'manual' (password). Returns { username, password }.
+  resetAppLogin: async ({ username, mode, password }) => {
+    const response = await api.post('/students/app-logins/reset', { username, mode, password });
+    return response.data;
+  },
+
   // ---- Student CRUD ----
   getStudentById: async (id) => {
     const response = await api.get(`/students/${id}`);

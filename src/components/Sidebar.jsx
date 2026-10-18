@@ -43,6 +43,7 @@ import {
   Inventory2 as AssetIcon,
   Tag as CountsIcon,
   People as PeopleIcon,
+  PhonelinkLock as AppAccessIcon,
   LocalLibrary as LibraryIcon,
   LibraryAdd as CatalogIcon,
   SwapHoriz as CirculationIcon,
@@ -355,6 +356,7 @@ const menuItems = [
       { title: 'Bulk Edit', icon: GridIcon, path: '/students/bulk-edit', perm: 'student.record.manage' },
       { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.record.manage' },
       { title: 'Reports', icon: ReportIcon, path: '/students/reports', perm: 'student.record.manage' },
+      { title: 'App Access', icon: AppAccessIcon, path: '/students/app-logins', perm: 'student.record.manage' },
     ],
   },
   {
