@@ -144,7 +144,7 @@ const modules = [
     icon: CommunicationIcon,
     path: "/communication",
     color: "#e91e63",
-    perm: "communication.send",
+    perm: "communication.message.send",
   },
   {
     title: "Employees",

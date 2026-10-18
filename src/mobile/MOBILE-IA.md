@@ -62,7 +62,7 @@ Names below are the live titles. `·` separates a hub's children.
   - Leave Approvals — `leave.application.approve` · Staff Attendance — `leave.attendance.view`
 - **Now**
   - Take Attendance `attendance.session.mark` · Bus Attendance `transport.attendance.mark`
-  - Post Homework `homework.day.post` · Send Message `communication.send` · Record Feedback `feedback.ticket.record` · My Activities `club.plan.conduct` (club conduct; admin club consoles are desktop-only)
+  - Post Homework `homework.day.post` · Send Message `communication.message.send` · Record Feedback `feedback.ticket.record` · My Activities `club.plan.conduct` (club conduct; admin club consoles are desktop-only)
   - Assembly `[hub]` · Today's assembly `assembly.view` · My Roster / My Checklist `+derived houseMember` · Grade Assembly `+derived evaluator` · Leaderboard `assembly.view`
 - **Mine**
   - My Timetable `timetable.view` · My Syllabus `syllabus.view` · Academic Calendar `academic-calendar.view`

@@ -37,7 +37,7 @@ export const ROLE_PERMISSIONS = {
     "attendance.record.view",
     // attendance.config.manage is god-only by default (not here); god grants admin via the
     // Permissions grid if a school wants it. Mirrors the god-first convention.
-    "communication.send",
+    "communication.message.send",
     "communication.template.manage",
     "hiring.candidate.view",
     "hiring.candidate.manage",

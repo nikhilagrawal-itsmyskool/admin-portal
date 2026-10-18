@@ -54,7 +54,7 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `attendance.session.mark` | Take daily roll-call: open a session, load the roster, mark & save statuses (admin + class teachers) | ✓ | ✓ | — | ✓ | — | — | — | — | — | — | — | — | — |
 | `attendance.session.finalize` | Finalize a daily attendance session and edit records after finalize (marking & viewing are open to all staff) | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `attendance.config.manage` | Manage the per-school Attendance Config (how a half-day counts toward attendance %) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
-| `communication.send` | Compose, schedule, preview, send and cancel SMS/WhatsApp messages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
+| `communication.message.send` | Compose, schedule, preview, send and cancel SMS/WhatsApp messages | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.template.manage` | Create, edit and activate message templates | ✓ | ✓ | — | — | — | — | — | — | — | — | — | — | — |
 | `communication.template.delete` | Delete or restore a message template | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `hiring.view` | See the Hiring menu and read candidate records | ✓ | ✓ | — | — | — | — | — | — | — | — | ✓ | — | — |

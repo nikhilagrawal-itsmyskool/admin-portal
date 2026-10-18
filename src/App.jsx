@@ -146,6 +146,7 @@ import AttendanceSessionList from './pages/attendance/AttendanceSessionList';
 import AttendanceSessionDetail from './pages/attendance/AttendanceSessionDetail';
 import AttendanceRegister from './pages/attendance/AttendanceRegister';
 import CommunicationDashboard from './pages/communication/CommunicationDashboard';
+import CommunicationPermissions from './pages/communication/Permissions';
 import TemplateList from './pages/communication/templates/TemplateList';
 import TemplateForm from './pages/communication/templates/TemplateForm';
 import ComposeMessage from './pages/communication/messages/ComposeMessage';
@@ -460,6 +461,7 @@ export default function App() {
         <Route path="attendance/sessions" element={<AttendanceSessionList />} />
         <Route path="attendance/sessions/:id" element={<AttendanceSessionDetail />} />
         <Route path="attendance/register" element={<AttendanceRegister />} />
+        <Route path="communication/permissions" element={<CommunicationPermissions />} />
         <Route path="communication" element={<CommunicationDashboard />} />
         <Route path="communication/templates" element={<TemplateList />} />
         <Route path="communication/templates/add" element={<TemplateForm />} />

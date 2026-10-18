@@ -106,7 +106,7 @@ export const MOBILE_FEATURES = [
   // are deliberately NOT listed here.
   { title: "My Activities", icon: AssemblyIcon, path: "/club/me", perm: "club.plan.conduct", section: "today", color: "#7c3aed", routes: ["/club/me", "/club/me/a/:id", "/club/me/a/:id/close"] },
   // Send Message — a daily action, pulled up out of the old "Office" hub.
-  { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.send", section: "today", color: "#e91e63" },
+  { title: "Send Message", icon: CommunicationIcon, path: "/communication/compose", perm: "communication.message.send", section: "today", color: "#e91e63" },
   // Feedback — a teacher records a home-visit feedback (today) and acts on ones assigned
   // to them (mine). The reviewer's dashboard is an office tile (feedback.ticket.review = god).
   { title: "Record Feedback", icon: FeedbackIcon, path: "/feedback/record", perm: "feedback.ticket.record", section: "today", color: "#0097a7" },

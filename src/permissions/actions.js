@@ -123,7 +123,7 @@ export const ACTIONS = {
   ATTENDANCE_FINALIZE: "attendance.session.finalize",
   ATTENDANCE_RECORD_VIEW: "attendance.record.view",
   ATTENDANCE_CONFIG_MANAGE: "attendance.config.manage",
-  COMMUNICATION_SEND: "communication.send",
+  COMMUNICATION_SEND: "communication.message.send",
   COMMUNICATION_TEMPLATE_MANAGE: "communication.template.manage",
   COMMUNICATION_TEMPLATE_DELETE: "communication.template.delete",
   // Recruitment/hiring (strict module.resource.action). Mirror of backend authz-policy.ts.
