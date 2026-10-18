@@ -51,6 +51,13 @@ export const studentService = {
     return response.data;
   },
 
+  // Set a family login's DISABLED app features (the keys turned OFF). [] = everything on.
+  // Returns { username, disabledFeatures }.
+  setAppLoginFeatures: async ({ username, disabledFeatures }) => {
+    const response = await api.post('/students/app-logins/features', { username, disabledFeatures });
+    return response.data;
+  },
+
   // ---- Student CRUD ----
   getStudentById: async (id) => {
     const response = await api.get(`/students/${id}`);
