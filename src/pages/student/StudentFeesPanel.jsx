@@ -35,6 +35,7 @@ export default function StudentFeesPanel({ studentId, student }) {
   const [transport, setTransport] = useState(null); // lazy-loaded for the Transport view
   const [wd, setWd] = useState(null); // withdraw dialog: null | { date, reason, busy, done }
   const [waiveAll, setWaiveAll] = useState({ open: false, reason: '', confirm: '', busy: false, done: null }); // full write-off
+  const [wo, setWo] = useState(null); // bad-debt dialog: null | { action:'writeoff'|'restore', reason, confirm, busy, done }
   const [allYears, setAllYears] = useState(false); // receipts: show only the selected year (off) or every year (on)
   const [showCancelled, setShowCancelled] = useState(false); // cancelled receipts hidden by default
   const [cancelTarget, setCancelTarget] = useState(null); // receipt being cancelled
@@ -45,6 +46,7 @@ export default function StudentFeesPanel({ studentId, student }) {
   const can = useCan();
   const canWithdraw = can(ACTIONS.FEE_STUDENT_MANAGE);   // mark withdrawn / leaving date
   const canWaive = can(ACTIONS.FEE_WAIVER_MANAGE);        // "Waive all" write-off (god-only)
+  const canWriteOff = can(ACTIONS.FEE_WRITEOFF_MANAGE);   // bad-debt write-off / restore (god-only)
   const canAssignConc = can(ACTIONS.FEE_CONCESSION_ASSIGN); // mid-year concession change
   const canCancelReceipt = can(ACTIONS.FEE_COLLECT);      // cancel a receipt
   const [followup, setFollowup] = useState([]); // follow-up timeline entries
@@ -178,6 +180,18 @@ export default function StudentFeesPanel({ studentId, student }) {
     } catch (err) { setError(errMsg(err, 'Waive failed')); setWaiveAll((s) => ({ ...s, busy: false })); }
   };
 
+  // Bad-debt write-off / restore (god-only). Ledger untouched — just moves the student between
+  // "collectable" and "bad debt". Reversible. Reloads the summary (banner) on success.
+  const doWriteOff = async () => {
+    if (!wo) return;
+    setWo((s) => ({ ...s, busy: true }));
+    try {
+      const res = await feesService.writeOffStudent(effStudentId, { action: wo.action, reason: wo.reason?.trim() || undefined });
+      setWo((s) => ({ ...s, busy: false, done: res }));
+      setRefreshKey((k) => k + 1);
+    } catch (err) { setError(errMsg(err, 'Write-off failed')); setWo((s) => ({ ...s, busy: false })); }
+  };
+
   const doCancel = async () => {
     if (!cancelTarget) return;
     setCancelBusy(true);
@@ -307,8 +321,24 @@ export default function StudentFeesPanel({ studentId, student }) {
           {canWaive && isCurrent && !isMobile && tot.remaining > 0 && (
             <Button size="small" color="error" variant="outlined" onClick={() => setWaiveAll({ open: true, reason: '', confirm: '', busy: false, done: null })}>Waive all</Button>
           )}
+          {canWriteOff && !isMobile && !summary?.feeWriteOff && tot.remaining > 0 && (
+            <Button size="small" color="inherit" variant="outlined" onClick={() => setWo({ action: 'writeoff', reason: '', confirm: '', busy: false, done: null })}>Write off</Button>
+          )}
         </Box>
       </CardContent>
+
+      {summary?.feeWriteOff && (
+        <Box sx={{ px: 2, pb: 1 }}>
+          <Alert severity="warning" variant="outlined" icon={false}
+            action={canWriteOff ? <Button size="small" color="inherit" onClick={() => setWo({ action: 'restore', reason: '', confirm: '', busy: false, done: null })}>Restore to active dues</Button> : null}
+            sx={{ py: 0.5, alignItems: 'center' }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 700 }}>⚑ BAD DEBT — written off{summary.writeOffInfo?.amount ? ` · ${inr(summary.writeOffInfo.amount)}` : ''}</Typography>
+            <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted }}>
+              {summary.writeOffInfo?.at ? fmtDate(summary.writeOffInfo.at) : ''}{summary.writeOffInfo?.reason ? ` · ${summary.writeOffInfo.reason}` : ''} · dues kept on record, excluded from collectable
+            </Typography>
+          </Alert>
+        </Box>
+      )}
 
       {!isCurrent && (
         <Box sx={{ px: 2, pb: 1 }}>
@@ -574,6 +604,44 @@ export default function StudentFeesPanel({ studentId, student }) {
             : <>
                 <Button onClick={() => setWaiveAll({ open: false, reason: '', confirm: '', busy: false, done: null })} disabled={waiveAll.busy}>Cancel</Button>
                 <Button color="error" variant="contained" onClick={doWaiveAll} disabled={waiveAll.busy || !waiveAll.reason.trim() || waiveAll.confirm.trim().toLowerCase() !== 'confirm'}>{waiveAll.busy ? 'Waiving…' : 'Waive all'}</Button>
+              </>}
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!wo} onClose={() => !wo?.busy && setWo(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{wo?.action === 'restore' ? 'Restore to active dues' : 'Write off (bad debt)'} — {student?.name || 'student'}</DialogTitle>
+        <DialogContent>
+          {wo?.done ? (
+            <Alert severity="success" sx={{ mt: 1 }}>
+              {wo.done.writtenOff
+                ? <>Written off as bad debt{wo.done.amount ? <> (<b>{inr(wo.done.amount)}</b>)</> : null}. The dues stay on the ledger but are now out of the collectable total.</>
+                : <>Restored to active dues. The full outstanding is collectable again.</>}
+            </Alert>
+          ) : wo?.action === 'restore' ? (
+            <>
+              <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
+                Brings this student&apos;s dues back into the <b>collectable</b> total. The ledger was never changed, so the full outstanding returns exactly as before.
+              </Typography>
+              <TextField fullWidth size="small" label="Reason (optional)" value={wo?.reason || ''} onChange={(e) => setWo((s) => ({ ...s, reason: e.target.value }))} multiline minRows={2} />
+            </>
+          ) : (
+            <>
+              <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
+                Marks this student&apos;s outstanding as <b>bad debt</b> — it leaves the collectable dues number and moves to the Bad-debt list. <b>The ledger is not touched</b>: the debt stays fully on record, this is reversible, and it is recoverable if the student returns. Use this for a left defaulter with no hope of recovery — not for a fee waiver.
+              </Typography>
+              <TextField autoFocus fullWidth size="small" label="Reason (required)" value={wo?.reason || ''} onChange={(e) => setWo((s) => ({ ...s, reason: e.target.value }))} placeholder="e.g. left in 2022, untraceable, no recovery expected" multiline minRows={2} sx={{ mb: 1.5 }} />
+              <TextField fullWidth size="small" label={'Type "confirm" to write off'} value={wo?.confirm || ''} onChange={(e) => setWo((s) => ({ ...s, confirm: e.target.value }))} />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {wo?.done
+            ? <Button variant="contained" onClick={() => setWo(null)}>Done</Button>
+            : <>
+                <Button onClick={() => setWo(null)} disabled={wo?.busy}>Cancel</Button>
+                {wo?.action === 'restore'
+                  ? <Button color="primary" variant="contained" onClick={doWriteOff} disabled={wo?.busy}>{wo?.busy ? 'Working…' : 'Restore'}</Button>
+                  : <Button color="error" variant="contained" onClick={doWriteOff} disabled={wo?.busy || !wo?.reason?.trim() || wo?.confirm?.trim().toLowerCase() !== 'confirm'}>{wo?.busy ? 'Working…' : 'Write off'}</Button>}
               </>}
         </DialogActions>
       </Dialog>

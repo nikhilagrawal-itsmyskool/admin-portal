@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Alert, CircularProgress, Chip, Link,
   Table, TableHead, TableBody, TableRow, TableCell, TextField, InputAdornment,
-  FormControlLabel, Switch, Button,
+  FormControlLabel, Switch, Button, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import { Search as SearchIcon, Print as PrintIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
@@ -25,14 +25,19 @@ export default function AccumulatedDues() {
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [hideLeft, setHideLeft] = useState(false);
+  // collectable | writeoff | all — may be deep-linked from the Overview "Written off" tile (?scope=writeoff)
+  const [scope, setScope] = useState(() => {
+    const s = new URLSearchParams(window.location.search).get('scope');
+    return s === 'writeoff' || s === 'all' ? s : 'collectable';
+  });
 
   const load = async () => {
     setLoading(true); setError('');
-    try { setData(await feesService.getTopDues(academicYearId)); }
+    try { setData(await feesService.getTopDues(academicYearId, undefined, scope)); }
     catch (err) { setError(errMsg(err, 'Failed to load report')); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [academicYearId, scope]);
 
   const columns = data?.columns || [];
   const ayName = useMemo(() => (years || []).find((y) => y.uuid === academicYearId)?.name || '', [years, academicYearId]);
@@ -55,7 +60,7 @@ export default function AccumulatedDues() {
     const lines = [head.map(esc).join(',')];
     rows.forEach((r, i) => {
       const contacts = (r.contacts || []).map(contactLine).join(' | ');
-      const cells = [i + 1, r.name, r.admissionNumber || '', r.className || '', r.hasLeft ? 'Left' : 'On roll', contacts,
+      const cells = [i + 1, r.name, r.admissionNumber || '', r.className || '', r.writtenOff ? 'Bad debt' : r.hasLeft ? 'Left' : 'On roll', contacts,
         ...columns.map((c) => Math.round(Number(r.byYear?.[c.academicYearId] || 0)) || ''), Math.round(r.total)];
       lines.push(cells.map(esc).join(','));
     });
@@ -71,7 +76,7 @@ export default function AccumulatedDues() {
     const body = rows.map((r, i) => {
       const contacts = (r.contacts || []).map((c) => `<div>${relLabel(c.relation)}: ${c.name || '—'}${c.mobile ? ` · ${c.mobile}` : ''}</div>`).join('');
       const yr = columns.map((c) => `<td class="num">${r.byYear?.[c.academicYearId] ? inr(r.byYear[c.academicYearId]) : '—'}</td>`).join('');
-      return `<tr><td>${i + 1}</td><td><b>${r.name}</b>${r.hasLeft ? ' <span class="left">(left)</span>' : ''}${r.admissionNumber ? `<div class="sub">${r.admissionNumber}</div>` : ''}</td><td>${r.className || '—'}</td><td class="contacts">${contacts || '—'}</td>${yr}<td class="num total">${inr(r.total)}</td></tr>`;
+      return `<tr><td>${i + 1}</td><td><b>${r.name}</b>${r.writtenOff ? ' <span class="left">(bad debt)</span>' : r.hasLeft ? ' <span class="left">(left)</span>' : ''}${r.admissionNumber ? `<div class="sub">${r.admissionNumber}</div>` : ''}</td><td>${r.className || '—'}</td><td class="contacts">${contacts || '—'}</td>${yr}<td class="num total">${inr(r.total)}</td></tr>`;
     }).join('');
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Accumulated Dues</title>
       <style>
@@ -117,6 +122,11 @@ export default function AccumulatedDues() {
 
       <Card sx={{ mb: 2 }}>
         <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', py: 1.5 }}>
+          <ToggleButtonGroup size="small" exclusive value={scope} onChange={(_, v) => v && setScope(v)}>
+            <ToggleButton value="collectable" sx={{ textTransform: 'none' }}>Collectable</ToggleButton>
+            <ToggleButton value="writeoff" sx={{ textTransform: 'none' }}>Bad debt</ToggleButton>
+            <ToggleButton value="all" sx={{ textTransform: 'none' }}>All</ToggleButton>
+          </ToggleButtonGroup>
           <TextField size="small" placeholder="Filter by name, class, admission or phone…" value={q} onChange={(e) => setQ(e.target.value)}
             sx={{ minWidth: 280, flex: 1 }} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
           <FormControlLabel control={<Switch size="small" checked={hideLeft} onChange={(e) => setHideLeft(e.target.checked)} />} label={<span style={{ fontSize: 13 }}>Hide left students</span>} />
@@ -153,6 +163,7 @@ export default function AccumulatedDues() {
                     <TableCell>
                       <Link component="button" underline="hover" onClick={() => navigate(`/students/${r.studentId}`)} sx={{ textAlign: 'left', fontWeight: 600 }}>{r.name}</Link>
                       {r.hasLeft && <Chip size="small" label="left" color="warning" variant="outlined" sx={{ ml: 0.75, height: 18, fontSize: 10 }} />}
+                      {r.writtenOff && <Chip size="small" label="bad debt" color="error" sx={{ ml: 0.5, height: 18, fontSize: 10 }} />}
                       {r.admissionNumber && <Typography sx={{ fontSize: 11, color: FEE_COLORS.muted }}>{r.admissionNumber}</Typography>}
                     </TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{r.className || '—'}</TableCell>

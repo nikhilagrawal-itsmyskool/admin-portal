@@ -43,6 +43,7 @@ export const ACTIONS = {
   FEE_FINE_EXEMPT: "fee.fine.exempt",             // exempt a late fine (manager + god)
   FEE_RECEIPT_VERIFY: "fee.receipt.verify",       // Scan & Verify (admin + god)
   FEE_MIGRATION_IMPORT: "fee.migration.import",   // bulk import (god-only)
+  FEE_WRITEOFF_MANAGE: "fee.writeoff.manage",     // write off dues as bad debt & restore (god-only)
   // Uniform store (strict module.resource.action). Mirror of backend authz-policy.ts. admin wildcard; no teacher.
   UNIFORM_INVENTORY_VIEW: "uniform.inventory.view",
   UNIFORM_INVENTORY_MANAGE: "uniform.inventory.manage",
@@ -356,6 +357,10 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.FEE_RECEIPT_VERIFY,
     description: "Scan & Verify receipts (admin + god only)",
+  },
+  {
+    action: ACTIONS.FEE_WRITEOFF_MANAGE,
+    description: "Write off a student's dues as bad debt & restore (god-only)",
   },
   { action: ACTIONS.UNIFORM_INVENTORY_VIEW, description: "View uniform items & stock" },
   { action: ACTIONS.UNIFORM_INVENTORY_MANAGE, description: "Add / edit / delete uniform items & sizes" },

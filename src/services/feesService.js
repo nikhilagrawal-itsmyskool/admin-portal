@@ -118,12 +118,14 @@ export const feesService = {
     (await api.get('/fees/reports/ungenerated-students', { params: { academicYearId } })).data,
   getDues: async (params = {}) =>
     (await api.get('/fees/reports/dues', { params })).data,
-  getTopDues: async (academicYearId, studentId) =>
-    (await api.get('/fees/reports/top-dues', { params: { ...(academicYearId ? { academicYearId } : {}), ...(studentId ? { studentId } : {}) } })).data,
+  getTopDues: async (academicYearId, studentId, include) =>
+    (await api.get('/fees/reports/top-dues', { params: { ...(academicYearId ? { academicYearId } : {}), ...(studentId ? { studentId } : {}), ...(include ? { include } : {}) } })).data,
   setFollowup: async (data) => (await api.post('/fees/reports/followup', data)).data,
   getFollowup: async (params = {}) => (await api.get('/fees/reports/followup', { params })).data,
   getFamilyDues: async (studentId, params = {}) => (await api.get(`/fees/students/${studentId}/family-dues`, { params })).data,
   withdrawStudent: async (studentId, data) => (await api.post(`/fees/students/${studentId}/withdraw`, data)).data,
+  // Bad-debt write-off / restore (god-only). data: { action: 'writeoff' | 'restore', reason }
+  writeOffStudent: async (studentId, data) => (await api.post(`/fees/students/${studentId}/write-off`, data)).data,
   getDuesByYear: async (studentId) => (await api.get(`/fees/students/${studentId}/dues-by-year`)).data,
   getFineExemptions: async (params = {}) => (await api.get('/fees/reports/fine-exemptions', { params })).data,
   // Exam-only (studying elsewhere): list flagged students + their open demands; cancel their demands.

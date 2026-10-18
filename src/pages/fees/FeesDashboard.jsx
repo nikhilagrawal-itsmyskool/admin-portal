@@ -102,11 +102,12 @@ export default function FeesDashboard() {
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} md={2.4}><Kpi label="Collected today" value={collectedTodayStr} accent={FEE_COLORS.primary} /></Grid>
-        <Grid item xs={6} md={2.4}><Kpi label="This month" value={inrShort(overview?.collectedMonth)} accent={FEE_COLORS.success} /></Grid>
-        <Grid item xs={6} md={2.4}><Kpi label="Outstanding (due now)" value={inrShort(overview?.dueNow)} sub={overview ? `Full year ${inrShort(overview.outstanding)} · ${overview.duesStudents || 0} due` : '—'} subColor={FEE_COLORS.danger} accent={FEE_COLORS.danger} onClick={() => navigate('/fees/dues')} /></Grid>
-        <Grid item xs={6} md={2.4}><Kpi label="Advance held" value={inrShort(overview?.advance)} sub={overview ? `${overview.advanceStudents || 0} students` : '—'} accent={FEE_COLORS.warning} /></Grid>
-        <Grid item xs={6} md={2.4}><Kpi label="Concessions (yr)" value={inrShort(overview?.concessionYtd)} accent={FEE_COLORS.primaryLight} /></Grid>
+        <Grid item xs={6} md={2}><Kpi label="Collected today" value={collectedTodayStr} accent={FEE_COLORS.primary} /></Grid>
+        <Grid item xs={6} md={2}><Kpi label="This month" value={inrShort(overview?.collectedMonth)} accent={FEE_COLORS.success} /></Grid>
+        <Grid item xs={6} md={2}><Kpi label="Outstanding (collectable)" value={inrShort(overview?.dueNow)} sub={overview ? `Full year ${inrShort(overview.outstanding)} · ${overview.duesStudents || 0} due` : '—'} subColor={FEE_COLORS.danger} accent={FEE_COLORS.danger} onClick={() => navigate('/fees/dues')} /></Grid>
+        <Grid item xs={6} md={2}><Kpi label="Written off (bad debt)" value={inrShort(overview?.writtenOff)} sub={overview ? `${overview.writtenOffStudents || 0} students` : '—'} accent={FEE_COLORS.muted} onClick={() => navigate('/fees/accumulated-dues?scope=writeoff')} /></Grid>
+        <Grid item xs={6} md={2}><Kpi label="Advance held" value={inrShort(overview?.advance)} sub={overview ? `${overview.advanceStudents || 0} students` : '—'} accent={FEE_COLORS.warning} /></Grid>
+        <Grid item xs={6} md={2}><Kpi label="Concessions (yr)" value={inrShort(overview?.concessionYtd)} accent={FEE_COLORS.primaryLight} /></Grid>
       </Grid>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
