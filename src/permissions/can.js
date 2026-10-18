@@ -40,7 +40,7 @@ export function can(user, action) {
   return rs.some((r) => !hasOverride(r, action, "revoke") && baseGrants(r, action)); // default, unless revoked
 }
 
-// Hook form: const can = useCan(); ... {can('timetable.manage') && <Button/>}
+// Hook form: const can = useCan(); ... {can('timetable.grid.manage') && <Button/>}
 export function useCan() {
   const { user } = useAuth();
   return (action) => can(user, action);

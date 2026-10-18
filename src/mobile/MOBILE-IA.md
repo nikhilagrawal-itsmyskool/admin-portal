@@ -67,12 +67,12 @@ Names below are the live titles. `·` separates a hub's children.
 - **Mine**
   - My Timetable `timetable.view` · My Syllabus `syllabus.view` · Academic Calendar `academic-calendar.view`
   - Exam Schedule *(all staff)* · My Exam Duties *(all staff)* · Enter Marks *(all staff)* · Co-Scholastic *(all staff)*
-  - My Feedback `feedback.ticket.respond` / not `feedback.ticket.review` · My Documents `documents.sign` / not `documents.manage`
+  - My Feedback `feedback.ticket.respond` / not `feedback.ticket.review` · My Documents `documents.sign` / not `documents.handbook.manage`
   - Leave `[hub]` · My Leave `leave.application.apply` / not `leave.application.approve` · Leave Calendar `leave.calendar.view` · My Attendance · My Penalty
 - **Programmes** `[hub: programmes]`
   - Spoken English `programme.unit.view` — Class → Month → Theme reader (links straight through while it's the only programme; becomes a hub when Scout etc. are added)
 - **Manage**
-  - Examinations `exam.view` · Subject Mapping `exam.manage` · Marks Progress `exam.manage` · Branding `exam.manage` · Feedback `feedback.ticket.review` · Staff Documents `documents.manage`
+  - Examinations `exam.view` · Subject Mapping `exam.manage` · Marks Progress `exam.manage` · Branding `exam.manage` · Feedback `feedback.ticket.review` · Staff Documents `documents.handbook.manage`
 - **People & Staff** `[hub: people]`
   - Students `student.view` · Employees `employee.view` · Hiring `hiring.candidate.view` · Transfer Certificate `transfer.view`
 - **Stores & Inventory** *(per-module `[hub]`)*

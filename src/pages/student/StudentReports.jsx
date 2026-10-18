@@ -64,7 +64,7 @@ export default function StudentReports() {
   const { academicYearId, years } = useAcademicYear();
   const { user } = useAuth();
   const can = useCan();
-  const canManage = can('student.manage');
+  const canManage = can('student.record.manage');
   const isAdminGod = (user?.roles || []).some((r) => r === 'admin' || r === 'god');
 
   const [catalog, setCatalog] = useState([]); // [{ key, label, group, contact }]

@@ -22,7 +22,7 @@ export default function OfferingsMatrix() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const can = useCan();
-  const canManage = can('syllabus.manage');
+  const canManage = can('syllabus.plan.manage');
   const { academicYearId } = useAcademicYear();
 
   const [grades, setGrades] = useState([]);

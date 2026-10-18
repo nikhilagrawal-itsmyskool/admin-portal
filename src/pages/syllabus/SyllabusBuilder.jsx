@@ -30,7 +30,7 @@ export default function SyllabusBuilder() {
   const navigate = useNavigate();
   const { id } = useParams();
   const can = useCan();
-  const canManage = can('syllabus.manage');
+  const canManage = can('syllabus.plan.manage');
   const { user } = useAuth();
   const isAdminGod = (user?.roles || []).some((r) => r === 'admin' || r === 'god');
 

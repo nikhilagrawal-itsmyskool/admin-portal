@@ -57,7 +57,7 @@ import {
 export const MOBILE_FEATURES = [
   // ── Today ──────────────────────────────────────────────────────────────────
   // Voice/LLM student assistant — god-only (assistant.use is granted to no role).
-  { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.view", section: "mine", color: "#f4b400" },
+  { title: "My Timetable", icon: TimetableIcon, path: "/timetable/published", perm: "timetable.grid.view", section: "mine", color: "#f4b400" },
   {
     title: "Take Attendance",
     icon: AttendanceIcon,
@@ -71,7 +71,7 @@ export const MOBILE_FEATURES = [
     title: "My Syllabus",
     icon: SyllabusIcon,
     path: "/syllabus/my",
-    perm: "syllabus.view",
+    perm: "syllabus.plan.view",
     section: "mine",
     color: "#8e24aa",
     routes: ["/syllabus/my", "/syllabus/my/:syllabusId/:classId"],
@@ -138,12 +138,12 @@ export const MOBILE_FEATURES = [
 
   // ── People & Staff ───────────────────────────────────────────────────────────
   // People & Staff: flat tiles (the band header is the group — no hub, one tap).
-  { title: "Students", icon: StudentIcon, path: "/students", perm: "student.view", section: "people", color: "#3d5afe", routes: ["/students", "/students/:id"] },
-  { title: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.view", section: "people", color: "#3d5afe" },
+  { title: "Students", icon: StudentIcon, path: "/students", perm: "student.record.view", section: "people", color: "#3d5afe", routes: ["/students", "/students/:id"] },
+  { title: "Employees", icon: PeopleIcon, path: "/employees", perm: "employee.record.view", section: "people", color: "#3d5afe" },
   { title: "Hiring", icon: HiringIcon, path: "/hiring", perm: "hiring.candidate.view", section: "people", color: "#3d5afe", routes: ["/hiring", "/hiring/new", "/hiring/:id", "/hiring/:id/edit"] },
   // Read-only TC search/list on mobile; tapping a row opens the student detail
   // (permitted via the Students feature). Apply/issue stays desktop-only.
-  { title: "Transfer Certificate", icon: TransferIcon, path: "/transfer", perm: "transfer.view", section: "people", color: "#3d5afe", routes: ["/transfer"] },
+  { title: "Transfer Certificate", icon: TransferIcon, path: "/transfer", perm: "transfer.certificate.view", section: "people", color: "#3d5afe", routes: ["/transfer"] },
 
   // ── Stores & Inventory ───────────────────────────────────────────────────────
   { title: "Library Catalog", hubLabel: "Catalog", icon: LibraryIcon, path: "/library/catalog", perm: "library.catalog.view", section: "stores", hub: "library", routes: ["/library/catalog", "/library/catalog/:id"] },
@@ -184,10 +184,10 @@ export const MOBILE_FEATURES = [
   { title: "Penalties", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/penalty"] },
   // Staff documents — self-service (read & sign own policies). Hidden from the managing
   // user (god) who reads compliance via the office tile below instead.
-  { title: "My Documents", icon: DocumentIcon, path: "/me/documents", perm: "documents.sign", notPerm: "documents.manage", section: "mine", color: "#3f51b5", routes: ["/me/documents", "/me/documents/:id"] },
+  { title: "My Documents", icon: DocumentIcon, path: "/me/documents", perm: "documents.sign", notPerm: "documents.handbook.manage", section: "mine", color: "#3f51b5", routes: ["/me/documents", "/me/documents/:id"] },
   // Staff documents — god view: read any policy + who-has-signed compliance (read-only on
   // mobile; authoring is desktop-only, enforced inside the page).
-  { title: "Staff Documents", icon: DocumentIcon, path: "/documents", perm: "documents.manage", section: "manage", color: "#3f51b5", routes: ["/documents", "/documents/:id"] },
+  { title: "Staff Documents", icon: DocumentIcon, path: "/documents", perm: "documents.handbook.manage", section: "manage", color: "#3f51b5", routes: ["/documents", "/documents/:id"] },
   { title: "Fees Overview", hubLabel: "Overview", icon: FeesIcon, path: "/fees", perm: "godpwa.fee.overview", section: "office", hub: "fees", routes: ["/fees"] },
   { title: "Dues Report", hubLabel: "Dues", icon: DuesIcon, path: "/fees/dues", perm: "godpwa.fee.dues", section: "office", hub: "fees", routes: ["/fees/dues"] },
   { title: "Receipts", hubLabel: "Receipts", icon: ReceiptIcon, path: "/fees/receipts", perm: "godpwa.fee.receipts", section: "office", hub: "fees", routes: ["/fees/receipts"] },
@@ -196,7 +196,7 @@ export const MOBILE_FEATURES = [
   { title: "Scan & Verify", icon: ScanIcon, path: "/verify/scan", perm: "fee.receipt.verify", section: "office", color: "#00897b", routes: ["/verify/scan"] },
 
   // ── Tools — pinned last. Assistant is god-only (assistant.use granted to no role).
-  { title: "Assistant", icon: AssistantIcon, path: "/assistant", perm: "assistant.use", section: "tools", color: "#3366ff" },
+  { title: "Assistant", icon: AssistantIcon, path: "/assistant", perm: "assistant.voice.use", section: "tools", color: "#3366ff" },
 ];
 
 // Hub display metadata (title, icon, module accent color), keyed by the `hub` field above.

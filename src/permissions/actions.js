@@ -101,19 +101,22 @@ export const ACTIONS = {
   SUPPLIES_ISSUE_MANAGE: "supplies.issue.manage",
   SUPPLIES_WASTAGE_VIEW: "supplies.wastage.view",
   SUPPLIES_WASTAGE_MANAGE: "supplies.wastage.manage",
-  TIMETABLE_VIEW: "timetable.view",
-  TIMETABLE_PRINT: "timetable.print",
-  TIMETABLE_MANAGE: "timetable.manage",
-  EMPLOYEE_VIEW: "employee.view",
-  EMPLOYEE_MANAGE: "employee.manage",
-  EMPLOYEE_RESTORE: "employee.restore",
+  TIMETABLE_VIEW: "timetable.grid.view",
+  TIMETABLE_PRINT: "timetable.grid.print",
+  TIMETABLE_MANAGE: "timetable.grid.manage",
+  EMPLOYEE_VIEW: "employee.record.view",
+  EMPLOYEE_MANAGE: "employee.record.manage",
+  EMPLOYEE_RESTORE: "employee.record.restore",
   // Force an employee to sign out and back in (bumps the login's session version). God-only by
   // default (listed on no role; god's '*' covers it) — grant to admin from the Permissions grid.
   EMPLOYEE_SESSION_RESET: "employee.session.reset",
+  // Staff document handbook authoring — god-only by default (god grants via grid). The /me
+  // read-&-sign endpoints self-authorize; documents.sign below is frontend menu visibility only.
+  DOCUMENTS_HANDBOOK_MANAGE: "documents.handbook.manage",
   PURCHASE_LOG_EDIT: "purchaseLog.edit",
   PURCHASE_LOG_RESTORE: "purchaseLog.restore",
-  STUDENT_VIEW: "student.view",
-  STUDENT_MANAGE: "student.manage",
+  STUDENT_VIEW: "student.record.view",
+  STUDENT_MANAGE: "student.record.manage",
   STUDENT_VIEW_CONTACTS: "student.contacts.view",
   // Attendance (module.resource.action). session.mark = take roll-call (roster/sessions/save +
   // read config); session.finalize = finalize & edit records; record.view = read a student's own
@@ -134,10 +137,10 @@ export const ACTIONS = {
   TRANSPORT_MANAGE: "transport.setup.manage",
   TRANSPORT_ATTENDANCE_MARK: "transport.attendance.mark",
   TRANSPORT_ATTENDANCE_FINALIZE: "transport.attendance.finalize",
-  TRANSFER_VIEW: "transfer.view",
-  TRANSFER_MANAGE: "transfer.manage",
-  SYLLABUS_VIEW: "syllabus.view",
-  SYLLABUS_MANAGE: "syllabus.manage",
+  TRANSFER_VIEW: "transfer.certificate.view",
+  TRANSFER_MANAGE: "transfer.certificate.manage",
+  SYLLABUS_VIEW: "syllabus.plan.view",
+  SYLLABUS_MANAGE: "syllabus.plan.manage",
   SYLLABUS_PROGRESS_MARK: "syllabus.progress.mark",
   // Morning-assembly planning — strict module.resource.action. Mirror of backend authz-policy.ts.
   ASSEMBLY_PLAN_VIEW: "assembly.plan.view",
@@ -181,7 +184,7 @@ export const ACTIONS = {
   PROGRAMME_SOURCE_MANAGE: "programme.source.manage",
   PROGRAMME_CONFIG_MANAGE: "programme.config.manage",
   // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
-  ASSISTANT_USE: "assistant.use",
+  ASSISTANT_USE: "assistant.voice.use",
   // Staff leave (strict module.resource.action). Mirror of backend authz-policy.ts.
   // calendar.view (shared who's-on-leave) + application.apply (self-service) are teacher/admin;
   // all oversight/config/biometric/deduction are GOD ONLY for now (god opens cells per-role
@@ -526,6 +529,10 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.EMPLOYEE_SESSION_RESET,
     description: "Force an employee to sign out and back in (e.g. after a role change) — god-only by default",
+  },
+  {
+    action: ACTIONS.DOCUMENTS_HANDBOOK_MANAGE,
+    description: "Author staff handbook documents (create/edit/remind/archive, view acks) — god-only by default",
   },
   {
     action: ACTIONS.PURCHASE_LOG_EDIT,

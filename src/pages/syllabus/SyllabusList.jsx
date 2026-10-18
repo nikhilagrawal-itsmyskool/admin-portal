@@ -15,7 +15,7 @@ import { useCan } from '../../permissions/can';
 export default function SyllabusList() {
   const navigate = useNavigate();
   const can = useCan();
-  const canManage = can('syllabus.manage');
+  const canManage = can('syllabus.plan.manage');
   const { academicYearId } = useAcademicYear();
 
   const [grades, setGrades] = useState([]);

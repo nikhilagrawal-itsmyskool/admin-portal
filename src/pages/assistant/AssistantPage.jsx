@@ -99,7 +99,7 @@ function StudentCard({ card }) {
 
 export default function AssistantPage() {
   const can = useCan();
-  const canView = can('assistant.use');
+  const canView = can('assistant.voice.use');
 
   const [messages, setMessages] = useState([]); // {role:'user'|'assistant', text, card?}
   const [context, setContext] = useState(null); // opaque Convo blob {history, focusStudentId, focusName}

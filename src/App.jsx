@@ -147,6 +147,12 @@ import AttendanceSessionDetail from './pages/attendance/AttendanceSessionDetail'
 import AttendanceRegister from './pages/attendance/AttendanceRegister';
 import CommunicationDashboard from './pages/communication/CommunicationDashboard';
 import CommunicationPermissions from './pages/communication/Permissions';
+import EmployeePermissions from './pages/employee/Permissions';
+import StudentPermissions from './pages/student/Permissions';
+import TimetablePermissions from './pages/timetable/Permissions';
+import SyllabusPermissions from './pages/syllabus/Permissions';
+import TransferPermissions from './pages/transfer/Permissions';
+import AssistantPermissions from './pages/assistant/Permissions';
 import TemplateList from './pages/communication/templates/TemplateList';
 import TemplateForm from './pages/communication/templates/TemplateForm';
 import ComposeMessage from './pages/communication/messages/ComposeMessage';
@@ -404,7 +410,9 @@ export default function App() {
         <Route path="asset/tree" element={<AssetTree />} />
         <Route path="asset/types" element={<AssetTypeList />} />
         <Route path="asset/counts" element={<AssetCounts />} />
+        <Route path="students/permissions" element={<StudentPermissions />} />
         <Route path="students" element={<StudentList />} />
+        <Route path="assistant/permissions" element={<AssistantPermissions />} />
         <Route path="assistant" element={<AssistantPage />} />
         <Route path="students/new" element={<StudentForm />} />
         <Route path="students/class-strength" element={<ClassStrength />} />
@@ -413,7 +421,9 @@ export default function App() {
         <Route path="students/reports" element={<StudentReports />} />
         <Route path="students/:id" element={<StudentDetail />} />
         <Route path="students/:id/edit" element={<StudentForm />} />
+        <Route path="transfer/permissions" element={<TransferPermissions />} />
         <Route path="transfer" element={<TransferList />} />
+        <Route path="employees/permissions" element={<EmployeePermissions />} />
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/add" element={<EmployeeForm />} />
         <Route path="employees/:id/edit" element={<EmployeeForm />} />
@@ -440,6 +450,7 @@ export default function App() {
         <Route path="supplies/wastages" element={<SupplyWastageList />} />
         <Route path="supplies/wastages/add" element={<SupplyWastageForm />} />
         <Route path="supplies/wastages/:id/edit" element={<SupplyWastageForm />} />
+        <Route path="timetable/permissions" element={<TimetablePermissions />} />
         <Route path="timetable" element={<TimetableDashboard />} />
         <Route path="timetable/subjects" element={<SubjectList />} />
         <Route path="timetable/configs" element={<ConfigList />} />
@@ -481,6 +492,7 @@ export default function App() {
         <Route path="transport/assignments" element={<TransportAssignmentList />} />
         <Route path="transport/attendance/mark" element={<TransportTakeAttendance />} />
         <Route path="transport/attendance/sessions" element={<TransportSessionList />} />
+        <Route path="syllabus/permissions" element={<SyllabusPermissions />} />
         <Route path="syllabus" element={<SyllabusList />} />
         <Route path="syllabus/overview" element={<SyllabusOverview />} />
         <Route path="syllabus/offerings" element={<OfferingsMatrix />} />

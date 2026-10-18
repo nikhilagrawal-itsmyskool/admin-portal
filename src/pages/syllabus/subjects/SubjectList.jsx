@@ -11,7 +11,7 @@ import { useCan } from '../../../permissions/can';
 
 export default function SubjectList() {
   const can = useCan();
-  const canManage = can('syllabus.manage');
+  const canManage = can('syllabus.plan.manage');
 
   const [grades, setGrades] = useState([]);
   const [filterGrade, setFilterGrade] = useState('');

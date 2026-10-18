@@ -126,9 +126,9 @@ const modules = [
       "Build subjects, grids, and wings, then auto-generate class timetables",
     icon: TimetableIcon,
     // Route by capability: planners get the overview, teachers the published view.
-    path: (can) => (can("timetable.print") ? "/timetable" : "/timetable/published"),
+    path: (can) => (can("timetable.grid.print") ? "/timetable" : "/timetable/published"),
     color: "#f4b400",
-    perm: "timetable.view",
+    perm: "timetable.grid.view",
   },
   {
     title: "Attendance",
@@ -152,7 +152,7 @@ const modules = [
     icon: PeopleIcon,
     path: "/employees",
     color: "#009688",
-    perm: "employee.view",
+    perm: "employee.record.view",
   },
   {
     title: "Hiring",
@@ -176,7 +176,7 @@ const modules = [
     icon: AssistantIcon,
     path: "/assistant",
     color: "#3366ff",
-    perm: "assistant.use",
+    perm: "assistant.voice.use",
   },
   {
     title: "Students",
@@ -184,7 +184,7 @@ const modules = [
     icon: StudentIcon,
     path: "/students",
     color: "#3d5afe",
-    perm: "student.view",
+    perm: "student.record.view",
   },
   {
     title: "Transfer Certs",
@@ -192,7 +192,7 @@ const modules = [
     icon: TransferIcon,
     path: "/transfer",
     color: "#607d8b",
-    perm: "transfer.view",
+    perm: "transfer.certificate.view",
   },
   {
     title: "Syllabus",
@@ -200,7 +200,7 @@ const modules = [
     icon: SyllabusIcon,
     path: "/syllabus",
     color: "#8e24aa",
-    perm: "syllabus.view",
+    perm: "syllabus.plan.view",
   },
   {
     title: "Programmes",

@@ -25,12 +25,12 @@ export const ROLE_PERMISSIONS = {
     "asset.*",
     "library.*",
     "supplies.*",
-    "employee.view",
-    "employee.manage",
-    "timetable.view",
-    "timetable.print",
-    "student.view",
-    "student.manage",
+    "employee.record.view",
+    "employee.record.manage",
+    "timetable.grid.view",
+    "timetable.grid.print",
+    "student.record.view",
+    "student.record.manage",
     "student.contacts.view",
     "attendance.session.mark",
     "attendance.session.finalize",
@@ -45,10 +45,10 @@ export const ROLE_PERMISSIONS = {
     "transport.setup.manage",
     "transport.attendance.mark",
     "transport.attendance.finalize",
-    "transfer.view",
-    "transfer.manage",
-    "syllabus.view",
-    "syllabus.manage",
+    "transfer.certificate.view",
+    "transfer.certificate.manage",
+    "syllabus.plan.view",
+    "syllabus.plan.manage",
     "syllabus.progress.mark",
     "programme.unit.view",
     "programme.unit.teach",
@@ -95,12 +95,12 @@ export const ROLE_PERMISSIONS = {
     "library.catalog.view", // Browse the library catalog
     "supplies.inventory.view", // See supply stock
     "supplies.issue.view", // See what supplies have been issued
-    "timetable.view", // Published timetable only (menu gates the rest)
-    "student.view",
+    "timetable.grid.view", // Published timetable only (menu gates the rest)
+    "student.record.view",
     "student.contacts.view", // Teachers may see un-masked parent/student & staff numbers
     "attendance.record.view", // Read a student's attendance history on the 360 view
-    "employee.view",
-    "syllabus.view", // Read plans; class teachers also mark coverage for their section
+    "employee.record.view",
+    "syllabus.plan.view", // Read plans; class teachers also mark coverage for their section
     "syllabus.progress.mark",
     "programme.unit.view", // Read the Spoken English & Life Communication monthly units
     "programme.unit.teach", // Mark a unit taught while conducting the programme
@@ -167,11 +167,11 @@ export const ROLE_PERMISSIONS = {
     "assembly.grading.manage",
     "assembly.house.view",
     "assembly.house.manage",
-    "syllabus.view",
-    "student.view",
+    "syllabus.plan.view",
+    "student.record.view",
     "student.contacts.view",
     "academic-calendar.view",
-    "timetable.view",
+    "timetable.grid.view",
     "transport.setup.view",
     "leave.calendar.view",
     "leave.application.apply",

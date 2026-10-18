@@ -50,7 +50,7 @@ function detectFromName(name, grades, exams) {
 
 export default function ModelPapers() {
   const can = useCan();
-  const canManage = can('syllabus.manage');
+  const canManage = can('syllabus.plan.manage');
   const [searchParams] = useSearchParams();
   const { academicYearId } = useAcademicYear();
 
