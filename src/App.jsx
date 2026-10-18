@@ -174,6 +174,7 @@ import ProgrammesList from './pages/programmes/ProgrammesList';
 import SelcReader from './pages/programmes/SelcReader';
 import SelcEditor from './pages/programmes/SelcEditor';
 import SelcSettings from './pages/programmes/SelcSettings';
+import ProgrammesPermissions from './pages/programmes/Permissions';
 import HomeworkPage from './pages/homework/HomeworkPage';
 import HomeworkPermissions from './pages/homework/Permissions';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
@@ -486,6 +487,7 @@ export default function App() {
         <Route path="syllabus/plans/:id" element={<SyllabusBuilder />} />
         <Route path="syllabus/my" element={<MySyllabus />} />
         <Route path="syllabus/my/:syllabusId/:classId" element={<TeacherCoverage />} />
+        <Route path="programmes/permissions" element={<ProgrammesPermissions />} />
         <Route path="programmes" element={<ProgrammesList />} />
         <Route path="programmes/selc/edit" element={<SelcEditor />} />
         <Route path="programmes/selc/settings" element={<SelcSettings />} />

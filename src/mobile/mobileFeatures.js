@@ -115,9 +115,9 @@ export const MOBILE_FEATURES = [
   // ── Programmes ─────────────────────────────────────────────────────────────────
   // Developmental programmes (Spoken English & Life Communication, later Scout, ...) collapse
   // into one "Programmes" hub. With a single programme visible it links straight to it; when a
-  // second is added the hub screen appears. Teacher read view (programme.view) — Class -> Month
+  // second is added the hub screen appears. Teacher read view (programme.unit.view) — Class -> Month
   // -> Theme reader. Content authoring is desktop-primary in Phase 1 (no separate mobile tile).
-  { title: "Spoken English", hubLabel: "Spoken English", icon: ProgrammesIcon, path: "/programmes/selc", perm: "programme.view", section: "programmes", hub: "programmes", routes: ["/programmes", "/programmes/selc", "/programmes/selc/:grade/:month"] },
+  { title: "Spoken English", hubLabel: "Spoken English", icon: ProgrammesIcon, path: "/programmes/selc", perm: "programme.unit.view", section: "programmes", hub: "programmes", routes: ["/programmes", "/programmes/selc", "/programmes/selc/:grade/:month"] },
 
   // ── Examinations ─────────────────────────────────────────────────────────────
   // Schedule + duties are open to all staff (no perm); management is exam.view only.

@@ -50,7 +50,11 @@ export const ROLE_PERMISSIONS = {
     "syllabus.view",
     "syllabus.manage",
     "syllabus.progress.mark",
-    "programme.view",
+    "programme.unit.view",
+    "programme.unit.teach",
+    "programme.source.view",
+    // programme.unit.manage + programme.source.manage are god-only (authoring stays god-first);
+    // god grants admin/incharge via the Permissions grid.
     "assembly.view",
     "assembly.manage",
     "homework.day.view",
@@ -90,7 +94,9 @@ export const ROLE_PERMISSIONS = {
     "employee.view",
     "syllabus.view", // Read plans; class teachers also mark coverage for their section
     "syllabus.progress.mark",
-    "programme.view", // Read the Spoken English & Life Communication monthly units
+    "programme.unit.view", // Read the Spoken English & Life Communication monthly units
+    "programme.unit.teach", // Mark a unit taught while conducting the programme
+    "programme.source.view", // Download the class-module reference docs
     "assembly.view", // Read the assembly plan for their wing
     "academic-calendar.view", // Read the school's academic calendar
     "leave.calendar.view", // See the shared who's-on-leave calendar
@@ -122,7 +128,8 @@ export const ROLE_PERMISSIONS = {
   "hiring-incharge": ["hiring.*"],
   "transport-incharge": ["transport.*"],
   "syllabus-incharge": ["syllabus.*"],
-  "programme-incharge": ["programme.*"],
+  // Explicit (not programme.*) so authoring (unit.manage/source.manage) + config.manage stay god-first.
+  "programme-incharge": ["programme.unit.view", "programme.unit.teach", "programme.source.view"],
   "assembly-incharge": ["assembly.*"],
   // Exam incharge === admin, but scoped to the examination module.
   // Exam office: run exams + view progress, but NOT report cards, config, mapping, or god-only overrides.

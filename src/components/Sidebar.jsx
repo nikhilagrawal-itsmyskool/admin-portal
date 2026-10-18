@@ -415,14 +415,16 @@ const menuItems = [
     ],
   },
   {
-    // No parent perm: teachers (programme.view) see the read-only "Spoken English"
-    // reader; managers (programme.manage) also get "Manage Content".
+    // No parent perm: teachers (programme.unit.view) see the read-only "Spoken English"
+    // reader; authors (programme.unit.manage) also get "Manage Content". Permissions is
+    // god-only (admin:true) and Settings is config.manage (god-first).
     title: 'Programmes',
     icon: ProgrammesIcon,
     children: [
-      { title: 'Spoken English', icon: ProgrammesIcon, path: '/programmes/selc', perm: 'programme.view' },
-      { title: 'Manage Spoken English', icon: SyllabusSubjectIcon, path: '/programmes/selc/edit', perm: 'godpwa.programme.manage' },
-      { title: 'Spoken English Settings', icon: AsmSettingsIcon, path: '/programmes/selc/settings', perm: 'godpwa.programme.manage' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/programmes/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Spoken English', icon: ProgrammesIcon, path: '/programmes/selc', perm: 'programme.unit.view' },
+      { title: 'Manage Spoken English', icon: SyllabusSubjectIcon, path: '/programmes/selc/edit', perm: 'programme.unit.manage' },
+      { title: 'Spoken English Settings', icon: AsmSettingsIcon, path: '/programmes/selc/settings', perm: 'programme.config.manage', admin: true },
     ],
   },
   {

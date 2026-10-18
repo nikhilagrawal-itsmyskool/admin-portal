@@ -70,7 +70,7 @@ Names below are the live titles. `·` separates a hub's children.
   - My Feedback `feedback.ticket.respond` / not `feedback.ticket.review` · My Documents `documents.sign` / not `documents.manage`
   - Leave `[hub]` · My Leave `leave.application.apply` / not `leave.application.approve` · Leave Calendar `leave.calendar.view` · My Attendance · My Penalty
 - **Programmes** `[hub: programmes]`
-  - Spoken English `programme.view` — Class → Month → Theme reader (links straight through while it's the only programme; becomes a hub when Scout etc. are added)
+  - Spoken English `programme.unit.view` — Class → Month → Theme reader (links straight through while it's the only programme; becomes a hub when Scout etc. are added)
 - **Manage**
   - Examinations `exam.view` · Subject Mapping `exam.manage` · Marks Progress `exam.manage` · Branding `exam.manage` · Feedback `feedback.ticket.review` · Staff Documents `documents.manage`
 - **People & Staff** `[hub: people]`

@@ -208,7 +208,7 @@ const modules = [
     icon: ProgrammesIcon,
     path: "/programmes",
     color: "#00838f",
-    perm: "programme.view",
+    perm: "programme.unit.view",
   },
   {
     title: "Assembly",

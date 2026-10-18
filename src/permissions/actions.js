@@ -163,11 +163,14 @@ export const ACTIONS = {
   EXAM_DUES_OVERRIDE: "exam.dues.override",
   // God-only: edit the role→permission overrides from the Permissions grid.
   AUTHZ_MANAGE: "authz.manage",
-  // Developmental programmes (Spoken English & Life Communication, …). view = the
-  // teacher Class→Month→Theme reader + catalog (teacher/admin); manage = author units
-  // + re-upload source docs (admin/god/programme-incharge).
-  PROGRAMME_VIEW: "programme.view",
-  PROGRAMME_MANAGE: "programme.manage",
+  // Developmental programmes (Spoken English & Life Communication, …) — strict
+  // module.resource.action. Mirror of backend authz-policy.ts.
+  PROGRAMME_UNIT_VIEW: "programme.unit.view",
+  PROGRAMME_UNIT_MANAGE: "programme.unit.manage",
+  PROGRAMME_UNIT_TEACH: "programme.unit.teach",
+  PROGRAMME_SOURCE_VIEW: "programme.source.view",
+  PROGRAMME_SOURCE_MANAGE: "programme.source.manage",
+  PROGRAMME_CONFIG_MANAGE: "programme.config.manage",
   // Voice/LLM student assistant. Granted to NO role -> god-only (god's '*' covers it).
   ASSISTANT_USE: "assistant.use",
   // Staff leave (strict module.resource.action). Mirror of backend authz-policy.ts.
@@ -658,12 +661,28 @@ export const ACTION_CATALOG = [
     description: "Create/edit/delete/publish examinations, datesheet papers & invigilator assignments",
   },
   {
-    action: ACTIONS.PROGRAMME_VIEW,
-    description: "See the Programmes menu and read a programme's monthly units (Class → Month → Theme)",
+    action: ACTIONS.PROGRAMME_UNIT_VIEW,
+    description: "Read a programme's monthly units (Class → Month → Theme) + catalog",
   },
   {
-    action: ACTIONS.PROGRAMME_MANAGE,
-    description: "Author programme units and re-upload class-module source documents",
+    action: ACTIONS.PROGRAMME_UNIT_MANAGE,
+    description: "Author programme units (create/edit/delete) + edit the programme definition",
+  },
+  {
+    action: ACTIONS.PROGRAMME_UNIT_TEACH,
+    description: "Mark a unit taught while conducting the programme",
+  },
+  {
+    action: ACTIONS.PROGRAMME_SOURCE_VIEW,
+    description: "List + download class-module source documents",
+  },
+  {
+    action: ACTIONS.PROGRAMME_SOURCE_MANAGE,
+    description: "Upload / re-upload class-module source documents",
+  },
+  {
+    action: ACTIONS.PROGRAMME_CONFIG_MANAGE,
+    description: "Edit programme settings (SelcSettings) — god-first",
   },
   {
     action: ACTIONS.ASSISTANT_USE,

@@ -15,7 +15,7 @@ import { useCan } from '../../permissions/can';
 // collapsed card at the top of the teacher reader (motto, philosophy, bullet list).
 export default function SelcSettings() {
   const can = useCan();
-  const canManage = can('godpwa.programme.manage');
+  const canManage = can('programme.config.manage');
 
   const [name, setName] = useState('');
   const [form, setForm] = useState({ motto: '', philosophy: '', teacherGuidance: [] });
