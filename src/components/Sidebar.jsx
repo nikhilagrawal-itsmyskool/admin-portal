@@ -185,9 +185,9 @@ const menuItems = [
     icon: FeesIcon,
     perm: 'fee.report.view',
     children: [
-      // Permissions is the FIRST item in every module (god-only) — the convention.
-      { title: 'Permissions', icon: PermissionsIcon, path: '/fees/permissions', perm: 'authz.manage', admin: true },
+      // Convention: Overview first, then Permissions (god-only), then the rest.
       { title: 'Overview', icon: OverviewIcon, path: '/fees' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/fees/permissions', perm: 'authz.manage', admin: true },
       { title: 'Dues Report', icon: DuesIcon, path: '/fees/dues', perm: 'fee.report.view' },
       { title: 'Accumulated Dues', icon: DuesIcon, path: '/fees/accumulated-dues', perm: 'fee.report.view' },
       // Collection Desk — the manager's phone-first view; also opened by god/director here. Gated
@@ -375,8 +375,9 @@ const menuItems = [
     icon: HiringIcon,
     perm: 'hiring.candidate.view',
     children: [
-      { title: 'Candidates', icon: HiringIcon, path: '/hiring', perm: 'hiring.candidate.view' },
+      // Convention: Permissions first (no Overview in this module), then the rest.
       { title: 'Permissions', icon: PermissionsIcon, path: '/hiring/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Candidates', icon: HiringIcon, path: '/hiring', perm: 'hiring.candidate.view' },
     ],
   },
   {
@@ -386,8 +387,8 @@ const menuItems = [
     title: 'Transport',
     icon: TransportIcon,
     children: [
-      { title: 'Permissions', icon: PermissionsIcon, path: '/transport/permissions', perm: 'authz.manage', admin: true },
       { title: 'Overview', icon: OverviewIcon, path: '/transport', perm: 'transport.setup.view' },
+      { title: 'Permissions', icon: PermissionsIcon, path: '/transport/permissions', perm: 'authz.manage', admin: true },
       { title: 'Stops', icon: StopIcon, path: '/transport/stops', perm: 'transport.setup.view' },
       { title: 'Vehicles', icon: VehicleIcon, path: '/transport/vehicles', perm: 'transport.setup.view' },
       { title: 'Routes', icon: RouteIcon, path: '/transport/routes', perm: 'transport.setup.view' },
