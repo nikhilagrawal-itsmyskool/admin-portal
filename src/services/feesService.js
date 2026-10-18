@@ -125,7 +125,8 @@ export const feesService = {
   getFamilyDues: async (studentId, params = {}) => (await api.get(`/fees/students/${studentId}/family-dues`, { params })).data,
   withdrawStudent: async (studentId, data) => (await api.post(`/fees/students/${studentId}/withdraw`, data)).data,
   // Bad-debt write-off / restore (god-only). data: { action: 'writeoff' | 'restore', reason }
-  writeOffStudent: async (studentId, data) => (await api.post(`/fees/students/${studentId}/write-off`, data)).data,
+  // Lives on the second fees stack (/fees-ext) — the primary fees stack is at the 500-resource limit.
+  writeOffStudent: async (studentId, data) => (await api.post(`/fees-ext/students/${studentId}/write-off`, data)).data,
   getDuesByYear: async (studentId) => (await api.get(`/fees/students/${studentId}/dues-by-year`)).data,
   getFineExemptions: async (params = {}) => (await api.get('/fees/reports/fine-exemptions', { params })).data,
   // Exam-only (studying elsewhere): list flagged students + their open demands; cancel their demands.
