@@ -130,6 +130,8 @@ export const ACTIONS = {
   COMMUNICATION_SEND: "communication.message.send",
   COMMUNICATION_TEMPLATE_MANAGE: "communication.template.manage",
   COMMUNICATION_TEMPLATE_DELETE: "communication.template.delete",
+  COMMUNICATION_CONFIG_VIEW: "communication.config.view",
+  COMMUNICATION_CONFIG_MANAGE: "communication.config.manage",
   // Recruitment/hiring (strict module.resource.action). Mirror of backend authz-policy.ts.
   // admin + hiring-incharge; no teacher.
   HIRING_CANDIDATE_VIEW: "hiring.candidate.view",

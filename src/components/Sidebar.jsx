@@ -332,6 +332,7 @@ const menuItems = [
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/communication' },
       { title: 'Permissions', icon: PermissionsIcon, path: '/communication/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/communication/config', perm: 'communication.config.view', admin: true },
       { title: 'Compose', icon: ComposeIcon, path: '/communication/compose' },
       { title: 'Templates', icon: TemplateIcon, path: '/communication/templates' },
       { title: 'Sent Messages', icon: SentIcon, path: '/communication/messages' },

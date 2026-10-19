@@ -71,4 +71,15 @@ export const communicationService = {
     const response = await api.post(`/communication/messages/${id}/cancel`);
     return response.data;
   },
+
+  // Message-routing policy (god-only Config screen): per message type, which channels fire.
+  getMessagePolicies: async () => {
+    const response = await api.get('/communication/config/message-policies');
+    return response.data; // { types: [{ key, label, group, inApp, sms, whatsapp, studentPref }] }
+  },
+
+  updateMessagePolicy: async (key, channels) => {
+    const response = await api.put(`/communication/config/message-policies/${key}`, channels);
+    return response.data; // { types: [...] }
+  },
 };
