@@ -187,6 +187,9 @@ import ProgrammesPermissions from './pages/programmes/Permissions';
 import HomeworkPage from './pages/homework/HomeworkPage';
 import HomeworkPermissions from './pages/homework/Permissions';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
+import MomentsPage from './pages/outreach/MomentsPage';
+import MyMoments from './pages/outreach/MyMoments';
+import OutreachPermissions from './pages/outreach/Permissions';
 import AcademicCalendarPage from './pages/academic-calendar/AcademicCalendarPage';
 import AcademicCalendarPermissions from './pages/academic-calendar/Permissions';
 import ExaminationList from './pages/examination/ExaminationList';
@@ -515,6 +518,9 @@ export default function App() {
         <Route path="homework/permissions" element={<HomeworkPermissions />} />
         <Route path="homework" element={<HomeworkPage />} />
         <Route path="homework/class-teachers" element={<HomeworkMappingPage />} />
+        <Route path="outreach/permissions" element={<OutreachPermissions />} />
+        <Route path="outreach/me" element={<MyMoments />} />
+        <Route path="outreach" element={<MomentsPage />} />
         <Route path="academic-calendar" element={<AcademicCalendarPage />} />
         <Route path="academic-calendar/permissions" element={<AcademicCalendarPermissions />} />
         <Route path="examinations" element={<ExaminationList />} />

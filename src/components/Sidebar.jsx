@@ -95,6 +95,7 @@ import {
   Grading as GradingIcon,
   EmojiEvents as LeaderboardIcon,
   PhotoCamera as HomeworkIcon,
+  PhotoLibrary as MomentsIcon,
   HistoryEdu as ExamIcon,
   HowToReg as DutyIcon,
   Image as BrandingSidebarIcon,
@@ -449,6 +450,17 @@ const menuItems = [
       { title: 'Permissions', icon: PermissionsIcon, path: '/homework/permissions', perm: 'authz.manage', admin: true },
       { title: 'Post Homework', icon: HomeworkIcon, path: '/homework', perm: 'homework.day.post' },
       { title: 'Class Teachers', icon: PeopleIcon, path: '/homework/class-teachers', perm: 'homework.day.manage' },
+    ],
+  },
+  {
+    // Parent-facing "Moments" photo feed. moment.post (class teacher) + moment.manage (admin
+    // compose) both reach the Moments screen; Permissions is god-only (behind the reveal toggle).
+    title: 'Moments',
+    icon: MomentsIcon,
+    perm: 'outreach.moment.view',
+    children: [
+      { title: 'Permissions', icon: PermissionsIcon, path: '/outreach/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Moments', icon: MomentsIcon, path: '/outreach', perm: 'outreach.moment.view' },
     ],
   },
   {

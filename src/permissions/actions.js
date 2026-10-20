@@ -160,6 +160,10 @@ export const ACTIONS = {
   HOMEWORK_DAY_VIEW: "homework.day.view",
   HOMEWORK_DAY_POST: "homework.day.post",
   HOMEWORK_DAY_MANAGE: "homework.day.manage",
+  // Outreach "Moments" (strict module.resource.action). Mirror of backend authz-policy.ts.
+  OUTREACH_MOMENT_VIEW: "outreach.moment.view",
+  OUTREACH_MOMENT_POST: "outreach.moment.post",
+  OUTREACH_MOMENT_MANAGE: "outreach.moment.manage",
   ACADEMIC_CALENDAR_VIEW: "academic-calendar.view",
   ACADEMIC_CALENDAR_MANAGE: "academic-calendar.manage",
   ACADEMIC_CALENDAR_CONFIG_MANAGE: "academic-calendar.config.manage",
