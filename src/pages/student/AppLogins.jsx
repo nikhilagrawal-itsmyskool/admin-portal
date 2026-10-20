@@ -253,7 +253,7 @@ function LoginCard({ login, revealed, onToggle, onReset, onFeatures }) {
                 </InputAdornment>
               ),
             }}
-            sx={{ width: 180 }}
+            sx={{ width: 300 }}
           />
           <Button size="small" variant="outlined" startIcon={<Tune />} onClick={onFeatures}>Features</Button>
           <Button size="small" variant="outlined" color="warning" startIcon={<LockReset />} onClick={onReset}>Reset</Button>
