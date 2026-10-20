@@ -72,14 +72,21 @@ export const communicationService = {
     return response.data;
   },
 
-  // Message-routing policy (god-only Config screen): per message type, which channels fire.
+  // Message-type registry (god-only Config screen).
   getMessagePolicies: async () => {
     const response = await api.get('/communication/config/message-policies');
-    return response.data; // { types: [{ key, label, group, inApp, sms, whatsapp, studentPref }] }
+    return response.data; // { types: [{ key, label, group, templateKey, inApp, sms, whatsapp, studentPref, smsTemplate, whatsappTemplate }] }
   },
 
-  updateMessagePolicy: async (key, channels) => {
-    const response = await api.put(`/communication/config/message-policies/${key}`, channels);
+  // Create a new message type. data: { key, label, group, templateKey, inApp, sms, whatsapp, studentPref }.
+  createMessageType: async (data) => {
+    const response = await api.post('/communication/config/message-policies', data);
+    return response.data; // { types: [...] }
+  },
+
+  // Update an existing type's metadata + channels (key in path). data may be any subset.
+  updateMessagePolicy: async (key, data) => {
+    const response = await api.put(`/communication/config/message-policies/${key}`, data);
     return response.data; // { types: [...] }
   },
 };
