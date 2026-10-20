@@ -60,6 +60,7 @@ export default function AppLogins() {
   const [resetTarget, setResetTarget] = useState(null);
   const [featuresTarget, setFeaturesTarget] = useState(null);
   const [classFilter, setClassFilter] = useState('');
+  const [sortBy, setSortBy] = useState('roll');
 
   const classes = useMemo(() => {
     const set = new Set();
@@ -71,6 +72,33 @@ export default function AppLogins() {
     () => (classFilter ? logins.filter((l) => (l.students || []).some((s) => s.className === classFilter)) : logins),
     [logins, classFilter],
   );
+
+  // The child a family is sorted/labelled by: when a class is picked, that child; else the first.
+  const focusChild = useCallback((l) => {
+    const kids = l.students || [];
+    if (classFilter) return kids.find((s) => s.className === classFilter) || kids[0] || null;
+    return kids[0] || null;
+  }, [classFilter]);
+
+  // Roll-number sort is only meaningful within a selected class (keyed to the in-class child);
+  // with no class we always sort by name.
+  const effectiveSort = classFilter ? sortBy : 'name';
+  const sortedFiltered = useMemo(() => {
+    const arr = [...filtered];
+    if (effectiveSort === 'roll') {
+      arr.sort((a, b) => {
+        const ra = focusChild(a)?.rollNumber, rb = focusChild(b)?.rollNumber;
+        if (ra == null && rb == null) return 0;
+        if (ra == null) return 1;
+        if (rb == null) return -1;
+        return ra - rb;
+      });
+    } else {
+      arr.sort((a, b) => (focusChild(a)?.name || a.username || '').toLowerCase()
+        .localeCompare((focusChild(b)?.name || b.username || '').toLowerCase()));
+    }
+    return arr;
+  }, [filtered, effectiveSort, focusChild]);
 
   const load = useCallback(async (q) => {
     setLoading(true);
@@ -118,18 +146,25 @@ export default function AppLogins() {
       )}
 
       <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
-        <TextField
-          sx={{ flex: 1, minWidth: 240 }}
-          placeholder="Search by family login number or student name…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><Search /></InputAdornment> }}
-        />
         <FormControl sx={{ minWidth: 180 }}>
           <InputLabel>Class</InputLabel>
           <Select label="Class" value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
             <MenuItem value=""><em>All classes</em></MenuItem>
             {classes.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <TextField
+          sx={{ flex: 1, minWidth: 220 }}
+          placeholder={classFilter ? `Search within ${classFilter}…` : 'Search by family login number or student name…'}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{ startAdornment: <InputAdornment position="start"><Search /></InputAdornment> }}
+        />
+        <FormControl sx={{ minWidth: 150 }}>
+          <InputLabel>Sort by</InputLabel>
+          <Select label="Sort by" value={effectiveSort} onChange={(e) => setSortBy(e.target.value)} disabled={!classFilter}>
+            {classFilter && <MenuItem value="roll">Roll number</MenuItem>}
+            <MenuItem value="name">Name</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -138,11 +173,11 @@ export default function AppLogins() {
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
-      ) : filtered.length === 0 ? (
+      ) : sortedFiltered.length === 0 ? (
         <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>No logins found.</Typography>
       ) : (
         <Stack spacing={1.5}>
-          {filtered.map((l) => (
+          {sortedFiltered.map((l) => (
             <LoginCard
               key={l.username}
               login={l}
@@ -166,7 +201,7 @@ function StudentChips({ students }) {
     return <Chip size="small" color="warning" variant="outlined" label="No students linked" />;
   }
   return students.map((s) => (
-    <Chip key={s.id} size="small" label={`${s.name}${s.className ? ` · ${s.className}` : ''}`} />
+    <Chip key={s.id} size="small" label={`${s.name}${s.className ? ` · ${s.className}` : ''}${s.rollNumber != null ? ` · Roll ${s.rollNumber}` : ''}`} />
   ));
 }
 
