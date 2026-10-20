@@ -20,6 +20,7 @@ const FEATURE_CATALOG = [
   { key: 'syllabus', label: 'Syllabus', desc: 'Month-wise syllabus + coverage' },
   { key: 'notices', label: 'Notices', desc: 'In-app notices + alerts' },
   { key: 'transport', label: 'Transport', desc: 'Route, stop, driver details' },
+  { key: 'calendar', label: 'Calendar', desc: 'School calendar — holidays & events' },
 ];
 
 // Natural-ish class order (grade prefix → section): Nursery/LKG/UKG, then I..XII.
