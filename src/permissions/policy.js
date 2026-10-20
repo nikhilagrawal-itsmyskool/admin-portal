@@ -125,7 +125,12 @@ export const ROLE_PERMISSIONS = {
   // can cover for an absent colleague) and to POST their class's daily homework photos.
   // Finalizing attendance stays admin/god; the class→teacher homework mapping override
   // (homework.day.manage) stays admin/god. Additive to the `teacher` role.
-  "class-teacher": ["attendance.session.mark", "homework.day.post", "outreach.moment.post"],
+  "class-teacher": ["attendance.session.mark", "homework.day.post"],
+  // Moments in-charge: owns the parent-facing Moments feed end to end — compose to any
+  // audience (whole school / grade / class), publish/unpublish. Admin-scoped-to-module, like
+  // the other *-incharge roles. NOT class-teacher related; the PWA Moments screen is for
+  // god / admin / moments-incharge only.
+  "moments-incharge": ["outreach.moment.view", "outreach.moment.post", "outreach.moment.manage"],
   // Club in-charge: READ-ONLY by default across the three club resources (clubs, bank, plans).
   // Authoring/approve/review/planning are god-first; god grants more via the Permissions grid.
   "club-incharge": ["club.setup.view", "club.activity.view", "club.plan.view"],

@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, TextField, Button, Stack, Chip, Alert,
-  CircularProgress, MenuItem, Divider, IconButton, Tooltip,
+  CircularProgress, Autocomplete, Checkbox, FormControlLabel, Divider, IconButton, Tooltip,
 } from '@mui/material';
 import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   AddPhotoAlternate as AddPhotoIcon,
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useAuth } from '../../context/AuthContext';
 import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -28,17 +27,18 @@ function reactionLine(reactions) {
   return Object.entries(reactions.counts).map(([k, n]) => `${REACTION_EMOJI[k] || k} ${n}`).join('  ');
 }
 
-// Teacher-first, phone-first screen: a class teacher posts photos + a note for their own
-// class and publishes it. Uses ONLY the own-class /me endpoints (the teacher holds
-// outreach.moment.post, not .view, so the admin reads would 403). The desktop /outreach
-// console is a separate, admin screen.
+// Phone-first Moments composer for god / admin / moments-incharge. Compose photos + a note
+// for an audience (whole school / grade / class) and publish — parents get an in-app
+// notification and see it in the family app. Gated on outreach.moment.manage. The desktop
+// /outreach console is the same capability on a laptop.
 export default function MyMoments() {
   const { user } = useAuth();
-  const allowed = can(user, ACTIONS.OUTREACH_MOMENT_POST);
-  const { academicYearId } = useAcademicYear();
+  const allowed = can(user, ACTIONS.OUTREACH_MOMENT_MANAGE);
 
+  const [options, setOptions] = useState({ grades: [], classes: [] });
+  const [wholeSchool, setWholeSchool] = useState(false);
+  const [grades, setGrades] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [classId, setClassId] = useState('');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [files, setFiles] = useState([]);
@@ -53,42 +53,46 @@ export default function MyMoments() {
   const loadPosts = useCallback(async () => {
     setLoadingPosts(true);
     try {
-      const rows = await outreachService.me.posted();
+      const rows = await outreachService.list();
       setPosts(Array.isArray(rows) ? rows : []);
     } catch (e) {
-      setErr(e.response?.data?.error?.description || 'Failed to load your moments');
+      setErr(e.response?.data?.error?.description || 'Failed to load moments');
     } finally { setLoadingPosts(false); }
   }, []);
 
   useEffect(() => {
     if (!allowed) return;
-    outreachService.me.classes(academicYearId)
-      .then((cls) => {
-        const list = Array.isArray(cls) ? cls : [];
-        setClasses(list);
-        if (list.length === 1) setClassId(list[0].classId);
-      })
-      .catch(() => {});
-  }, [allowed, academicYearId]);
+    outreachService.audienceOptions().then(setOptions).catch(() => {});
+    loadPosts();
+  }, [allowed, loadPosts]);
 
-  useEffect(() => { if (allowed) loadPosts(); }, [allowed, loadPosts]);
+  const buildAudience = () => {
+    if (wholeSchool) return [{ scope: 'school' }];
+    return [
+      ...grades.map((g) => ({ scope: 'grade', refId: g })),
+      ...classes.map((c) => ({ scope: 'class', refId: c.classId })),
+    ];
+  };
 
-  const resetComposer = () => { setTitle(''); setBody(''); setFiles([]); };
+  const resetComposer = () => {
+    setTitle(''); setBody(''); setFiles([]); setWholeSchool(false); setGrades([]); setClasses([]);
+  };
 
   const compose = async (doPublish) => {
     setErr(''); setSuccess('');
-    if (!classId) { setErr('Pick your class first.'); return; }
+    const audience = buildAudience();
+    if (!audience.length) { setErr('Choose an audience (whole school, or a grade/class).'); return; }
     if (!files.length) { setErr('Add at least one photo.'); return; }
     const tooBig = files.find((f) => f.size > PHOTO_MAX_BYTES);
     if (tooBig) { setErr(`"${tooBig.name}" is larger than 5 MB.`); return; }
     setBusy(true);
     try {
-      const created = await outreachService.me.create({ classId, title: title.trim() || undefined, body: body.trim() || undefined });
+      const created = await outreachService.create({ title: title.trim() || undefined, body: body.trim() || undefined, audience });
       const images = await filesToImages(files);
       for (const image of images) {
-        await outreachService.me.addPhoto(created.uuid, { image });
+        await outreachService.addPhoto(created.uuid, { image });
       }
-      if (doPublish) await outreachService.me.publish(created.uuid);
+      if (doPublish) await outreachService.publish(created.uuid);
       setSuccess(doPublish ? 'Posted — parents notified.' : 'Saved as draft.');
       resetComposer();
       await loadPosts();
@@ -100,8 +104,8 @@ export default function MyMoments() {
   const toggle = async (row, publish) => {
     setErr(''); setSuccess(''); setBusy(true);
     try {
-      if (publish) await outreachService.me.publish(row.uuid);
-      else await outreachService.me.unpublish(row.uuid);
+      if (publish) await outreachService.publish(row.uuid);
+      else await outreachService.unpublish(row.uuid);
       setConfirmUnpub(null);
       await loadPosts();
       setSuccess(publish ? 'Posted — parents notified.' : 'Unpublished.');
@@ -114,12 +118,10 @@ export default function MyMoments() {
     return (
       <Box sx={{ p: 2 }}>
         <Typography variant="h6" sx={{ mb: 1 }}>Moments</Typography>
-        <Alert severity="info">Only a class teacher can post moments for their class.</Alert>
+        <Alert severity="info">Only god, admin, or the Moments in-charge can post moments.</Alert>
       </Box>
     );
   }
-
-  const selectedClassName = classes.find((c) => c.classId === classId)?.className;
 
   return (
     <Box sx={{ p: 2, maxWidth: 640, mx: 'auto' }}>
@@ -128,53 +130,64 @@ export default function MyMoments() {
         <Typography variant="h6">Moments</Typography>
       </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Share today's photos with your class's parents. Posting sends them a notification.
+        Share photos with parents. Posting sends an in-app notification and the post appears in the family app.
       </Typography>
 
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr('')}>{err}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
-      {classes.length === 0 ? (
-        <Alert severity="warning" sx={{ mb: 3 }}>You are not set as a class teacher for any class this year.</Alert>
-      ) : (
-        <Card variant="outlined" sx={{ mb: 3 }}>
-          <CardContent>
-            <Stack spacing={2}>
-              {classes.length > 1 ? (
-                <TextField select label="Class" size="small" fullWidth value={classId} onChange={(e) => setClassId(e.target.value)}>
-                  {classes.map((c) => <MenuItem key={c.classId} value={c.classId}>{c.className}</MenuItem>)}
-                </TextField>
-              ) : (
-                <Typography variant="subtitle2">Posting for <b>{selectedClassName}</b></Typography>
-              )}
+      <Card variant="outlined" sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack spacing={2}>
+            <Button component="label" variant="outlined" startIcon={<AddPhotoIcon />} fullWidth sx={{ py: 1.2 }}>
+              {files.length ? `${files.length} photo${files.length > 1 ? 's' : ''} selected` : 'Add photos'}
+              <input hidden multiple type="file" accept={PHOTO_ACCEPT} onChange={(e) => setFiles(Array.from(e.target.files || []))} />
+            </Button>
+            {files.length > 0 && (
+              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                {files.map((f, i) => (
+                  <Chip key={i} label={f.name} size="small" onDelete={() => setFiles(files.filter((_, j) => j !== i))} />
+                ))}
+              </Stack>
+            )}
 
-              <Button component="label" variant="outlined" startIcon={<AddPhotoIcon />} fullWidth sx={{ py: 1.2 }}>
-                {files.length ? `${files.length} photo${files.length > 1 ? 's' : ''} selected` : 'Add photos'}
-                <input hidden multiple type="file" accept={PHOTO_ACCEPT} onChange={(e) => setFiles(Array.from(e.target.files || []))} />
-              </Button>
-              {files.length > 0 && (
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  {files.map((f, i) => (
-                    <Chip key={i} label={f.name} size="small" onDelete={() => setFiles(files.filter((_, j) => j !== i))} />
-                  ))}
+            <TextField label="Title (optional)" size="small" fullWidth value={title} onChange={(e) => setTitle(e.target.value)} inputProps={{ maxLength: 256 }} />
+            <TextField label="Message (optional)" size="small" fullWidth multiline minRows={2} value={body} onChange={(e) => setBody(e.target.value)} />
+
+            <Box>
+              <FormControlLabel
+                control={<Checkbox checked={wholeSchool} onChange={(e) => setWholeSchool(e.target.checked)} />}
+                label="Whole school"
+              />
+              {!wholeSchool && (
+                <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+                  <Autocomplete
+                    multiple size="small" options={options.grades.map((g) => g.grade)}
+                    value={grades} onChange={(_, v) => setGrades(v)}
+                    renderInput={(params) => <TextField {...params} label="Grades" placeholder="e.g. I, II" />}
+                  />
+                  <Autocomplete
+                    multiple size="small" options={options.classes}
+                    getOptionLabel={(o) => o.name || ''}
+                    isOptionEqualToValue={(o, v) => o.classId === v.classId}
+                    value={classes} onChange={(_, v) => setClasses(v)}
+                    renderInput={(params) => <TextField {...params} label="Classes" placeholder="Select sections" />}
+                  />
                 </Stack>
               )}
+            </Box>
 
-              <TextField label="Title (optional)" size="small" fullWidth value={title} onChange={(e) => setTitle(e.target.value)} inputProps={{ maxLength: 256 }} />
-              <TextField label="Message (optional)" size="small" fullWidth multiline minRows={2} value={body} onChange={(e) => setBody(e.target.value)} />
-
-              <Stack direction="row" spacing={1}>
-                <Button variant="contained" fullWidth startIcon={<PublishIcon />} onClick={() => compose(true)} disabled={busy}>
-                  {busy ? 'Working…' : 'Post'}
-                </Button>
-                <Button variant="text" onClick={() => compose(false)} disabled={busy}>Draft</Button>
-              </Stack>
+            <Stack direction="row" spacing={1}>
+              <Button variant="contained" fullWidth startIcon={<PublishIcon />} onClick={() => compose(true)} disabled={busy}>
+                {busy ? 'Working…' : 'Post'}
+              </Button>
+              <Button variant="text" onClick={() => compose(false)} disabled={busy}>Draft</Button>
             </Stack>
-          </CardContent>
-        </Card>
-      )}
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>Your recent moments</Typography>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>Recent moments</Typography>
       {loadingPosts ? (
         <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress /></Box>
       ) : posts.length === 0 ? (
