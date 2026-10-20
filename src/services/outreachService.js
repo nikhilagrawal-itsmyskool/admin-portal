@@ -87,23 +87,43 @@ export const outreachService = {
 export const REACTION_EMOJI = { love: '❤️', like: '👍', clap: '👏', smile: '😊', celebrate: '🎉' };
 
 export const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp';
-export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+// Sanity cap on the ORIGINAL file before downscaling (reject absurd files, e.g. a RAW).
+export const PHOTO_MAX_BYTES = 40 * 1024 * 1024;
+// Delivery size: resize to this long-edge + JPEG quality in the browser before upload. Not
+// editing (no crop/filter) — just sizing for the feed, like WhatsApp's HD. Keeps 50-photo
+// posts fast and light on R2 + parents' data, and comfortably under the backend's 5 MB cap.
+const DOWNSCALE_MAX_EDGE = 1920;
+const DOWNSCALE_QUALITY = 0.85;
 
-// File -> raw base64 (strips the data: URI prefix), for the photo payload.
-export function readFileB64(file) {
+// Resize one image file in-browser and return the { fileName, mimeType, base64Data } payload.
+export function downscaleImage(file, maxEdge = DOWNSCALE_MAX_EDGE, quality = DOWNSCALE_QUALITY) {
   return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result).split(',')[1]);
-    r.onerror = reject;
-    r.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      const base64Data = dataUrl.split(',')[1];
+      const fileName = (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg';
+      resolve({ fileName, mimeType: 'image/jpeg', base64Data });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(`Could not read "${file.name}"`)); };
+    img.src = url;
   });
 }
 
-// Turn selected File[] into the image payloads addPhoto expects.
-export async function filesToImages(files) {
+// Turn selected File[] into downscaled image payloads. onProgress(done, total) optional.
+export async function filesToImages(files, onProgress) {
   const out = [];
-  for (const f of files) {
-    out.push({ fileName: f.name, mimeType: f.type, base64Data: await readFileB64(f) });
+  for (let i = 0; i < files.length; i++) {
+    out.push(await downscaleImage(files[i]));
+    if (onProgress) onProgress(i + 1, files.length);
   }
   return out;
 }

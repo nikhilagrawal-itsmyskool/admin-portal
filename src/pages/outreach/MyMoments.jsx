@@ -43,6 +43,7 @@ export default function MyMoments() {
   const [body, setBody] = useState('');
   const [files, setFiles] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState('');
   const [err, setErr] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -84,13 +85,15 @@ export default function MyMoments() {
     if (!audience.length) { setErr('Choose an audience (whole school, or a grade/class).'); return; }
     if (!files.length) { setErr('Add at least one photo.'); return; }
     const tooBig = files.find((f) => f.size > PHOTO_MAX_BYTES);
-    if (tooBig) { setErr(`"${tooBig.name}" is larger than 5 MB.`); return; }
+    if (tooBig) { setErr(`"${tooBig.name}" is too large (max 40 MB).`); return; }
     setBusy(true);
     try {
       const created = await outreachService.create({ title: title.trim() || undefined, body: body.trim() || undefined, audience });
-      const images = await filesToImages(files);
-      for (const image of images) {
-        await outreachService.addPhoto(created.uuid, { image });
+      setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
+      const images = await filesToImages(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
+      for (let i = 0; i < images.length; i++) {
+        setProgress(`Uploading photo ${i + 1}/${images.length}…`);
+        await outreachService.addPhoto(created.uuid, { image: images[i] });
       }
       if (doPublish) await outreachService.publish(created.uuid);
       setSuccess(doPublish ? 'Posted — parents notified.' : 'Saved as draft.');
@@ -98,7 +101,7 @@ export default function MyMoments() {
       await loadPosts();
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to post the moment');
-    } finally { setBusy(false); }
+    } finally { setBusy(false); setProgress(''); }
   };
 
   const toggle = async (row, publish) => {
@@ -183,6 +186,7 @@ export default function MyMoments() {
               </Button>
               <Button variant="text" onClick={() => compose(false)} disabled={busy}>Draft</Button>
             </Stack>
+            {busy && progress && <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{progress}</Typography>}
           </Stack>
         </CardContent>
       </Card>

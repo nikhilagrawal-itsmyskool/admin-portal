@@ -64,6 +64,7 @@ export default function MomentsPage() {
   const [classes, setClasses] = useState([]);         // selected class objects
   const [files, setFiles] = useState([]);             // File[]
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState('');
   const [options, setOptions] = useState({ grades: [], classes: [] });
 
   // View dialog + delete confirm
@@ -107,13 +108,15 @@ export default function MomentsPage() {
     if (!audience.length) { setErr('Choose an audience (whole school, or at least one grade/class).'); return; }
     if (!files.length) { setErr('Add at least one photo.'); return; }
     const tooBig = files.find((f) => f.size > PHOTO_MAX_BYTES);
-    if (tooBig) { setErr(`"${tooBig.name}" is larger than 5 MB.`); return; }
+    if (tooBig) { setErr(`"${tooBig.name}" is too large (max 40 MB).`); return; }
     setBusy(true);
     try {
       const created = await outreachService.create({ title: title.trim() || undefined, body: body.trim() || undefined, audience });
-      const images = await filesToImages(files);
-      for (const image of images) {
-        await outreachService.addPhoto(created.uuid, { image });
+      setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
+      const images = await filesToImages(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
+      for (let i = 0; i < images.length; i++) {
+        setProgress(`Uploading photo ${i + 1}/${images.length}…`);
+        await outreachService.addPhoto(created.uuid, { image: images[i] });
       }
       if (doPublish) await outreachService.publish(created.uuid);
       setSuccess(doPublish ? 'Moment published — parents notified.' : 'Draft saved.');
@@ -121,7 +124,7 @@ export default function MomentsPage() {
       await loadList();
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save the moment');
-    } finally { setBusy(false); }
+    } finally { setBusy(false); setProgress(''); }
   };
 
   const openView = async (id) => {
@@ -238,11 +241,12 @@ export default function MomentsPage() {
                 </Grid>
               )}
               <Grid item xs={12}>
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
                   <Button variant="contained" startIcon={<PublishIcon />} onClick={() => compose(true)} disabled={busy}>
                     {busy ? 'Working…' : 'Publish'}
                   </Button>
                   <Button variant="text" onClick={() => compose(false)} disabled={busy}>Save as draft</Button>
+                  {busy && progress && <Typography variant="caption" color="text.secondary">{progress}</Typography>}
                 </Stack>
               </Grid>
             </Grid>
@@ -287,7 +291,7 @@ export default function MomentsPage() {
                 </Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary">To: {audienceSummary(viewing.audience)}</Typography>
-              {viewing.body && <Typography variant="body2">{viewing.body}</Typography>}
+              {viewing.body && <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{viewing.body}</Typography>}
               {Array.isArray(viewing.photos) && viewing.photos.length > 0 && (
                 <Grid container spacing={1}>
                   {viewing.photos.map((p) => (
