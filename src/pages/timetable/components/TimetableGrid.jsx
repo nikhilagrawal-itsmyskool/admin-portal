@@ -149,7 +149,10 @@ export default function TimetableGrid({
       );
     }
     const items = bySlot.get(slot.uuid) || [];
-    const canEdit = editable && items.length > 0;
+    // In edit mode EVERY teaching cell is clickable — including empty ones, so a
+    // hand-authored grid can fill blanks (pre-primary). View mode stays non-interactive.
+    const canEdit = editable;
+    const empty = items.length === 0;
     return (
       <Box
         onClick={canEdit ? () => setEditingCell({ day, slot, items }) : undefined}
@@ -160,26 +163,43 @@ export default function TimetableGrid({
           borderRadius: 1,
           p: 0.5,
           cursor: canEdit ? "pointer" : "default",
+          display: empty ? "flex" : undefined,
+          alignItems: empty ? "center" : undefined,
+          justifyContent: empty ? "center" : undefined,
           "&:hover": canEdit ? { borderColor: "#598bff", boxShadow: 1 } : undefined,
         }}
       >
-        {items.map((e) => (
-          <Box key={e.uuid} sx={{ mb: items.length > 1 ? 0.5 : 0 }}>
-            <Typography
-              variant="caption"
-              sx={{ fontWeight: 600, display: "block", lineHeight: 1.25 }}
-            >
-              {subjLabel(e)}
-              {e.bandId ? " *" : ""}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: "#5a6473", display: "block", lineHeight: 1.25 }}
-            >
-              {otherLabel(e)}
-            </Typography>
-          </Box>
-        ))}
+        {empty && canEdit && (
+          <Typography variant="caption" sx={{ color: "#b8c0d0" }}>
+            ＋
+          </Typography>
+        )}
+        {items.map((e) => {
+          // A hand-authored cell carries free text in `label`; a solver cell carries a
+          // subject (+ teacher). Show the label when present, else the subject.
+          const primary = e.label || subjLabel(e);
+          // Suppress the "—" second line for a label-only (teacher-less) cell.
+          const showOther = mode !== "class" || !!e.teacherId;
+          return (
+            <Box key={e.uuid} sx={{ mb: items.length > 1 ? 0.5 : 0 }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 600, display: "block", lineHeight: 1.25 }}
+              >
+                {primary}
+                {e.bandId ? " *" : ""}
+              </Typography>
+              {showOther && (
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#5a6473", display: "block", lineHeight: 1.25 }}
+                >
+                  {otherLabel(e)}
+                </Typography>
+              )}
+            </Box>
+          );
+        })}
       </Box>
     );
   };
@@ -256,6 +276,8 @@ export default function TimetableGrid({
           publishedTimetableId={publishedTimetableId}
           classId={selectedId}
           group={editingCell.items}
+          day={editingCell.day}
+          slot={editingCell.slot}
           config={config}
           allEntries={entries}
           onChanged={() => onChanged && onChanged()}

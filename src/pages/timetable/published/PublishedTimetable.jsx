@@ -12,6 +12,7 @@ import {
   MenuItem,
   ToggleButton,
   ToggleButtonGroup,
+  Button,
   useMediaQuery,
 } from "@mui/material";
 import { timetableService } from "../../../services/timetableService";
@@ -30,6 +31,7 @@ export default function PublishedTimetable() {
   const [error, setError] = useState("");
   // 'individual' (class/teacher, view-only) | 'master' (per-day) | 'truemaster' (all-days block)
   const [view, setView] = useState("individual");
+  const [editMode, setEditMode] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const { user } = useAuth();
   // Phone = either dimension < 600px, so it stays true when rotated to landscape.
@@ -152,7 +154,9 @@ export default function PublishedTimetable() {
                   exclusive
                   value={view}
                   onChange={(e, v) => {
-                    if (v) setView(v);
+                    if (!v) return;
+                    setView(v);
+                    if (v !== "individual") setEditMode(false);
                   }}
                 >
                   <ToggleButton value="individual">Class / Teacher</ToggleButton>
@@ -161,6 +165,17 @@ export default function PublishedTimetable() {
                     <ToggleButton value="truemaster">True Master</ToggleButton>
                   )}
                 </ToggleButtonGroup>
+                {/* Hand-edit the class grid in place (god): fill/edit/clear cells — used
+                    for pre-primary label grids and any manual master. */}
+                {isGod && view === "individual" && (
+                  <Button
+                    size="small"
+                    variant={editMode ? "contained" : "outlined"}
+                    onClick={() => setEditMode((v) => !v)}
+                  >
+                    {editMode ? "Done editing" : "Edit"}
+                  </Button>
+                )}
               </Stack>
             )}
             {view === "individual" ? (
@@ -173,6 +188,9 @@ export default function PublishedTimetable() {
                 isPhone={isPhone}
                 showSelector={!simpleMobile}
                 showMaster={false}
+                editable={editMode && isGod}
+                publishedTimetableId={pt.uuid}
+                onChanged={() => setReloadKey((k) => k + 1)}
               />
             ) : view === "master" ? (
               <MasterTimetable

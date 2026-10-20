@@ -1,6 +1,9 @@
 import api from "../config/api";
 
 const BASE = "/timetable";
+// Overflow endpoints live in a second stack under /timetable-ext (the primary timetable
+// service is at CloudFormation's 500-resource limit). Same logic, different base path.
+const EXT = "/timetable-ext";
 
 export const timetableService = {
   // Lookups (enum dropdowns)
@@ -363,6 +366,34 @@ export const timetableService = {
   },
   swapPublishedEntries: async (data) => {
     const response = await api.post(`${BASE}/published/swap`, data);
+    return response.data;
+  },
+
+  // Hand-authored (manual) master: create a draft, load it, fill/clear a cell, activate.
+  // A cell carries a free-text `label` and/or subjectId+teacherId; pre-primary cells are
+  // label-only (teacher-less). See the timetable module DESIGN.md "manual master".
+  createManualMaster: async (data) => {
+    // { academicYearId, wingId?, configId } -> { publishedTimetableId }
+    const response = await api.post(`${EXT}/published/manual`, data);
+    return response.data;
+  },
+  getPublishedById: async (id) => {
+    const response = await api.get(`${EXT}/published/${id}`);
+    return response.data; // { publishedTimetable, entries, config }
+  },
+  createPublishedEntry: async (data) => {
+    // { publishedTimetableId, classId, dayOfWeek, timeSlotId, label?, subjectId?, teacherId? }
+    const response = await api.post(`${EXT}/published/entries`, data);
+    return response.data; // { entryId }
+  },
+  deletePublishedEntry: async (id, publishedTimetableId) => {
+    const response = await api.delete(`${EXT}/published/entries/${id}`, {
+      params: { publishedTimetableId },
+    });
+    return response.data;
+  },
+  activateDraft: async (id, data = {}) => {
+    const response = await api.post(`${EXT}/published/${id}/activate`, data);
     return response.data;
   },
 
