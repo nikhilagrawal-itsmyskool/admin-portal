@@ -232,6 +232,8 @@ export const ACTIONS = {
   CLUB_PLAN_MANAGE: "club.plan.manage",
   CLUB_PLAN_PUBLISH: "club.plan.publish",
   CLUB_PLAN_CONDUCT: "club.plan.conduct",
+  // Website publisher (per-school Contentful push from Moments). Mirror of backend authz-policy.ts.
+  WEBSITE_PUBLISH: "website.publish",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.

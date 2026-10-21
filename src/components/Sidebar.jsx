@@ -97,6 +97,7 @@ import {
   EmojiEvents as LeaderboardIcon,
   PhotoCamera as HomeworkIcon,
   PhotoLibrary as MomentsIcon,
+  Language as WebsiteIcon,
   HistoryEdu as ExamIcon,
   HowToReg as DutyIcon,
   Image as BrandingSidebarIcon,
@@ -463,6 +464,17 @@ const menuItems = [
     children: [
       { title: 'Permissions', icon: PermissionsIcon, path: '/outreach/permissions', perm: 'authz.manage', admin: true },
       { title: 'Moments', icon: MomentsIcon, path: '/outreach', perm: 'outreach.moment.view' },
+    ],
+  },
+  {
+    // Website publisher — per-school push of curated Moments photos into Contentful. Gated on
+    // website.publish (god + website-incharge only), so it's invisible unless a school uses it.
+    title: 'Website',
+    icon: WebsiteIcon,
+    perm: 'website.publish',
+    children: [
+      { title: 'Permissions', icon: PermissionsIcon, path: '/website/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Publish', icon: WebsiteIcon, path: '/website', perm: 'website.publish' },
     ],
   },
   {

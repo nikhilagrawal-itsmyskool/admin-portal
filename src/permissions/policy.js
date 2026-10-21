@@ -134,6 +134,8 @@ export const ROLE_PERMISSIONS = {
   // Club in-charge: READ-ONLY by default across the three club resources (clubs, bank, plans).
   // Authoring/approve/review/planning are god-first; god grants more via the Permissions grid.
   "club-incharge": ["club.setup.view", "club.activity.view", "club.plan.view"],
+  // Website publisher — curates Moments photos into Contentful. Per-school (only DBPASN assigns it).
+  "website-incharge": ["website.publish"],
   // Each in-charge === admin, but scoped to its own module.
   "medical-incharge": ["medical.*"],
   "lab-incharge": ["lab.*"],
