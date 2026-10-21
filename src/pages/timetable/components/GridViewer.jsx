@@ -38,6 +38,9 @@ export default function GridViewer({
   onModeChange,
   initialMode,
   initialSelectedId,
+  // Explicit class list for the By-Class picker. Needed when authoring a brand-new master
+  // whose entries are still empty (so classes can't be derived from entries yet).
+  classIds: classIdsProp,
   isPhone = false,
   showSelector = true,
   // The published page has its own top-level Master / True Master views, so it hides
@@ -98,7 +101,12 @@ export default function GridViewer({
   // order (which changed with CP-SAT), so sort here rather than rely on that order.
   // Classes follow the canonical API order (classRank); teachers sort by name.
   const classIds = useMemo(() => {
-    const ids = [...new Set(entries.map((e) => e.classId))];
+    // Prefer an explicit list (new/empty master); else derive from the entries.
+    const base =
+      classIdsProp && classIdsProp.length
+        ? classIdsProp
+        : entries.map((e) => e.classId);
+    const ids = [...new Set(base)];
     return ids.sort((a, b) => {
       const ra = classRank[a] ?? Infinity;
       const rb = classRank[b] ?? Infinity;
@@ -109,7 +117,7 @@ export default function GridViewer({
         { numeric: true },
       );
     });
-  }, [entries, classRank, classById]);
+  }, [entries, classRank, classById, classIdsProp]);
   const teacherIds = useMemo(() => {
     const ids = [...new Set(entries.map((e) => e.teacherId).filter(Boolean))];
     return ids.sort((a, b) =>

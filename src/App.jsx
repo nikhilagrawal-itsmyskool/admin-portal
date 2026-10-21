@@ -128,6 +128,7 @@ import RunDetail from './pages/timetable/runs/RunDetail';
 import ConstraintList from './pages/timetable/constraints/ConstraintList';
 import GenerateWizard from './pages/timetable/generate/GenerateWizard';
 import PublishedTimetable from './pages/timetable/published/PublishedTimetable';
+import ManualTimetable from './pages/timetable/ManualTimetable';
 import SeasonList from './pages/timetable/seasons/SeasonList';
 import SeasonEditor from './pages/timetable/seasons/SeasonEditor';
 import StudentList from './pages/student/StudentList';
@@ -469,6 +470,7 @@ export default function App() {
         <Route path="timetable/runs" element={<RunList />} />
         <Route path="timetable/runs/:id" element={<RunDetail />} />
         <Route path="timetable/published" element={<PublishedTimetable />} />
+        <Route path="timetable/manual" element={<ManualTimetable />} />
         <Route path="timetable/seasons" element={<SeasonList />} />
         <Route path="timetable/seasons/:id" element={<SeasonEditor />} />
         <Route path="attendance" element={<AttendanceDashboard />} />

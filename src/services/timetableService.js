@@ -345,11 +345,11 @@ export const timetableService = {
     const response = await api.get(`${BASE}/published`, { params });
     return response.data; // { publishedTimetable, entries, config }
   },
-  getPublishedList: async (academicYearId) => {
-    const response = await api.get(`${BASE}/published-list`, {
-      params: { academicYearId },
-    });
-    return response.data; // { published: [{ uuid, wingId, wingName, entryCount, ... }] }
+  getPublishedList: async (academicYearId, includeDrafts = false) => {
+    const params = { academicYearId };
+    if (includeDrafts) params.includeDrafts = 1;
+    const response = await api.get(`${BASE}/published-list`, { params });
+    return response.data; // { published: [{ uuid, wingId, wingName, status, configId, entryCount, ... }] }
   },
   validateMove: async (data) => {
     const response = await api.post(`${BASE}/validate-move`, data);
@@ -394,6 +394,10 @@ export const timetableService = {
   },
   activateDraft: async (id, data = {}) => {
     const response = await api.post(`${EXT}/published/${id}/activate`, data);
+    return response.data;
+  },
+  deleteMaster: async (id) => {
+    const response = await api.delete(`${EXT}/published/${id}`);
     return response.data;
   },
 
