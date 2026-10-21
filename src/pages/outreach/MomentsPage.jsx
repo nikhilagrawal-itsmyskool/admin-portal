@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import SelectedThumbs from './SelectedThumbs';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useAuth } from '../../context/AuthContext';
 import { can } from '../../permissions/can';
@@ -233,11 +234,7 @@ export default function MomentsPage() {
               </Grid>
               {files.length > 0 && (
                 <Grid item xs={12}>
-                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                    {files.map((f, i) => (
-                      <Chip key={i} label={f.name} size="small" onDelete={() => setFiles(files.filter((_, j) => j !== i))} />
-                    ))}
-                  </Stack>
+                  <SelectedThumbs files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
                 </Grid>
               )}
               <Grid item xs={12}>
@@ -283,6 +280,7 @@ export default function MomentsPage() {
             <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress /></Box>
           ) : (
             <Stack spacing={1.5}>
+              <Typography variant="caption" color="text.secondary">Preview — how parents will see it</Typography>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Chip size="small" label={viewing.status === 'published' ? 'Published' : 'Draft'} color={viewing.status === 'published' ? 'success' : 'default'} variant={viewing.status === 'published' ? 'filled' : 'outlined'} />
                 <Typography variant="caption" color="text.secondary">

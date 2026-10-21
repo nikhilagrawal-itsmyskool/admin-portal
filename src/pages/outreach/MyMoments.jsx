@@ -8,6 +8,7 @@ import {
   AddPhotoAlternate as AddPhotoIcon,
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import SelectedThumbs from './SelectedThumbs';
 import { useAuth } from '../../context/AuthContext';
 import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -147,11 +148,7 @@ export default function MyMoments() {
               <input hidden multiple type="file" accept={PHOTO_ACCEPT} onChange={(e) => setFiles(Array.from(e.target.files || []))} />
             </Button>
             {files.length > 0 && (
-              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                {files.map((f, i) => (
-                  <Chip key={i} label={f.name} size="small" onDelete={() => setFiles(files.filter((_, j) => j !== i))} />
-                ))}
-              </Stack>
+              <SelectedThumbs files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
             )}
 
             <TextField label="Title (optional)" size="small" fullWidth value={title} onChange={(e) => setTitle(e.target.value)} inputProps={{ maxLength: 256 }} />
