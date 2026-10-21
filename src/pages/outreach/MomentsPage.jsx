@@ -7,6 +7,7 @@ import {
 import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   Visibility as ViewIcon, AddPhotoAlternate as AddPhotoIcon, Close as CloseIcon,
+  OndemandVideo as VideoIcon, Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -64,6 +65,9 @@ export default function MomentsPage() {
   const [grades, setGrades] = useState([]);           // selected grade labels
   const [classes, setClasses] = useState([]);         // selected class objects
   const [files, setFiles] = useState([]);             // File[]
+  const [videoUrls, setVideoUrls] = useState([]);     // YouTube URLs (strings)
+  const [videoInput, setVideoInput] = useState('');
+  const [publishAt, setPublishAt] = useState('');     // datetime-local string
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
   const [options, setOptions] = useState({ grades: [], classes: [] });
@@ -100,27 +104,53 @@ export default function MomentsPage() {
 
   const resetComposer = () => {
     setTitle(''); setBody(''); setWholeSchool(false); setGrades([]); setClasses([]); setFiles([]);
+    setVideoUrls([]); setVideoInput(''); setPublishAt('');
   };
 
-  // Create a draft, attach every selected photo, then (optionally) publish.
-  const compose = async (doPublish) => {
+  const addVideoUrl = () => {
+    const u = videoInput.trim();
+    if (!u) return;
+    setVideoUrls((prev) => [...prev, u]);
+    setVideoInput('');
+  };
+
+  // Create a draft, attach photos + YouTube links, then publish / schedule / leave as draft.
+  // mode = 'publish' | 'draft' | 'schedule'.
+  const compose = async (mode) => {
     setErr(''); setSuccess('');
     const audience = buildAudience();
     if (!audience.length) { setErr('Choose an audience (whole school, or at least one grade/class).'); return; }
-    if (!files.length) { setErr('Add at least one photo.'); return; }
+    if (!files.length && !videoUrls.length) { setErr('Add at least one photo or YouTube link.'); return; }
     const tooBig = files.find((f) => f.size > PHOTO_MAX_BYTES);
     if (tooBig) { setErr(`"${tooBig.name}" is too large (max 40 MB).`); return; }
+    let publishIso = null;
+    if (mode === 'schedule') {
+      const when = publishAt ? new Date(publishAt) : null;
+      if (!when || isNaN(when.getTime()) || when.getTime() <= Date.now()) { setErr('Pick a future date & time to schedule.'); return; }
+      publishIso = when.toISOString();
+    }
     setBusy(true);
     try {
       const created = await outreachService.create({ title: title.trim() || undefined, body: body.trim() || undefined, audience });
-      setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
-      const images = await filesToImages(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
-      for (let i = 0; i < images.length; i++) {
-        setProgress(`Uploading photo ${i + 1}/${images.length}…`);
-        await outreachService.addPhoto(created.uuid, { image: images[i] });
+      if (files.length) {
+        setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
+        const images = await filesToImages(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
+        for (let i = 0; i < images.length; i++) {
+          setProgress(`Uploading photo ${i + 1}/${images.length}…`);
+          await outreachService.addPhoto(created.uuid, { image: images[i] });
+        }
       }
-      if (doPublish) await outreachService.publish(created.uuid);
-      setSuccess(doPublish ? 'Moment published — parents notified.' : 'Draft saved.');
+      for (let i = 0; i < videoUrls.length; i++) {
+        setProgress(`Adding video ${i + 1}/${videoUrls.length}…`);
+        await outreachService.addVideo(created.uuid, { url: videoUrls[i] });
+      }
+      if (mode === 'publish') await outreachService.publish(created.uuid);
+      else if (mode === 'schedule') await outreachService.schedule(created.uuid, publishIso);
+      setSuccess(
+        mode === 'publish' ? 'Moment published — parents notified.'
+          : mode === 'schedule' ? `Scheduled for ${fmtDateTime(publishIso)}.`
+          : 'Draft saved.',
+      );
       resetComposer();
       await loadList();
     } catch (e) {
@@ -157,20 +187,23 @@ export default function MomentsPage() {
     { field: 'title', headerName: 'Title', flex: 1, minWidth: 180,
       renderCell: (p) => p.value || <em style={{ color: '#888' }}>(no title)</em> },
     { field: 'status', headerName: 'Status', width: 120,
-      renderCell: (p) => <Chip size="small" label={p.value === 'published' ? 'Published' : 'Draft'} color={p.value === 'published' ? 'success' : 'default'} variant={p.value === 'published' ? 'filled' : 'outlined'} /> },
+      renderCell: (p) => p.row.scheduled
+        ? <Chip size="small" label="Scheduled" color="info" variant="outlined" />
+        : <Chip size="small" label={p.value === 'published' ? 'Published' : 'Draft'} color={p.value === 'published' ? 'success' : 'default'} variant={p.value === 'published' ? 'filled' : 'outlined'} /> },
     { field: 'audience', headerName: 'Audience', flex: 1, minWidth: 160, sortable: false,
       valueGetter: (v) => audienceSummary(v) },
-    { field: 'photoCount', headerName: 'Photos', width: 90, align: 'center', headerAlign: 'center' },
-    { field: 'reactionCount', headerName: 'Reactions', width: 100, align: 'center', headerAlign: 'center' },
-    { field: 'publishedAt', headerName: 'Published', width: 160,
-      valueGetter: (v) => (v ? fmtDateTime(v) : '—') },
+    { field: 'photoCount', headerName: 'Photos', width: 80, align: 'center', headerAlign: 'center' },
+    { field: 'videoCount', headerName: 'Videos', width: 80, align: 'center', headerAlign: 'center' },
+    { field: 'reactionCount', headerName: 'Reactions', width: 90, align: 'center', headerAlign: 'center' },
+    { field: 'publishedAt', headerName: 'When', width: 170,
+      valueGetter: (v, row) => (row.scheduled ? `⏱ ${fmtDateTime(row.publishAt)}` : (v ? fmtDateTime(v) : '—')) },
     { field: 'actions', headerName: 'Actions', width: 130, sortable: false,
       renderCell: (p) => (
         <Box>
           <Tooltip title="View"><IconButton size="small" onClick={() => openView(p.row.uuid)}><ViewIcon fontSize="small" /></IconButton></Tooltip>
           {canManage && (p.row.status === 'published'
             ? <Tooltip title="Unpublish"><IconButton size="small" color="warning" onClick={() => setConfirmUnpub(p.row)}><UnpublishIcon fontSize="small" /></IconButton></Tooltip>
-            : <Tooltip title="Publish"><IconButton size="small" color="success" onClick={() => doPublishToggle(p.row, true)} disabled={busy || !p.row.photoCount}><PublishIcon fontSize="small" /></IconButton></Tooltip>)}
+            : <Tooltip title="Publish now"><IconButton size="small" color="success" onClick={() => doPublishToggle(p.row, true)} disabled={busy || !(p.row.photoCount || p.row.videoCount)}><PublishIcon fontSize="small" /></IconButton></Tooltip>)}
         </Box>
       ) },
   ];
@@ -239,10 +272,40 @@ export default function MomentsPage() {
               )}
               <Grid item xs={12}>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Button variant="contained" startIcon={<PublishIcon />} onClick={() => compose(true)} disabled={busy}>
-                    {busy ? 'Working…' : 'Publish'}
+                  <TextField
+                    label="YouTube link" size="small" fullWidth value={videoInput}
+                    onChange={(e) => setVideoInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addVideoUrl(); } }}
+                    placeholder="Paste a YouTube URL and press Add"
+                  />
+                  <Button variant="outlined" startIcon={<VideoIcon />} onClick={addVideoUrl} disabled={!videoInput.trim()}>Add</Button>
+                </Stack>
+                {videoUrls.length > 0 && (
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                    {videoUrls.map((u, i) => (
+                      <Chip key={i} icon={<VideoIcon />} label={u.length > 44 ? `${u.slice(0, 44)}…` : u} size="small"
+                        onDelete={() => setVideoUrls(videoUrls.filter((_, j) => j !== i))} />
+                    ))}
+                  </Stack>
+                )}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Schedule for later (optional)" type="datetime-local" size="small" fullWidth
+                  value={publishAt} onChange={(e) => setPublishAt(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Leave empty to publish now or save as draft"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Button variant="contained" startIcon={<PublishIcon />} onClick={() => compose('publish')} disabled={busy}>
+                    {busy ? 'Working…' : 'Publish now'}
                   </Button>
-                  <Button variant="text" onClick={() => compose(false)} disabled={busy}>Save as draft</Button>
+                  <Button variant="outlined" startIcon={<ScheduleIcon />} onClick={() => compose('schedule')} disabled={busy || !publishAt}>
+                    Schedule
+                  </Button>
+                  <Button variant="text" onClick={() => compose('draft')} disabled={busy}>Save as draft</Button>
                   {busy && progress && <Typography variant="caption" color="text.secondary">{progress}</Typography>}
                 </Stack>
               </Grid>
@@ -282,9 +345,12 @@ export default function MomentsPage() {
             <Stack spacing={1.5}>
               <Typography variant="caption" color="text.secondary">Preview — how parents will see it</Typography>
               <Stack direction="row" spacing={1} alignItems="center">
-                <Chip size="small" label={viewing.status === 'published' ? 'Published' : 'Draft'} color={viewing.status === 'published' ? 'success' : 'default'} variant={viewing.status === 'published' ? 'filled' : 'outlined'} />
+                {viewing.scheduled
+                  ? <Chip size="small" label="Scheduled" color="info" variant="outlined" />
+                  : <Chip size="small" label={viewing.status === 'published' ? 'Published' : 'Draft'} color={viewing.status === 'published' ? 'success' : 'default'} variant={viewing.status === 'published' ? 'filled' : 'outlined'} />}
                 <Typography variant="caption" color="text.secondary">
-                  {viewing.status === 'published' && viewing.publishedAt ? `Published ${fmtDateTime(viewing.publishedAt)}` : ''}
+                  {viewing.scheduled && viewing.publishAt ? `for ${fmtDateTime(viewing.publishAt)}` : ''}
+                  {!viewing.scheduled && viewing.status === 'published' && viewing.publishedAt ? `Published ${fmtDateTime(viewing.publishedAt)}` : ''}
                   {viewing.authorName ? ` · by ${viewing.authorName}` : ''}
                 </Typography>
               </Stack>
@@ -296,6 +362,20 @@ export default function MomentsPage() {
                     <Grid item xs={6} key={p.uuid}>
                       <MomentPhoto momentId={viewing.uuid} photo={p} />
                       {p.caption && <Typography variant="caption" color="text.secondary">{p.caption}</Typography>}
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+              {Array.isArray(viewing.videos) && viewing.videos.length > 0 && (
+                <Grid container spacing={1}>
+                  {viewing.videos.map((v) => (
+                    <Grid item xs={6} key={v.uuid}>
+                      <Box component="a" href={`https://youtu.be/${v.youtubeId}`} target="_blank" rel="noopener noreferrer"
+                        sx={{ display: 'block', position: 'relative', borderRadius: 1, overflow: 'hidden' }}>
+                        <Box component="img" src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`} alt="" sx={{ width: '100%', display: 'block' }} />
+                        <VideoIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 40, filter: 'drop-shadow(0 0 4px rgba(0,0,0,.6))' }} />
+                      </Box>
+                      {v.caption && <Typography variant="caption" color="text.secondary">{v.caption}</Typography>}
                     </Grid>
                   ))}
                 </Grid>
@@ -316,7 +396,7 @@ export default function MomentsPage() {
           <DialogActions>
             {viewing.status === 'published'
               ? <Button color="warning" startIcon={<UnpublishIcon />} onClick={() => setConfirmUnpub(viewing)} disabled={busy}>Unpublish</Button>
-              : <Button color="success" startIcon={<PublishIcon />} onClick={() => doPublishToggle(viewing, true)} disabled={busy || !(viewing.photos?.length)}>Publish</Button>}
+              : <Button color="success" startIcon={<PublishIcon />} onClick={() => doPublishToggle(viewing, true)} disabled={busy || !(viewing.photos?.length || viewing.videos?.length)}>Publish now</Button>}
           </DialogActions>
         )}
       </Dialog>

@@ -67,6 +67,14 @@ export const outreachService = {
     return response.data;
   },
 
+  // Videos = YouTube links (several per moment). { url, caption? }.
+  addVideo: async (id, data) => (await api.post(`/outreach/moments/${id}/videos`, data)).data,
+  removeVideo: async (id, videoId) => (await api.delete(`/outreach/moments/${id}/videos/${videoId}`)).data,
+
+  // Scheduled publish — publishAt is an ISO datetime (UTC). unschedule clears it (back to draft).
+  schedule: async (id, publishAt) => (await api.post(`/outreach/moments/${id}/schedule`, { publishAt })).data,
+  unschedule: async (id) => (await api.post(`/outreach/moments/${id}/unschedule`)).data,
+
   // ── Teacher PWA (own-class) — the /me surface used on phones ──────────────────
   me: {
     // Classes this teacher is the class teacher of (can post for).

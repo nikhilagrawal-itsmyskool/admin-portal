@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
-  AddPhotoAlternate as AddPhotoIcon,
+  AddPhotoAlternate as AddPhotoIcon, OndemandVideo as VideoIcon, Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SelectedThumbs from './SelectedThumbs';
@@ -43,6 +43,9 @@ export default function MyMoments() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [files, setFiles] = useState([]);
+  const [videoUrls, setVideoUrls] = useState([]);
+  const [videoInput, setVideoInput] = useState('');
+  const [publishAt, setPublishAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
   const [err, setErr] = useState('');
@@ -78,26 +81,52 @@ export default function MyMoments() {
 
   const resetComposer = () => {
     setTitle(''); setBody(''); setFiles([]); setWholeSchool(false); setGrades([]); setClasses([]);
+    setVideoUrls([]); setVideoInput(''); setPublishAt('');
   };
 
-  const compose = async (doPublish) => {
+  const addVideoUrl = () => {
+    const u = videoInput.trim();
+    if (!u) return;
+    setVideoUrls((prev) => [...prev, u]);
+    setVideoInput('');
+  };
+
+  // mode = 'publish' | 'draft' | 'schedule'.
+  const compose = async (mode) => {
     setErr(''); setSuccess('');
     const audience = buildAudience();
     if (!audience.length) { setErr('Choose an audience (whole school, or a grade/class).'); return; }
-    if (!files.length) { setErr('Add at least one photo.'); return; }
+    if (!files.length && !videoUrls.length) { setErr('Add at least one photo or YouTube link.'); return; }
     const tooBig = files.find((f) => f.size > PHOTO_MAX_BYTES);
     if (tooBig) { setErr(`"${tooBig.name}" is too large (max 40 MB).`); return; }
+    let publishIso = null;
+    if (mode === 'schedule') {
+      const when = publishAt ? new Date(publishAt) : null;
+      if (!when || isNaN(when.getTime()) || when.getTime() <= Date.now()) { setErr('Pick a future date & time to schedule.'); return; }
+      publishIso = when.toISOString();
+    }
     setBusy(true);
     try {
       const created = await outreachService.create({ title: title.trim() || undefined, body: body.trim() || undefined, audience });
-      setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
-      const images = await filesToImages(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
-      for (let i = 0; i < images.length; i++) {
-        setProgress(`Uploading photo ${i + 1}/${images.length}…`);
-        await outreachService.addPhoto(created.uuid, { image: images[i] });
+      if (files.length) {
+        setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
+        const images = await filesToImages(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
+        for (let i = 0; i < images.length; i++) {
+          setProgress(`Uploading photo ${i + 1}/${images.length}…`);
+          await outreachService.addPhoto(created.uuid, { image: images[i] });
+        }
       }
-      if (doPublish) await outreachService.publish(created.uuid);
-      setSuccess(doPublish ? 'Posted — parents notified.' : 'Saved as draft.');
+      for (let i = 0; i < videoUrls.length; i++) {
+        setProgress(`Adding video ${i + 1}/${videoUrls.length}…`);
+        await outreachService.addVideo(created.uuid, { url: videoUrls[i] });
+      }
+      if (mode === 'publish') await outreachService.publish(created.uuid);
+      else if (mode === 'schedule') await outreachService.schedule(created.uuid, publishIso);
+      setSuccess(
+        mode === 'publish' ? 'Posted — parents notified.'
+          : mode === 'schedule' ? `Scheduled for ${fmtDateTime(publishIso)}.`
+          : 'Saved as draft.',
+      );
       resetComposer();
       await loadPosts();
     } catch (e) {
@@ -155,6 +184,24 @@ export default function MyMoments() {
             <TextField label="Message (optional)" size="small" fullWidth multiline minRows={2} value={body} onChange={(e) => setBody(e.target.value)} />
 
             <Box>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField label="YouTube link" size="small" fullWidth value={videoInput}
+                  onChange={(e) => setVideoInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addVideoUrl(); } }}
+                  placeholder="Paste a YouTube URL" />
+                <Button variant="outlined" startIcon={<VideoIcon />} onClick={addVideoUrl} disabled={!videoInput.trim()}>Add</Button>
+              </Stack>
+              {videoUrls.length > 0 && (
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                  {videoUrls.map((u, i) => (
+                    <Chip key={i} icon={<VideoIcon />} label={u.length > 32 ? `${u.slice(0, 32)}…` : u} size="small"
+                      onDelete={() => setVideoUrls(videoUrls.filter((_, j) => j !== i))} />
+                  ))}
+                </Stack>
+              )}
+            </Box>
+
+            <Box>
               <FormControlLabel
                 control={<Checkbox checked={wholeSchool} onChange={(e) => setWholeSchool(e.target.checked)} />}
                 label="Whole school"
@@ -177,11 +224,16 @@ export default function MyMoments() {
               )}
             </Box>
 
-            <Stack direction="row" spacing={1}>
-              <Button variant="contained" fullWidth startIcon={<PublishIcon />} onClick={() => compose(true)} disabled={busy}>
-                {busy ? 'Working…' : 'Post'}
+            <TextField label="Schedule for later (optional)" type="datetime-local" size="small" fullWidth
+              value={publishAt} onChange={(e) => setPublishAt(e.target.value)} InputLabelProps={{ shrink: true }} />
+            <Stack spacing={1}>
+              <Button variant="contained" fullWidth startIcon={<PublishIcon />} onClick={() => compose('publish')} disabled={busy}>
+                {busy ? 'Working…' : 'Post now'}
               </Button>
-              <Button variant="text" onClick={() => compose(false)} disabled={busy}>Draft</Button>
+              <Stack direction="row" spacing={1}>
+                <Button variant="outlined" fullWidth startIcon={<ScheduleIcon />} onClick={() => compose('schedule')} disabled={busy || !publishAt}>Schedule</Button>
+                <Button variant="text" onClick={() => compose('draft')} disabled={busy}>Draft</Button>
+              </Stack>
             </Stack>
             {busy && progress && <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{progress}</Typography>}
           </Stack>
@@ -202,13 +254,16 @@ export default function MyMoments() {
                   <Typography variant="subtitle2" noWrap sx={{ flex: 1 }}>
                     {p.title || <em style={{ color: '#888' }}>(no title)</em>}
                   </Typography>
-                  <Chip size="small" label={p.status === 'published' ? 'Published' : 'Draft'}
-                    color={p.status === 'published' ? 'success' : 'default'}
-                    variant={p.status === 'published' ? 'filled' : 'outlined'} />
+                  {p.scheduled
+                    ? <Chip size="small" label="Scheduled" color="info" variant="outlined" />
+                    : <Chip size="small" label={p.status === 'published' ? 'Published' : 'Draft'}
+                        color={p.status === 'published' ? 'success' : 'default'}
+                        variant={p.status === 'published' ? 'filled' : 'outlined'} />}
                 </Stack>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                   {audienceSummary(p.audience)} · {p.photoCount} photo{p.photoCount === 1 ? '' : 's'}
-                  {p.publishedAt ? ` · ${fmtDateTime(p.publishedAt)}` : ''}
+                  {p.videoCount ? ` · ${p.videoCount} video${p.videoCount === 1 ? '' : 's'}` : ''}
+                  {p.scheduled ? ` · ⏱ ${fmtDateTime(p.publishAt)}` : p.publishedAt ? ` · ${fmtDateTime(p.publishedAt)}` : ''}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                   {reactionLine(p.reactions)}
@@ -222,8 +277,8 @@ export default function MyMoments() {
                       </IconButton>
                     </Tooltip>
                   ) : (
-                    <Button size="small" startIcon={<PublishIcon />} onClick={() => toggle(p, true)} disabled={busy || !p.photoCount}>
-                      Post
+                    <Button size="small" startIcon={<PublishIcon />} onClick={() => toggle(p, true)} disabled={busy || !(p.photoCount || p.videoCount)}>
+                      {p.scheduled ? 'Post now' : 'Post'}
                     </Button>
                   )}
                 </Stack>
