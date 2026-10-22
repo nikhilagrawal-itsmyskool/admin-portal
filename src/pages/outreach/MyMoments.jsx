@@ -291,30 +291,40 @@ export default function MyMoments() {
           {posts.map((p) => (
             <Card key={p.uuid} variant="outlined">
               <CardContent sx={{ pb: 1.5 }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-                  <Typography variant="subtitle2" noWrap sx={{ flex: 1 }}>
-                    {p.title || <em style={{ color: '#888' }}>(no title)</em>}
-                  </Typography>
-                  {p.scheduled
-                    ? <Chip size="small" label="Scheduled" color="info" variant="outlined" />
-                    : <Chip size="small" label={p.status === 'published' ? 'Published' : 'Draft'}
-                        color={p.status === 'published' ? 'success' : 'default'}
-                        variant={p.status === 'published' ? 'filled' : 'outlined'} />}
-                </Stack>
-                <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
-                  <MetaItem icon={<AudienceIcon sx={{ fontSize: 16 }} />} text={audienceSummary(p.audience)} />
-                  <MetaItem icon={<MomentsIcon sx={{ fontSize: 16 }} />} text={p.photoCount} />
-                  {p.videoCount ? <MetaItem icon={<VideoIcon sx={{ fontSize: 16 }} />} text={p.videoCount} /> : null}
-                  <MetaItem icon={<ReactionIcon sx={{ fontSize: 16 }} />} text={p.reactionCount || 0} />
-                </Stack>
-                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    <Box component="span" sx={{ fontWeight: 600 }}>Created</Box> {fmtDateTime(p.createdAt)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    <Box component="span" sx={{ fontWeight: 600 }}>Published</Box>{' '}
-                    {p.publishedAt ? fmtDateTime(p.publishedAt) : p.scheduled ? `scheduled ${fmtDateTime(p.publishAt)}` : '—'}
-                  </Typography>
+                <Stack direction="row" spacing={1.5}>
+                  {p.coverUrl && (
+                    <Box onClick={() => openView(p.uuid)}
+                      sx={{ width: 64, height: 64, flex: '0 0 auto', borderRadius: 1, overflow: 'hidden', bgcolor: 'action.hover', cursor: 'pointer' }}>
+                      <Box component="img" src={p.coverUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </Box>
+                  )}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+                      <Typography variant="subtitle2" noWrap sx={{ flex: 1 }}>
+                        {p.title || <em style={{ color: '#888' }}>(no title)</em>}
+                      </Typography>
+                      {p.scheduled
+                        ? <Chip size="small" label="Scheduled" color="info" variant="outlined" />
+                        : <Chip size="small" label={p.status === 'published' ? 'Published' : 'Draft'}
+                            color={p.status === 'published' ? 'success' : 'default'}
+                            variant={p.status === 'published' ? 'filled' : 'outlined'} />}
+                    </Stack>
+                    <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                      <MetaItem icon={<AudienceIcon sx={{ fontSize: 16 }} />} text={audienceSummary(p.audience)} />
+                      <MetaItem icon={<MomentsIcon sx={{ fontSize: 16 }} />} text={p.photoCount} />
+                      {p.videoCount ? <MetaItem icon={<VideoIcon sx={{ fontSize: 16 }} />} text={p.videoCount} /> : null}
+                      <MetaItem icon={<ReactionIcon sx={{ fontSize: 16 }} />} text={p.reactionCount || 0} />
+                    </Stack>
+                    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        <Box component="span" sx={{ fontWeight: 600 }}>Created</Box> {fmtDateTime(p.createdAt)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        <Box component="span" sx={{ fontWeight: 600 }}>Published</Box>{' '}
+                        {p.publishedAt ? fmtDateTime(p.publishedAt) : p.scheduled ? `scheduled ${fmtDateTime(p.publishAt)}` : '—'}
+                      </Typography>
+                    </Stack>
+                  </Box>
                 </Stack>
                 <Divider sx={{ my: 1.25 }} />
                 <Stack direction="row" spacing={1} justifyContent="flex-end">
