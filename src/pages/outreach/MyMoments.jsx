@@ -7,7 +7,7 @@ import {
 import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   AddPhotoAlternate as AddPhotoIcon, OndemandVideo as VideoIcon, Schedule as ScheduleIcon,
-  Visibility as ViewIcon, Close as CloseIcon,
+  Visibility as ViewIcon, Close as CloseIcon, Groups as AudienceIcon, FavoriteBorder as ReactionIcon,
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SelectedThumbs from './SelectedThumbs';
@@ -29,6 +29,16 @@ function audienceSummary(audience) {
 function reactionLine(reactions) {
   if (!reactions || !reactions.total) return 'No reactions yet';
   return Object.entries(reactions.counts).map(([k, n]) => `${REACTION_EMOJI[k] || k} ${n}`).join('  ');
+}
+
+// A small icon + value, for the scannable meta row on a card.
+function MetaItem({ icon, text }) {
+  return (
+    <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: 'text.secondary' }}>
+      {icon}
+      <Typography variant="caption">{text}</Typography>
+    </Stack>
+  );
 }
 
 // Lazy photo: presigned URL (prod) or a base64 fallback (local).
@@ -291,19 +301,22 @@ export default function MyMoments() {
                         color={p.status === 'published' ? 'success' : 'default'}
                         variant={p.status === 'published' ? 'filled' : 'outlined'} />}
                 </Stack>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  {audienceSummary(p.audience)} · {p.photoCount} photo{p.photoCount === 1 ? '' : 's'}{p.videoCount ? ` · ${p.videoCount} video${p.videoCount === 1 ? '' : 's'}` : ''}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  Created: {fmtDateTime(p.createdAt)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  Published: {p.publishedAt ? fmtDateTime(p.publishedAt) : p.scheduled ? `scheduled for ${fmtDateTime(p.publishAt)}` : '—'}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                  {reactionLine(p.reactions)}
-                </Typography>
-                <Divider sx={{ my: 1 }} />
+                <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
+                  <MetaItem icon={<AudienceIcon sx={{ fontSize: 16 }} />} text={audienceSummary(p.audience)} />
+                  <MetaItem icon={<MomentsIcon sx={{ fontSize: 16 }} />} text={p.photoCount} />
+                  {p.videoCount ? <MetaItem icon={<VideoIcon sx={{ fontSize: 16 }} />} text={p.videoCount} /> : null}
+                  <MetaItem icon={<ReactionIcon sx={{ fontSize: 16 }} />} text={p.reactionCount || 0} />
+                </Stack>
+                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    <Box component="span" sx={{ fontWeight: 600 }}>Created</Box> {fmtDateTime(p.createdAt)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    <Box component="span" sx={{ fontWeight: 600 }}>Published</Box>{' '}
+                    {p.publishedAt ? fmtDateTime(p.publishedAt) : p.scheduled ? `scheduled ${fmtDateTime(p.publishAt)}` : '—'}
+                  </Typography>
+                </Stack>
+                <Divider sx={{ my: 1.25 }} />
                 <Stack direction="row" spacing={1} justifyContent="flex-end">
                   <Button size="small" variant="outlined" startIcon={<ViewIcon />} onClick={() => openView(p.uuid)}>Preview</Button>
                   {p.status === 'published'
