@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, TextField, Button, Stack, Chip, Alert,
-  CircularProgress, Autocomplete, Checkbox, FormControlLabel, Divider, IconButton, Tooltip,
+  CircularProgress, Autocomplete, Checkbox, FormControlLabel, Divider, IconButton,
+  Dialog, DialogTitle, DialogContent, Grid, useMediaQuery, useTheme,
 } from '@mui/material';
 import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   AddPhotoAlternate as AddPhotoIcon, OndemandVideo as VideoIcon, Schedule as ScheduleIcon,
+  Visibility as ViewIcon, Close as CloseIcon,
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SelectedThumbs from './SelectedThumbs';
@@ -26,6 +28,22 @@ function audienceSummary(audience) {
 function reactionLine(reactions) {
   if (!reactions || !reactions.total) return 'No reactions yet';
   return Object.entries(reactions.counts).map(([k, n]) => `${REACTION_EMOJI[k] || k} ${n}`).join('  ');
+}
+
+// Lazy photo: presigned URL (prod) or a base64 fallback (local).
+function MomentPhoto({ momentId, photo }) {
+  const [src, setSrc] = useState(photo.imageUrl || null);
+  useEffect(() => {
+    let alive = true;
+    if (photo.imageUrl) { setSrc(photo.imageUrl); return undefined; }
+    outreachService.getPhotoImage(momentId, photo.uuid).then((r) => { if (alive) setSrc(r.dataUri); }).catch(() => {});
+    return () => { alive = false; };
+  }, [momentId, photo.uuid, photo.imageUrl]);
+  return (
+    <Box sx={{ width: '100%', height: 120, bgcolor: 'action.hover', borderRadius: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {src ? <Box component="img" src={src} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Typography variant="caption" color="text.secondary">…</Typography>}
+    </Box>
+  );
 }
 
 // Phone-first Moments composer for god / admin / moments-incharge. Compose photos + a note
@@ -54,6 +72,17 @@ export default function MyMoments() {
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [confirmUnpub, setConfirmUnpub] = useState(null);
+  const [viewing, setViewing] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const openView = async (id) => {
+    setViewLoading(true); setViewing({ uuid: id });
+    try { setViewing(await outreachService.getById(id)); }
+    catch (e) { setErr(e.response?.data?.error?.description || 'Failed to open'); setViewing(null); }
+    finally { setViewLoading(false); }
+  };
 
   const loadPosts = useCallback(async () => {
     setLoadingPosts(true);
@@ -228,11 +257,11 @@ export default function MyMoments() {
               value={publishAt} onChange={(e) => setPublishAt(e.target.value)} InputLabelProps={{ shrink: true }} />
             <Stack spacing={1}>
               <Button variant="contained" fullWidth startIcon={<PublishIcon />} onClick={() => compose('publish')} disabled={busy}>
-                {busy ? 'Working…' : 'Post now'}
+                {busy ? 'Working…' : 'Publish now'}
               </Button>
               <Stack direction="row" spacing={1}>
                 <Button variant="outlined" fullWidth startIcon={<ScheduleIcon />} onClick={() => compose('schedule')} disabled={busy || !publishAt}>Schedule</Button>
-                <Button variant="text" onClick={() => compose('draft')} disabled={busy}>Draft</Button>
+                <Button variant="text" onClick={() => compose('draft')} disabled={busy}>Save draft</Button>
               </Stack>
             </Stack>
             {busy && progress && <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>{progress}</Typography>}
@@ -269,18 +298,11 @@ export default function MyMoments() {
                   {reactionLine(p.reactions)}
                 </Typography>
                 <Divider sx={{ my: 1 }} />
-                <Stack direction="row" justifyContent="flex-end">
-                  {p.status === 'published' ? (
-                    <Tooltip title="Unpublish">
-                      <IconButton size="small" color="warning" onClick={() => setConfirmUnpub(p)} disabled={busy}>
-                        <UnpublishIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : (
-                    <Button size="small" startIcon={<PublishIcon />} onClick={() => toggle(p, true)} disabled={busy || !(p.photoCount || p.videoCount)}>
-                      {p.scheduled ? 'Post now' : 'Post'}
-                    </Button>
-                  )}
+                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                  <Button size="small" startIcon={<ViewIcon />} onClick={() => openView(p.uuid)}>Preview</Button>
+                  {p.status === 'published'
+                    ? <Button size="small" color="warning" startIcon={<UnpublishIcon />} onClick={() => setConfirmUnpub(p)} disabled={busy}>Unpublish</Button>
+                    : <Button size="small" variant="contained" startIcon={<PublishIcon />} onClick={() => toggle(p, true)} disabled={busy || !(p.photoCount || p.videoCount)}>{p.scheduled ? 'Publish now' : 'Publish'}</Button>}
                 </Stack>
               </CardContent>
             </Card>
@@ -298,6 +320,48 @@ export default function MyMoments() {
         onCancel={() => setConfirmUnpub(null)}
         loading={busy}
       />
+
+      <Dialog open={!!viewing} onClose={() => setViewing(null)} fullScreen={fullScreen} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {viewing?.title || 'Moment'}
+          <IconButton onClick={() => setViewing(null)} size="small"><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {viewLoading || !viewing?.uuid ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress /></Box>
+          ) : (
+            <Stack spacing={1.5}>
+              <Typography variant="caption" color="text.secondary">Preview — how parents will see it</Typography>
+              <Typography variant="body2" color="text.secondary">To: {audienceSummary(viewing.audience)}</Typography>
+              {viewing.body && <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{viewing.body}</Typography>}
+              {Array.isArray(viewing.photos) && viewing.photos.length > 0 && (
+                <Grid container spacing={1}>
+                  {viewing.photos.map((p) => (
+                    <Grid item xs={6} key={p.uuid}>
+                      <MomentPhoto momentId={viewing.uuid} photo={p} />
+                      {p.caption && <Typography variant="caption" color="text.secondary">{p.caption}</Typography>}
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+              {Array.isArray(viewing.videos) && viewing.videos.length > 0 && (
+                <Grid container spacing={1}>
+                  {viewing.videos.map((v) => (
+                    <Grid item xs={6} key={v.uuid}>
+                      <Box component="a" href={`https://youtu.be/${v.youtubeId}`} target="_blank" rel="noopener noreferrer" sx={{ display: 'block', position: 'relative', borderRadius: 1, overflow: 'hidden' }}>
+                        <Box component="img" src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`} alt="" sx={{ width: '100%', display: 'block' }} />
+                        <VideoIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 40, filter: 'drop-shadow(0 0 4px rgba(0,0,0,.6))' }} />
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+              <Divider />
+              <Typography variant="caption" color="text.secondary">{reactionLine(viewing.reactions)}</Typography>
+            </Stack>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
