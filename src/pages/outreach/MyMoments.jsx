@@ -11,6 +11,7 @@ import {
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SelectedThumbs from './SelectedThumbs';
+import PhotoLightbox from './PhotoLightbox';
 import { useAuth } from '../../context/AuthContext';
 import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -74,6 +75,7 @@ export default function MyMoments() {
   const [confirmUnpub, setConfirmUnpub] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(null);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -290,18 +292,22 @@ export default function MyMoments() {
                         variant={p.status === 'published' ? 'filled' : 'outlined'} />}
                 </Stack>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  {audienceSummary(p.audience)} · {p.photoCount} photo{p.photoCount === 1 ? '' : 's'}
-                  {p.videoCount ? ` · ${p.videoCount} video${p.videoCount === 1 ? '' : 's'}` : ''}
-                  {p.scheduled ? ` · ⏱ ${fmtDateTime(p.publishAt)}` : p.publishedAt ? ` · ${fmtDateTime(p.publishedAt)}` : ''}
+                  {audienceSummary(p.audience)} · {p.photoCount} photo{p.photoCount === 1 ? '' : 's'}{p.videoCount ? ` · ${p.videoCount} video${p.videoCount === 1 ? '' : 's'}` : ''}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  Created: {fmtDateTime(p.createdAt)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  Published: {p.publishedAt ? fmtDateTime(p.publishedAt) : p.scheduled ? `scheduled for ${fmtDateTime(p.publishAt)}` : '—'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                   {reactionLine(p.reactions)}
                 </Typography>
                 <Divider sx={{ my: 1 }} />
                 <Stack direction="row" spacing={1} justifyContent="flex-end">
-                  <Button size="small" startIcon={<ViewIcon />} onClick={() => openView(p.uuid)}>Preview</Button>
+                  <Button size="small" variant="outlined" startIcon={<ViewIcon />} onClick={() => openView(p.uuid)}>Preview</Button>
                   {p.status === 'published'
-                    ? <Button size="small" color="warning" startIcon={<UnpublishIcon />} onClick={() => setConfirmUnpub(p)} disabled={busy}>Unpublish</Button>
+                    ? <Button size="small" variant="outlined" color="warning" startIcon={<UnpublishIcon />} onClick={() => setConfirmUnpub(p)} disabled={busy}>Unpublish</Button>
                     : <Button size="small" variant="contained" startIcon={<PublishIcon />} onClick={() => toggle(p, true)} disabled={busy || !(p.photoCount || p.videoCount)}>{p.scheduled ? 'Publish now' : 'Publish'}</Button>}
                 </Stack>
               </CardContent>
@@ -336,9 +342,11 @@ export default function MyMoments() {
               {viewing.body && <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{viewing.body}</Typography>}
               {Array.isArray(viewing.photos) && viewing.photos.length > 0 && (
                 <Grid container spacing={1}>
-                  {viewing.photos.map((p) => (
+                  {viewing.photos.map((p, i) => (
                     <Grid item xs={6} key={p.uuid}>
-                      <MomentPhoto momentId={viewing.uuid} photo={p} />
+                      <Box onClick={() => setLightboxIdx(i)} sx={{ cursor: 'pointer' }}>
+                        <MomentPhoto momentId={viewing.uuid} photo={p} />
+                      </Box>
                       {p.caption && <Typography variant="caption" color="text.secondary">{p.caption}</Typography>}
                     </Grid>
                   ))}
@@ -362,6 +370,10 @@ export default function MyMoments() {
           )}
         </DialogContent>
       </Dialog>
+
+      {viewing?.photos && (
+        <PhotoLightbox momentId={viewing.uuid} photos={viewing.photos} index={lightboxIdx} onClose={() => setLightboxIdx(null)} onIndex={setLightboxIdx} />
+      )}
     </Box>
   );
 }
