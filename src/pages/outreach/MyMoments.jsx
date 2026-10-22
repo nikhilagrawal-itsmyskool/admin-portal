@@ -17,7 +17,7 @@ import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { fmtDateTime } from '../../utils/date';
 import {
-  outreachService, filesToImages, REACTION_EMOJI, PHOTO_ACCEPT, PHOTO_MAX_BYTES,
+  outreachService, filesToUploads, REACTION_EMOJI, PHOTO_ACCEPT, PHOTO_MAX_BYTES,
 } from '../../services/outreachService';
 
 function audienceSummary(audience) {
@@ -151,10 +151,10 @@ export default function MyMoments() {
       const created = await outreachService.create({ title: title.trim() || undefined, body: body.trim() || undefined, audience });
       if (files.length) {
         setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
-        const images = await filesToImages(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
-        for (let i = 0; i < images.length; i++) {
-          setProgress(`Uploading photo ${i + 1}/${images.length}…`);
-          await outreachService.addPhoto(created.uuid, { image: images[i] });
+        const uploads = await filesToUploads(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
+        for (let i = 0; i < uploads.length; i++) {
+          setProgress(`Uploading photo ${i + 1}/${uploads.length}…`);
+          await outreachService.addPhoto(created.uuid, { image: uploads[i].image, thumb: uploads[i].thumb });
         }
       }
       for (let i = 0; i < videoUrls.length; i++) {

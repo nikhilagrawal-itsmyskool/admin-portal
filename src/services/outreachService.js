@@ -135,3 +135,18 @@ export async function filesToImages(files, onProgress) {
   }
   return out;
 }
+
+// A display image (~1920px) + a tiny cover thumb (~320px) per file, so list covers are light.
+export async function fileToUpload(file) {
+  const image = await downscaleImage(file, DOWNSCALE_MAX_EDGE, DOWNSCALE_QUALITY);
+  const thumb = await downscaleImage(file, 320, 0.7);
+  return { image, thumb };
+}
+export async function filesToUploads(files, onProgress) {
+  const out = [];
+  for (let i = 0; i < files.length; i++) {
+    out.push(await fileToUpload(files[i]));
+    if (onProgress) onProgress(i + 1, files.length);
+  }
+  return out;
+}
