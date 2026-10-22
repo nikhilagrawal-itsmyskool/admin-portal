@@ -7,7 +7,7 @@ import {
 import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   Visibility as ViewIcon, AddPhotoAlternate as AddPhotoIcon, Close as CloseIcon,
-  OndemandVideo as VideoIcon, Schedule as ScheduleIcon,
+  OndemandVideo as VideoIcon, Schedule as ScheduleIcon, Videocam as UploadVideoIcon,
 } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -18,7 +18,8 @@ import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { fmtDateTime } from '../../utils/date';
 import {
-  outreachService, filesToUploads, REACTION_EMOJI, PHOTO_ACCEPT, PHOTO_MAX_BYTES,
+  outreachService, filesToUploads, uploadVideo, validateVideo,
+  REACTION_EMOJI, PHOTO_ACCEPT, PHOTO_MAX_BYTES, VIDEO_ACCEPT, VIDEO_MAX_SECONDS,
 } from '../../services/outreachService';
 
 // Lazily render a photo: prefer the presigned URL (prod); fall back to a base64 fetch (local).
@@ -65,6 +66,7 @@ export default function MomentsPage() {
   const [grades, setGrades] = useState([]);           // selected grade labels
   const [classes, setClasses] = useState([]);         // selected class objects
   const [files, setFiles] = useState([]);             // File[]
+  const [videoFiles, setVideoFiles] = useState([]);   // uploaded-video File[] (→ R2)
   const [videoUrls, setVideoUrls] = useState([]);     // YouTube URLs (strings)
   const [videoInput, setVideoInput] = useState('');
   const [publishAt, setPublishAt] = useState('');     // datetime-local string
@@ -104,7 +106,7 @@ export default function MomentsPage() {
 
   const resetComposer = () => {
     setTitle(''); setBody(''); setWholeSchool(false); setGrades([]); setClasses([]); setFiles([]);
-    setVideoUrls([]); setVideoInput(''); setPublishAt('');
+    setVideoFiles([]); setVideoUrls([]); setVideoInput(''); setPublishAt('');
   };
 
   const addVideoUrl = () => {
@@ -114,13 +116,26 @@ export default function MomentsPage() {
     setVideoInput('');
   };
 
+  // Pick video files; validate each (format/size/≤5 min) before accepting for upload.
+  const onPickVideos = async (e) => {
+    setErr('');
+    const picked = Array.from(e.target.files || []);
+    e.target.value = '';
+    for (const f of picked) {
+      // eslint-disable-next-line no-await-in-loop
+      const v = await validateVideo(f);
+      if (!v.ok) { setErr(v.error); continue; }
+      setVideoFiles((prev) => [...prev, f]);
+    }
+  };
+
   // Create a draft, attach photos + YouTube links, then publish / schedule / leave as draft.
   // mode = 'publish' | 'draft' | 'schedule'.
   const compose = async (mode) => {
     setErr(''); setSuccess('');
     const audience = buildAudience();
     if (!audience.length) { setErr('Choose an audience (whole school, or at least one grade/class).'); return; }
-    if (!files.length && !videoUrls.length) { setErr('Add at least one photo or YouTube link.'); return; }
+    if (!files.length && !videoUrls.length && !videoFiles.length) { setErr('Add at least one photo, video, or YouTube link.'); return; }
     const tooBig = files.find((f) => f.size > PHOTO_MAX_BYTES);
     if (tooBig) { setErr(`"${tooBig.name}" is too large (max 40 MB).`); return; }
     let publishIso = null;
@@ -143,6 +158,10 @@ export default function MomentsPage() {
       for (let i = 0; i < videoUrls.length; i++) {
         setProgress(`Adding video ${i + 1}/${videoUrls.length}…`);
         await outreachService.addVideo(created.uuid, { url: videoUrls[i] });
+      }
+      for (let i = 0; i < videoFiles.length; i++) {
+        await uploadVideo(created.uuid, videoFiles[i], undefined,
+          (pct) => setProgress(`Uploading video ${i + 1}/${videoFiles.length}… ${pct}%`));
       }
       if (mode === 'publish') await outreachService.publish(created.uuid);
       else if (mode === 'schedule') await outreachService.schedule(created.uuid, publishIso);
@@ -289,6 +308,26 @@ export default function MomentsPage() {
                   </Stack>
                 )}
               </Grid>
+              <Grid item xs={12}>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Button component="label" variant="outlined" startIcon={<UploadVideoIcon />}>
+                    Upload a video
+                    <input hidden multiple type="file" accept={VIDEO_ACCEPT} onChange={onPickVideos} />
+                  </Button>
+                  <Typography variant="caption" color="text.secondary">
+                    Up to {VIDEO_MAX_SECONDS / 60} min each. Longer recordings? Upload to YouTube and paste the link above.
+                  </Typography>
+                </Stack>
+                {videoFiles.length > 0 && (
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                    {videoFiles.map((f, i) => (
+                      <Chip key={i} icon={<UploadVideoIcon />}
+                        label={`${f.name.length > 30 ? `${f.name.slice(0, 30)}…` : f.name} · ${(f.size / (1024 * 1024)).toFixed(0)} MB`}
+                        size="small" onDelete={() => setVideoFiles(videoFiles.filter((_, j) => j !== i))} />
+                    ))}
+                  </Stack>
+                )}
+              </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
                   label="Schedule for later (optional)" type="datetime-local" size="small" fullWidth
@@ -369,12 +408,17 @@ export default function MomentsPage() {
               {Array.isArray(viewing.videos) && viewing.videos.length > 0 && (
                 <Grid container spacing={1}>
                   {viewing.videos.map((v) => (
-                    <Grid item xs={6} key={v.uuid}>
-                      <Box component="a" href={`https://youtu.be/${v.youtubeId}`} target="_blank" rel="noopener noreferrer"
-                        sx={{ display: 'block', position: 'relative', borderRadius: 1, overflow: 'hidden' }}>
-                        <Box component="img" src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`} alt="" sx={{ width: '100%', display: 'block' }} />
-                        <VideoIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 40, filter: 'drop-shadow(0 0 4px rgba(0,0,0,.6))' }} />
-                      </Box>
+                    <Grid item xs={v.source === 'r2' ? 12 : 6} key={v.uuid}>
+                      {v.source === 'r2' && v.videoUrl ? (
+                        <Box component="video" src={v.videoUrl} controls preload="metadata"
+                          sx={{ width: '100%', maxHeight: 320, borderRadius: 1, bgcolor: '#000', display: 'block' }} />
+                      ) : (
+                        <Box component="a" href={`https://youtu.be/${v.youtubeId}`} target="_blank" rel="noopener noreferrer"
+                          sx={{ display: 'block', position: 'relative', borderRadius: 1, overflow: 'hidden' }}>
+                          <Box component="img" src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`} alt="" sx={{ width: '100%', display: 'block' }} />
+                          <VideoIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 40, filter: 'drop-shadow(0 0 4px rgba(0,0,0,.6))' }} />
+                        </Box>
+                      )}
                       {v.caption && <Typography variant="caption" color="text.secondary">{v.caption}</Typography>}
                     </Grid>
                   ))}

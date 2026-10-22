@@ -71,6 +71,10 @@ export const outreachService = {
   addVideo: async (id, data) => (await api.post(`/outreach/moments/${id}/videos`, data)).data,
   removeVideo: async (id, videoId) => (await api.delete(`/outreach/moments/${id}/videos/${videoId}`)).data,
 
+  // Uploaded videos (direct-to-R2). Step 1: get a presigned PUT URL. Step 2: record the clip.
+  videoUploadUrl: async (id, data) => (await api.post(`/outreach/moments/${id}/videos/upload-url`, data)).data,
+  addR2Video: async (id, data) => (await api.post(`/outreach/moments/${id}/videos/r2`, data)).data,
+
   // Scheduled publish — publishAt is an ISO datetime (UTC). unschedule clears it (back to draft).
   schedule: async (id, publishAt) => (await api.post(`/outreach/moments/${id}/schedule`, { publishAt })).data,
   unschedule: async (id) => (await api.post(`/outreach/moments/${id}/unschedule`)).data,
@@ -149,4 +153,65 @@ export async function filesToUploads(files, onProgress) {
     if (onProgress) onProgress(i + 1, files.length);
   }
   return out;
+}
+
+// ── Uploaded video (direct-to-R2) ──────────────────────────────────────────────────
+// Short clips upload straight from the phone to R2; longer recordings stay on YouTube.
+export const VIDEO_ACCEPT = 'video/mp4,video/quicktime,video/webm';
+export const VIDEO_ALLOWED_MIME = ['video/mp4', 'video/quicktime', 'video/webm'];
+export const VIDEO_MAX_BYTES = 250 * 1024 * 1024; // 250 MB (matches the backend backstop)
+export const VIDEO_MAX_SECONDS = 300;             // 5 minutes
+
+// Read a video file's duration in the browser (so we can reject >5 min before uploading).
+function readVideoDuration(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(Number.isFinite(v.duration) ? v.duration : null); };
+    v.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    v.src = url;
+  });
+}
+
+// Validate a picked video before upload. Returns { ok, error?, mimeType, sizeBytes, durationSeconds }.
+export async function validateVideo(file) {
+  const mimeType = (file.type || '').toLowerCase();
+  if (!VIDEO_ALLOWED_MIME.includes(mimeType)) {
+    return { ok: false, error: `"${file.name}" isn't a supported video (use MP4, MOV or WebM).` };
+  }
+  if (file.size > VIDEO_MAX_BYTES) {
+    return { ok: false, error: `"${file.name}" is ${(file.size / (1024 * 1024)).toFixed(0)} MB — the limit is ${VIDEO_MAX_BYTES / (1024 * 1024)} MB. Put it on YouTube and paste the link instead.` };
+  }
+  const durationSeconds = await readVideoDuration(file);
+  if (durationSeconds && durationSeconds > VIDEO_MAX_SECONDS) {
+    const mins = Math.floor(durationSeconds / 60);
+    const secs = Math.round(durationSeconds % 60);
+    return { ok: false, error: `"${file.name}" is ${mins}m ${secs}s — the limit is ${VIDEO_MAX_SECONDS / 60} minutes. Put it on YouTube and paste the link instead.` };
+  }
+  return { ok: true, mimeType, sizeBytes: file.size, durationSeconds: durationSeconds ? Math.round(durationSeconds) : null };
+}
+
+// Full two-step upload of one video onto a (draft) moment. onProgress(pct 0..100) optional.
+// 1) ask the API for a presigned R2 PUT URL, 2) PUT the bytes straight to R2 (with progress),
+// 3) tell the API to record the clip. Returns the updated moment.
+export async function uploadVideo(momentId, file, caption, onProgress) {
+  const meta = await validateVideo(file);
+  if (!meta.ok) throw new Error(meta.error);
+  const { uploadUrl, storageKey } = await outreachService.videoUploadUrl(momentId, {
+    fileName: file.name || 'video.mp4', mimeType: meta.mimeType, sizeBytes: meta.sizeBytes, durationSeconds: meta.durationSeconds,
+  });
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl, true);
+    xhr.setRequestHeader('Content-Type', meta.mimeType); // MUST match what the backend signed
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status})`)));
+    xhr.onerror = () => reject(new Error('Upload failed — check your connection and try again.'));
+    xhr.send(file);
+  });
+  return outreachService.addR2Video(momentId, {
+    storageKey, mimeType: meta.mimeType, sizeBytes: meta.sizeBytes, durationSeconds: meta.durationSeconds,
+    caption: (caption || '').trim() || undefined,
+  });
 }

@@ -8,6 +8,7 @@ import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   AddPhotoAlternate as AddPhotoIcon, OndemandVideo as VideoIcon, Schedule as ScheduleIcon,
   Visibility as ViewIcon, Close as CloseIcon, Groups as AudienceIcon, FavoriteBorder as ReactionIcon,
+  Videocam as UploadVideoIcon,
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SelectedThumbs from './SelectedThumbs';
@@ -17,7 +18,8 @@ import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { fmtDateTime } from '../../utils/date';
 import {
-  outreachService, filesToUploads, REACTION_EMOJI, PHOTO_ACCEPT, PHOTO_MAX_BYTES,
+  outreachService, filesToUploads, uploadVideo, validateVideo,
+  REACTION_EMOJI, PHOTO_ACCEPT, PHOTO_MAX_BYTES, VIDEO_ACCEPT, VIDEO_MAX_SECONDS,
 } from '../../services/outreachService';
 
 function audienceSummary(audience) {
@@ -72,6 +74,7 @@ export default function MyMoments() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [files, setFiles] = useState([]);
+  const [videoFiles, setVideoFiles] = useState([]);
   const [videoUrls, setVideoUrls] = useState([]);
   const [videoInput, setVideoInput] = useState('');
   const [publishAt, setPublishAt] = useState('');
@@ -121,7 +124,7 @@ export default function MyMoments() {
   };
 
   const resetComposer = () => {
-    setTitle(''); setBody(''); setFiles([]); setWholeSchool(false); setGrades([]); setClasses([]);
+    setTitle(''); setBody(''); setFiles([]); setVideoFiles([]); setWholeSchool(false); setGrades([]); setClasses([]);
     setVideoUrls([]); setVideoInput(''); setPublishAt('');
   };
 
@@ -132,12 +135,25 @@ export default function MyMoments() {
     setVideoInput('');
   };
 
+  // Pick video files from the phone; validate each (format/size/≤5 min) before accepting.
+  const onPickVideos = async (e) => {
+    setErr('');
+    const picked = Array.from(e.target.files || []);
+    e.target.value = '';
+    for (const f of picked) {
+      // eslint-disable-next-line no-await-in-loop
+      const v = await validateVideo(f);
+      if (!v.ok) { setErr(v.error); continue; }
+      setVideoFiles((prev) => [...prev, f]);
+    }
+  };
+
   // mode = 'publish' | 'draft' | 'schedule'.
   const compose = async (mode) => {
     setErr(''); setSuccess('');
     const audience = buildAudience();
     if (!audience.length) { setErr('Choose an audience (whole school, or a grade/class).'); return; }
-    if (!files.length && !videoUrls.length) { setErr('Add at least one photo or YouTube link.'); return; }
+    if (!files.length && !videoUrls.length && !videoFiles.length) { setErr('Add at least one photo, video, or YouTube link.'); return; }
     const tooBig = files.find((f) => f.size > PHOTO_MAX_BYTES);
     if (tooBig) { setErr(`"${tooBig.name}" is too large (max 40 MB).`); return; }
     let publishIso = null;
@@ -160,6 +176,10 @@ export default function MyMoments() {
       for (let i = 0; i < videoUrls.length; i++) {
         setProgress(`Adding video ${i + 1}/${videoUrls.length}…`);
         await outreachService.addVideo(created.uuid, { url: videoUrls[i] });
+      }
+      for (let i = 0; i < videoFiles.length; i++) {
+        await uploadVideo(created.uuid, videoFiles[i], undefined,
+          (pct) => setProgress(`Uploading video ${i + 1}/${videoFiles.length}… ${pct}%`));
       }
       if (mode === 'publish') await outreachService.publish(created.uuid);
       else if (mode === 'schedule') await outreachService.schedule(created.uuid, publishIso);
@@ -237,6 +257,25 @@ export default function MyMoments() {
                   {videoUrls.map((u, i) => (
                     <Chip key={i} icon={<VideoIcon />} label={u.length > 32 ? `${u.slice(0, 32)}…` : u} size="small"
                       onDelete={() => setVideoUrls(videoUrls.filter((_, j) => j !== i))} />
+                  ))}
+                </Stack>
+              )}
+            </Box>
+
+            <Box>
+              <Button component="label" variant="outlined" startIcon={<UploadVideoIcon />} fullWidth sx={{ py: 1.2 }}>
+                {videoFiles.length ? `${videoFiles.length} video${videoFiles.length > 1 ? 's' : ''} selected` : 'Add video from phone'}
+                <input hidden multiple type="file" accept={VIDEO_ACCEPT} onChange={onPickVideos} />
+              </Button>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                Up to {VIDEO_MAX_SECONDS / 60} min each. Longer recordings? Upload to YouTube and paste the link above.
+              </Typography>
+              {videoFiles.length > 0 && (
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                  {videoFiles.map((f, i) => (
+                    <Chip key={i} icon={<UploadVideoIcon />}
+                      label={`${f.name.length > 22 ? `${f.name.slice(0, 22)}…` : f.name} · ${(f.size / (1024 * 1024)).toFixed(0)} MB`}
+                      size="small" onDelete={() => setVideoFiles(videoFiles.filter((_, j) => j !== i))} />
                   ))}
                 </Stack>
               )}
@@ -378,11 +417,17 @@ export default function MyMoments() {
               {Array.isArray(viewing.videos) && viewing.videos.length > 0 && (
                 <Grid container spacing={1}>
                   {viewing.videos.map((v) => (
-                    <Grid item xs={6} key={v.uuid}>
-                      <Box component="a" href={`https://youtu.be/${v.youtubeId}`} target="_blank" rel="noopener noreferrer" sx={{ display: 'block', position: 'relative', borderRadius: 1, overflow: 'hidden' }}>
-                        <Box component="img" src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`} alt="" sx={{ width: '100%', display: 'block' }} />
-                        <VideoIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 40, filter: 'drop-shadow(0 0 4px rgba(0,0,0,.6))' }} />
-                      </Box>
+                    <Grid item xs={v.source === 'r2' ? 12 : 6} key={v.uuid}>
+                      {v.source === 'r2' && v.videoUrl ? (
+                        <Box component="video" src={v.videoUrl} controls preload="metadata"
+                          sx={{ width: '100%', maxHeight: 280, borderRadius: 1, bgcolor: '#000', display: 'block' }} />
+                      ) : (
+                        <Box component="a" href={`https://youtu.be/${v.youtubeId}`} target="_blank" rel="noopener noreferrer" sx={{ display: 'block', position: 'relative', borderRadius: 1, overflow: 'hidden' }}>
+                          <Box component="img" src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`} alt="" sx={{ width: '100%', display: 'block' }} />
+                          <VideoIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 40, filter: 'drop-shadow(0 0 4px rgba(0,0,0,.6))' }} />
+                        </Box>
+                      )}
+                      {v.caption && <Typography variant="caption" color="text.secondary">{v.caption}</Typography>}
                     </Grid>
                   ))}
                 </Grid>
