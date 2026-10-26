@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import { isMobilePathAllowed } from '../mobile/mobileFeatures';
-import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
+import { Box, CircularProgress, Toolbar, useMediaQuery, useTheme } from '@mui/material';
 import Sidebar, { DRAWER_WIDTH, COLLAPSED_WIDTH } from '../components/Sidebar';
 import Header from '../components/Header';
 import CommandPalette from '../components/common/CommandPalette';
-import { AcademicYearProvider } from '../context/AcademicYearContext';
+import { AcademicYearProvider, useAcademicYear } from '../context/AcademicYearContext';
 import { AdminRevealProvider } from '../context/AdminRevealContext';
 import { useScrollRestoration } from '../hooks/useScrollRestoration';
 
@@ -43,7 +43,7 @@ export default function MainLayout() {
 
   return (
     <AcademicYearProvider>
-      <AdminRevealProvider>
+      <AdminRevealProvider>{/* YearGate (below) holds page content until the current year resolves */}
       <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <Sidebar
           open={sidebarOpen}
@@ -65,10 +65,26 @@ export default function MainLayout() {
           }}
         >
           <Toolbar />
-          {blockedOnMobile ? <Navigate to="/" replace /> : <Outlet />}
+          {blockedOnMobile ? <Navigate to="/" replace /> : <YearGate><Outlet /></YearGate>}
         </Box>
       </Box>
       </AdminRevealProvider>
     </AcademicYearProvider>
   );
+}
+
+// Holds page content until the selected academic year is resolved, so year-scoped
+// pages fetch once with the real id rather than firing with an empty id and then
+// re-fetching when it lands. The surrounding shell (sidebar/header) renders
+// immediately; this only defers the <Outlet/>. Resolves once per login/refresh.
+function YearGate({ children }) {
+  const { ready } = useAcademicYear();
+  if (!ready) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 10 }}>
+        <CircularProgress size={28} />
+      </Box>
+    );
+  }
+  return children;
 }
