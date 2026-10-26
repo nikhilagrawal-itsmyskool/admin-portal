@@ -42,6 +42,9 @@ export default function AssetInventoryAI() {
   const [rooms, setRooms] = useState([]);
   const [room, setRoom] = useState(null);
   const [itemTypes, setItemTypes] = useState([]); // for manual add
+  const [roomType, setRoomType] = useState(null); // container type used to create new rooms
+  const [newRoom, setNewRoom] = useState(''); // inline new-room name
+  const [creatingRoom, setCreatingRoom] = useState(false);
   const [lines, setLines] = useState([]); // [{typeId, typeCode, label, count, confidence}]
   const [unmatched, setUnmatched] = useState([]); // [{label, count}]
   const [shotCount, setShotCount] = useState(0);
@@ -59,7 +62,10 @@ export default function AssetInventoryAI() {
     try {
       const [tree, types] = await Promise.all([assetService.getTree(), assetService.listTypes()]);
       setRooms(flattenContainers(Array.isArray(tree) ? tree : []));
-      setItemTypes((Array.isArray(types) ? types : []).filter((t) => t.kind === 'item'));
+      const list = Array.isArray(types) ? types : [];
+      setItemTypes(list.filter((t) => t.kind === 'item'));
+      // The type new rooms are created as: prefer 'room', else any container.
+      setRoomType(list.find((t) => t.code === 'room') || list.find((t) => t.kind === 'container') || null);
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to load rooms');
     }
@@ -132,6 +138,23 @@ export default function AssetInventoryAI() {
 
   const dismissUnmatched = (label) => setUnmatched((prev) => prev.filter((u) => u.label !== label));
 
+  // Create a room on the fly (flat, at the tree root) so the operator never has to
+  // pre-build a hierarchy on desktop. They can reparent it later on the Asset Tree.
+  const createRoom = async () => {
+    const name = newRoom.trim();
+    if (!name || !roomType) return;
+    setErr(''); setCreatingRoom(true);
+    try {
+      const created = await assetService.createAsset({ typeId: roomType.uuid, name });
+      const opt = { uuid: created.uuid, name: created.name, pathLabel: created.name };
+      setRooms((prev) => [...prev, opt]);
+      setRoom(opt);
+      setNewRoom('');
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Could not create the room');
+    } finally { setCreatingRoom(false); }
+  };
+
   const resetCapture = () => {
     setLines([]); setUnmatched([]); setNotes([]); setShotCount(0); setErr(''); setSuccess('');
   };
@@ -190,8 +213,20 @@ export default function AssetInventoryAI() {
               size="small" options={rooms} value={room} onChange={(_, v) => setRoom(v)}
               getOptionLabel={(o) => o.pathLabel || o.name || ''}
               isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-              renderInput={(params) => <TextField {...params} label="Room" placeholder="Search for a room / lab / hall" />}
+              renderInput={(params) => <TextField {...params} label={rooms.length ? 'Room' : 'No rooms yet — add one below'} placeholder="Search for a room / lab / hall" />}
             />
+
+            <Stack direction="row" spacing={1} alignItems="center">
+              <TextField
+                size="small" fullWidth label="Or add a new room" value={newRoom}
+                onChange={(e) => setNewRoom(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); createRoom(); } }}
+                placeholder="e.g. Class I-A, Computer Lab"
+              />
+              <Button variant="outlined" onClick={createRoom} disabled={!newRoom.trim() || !roomType || creatingRoom}>
+                {creatingRoom ? '…' : 'Add'}
+              </Button>
+            </Stack>
 
             <Button component="label" variant="contained" startIcon={<AddPhotoIcon />} fullWidth sx={{ py: 1.3 }} disabled={!room || busy}>
               {shotCount === 0 ? 'Take a photo of the room' : `Add another photo (${nextHint})`}
