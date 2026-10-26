@@ -133,4 +133,16 @@ export const assetService = {
     const response = await api.get(`/asset/assets/${id}/movements`);
     return response.data;
   },
+
+  // ---- AI-assisted inventory ----
+  // images: [{ data: base64, mediaType }]  -> { draft:[{typeId,typeCode,label,count,confidence}], unmatched, notes, model }
+  analyzeInventory: async (images) => {
+    const response = await api.post('/asset/inventory/analyze', { images });
+    return response.data;
+  },
+  // { roomId, lines:[{typeId,count,assetCondition?}] } -> { created:[...], count }
+  commitInventory: async (data) => {
+    const response = await api.post('/asset/inventory/commit', data);
+    return response.data;
+  },
 };

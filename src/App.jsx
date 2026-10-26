@@ -95,6 +95,7 @@ import AssetPermissions from './pages/asset/Permissions';
 import AssetTree from './pages/asset/tree/AssetTree';
 import AssetTypeList from './pages/asset/types/AssetTypeList';
 import AssetCounts from './pages/asset/AssetCounts';
+import AssetInventoryAI from './pages/asset/AssetInventoryAI';
 import EmployeeList from './pages/employee/EmployeeList';
 import EmployeeForm from './pages/employee/EmployeeForm';
 import LibraryDashboard from './pages/library/LibraryDashboard';
@@ -418,6 +419,7 @@ export default function App() {
         <Route path="asset/tree" element={<AssetTree />} />
         <Route path="asset/types" element={<AssetTypeList />} />
         <Route path="asset/counts" element={<AssetCounts />} />
+        <Route path="asset/inventory-ai" element={<AssetInventoryAI />} />
         <Route path="students/permissions" element={<StudentPermissions />} />
         <Route path="students" element={<StudentList />} />
         <Route path="assistant/permissions" element={<AssistantPermissions />} />

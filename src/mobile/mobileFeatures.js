@@ -15,6 +15,7 @@ import {
   SportsCricket as SportsIcon,
   Widgets as SuppliesIcon,
   Tag as CountsIcon,
+  AddAPhoto as InventoryAIIcon,
   Groups as AssemblyIcon,
   EditCalendar as AssemblyRosterIcon,
   FactCheck as AssemblyChecklistIcon,
@@ -171,6 +172,9 @@ export const MOBILE_FEATURES = [
 
   // Physical stock-count is the assets-incharge's job (asset.register.*), not every teacher's.
   { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.register.view", section: "stores", color: "#8d6e63" },
+  // AI Inventory — photograph a room, Claude drafts counts, operator corrects & saves as
+  // quantity buckets. A write surface, so asset.register.manage (admin/assets-incharge/god).
+  { title: "AI Inventory", icon: InventoryAIIcon, path: "/asset/inventory-ai", perm: "asset.register.manage", section: "stores", color: "#8d6e63", routes: ["/asset/inventory-ai"] },
 
   // ── Office — god only. The godpwa.* perms are granted to NO role, so only god ('*')
   // sees these; admins on a phone won't. Read-only checking on the go.
