@@ -247,6 +247,15 @@ import WhosOnLeave from './pages/leave/WhosOnLeave';
 import LeaveTypes from './pages/leave/LeaveTypes';
 import BiometricImport from './pages/leave/BiometricImport';
 import DeductionReport from './pages/leave/DeductionReport';
+// Staff attendance (live-ESSL generation) + biometric devices — supersedes the legacy
+// Leave-based attendance screens above (which stay as files but are unlinked from nav).
+import StaffAttendanceDashboard from './pages/staffAttendance/Dashboard';
+import StaffAttendanceReport from './pages/staffAttendance/Report';
+import StaffRegularizations from './pages/staffAttendance/Regularizations';
+import StaffAttendanceConfig from './pages/staffAttendance/Config';
+import StaffMyAttendance from './pages/staffAttendance/MyAttendance';
+import BiometricDevices from './pages/biometric/Devices';
+import BiometricDeviceDetail from './pages/biometric/DeviceDetail';
 import RecordFeedback from './pages/feedback/RecordFeedback';
 import MyFeedback from './pages/feedback/MyFeedback';
 import FeedbackDashboard from './pages/feedback/FeedbackDashboard';
@@ -584,6 +593,14 @@ export default function App() {
         <Route path="leave/types" element={<LeaveTypes />} />
         <Route path="leave/import" element={<BiometricImport />} />
         <Route path="leave/deductions" element={<DeductionReport />} />
+        {/* Staff attendance (live-ESSL) + biometric devices */}
+        <Route path="staff-attendance" element={<StaffAttendanceDashboard />} />
+        <Route path="staff-attendance/report" element={<StaffAttendanceReport />} />
+        <Route path="staff-attendance/regularizations" element={<StaffRegularizations />} />
+        <Route path="staff-attendance/config" element={<StaffAttendanceConfig />} />
+        <Route path="staff-attendance/me" element={<StaffMyAttendance />} />
+        <Route path="staff-attendance/devices" element={<BiometricDevices />} />
+        <Route path="staff-attendance/devices/:id" element={<BiometricDeviceDetail />} />
         <Route path="feedback/permissions" element={<FeedbackPermissions />} />
         <Route path="feedback" element={<FeedbackDashboard />} />
         <Route path="feedback/record" element={<RecordFeedback />} />

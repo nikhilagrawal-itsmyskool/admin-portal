@@ -234,6 +234,22 @@ export const ACTIONS = {
   CLUB_PLAN_CONDUCT: "club.plan.conduct",
   // Website publisher (per-school Contentful push from Moments). Mirror of backend authz-policy.ts.
   WEBSITE_PUBLISH: "website.publish",
+  // Biometric / attendance devices (ESSL K30 Pro etc.). Mirror of backend authz-policy.ts.
+  // Locked god-first (no role grant in policy.js). device = registry; enrollment = push a
+  // staff member (assign device_number + enqueue) + view state; punch = read captured punches.
+  BIOMETRIC_DEVICE_VIEW: "biometric.device.view",
+  BIOMETRIC_DEVICE_MANAGE: "biometric.device.manage",
+  BIOMETRIC_ENROLLMENT_VIEW: "biometric.enrollment.view",
+  BIOMETRIC_ENROLLMENT_SYNC: "biometric.enrollment.sync",
+  BIOMETRIC_PUNCH_VIEW: "biometric.punch.view",
+  // Staff attendance (distinct from student roll-call). Mirror of backend authz-policy.ts.
+  // record.view = oversight dashboard + reports (admin + education-director); config.manage =
+  // policy/season Config (god-only); regularization.apply = /me (all staff); approve = decide
+  // requests (education-director, god).
+  STAFF_ATTENDANCE_VIEW: "staff-attendance.record.view",
+  STAFF_ATTENDANCE_CONFIG_MANAGE: "staff-attendance.config.manage",
+  STAFF_ATTENDANCE_REGULARIZE: "staff-attendance.regularization.apply",
+  STAFF_ATTENDANCE_APPROVE: "staff-attendance.regularization.approve",
 };
 
 // Catalog drives the generated permissions.md matrix. One line per action.

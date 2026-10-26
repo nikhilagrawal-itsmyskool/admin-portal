@@ -82,6 +82,8 @@ export const ROLE_PERMISSIONS = {
     "fee.receipt.verify", // Scan & Verify (admin + god only; NOT fee incharges)
     "leave.calendar.view", // See the shared who's-on-leave calendar
     "leave.application.apply", // Self-service own leave; oversight/config/biometric/deduction are god-only for now
+    "staff-attendance.record.view", // Oversight: daily ins/outs grid + reports
+    "staff-attendance.regularization.apply", // Admins also see own attendance + file regularization
     "documents.sign", // Read & sign own documents; authoring (documents.manage) is god-only
     // Clubs & Activities: NONE by default (locked to god). god grants admin via the grid.
   ],
@@ -113,6 +115,7 @@ export const ROLE_PERMISSIONS = {
     "academic-calendar.view", // Read the school's academic calendar
     "leave.calendar.view", // See the shared who's-on-leave calendar
     "leave.application.apply", // Apply for own leave; see own attendance & penalty
+    "staff-attendance.regularization.apply", // See own attendance + file/cancel own regularization
     "documents.sign", // Read & sign the staff policies shared with them
     // Feedback/complaints: any teacher may record + assign, and respond to items
     // assigned to them. Reviewing/completing (feedback.ticket.review) is god-only.
@@ -185,6 +188,9 @@ export const ROLE_PERMISSIONS = {
     "transport.setup.view",
     "leave.calendar.view",
     "leave.application.apply",
+    "staff-attendance.record.view", // Oversight dashboard + reports
+    "staff-attendance.regularization.apply", // Own attendance + regularization
+    "staff-attendance.regularization.approve", // Approve/reject staff regularizations
   ],
 };
 

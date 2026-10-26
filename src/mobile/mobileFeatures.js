@@ -184,13 +184,13 @@ export const MOBILE_FEATURES = [
   // Leave Calendar — month view of who's on leave, inside the Leave hub with the other
   // leave options so staff can plan before applying (no notPerm so god sees it too).
   { title: "Leave Calendar", icon: AcademicCalendarIcon, path: "/leave/day", perm: "leave.calendar.view", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/day"] },
-  { title: "Staff Attendance", icon: PeopleIcon, path: "/leave/staff", perm: "leave.attendance.view", section: "office", color: "#3d5afe", routes: ["/leave/staff"] },
+  { title: "Staff Attendance", icon: PeopleIcon, path: "/staff-attendance", perm: "staff-attendance.record.view", section: "office", color: "#3d5afe", routes: ["/staff-attendance", "/staff-attendance/report", "/staff-attendance/regularizations"] },
   // Feedback dashboard — reviewer oversight (feedback.ticket.review = god only for now); Manage band.
   { title: "Feedback", icon: FeedbackIcon, path: "/feedback", perm: "feedback.ticket.review", section: "manage", color: "#0097a7", routes: ["/feedback", "/feedback/t/:id"] },
   // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
   // notPerm hides it from an oversight user (god) who never applies for their own leave.
   { title: "Request", icon: LeaveIcon, path: "/leave/me", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me"] },
-  { title: "My Attendance", icon: AttendanceIcon, path: "/leave/me/attendance", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/attendance"] },
+  { title: "My Attendance", icon: AttendanceIcon, path: "/staff-attendance/me", perm: "staff-attendance.regularization.apply", notPerm: "staff-attendance.regularization.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/staff-attendance/me"] },
   { title: "Penalties", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/penalty"] },
   // Staff documents — self-service (read & sign own policies). Hidden from the managing
   // user (god) who reads compliance via the office tile below instead.

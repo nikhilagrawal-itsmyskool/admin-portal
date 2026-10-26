@@ -36,6 +36,7 @@ export default function EmployeeForm() {
     familyUniqueNumber: "",
     employeeNumber: "",
     code: "",
+    deviceNumber: "",
     gender: "",
     dob: "",
     mobile: "",
@@ -73,6 +74,7 @@ export default function EmployeeForm() {
         familyUniqueNumber: employee.familyUniqueNumber || "",
         employeeNumber: employee.employeeNumber || "",
         code: employee.code || "",
+        deviceNumber: employee.deviceNumber || "",
         gender: employee.gender || "",
         dob: employee.dob ? String(employee.dob).slice(0, 10) : "",
         mobile: employee.mobile || "",
@@ -108,6 +110,7 @@ export default function EmployeeForm() {
       [
         "employeeNumber",
         "code",
+        "deviceNumber",
         "gender",
         "dob",
         "mobile",
@@ -204,6 +207,17 @@ export default function EmployeeForm() {
                   onChange={handleChange}
                   inputProps={{ maxLength: 16 }}
                   helperText="Short code shown in the master timetable (e.g. NKG)."
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Device Number (biometric PIN)"
+                  name="deviceNumber"
+                  value={formData.deviceNumber}
+                  onChange={handleChange}
+                  inputProps={{ inputMode: "numeric", maxLength: 9 }}
+                  helperText="Numeric; used on the attendance/biometric device."
                 />
               </Grid>
               <Grid item xs={12} md={6}>

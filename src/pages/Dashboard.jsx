@@ -251,6 +251,14 @@ const modules = [
     perm: "leave.calendar.view",
   },
   {
+    title: "Staff Attendance",
+    description: "Daily staff in/out from the biometric device, reports, and regularizations",
+    icon: PeopleIcon,
+    path: "/staff-attendance",
+    color: "#00897b",
+    perm: "staff-attendance.record.view",
+  },
+  {
     title: "Examinations",
     description: "Datesheets, admit cards, seating, and reports",
     icon: ExamIcon,

@@ -561,13 +561,24 @@ const menuItems = [
       { title: 'Permissions', icon: PermissionsIcon, path: '/leave/permissions', perm: 'authz.manage', admin: true },
       { title: 'Config', icon: AsmSettingsIcon, path: '/leave/types', perm: 'leave.config.view', admin: true },
       { title: 'Apply / My Requests', icon: MarkIcon, path: '/leave/me', perm: 'leave.application.apply', notPerm: 'leave.application.approve' },
-      { title: 'My Attendance', icon: AttendanceIcon, path: '/leave/me/attendance', perm: 'leave.application.apply', notPerm: 'leave.application.approve' },
       { title: 'My Penalty', icon: WaiverIcon, path: '/leave/me/penalty', perm: 'leave.application.apply', notPerm: 'leave.application.approve' },
       { title: 'Leave Calendar', icon: CalendarIcon, path: '/leave/day', perm: 'leave.calendar.view' },
       { title: 'Approvals', icon: DutyIcon, path: '/leave/approvals', perm: 'leave.application.approve' },
-      { title: 'Staff Attendance', icon: PeopleIcon, path: '/leave/staff', perm: 'leave.attendance.view' },
-      { title: 'Biometric Import', icon: BioImportIcon, path: '/leave/import', perm: 'leave.attendance.manage' },
       { title: 'Deduction Report', icon: StructureIcon, path: '/leave/deductions', perm: 'leave.deduction.view' },
+    ],
+  },
+  {
+    // Staff Attendance (live-ESSL generation) — supersedes the old Leave-based attendance
+    // screens. No parent perm: each child self-filters (god/admin/director see oversight;
+    // every staff member sees My Attendance). Config is admin:true (behind the reveal toggle).
+    title: 'Staff Attendance',
+    icon: AttendanceIcon,
+    children: [
+      { title: 'Config', icon: AsmSettingsIcon, path: '/staff-attendance/config', perm: 'staff-attendance.config.manage', admin: true },
+      { title: 'My Attendance', icon: AttendanceIcon, path: '/staff-attendance/me', perm: 'staff-attendance.regularization.apply', notPerm: 'staff-attendance.regularization.approve' },
+      { title: 'Dashboard', icon: PeopleIcon, path: '/staff-attendance', perm: 'staff-attendance.record.view' },
+      { title: 'Regularizations', icon: DutyIcon, path: '/staff-attendance/regularizations', perm: 'staff-attendance.regularization.approve' },
+      { title: 'Biometric Devices', icon: BioImportIcon, path: '/staff-attendance/devices', perm: 'biometric.device.view' },
     ],
   },
   {
