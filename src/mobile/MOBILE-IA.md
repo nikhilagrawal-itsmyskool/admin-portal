@@ -81,8 +81,7 @@ Names below are the live titles. `·` separates a hub's children.
   - Medical · Items `medical.inventory.view` / Issues `medical.issue.view`
   - Sports · Items `sports.inventory.view` / Issues `sports.issue.view`
   - Supplies · Items `supplies.inventory.view` / Issues `supplies.issue.view`
-  - Asset Counts `asset.register.view`
-  - AI Inventory `asset.register.manage` *(photograph a room → AI draft counts → correct → save)*
+  - Assets · Counts `asset.register.view` / Inventory `asset.register.manage` *(photograph a room → AI draft counts → correct → save)*
 - **Tools** · Assistant `assistant.use` *(god)*
 
 ---

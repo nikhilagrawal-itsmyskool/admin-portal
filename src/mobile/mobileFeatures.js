@@ -16,6 +16,7 @@ import {
   Widgets as SuppliesIcon,
   Tag as CountsIcon,
   AddAPhoto as InventoryAIIcon,
+  Chair as AssetHubIcon,
   Groups as AssemblyIcon,
   EditCalendar as AssemblyRosterIcon,
   FactCheck as AssemblyChecklistIcon,
@@ -170,11 +171,10 @@ export const MOBILE_FEATURES = [
   { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.inventory.view", section: "stores", hub: "supplies" },
   { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.issue.view", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },
 
-  // Physical stock-count is the assets-incharge's job (asset.register.*), not every teacher's.
-  { title: "Asset Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.register.view", section: "stores", color: "#8d6e63" },
-  // AI Inventory — photograph a room, Claude drafts counts, operator corrects & saves as
-  // quantity buckets. A write surface, so asset.register.manage (admin/assets-incharge/god).
-  { title: "AI Inventory", icon: InventoryAIIcon, path: "/asset/inventory-ai", perm: "asset.register.manage", section: "stores", color: "#8d6e63", routes: ["/asset/inventory-ai"] },
+  // Assets hub — the asset register (assets-incharge's job, asset.register.*, not teachers').
+  // Counts = read the per-type tally; Inventory = photograph a room → AI draft → save buckets.
+  { title: "Asset Counts", hubLabel: "Counts", icon: CountsIcon, path: "/asset/counts", perm: "asset.register.view", section: "stores", hub: "asset" },
+  { title: "AI Inventory", hubLabel: "Inventory", icon: InventoryAIIcon, path: "/asset/inventory-ai", perm: "asset.register.manage", section: "stores", hub: "asset", routes: ["/asset/inventory-ai"] },
 
   // ── Office — god only. The godpwa.* perms are granted to NO role, so only god ('*')
   // sees these; admins on a phone won't. Read-only checking on the go.
@@ -216,6 +216,7 @@ export const MOBILE_HUBS = {
   medical: { title: "Medical", icon: MedicalIcon, color: "#3366ff" },
   sports: { title: "Sports", icon: SportsIcon, color: "#0095ff" },
   supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
+  asset: { title: "Assets", icon: AssetHubIcon, color: "#8d6e63" },
   fees: { title: "Fees", icon: FeesIcon, color: "#00897b" },
   // Single programme today -> the collapsed hub card reads "Spoken English" (the band
   // header is already "Programmes"). When a 2nd programme is added, rename this back to
