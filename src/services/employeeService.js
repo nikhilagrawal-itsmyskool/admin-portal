@@ -61,4 +61,15 @@ export const employeeService = {
     const response = await api.post(`/employees/${id}/force-logout`);
     return response.data;
   },
+
+  // Per-school employee config. getConfig readable by employee viewers; updateConfig god-only.
+  getConfig: async () => {
+    const response = await api.get('/employees/config');
+    return response.data; // { config: { restrictRoledEdit } }
+  },
+
+  updateConfig: async (payload) => {
+    const response = await api.put('/employees/config', payload);
+    return response.data;
+  },
 };

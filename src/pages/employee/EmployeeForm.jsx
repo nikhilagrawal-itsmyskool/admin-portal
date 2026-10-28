@@ -50,13 +50,23 @@ export default function EmployeeForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [restrictRoledEdit, setRestrictRoledEdit] = useState(true);
 
   useEffect(() => {
     loadRoles();
+    employeeService
+      .getConfig()
+      .then((d) => setRestrictRoledEdit(d?.config?.restrictRoledEdit ?? true))
+      .catch(() => {});
     if (isEdit) {
       loadEmployee();
     }
   }, [id]);
+
+  // On edit, a non-god admin cannot change a roled employee when the school restricts it
+  // (the backend enforces the same). Role assignment itself is always god-only.
+  const roleProtected =
+    isEdit && restrictRoledEdit && !canManageRoles && selectedRoles.length > 0;
 
   const loadRoles = async () => {
     try {
@@ -165,6 +175,13 @@ export default function EmployeeForm() {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
+        </Alert>
+      )}
+
+      {roleProtected && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          This employee holds a role, so only a god user can edit their details. You can view the
+          information below but cannot save changes.
         </Alert>
       )}
 
@@ -324,7 +341,7 @@ export default function EmployeeForm() {
               )}
               <Grid item xs={12}>
                 <Box sx={{ display: "flex", gap: 2 }}>
-                  <Button type="submit" variant="contained" disabled={saving}>
+                  <Button type="submit" variant="contained" disabled={saving || roleProtected}>
                     {saving
                       ? "Saving..."
                       : isEdit

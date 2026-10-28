@@ -97,6 +97,7 @@ Role-based permissions enforced in the admin portal UI (read from the JWT `roles
 | `employee.record.restore` | Restore a deleted employee | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `employee.session.reset` | Force an employee to sign out and back in (e.g. after a role change) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `employee.roles.manage` | Assign or change an employee's roles (admins can add/edit employees but not roles) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
+| `employee.config.manage` | Manage Employee Config (e.g. whether admins may edit/delete employees who hold a role) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `documents.handbook.manage` | Author staff handbook documents (create/edit/remind/archive, view acks) — god-only by default | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `purchaseLog.edit` | Edit a purchase log entry (medical, lab, sports, supplies, …) | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |
 | `purchaseLog.restore` | Restore a deleted purchase log entry | ✓ | — | — | — | — | — | — | — | — | — | — | — | — |

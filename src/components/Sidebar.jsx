@@ -378,6 +378,7 @@ const menuItems = [
     perm: 'employee.record.view',
     children: [
       { title: 'Permissions', icon: PermissionsIcon, path: '/employees/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/employees/config', perm: 'employee.config.manage', admin: true },
       { title: 'All Employees', icon: PeopleIcon, path: '/employees', perm: 'employee.record.view' },
       // Staff document handbook lives under Employees. Managing (documents.handbook.manage) is
       // god-only; everyone else with documents.sign gets their personal "My Documents".

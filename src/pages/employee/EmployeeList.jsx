@@ -43,6 +43,13 @@ export default function EmployeeList() {
   const isGod = can(ACTIONS.EMPLOYEE_RESTORE);
   // Force re-login is god-only by default (grantable to admin via the Permissions grid).
   const canForceReLogin = can(ACTIONS.EMPLOYEE_SESSION_RESET);
+  // Role management (god) also bypasses the roled-employee edit restriction.
+  const canManageRoles = can(ACTIONS.EMPLOYEE_ROLES_MANAGE);
+  // Default to the restrictive value (true) until config loads, matching the backend default.
+  const [restrictRoledEdit, setRestrictRoledEdit] = useState(true);
+  // A roled employee that a non-god admin may NOT edit/delete (backend enforces this too).
+  const isRoleProtected = (row) =>
+    restrictRoledEdit && !canManageRoles && (row?.roles || []).length > 0;
 
   // Managers can open anyone's detail; view-only staff (teachers) may open
   // only their own row. user.employeeId is the logged-in employee's uuid.
@@ -78,6 +85,15 @@ export default function EmployeeList() {
   useEffect(() => {
     loadEmployees();
   }, [showDeleted, selectedRoles]);
+
+  // Load the per-school config so we can gate Edit/Delete for roled employees.
+  useEffect(() => {
+    if (!isAdmin) return;
+    employeeService
+      .getConfig()
+      .then((d) => setRestrictRoledEdit(d?.config?.restrictRoledEdit ?? true))
+      .catch(() => {});
+  }, [isAdmin]);
 
   // The role list drives the filter picker (admin/god only — the endpoint is guarded).
   useEffect(() => {
@@ -238,14 +254,18 @@ export default function EmployeeList() {
             )}
             {isAdmin && !isDeleted && (
               <>
-                <IconButton
-                  size="small"
-                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-                  onClick={() => navigate(`/employees/${params.row.uuid}/edit`)}
-                  title="Edit Employee"
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
+                {/* Edit + Delete are hidden for a non-god admin on a roled employee when the
+                    school restricts it (backend enforces the same). Credentials stay. */}
+                {!isRoleProtected(params.row) && (
+                  <IconButton
+                    size="small"
+                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                    onClick={() => navigate(`/employees/${params.row.uuid}/edit`)}
+                    title="Edit Employee"
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                )}
                 <IconButton
                   size="small"
                   color="primary"
@@ -256,6 +276,7 @@ export default function EmployeeList() {
                 >
                   <VpnKeyIcon fontSize="small" />
                 </IconButton>
+                {!isRoleProtected(params.row) && (
                 <IconButton
                   size="small"
                   color="error"
@@ -265,6 +286,7 @@ export default function EmployeeList() {
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
+                )}
               </>
             )}
             {/* Force re-login — god-only by default. Use after changing someone's role so the

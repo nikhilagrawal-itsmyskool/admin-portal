@@ -98,6 +98,7 @@ import AssetCounts from './pages/asset/AssetCounts';
 import AssetInventoryAI from './pages/asset/AssetInventoryAI';
 import EmployeeList from './pages/employee/EmployeeList';
 import EmployeeForm from './pages/employee/EmployeeForm';
+import EmployeeConfig from './pages/employee/EmployeeConfig';
 import LibraryDashboard from './pages/library/LibraryDashboard';
 import LibraryPermissions from './pages/library/Permissions';
 import WorkList from './pages/library/works/WorkList';
@@ -444,6 +445,7 @@ export default function App() {
         <Route path="transfer/permissions" element={<TransferPermissions />} />
         <Route path="transfer" element={<TransferList />} />
         <Route path="employees/permissions" element={<EmployeePermissions />} />
+        <Route path="employees/config" element={<EmployeeConfig />} />
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/add" element={<EmployeeForm />} />
         <Route path="employees/:id/edit" element={<EmployeeForm />} />

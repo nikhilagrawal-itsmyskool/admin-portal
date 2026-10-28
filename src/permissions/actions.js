@@ -114,6 +114,9 @@ export const ACTIONS = {
   // Assign/change an employee's roles. Split out of employee.manage so admins can add/edit
   // employees but not grant roles. God-only by default; grantable from the Permissions grid.
   EMPLOYEE_ROLES_MANAGE: "employee.roles.manage",
+  // Manage the Employee Config screen (e.g. whether admins may edit/delete roled employees).
+  // God-only by default; grantable from the Permissions grid.
+  EMPLOYEE_CONFIG_MANAGE: "employee.config.manage",
   // Staff document handbook authoring — god-only by default (god grants via grid). The /me
   // read-&-sign endpoints self-authorize; documents.sign below is frontend menu visibility only.
   DOCUMENTS_HANDBOOK_MANAGE: "documents.handbook.manage",
@@ -565,6 +568,10 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.EMPLOYEE_ROLES_MANAGE,
     description: "Assign or change an employee's roles (admins can add/edit employees but not roles) — god-only by default",
+  },
+  {
+    action: ACTIONS.EMPLOYEE_CONFIG_MANAGE,
+    description: "Manage Employee Config (e.g. whether admins may edit/delete employees who hold a role) — god-only by default",
   },
   {
     action: ACTIONS.DOCUMENTS_HANDBOOK_MANAGE,
