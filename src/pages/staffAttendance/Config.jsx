@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Card, CardContent, TextField, Button, Grid, Alert, Switch,
   FormControlLabel, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Stack,
-  Autocomplete, Chip,
+  Autocomplete, Chip, MenuItem,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -14,6 +14,8 @@ import { employeeService } from "../../services/employeeService";
 import { useCan } from "../../permissions/can";
 
 const EMPTY_SEASON = { name: "", startMonth: 4, startDay: 1, endMonth: 6, endDay: 30, expectedIn: "07:30", expectedOut: "13:30", graceMin: 10, halfDayAfterMin: "", sortOrder: 0 };
+const MONTHS = [[1, "Jan"], [2, "Feb"], [3, "Mar"], [4, "Apr"], [5, "May"], [6, "Jun"], [7, "Jul"], [8, "Aug"], [9, "Sep"], [10, "Oct"], [11, "Nov"], [12, "Dec"]];
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
 export default function StaffAttendanceConfig() {
   const can = useCan();
@@ -230,15 +232,31 @@ export default function StaffAttendanceConfig() {
           {seasonDialog && (
             <Grid container spacing={2} sx={{ mt: 0.5 }}>
               <Grid item xs={12}><TextField fullWidth label="Name" value={seasonDialog.name} onChange={(e) => setSeasonDialog({ ...seasonDialog, name: e.target.value })} /></Grid>
-              <Grid item xs={3}><TextField fullWidth type="number" label="Start month" value={seasonDialog.startMonth} onChange={(e) => setSeasonDialog({ ...seasonDialog, startMonth: e.target.value })} /></Grid>
-              <Grid item xs={3}><TextField fullWidth type="number" label="Start day" value={seasonDialog.startDay} onChange={(e) => setSeasonDialog({ ...seasonDialog, startDay: e.target.value })} /></Grid>
-              <Grid item xs={3}><TextField fullWidth type="number" label="End month" value={seasonDialog.endMonth} onChange={(e) => setSeasonDialog({ ...seasonDialog, endMonth: e.target.value })} /></Grid>
-              <Grid item xs={3}><TextField fullWidth type="number" label="End day" value={seasonDialog.endDay} onChange={(e) => setSeasonDialog({ ...seasonDialog, endDay: e.target.value })} /></Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField select fullWidth label="Start month" value={Number(seasonDialog.startMonth)} onChange={(e) => setSeasonDialog({ ...seasonDialog, startMonth: e.target.value })}>
+                  {MONTHS.map(([v, n]) => <MenuItem key={v} value={v}>{n}</MenuItem>)}
+                </TextField>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField select fullWidth label="Start day" value={Number(seasonDialog.startDay)} onChange={(e) => setSeasonDialog({ ...seasonDialog, startDay: e.target.value })}>
+                  {DAYS.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+                </TextField>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField select fullWidth label="End month" value={Number(seasonDialog.endMonth)} onChange={(e) => setSeasonDialog({ ...seasonDialog, endMonth: e.target.value })}>
+                  {MONTHS.map(([v, n]) => <MenuItem key={v} value={v}>{n}</MenuItem>)}
+                </TextField>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField select fullWidth label="End day" value={Number(seasonDialog.endDay)} onChange={(e) => setSeasonDialog({ ...seasonDialog, endDay: e.target.value })}>
+                  {DAYS.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+                </TextField>
+              </Grid>
               <Grid item xs={6}><TextField fullWidth type="time" label="Expected in" value={seasonDialog.expectedIn} onChange={(e) => setSeasonDialog({ ...seasonDialog, expectedIn: e.target.value })} InputLabelProps={{ shrink: true }} /></Grid>
               <Grid item xs={6}><TextField fullWidth type="time" label="Expected out" value={seasonDialog.expectedOut} onChange={(e) => setSeasonDialog({ ...seasonDialog, expectedOut: e.target.value })} InputLabelProps={{ shrink: true }} /></Grid>
-              <Grid item xs={4}><TextField fullWidth type="number" label="Grace (min)" value={seasonDialog.graceMin} onChange={(e) => setSeasonDialog({ ...seasonDialog, graceMin: e.target.value })} /></Grid>
-              <Grid item xs={4}><TextField fullWidth type="number" label="Half-day < (min)" value={seasonDialog.halfDayAfterMin} onChange={(e) => setSeasonDialog({ ...seasonDialog, halfDayAfterMin: e.target.value })} /></Grid>
-              <Grid item xs={4}><TextField fullWidth type="number" label="Sort order" value={seasonDialog.sortOrder} onChange={(e) => setSeasonDialog({ ...seasonDialog, sortOrder: e.target.value })} /></Grid>
+              <Grid item xs={6} sm={4}><TextField fullWidth type="number" label="Grace (min)" value={seasonDialog.graceMin} onChange={(e) => setSeasonDialog({ ...seasonDialog, graceMin: e.target.value })} helperText="Lateness allowed after check-in" /></Grid>
+              <Grid item xs={6} sm={4}><TextField fullWidth type="number" label="Half day if worked < (min)" value={seasonDialog.halfDayAfterMin} onChange={(e) => setSeasonDialog({ ...seasonDialog, halfDayAfterMin: e.target.value })} helperText="0 / blank = off" /></Grid>
+              <Grid item xs={6} sm={4}><TextField fullWidth type="number" label="Sort order" value={seasonDialog.sortOrder} onChange={(e) => setSeasonDialog({ ...seasonDialog, sortOrder: e.target.value })} helperText="Lower checked first" /></Grid>
             </Grid>
           )}
         </DialogContent>
