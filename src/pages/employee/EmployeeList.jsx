@@ -45,11 +45,14 @@ export default function EmployeeList() {
   const canForceReLogin = can(ACTIONS.EMPLOYEE_SESSION_RESET);
   // Role management (god) also bypasses the roled-employee edit restriction.
   const canManageRoles = can(ACTIONS.EMPLOYEE_ROLES_MANAGE);
-  // Default to the restrictive value (true) until config loads, matching the backend default.
-  const [restrictRoledEdit, setRestrictRoledEdit] = useState(true);
-  // A roled employee that a non-god admin may NOT edit/delete (backend enforces this too).
+  // Role codes that only god may edit (from Employee Config). Empty = no lock.
+  const [editProtectedRoles, setEditProtectedRoles] = useState([]);
+  // A non-god admin may NOT edit/delete an employee holding any edit-protected role
+  // (backend enforces this too).
   const isRoleProtected = (row) =>
-    restrictRoledEdit && !canManageRoles && (row?.roles || []).length > 0;
+    !canManageRoles &&
+    editProtectedRoles.length > 0 &&
+    (row?.roles || []).some((r) => editProtectedRoles.includes(r.code));
 
   // Managers can open anyone's detail; view-only staff (teachers) may open
   // only their own row. user.employeeId is the logged-in employee's uuid.
@@ -86,12 +89,12 @@ export default function EmployeeList() {
     loadEmployees();
   }, [showDeleted, selectedRoles]);
 
-  // Load the per-school config so we can gate Edit/Delete for roled employees.
+  // Load the per-school config so we can gate Edit/Delete for edit-protected roles.
   useEffect(() => {
     if (!isAdmin) return;
     employeeService
       .getConfig()
-      .then((d) => setRestrictRoledEdit(d?.config?.restrictRoledEdit ?? true))
+      .then((d) => setEditProtectedRoles(d?.config?.editProtectedRoles || []))
       .catch(() => {});
   }, [isAdmin]);
 

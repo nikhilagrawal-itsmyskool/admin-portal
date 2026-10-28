@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, Card, CardContent, TextField, Button, Grid, Alert, Switch,
   FormControlLabel, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Stack,
+  Autocomplete, Chip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -9,6 +10,7 @@ import AddIcon from "@mui/icons-material/Add";
 import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { staffAttendanceService } from "../../services/staffAttendanceService";
+import { employeeService } from "../../services/employeeService";
 import { useCan } from "../../permissions/can";
 
 const EMPTY_SEASON = { name: "", startMonth: 4, startDay: 1, endMonth: 6, endDay: 30, expectedIn: "07:30", expectedOut: "13:30", graceMin: 10, halfDayAfterMin: "", sortOrder: 0 };
@@ -25,21 +27,36 @@ export default function StaffAttendanceConfig() {
   const [error, setError] = useState("");
   const [seasonDialog, setSeasonDialog] = useState(null); // { ...season, _edit:bool }
   const [del, setDel] = useState(null);
+  const [allRoles, setAllRoles] = useState([]);
+  const [allEmployees, setAllEmployees] = useState([]);
 
   const dirty = cfg && JSON.stringify(cfg) !== baseline;
+
+  // Helpers to map stored code/id arrays <-> option objects for the pickers.
+  const rolesFromCodes = (codes) => allRoles.filter((r) => (codes || []).includes(r.code));
+  const empsFromIds = (ids) => allEmployees.filter((e) => (ids || []).includes(e.uuid));
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const load = async () => {
     setLoading(true);
     try {
-      const c = await staffAttendanceService.getConfig();
+      const [c, roles, emps] = await Promise.all([
+        staffAttendanceService.getConfig(),
+        employeeService.listRoles().catch(() => []),
+        employeeService.searchEmployees({}).catch(() => []),
+      ]);
+      setAllRoles(roles || []);
+      setAllEmployees(emps || []);
       const picked = {
         expectedIn: c.expectedIn || "09:00",
         expectedOut: c.expectedOut || "15:00",
         graceMin: c.graceMin ?? 10,
         halfDayAfterMin: c.halfDayAfterMin ?? "",
         enabled: c.enabled || "on",
+        exemptRoleCodes: c.exemptRoleCodes || [],
+        includeEmployeeIds: c.includeEmployeeIds || [],
+        exemptEmployeeIds: c.exemptEmployeeIds || [],
       };
       setCfg(picked);
       setBaseline(JSON.stringify(picked));
@@ -57,7 +74,11 @@ export default function StaffAttendanceConfig() {
     try {
       const payload = { ...cfg, halfDayAfterMin: cfg.halfDayAfterMin === "" ? null : Number(cfg.halfDayAfterMin), graceMin: Number(cfg.graceMin) };
       const c = await staffAttendanceService.updateConfig(payload);
-      const picked = { expectedIn: c.expectedIn, expectedOut: c.expectedOut, graceMin: c.graceMin ?? 10, halfDayAfterMin: c.halfDayAfterMin ?? "", enabled: c.enabled || "on" };
+      const picked = {
+        expectedIn: c.expectedIn, expectedOut: c.expectedOut, graceMin: c.graceMin ?? 10,
+        halfDayAfterMin: c.halfDayAfterMin ?? "", enabled: c.enabled || "on",
+        exemptRoleCodes: c.exemptRoleCodes || [], includeEmployeeIds: c.includeEmployeeIds || [], exemptEmployeeIds: c.exemptEmployeeIds || [],
+      };
       setCfg(picked);
       setBaseline(JSON.stringify(picked));
     } catch (err) {
@@ -140,6 +161,52 @@ export default function StaffAttendanceConfig() {
           </Grid>
           <Box sx={{ mt: 2 }}>
             <Button variant="contained" onClick={saveConfig} disabled={!dirty || saving}>{dirty ? (saving ? "Saving…" : "Save policy") : "Saved"}</Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 0.5 }}>Exemptions</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+            Who does NOT appear in staff attendance. Exempt whole roles, then (optionally) pull
+            specific people back in with “take attendance anyway”. You can also exempt individual
+            employees who hold no exempt role.
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple options={allRoles} getOptionLabel={(o) => o.name}
+                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                value={rolesFromCodes(cfg.exemptRoleCodes)}
+                onChange={(_e, v) => setCfg({ ...cfg, exemptRoleCodes: v.map((r) => r.code) })}
+                renderTags={(value, getTagProps) => value.map((o, i) => <Chip label={o.name} size="small" {...getTagProps({ index: i })} />)}
+                renderInput={(p) => <TextField {...p} label="Exempt roles" placeholder="Pick roles…" helperText="Everyone holding any of these roles is exempt." />}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Autocomplete
+                multiple options={allEmployees} getOptionLabel={(o) => `${o.name}${o.employeeNumber ? ` (${o.employeeNumber})` : ""}`}
+                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                value={empsFromIds(cfg.includeEmployeeIds)}
+                onChange={(_e, v) => setCfg({ ...cfg, includeEmployeeIds: v.map((x) => x.uuid) })}
+                renderTags={(value, getTagProps) => value.map((o, i) => <Chip label={o.name} size="small" {...getTagProps({ index: i })} />)}
+                renderInput={(p) => <TextField {...p} label="Take attendance anyway" placeholder="Pick employees…" helperText="Overrides the role exemption for these people." />}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Autocomplete
+                multiple options={allEmployees} getOptionLabel={(o) => `${o.name}${o.employeeNumber ? ` (${o.employeeNumber})` : ""}`}
+                isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+                value={empsFromIds(cfg.exemptEmployeeIds)}
+                onChange={(_e, v) => setCfg({ ...cfg, exemptEmployeeIds: v.map((x) => x.uuid) })}
+                renderTags={(value, getTagProps) => value.map((o, i) => <Chip label={o.name} size="small" {...getTagProps({ index: i })} />)}
+                renderInput={(p) => <TextField {...p} label="Also exempt (individuals)" placeholder="Pick employees…" helperText="Exempt these people even without an exempt role." />}
+              />
+            </Grid>
+          </Grid>
+          <Box sx={{ mt: 2 }}>
+            <Button variant="contained" onClick={saveConfig} disabled={!dirty || saving}>{dirty ? (saving ? "Saving…" : "Save") : "Saved"}</Button>
           </Box>
         </CardContent>
       </Card>

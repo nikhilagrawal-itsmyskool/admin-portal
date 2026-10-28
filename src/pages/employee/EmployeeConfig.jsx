@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Alert, CircularProgress, Button, Stack,
-  FormControlLabel, Switch,
+  Autocomplete, TextField, Chip,
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { employeeService } from '../../services/employeeService';
@@ -13,7 +13,8 @@ export default function EmployeeConfig() {
   const can = useCan();
   const canManage = can(ACTIONS.EMPLOYEE_CONFIG_MANAGE);
 
-  const [restrict, setRestrict] = useState(true);
+  const [allRoles, setAllRoles] = useState([]);
+  const [selectedRoles, setSelectedRoles] = useState([]); // role objects
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -23,8 +24,11 @@ export default function EmployeeConfig() {
     if (!canManage) { setLoading(false); return; }
     (async () => {
       try {
+        const roles = (await employeeService.listRoles()) || [];
+        setAllRoles(roles);
         const { config } = await employeeService.getConfig();
-        setRestrict(config?.restrictRoledEdit ?? true);
+        const codes = config?.editProtectedRoles || [];
+        setSelectedRoles(roles.filter((r) => codes.includes(r.code)));
       } catch (e) {
         setErr(e.response?.data?.error?.description || 'Failed to load config');
       } finally { setLoading(false); }
@@ -34,8 +38,9 @@ export default function EmployeeConfig() {
   const save = async () => {
     setSaving(true); setErr(''); setMsg('');
     try {
-      const { config } = await employeeService.updateConfig({ restrictRoledEdit: restrict });
-      setRestrict(config.restrictRoledEdit);
+      const codes = selectedRoles.map((r) => r.code);
+      const { config } = await employeeService.updateConfig({ editProtectedRoles: codes });
+      setSelectedRoles(allRoles.filter((r) => (config.editProtectedRoles || []).includes(r.code)));
       setMsg('Employee config saved.');
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save config');
@@ -53,7 +58,7 @@ export default function EmployeeConfig() {
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', maxWidth: 720 }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>Employee Config</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Settings for how employee records are managed in this school.
@@ -63,16 +68,29 @@ export default function EmployeeConfig() {
 
       <Card variant="outlined">
         <CardContent>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Protect employees who have roles</Typography>
-          <FormControlLabel
-            control={<Switch checked={restrict} onChange={(e) => setRestrict(e.target.checked)} />}
-            label="Only a god user can edit or delete an employee who holds a role"
-          />
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-            When ON, an admin can still add employees and edit those with no role, but employees who
-            have been assigned any role (e.g. teacher, in-charge) can only be edited or deleted by a
-            god user. Admins can always view them. Role assignment is god-only regardless of this setting.
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Edit-protected roles</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+            Pick the roles that only a god user may manage. An admin will NOT be able to edit or
+            delete an employee who holds any of these roles (admins can still add employees, edit
+            everyone else, view all, and reset passwords). Role assignment itself is always god-only.
+            Leave empty to let admins edit everyone.
           </Typography>
+          <Autocomplete
+            multiple
+            options={allRoles}
+            getOptionLabel={(o) => o.name}
+            isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+            value={selectedRoles}
+            onChange={(_e, value) => setSelectedRoles(value)}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip label={option.name} size="small" {...getTagProps({ index })} />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField {...params} label="Roles only god can edit" placeholder="Pick roles…" />
+            )}
+          />
 
           <Stack direction="row" justifyContent="flex-end" sx={{ mt: 3 }}>
             <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={saving}>

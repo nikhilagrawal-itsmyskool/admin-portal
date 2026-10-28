@@ -50,23 +50,24 @@ export default function EmployeeForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [restrictRoledEdit, setRestrictRoledEdit] = useState(true);
+  const [editProtectedRoles, setEditProtectedRoles] = useState([]);
 
   useEffect(() => {
     loadRoles();
     employeeService
       .getConfig()
-      .then((d) => setRestrictRoledEdit(d?.config?.restrictRoledEdit ?? true))
+      .then((d) => setEditProtectedRoles(d?.config?.editProtectedRoles || []))
       .catch(() => {});
     if (isEdit) {
       loadEmployee();
     }
   }, [id]);
 
-  // On edit, a non-god admin cannot change a roled employee when the school restricts it
+  // On edit, a non-god admin cannot change an employee who holds an edit-protected role
   // (the backend enforces the same). Role assignment itself is always god-only.
   const roleProtected =
-    isEdit && restrictRoledEdit && !canManageRoles && selectedRoles.length > 0;
+    isEdit && !canManageRoles &&
+    selectedRoles.some((r) => editProtectedRoles.includes(r.code));
 
   const loadRoles = async () => {
     try {
