@@ -361,7 +361,7 @@ const menuItems = [
       { title: 'Bulk Edit', icon: GridIcon, path: '/students/bulk-edit', perm: 'student.record.manage' },
       { title: 'Houses', icon: HouseIcon, path: '/students/houses', perm: 'student.record.manage' },
       { title: 'Reports', icon: ReportIcon, path: '/students/reports', perm: 'student.record.manage' },
-      { title: 'App Access', icon: AppAccessIcon, path: '/students/app-logins', perm: 'student.record.manage', admin: true },
+      { title: 'App Access', icon: AppAccessIcon, path: '/students/app-logins', perm: 'student.record.manage' },
     ],
   },
   {
