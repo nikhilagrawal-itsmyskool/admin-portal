@@ -5,6 +5,7 @@ import {
   FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Autocomplete,
 } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
 import { biometricService } from "../../services/biometricService";
@@ -39,15 +40,24 @@ export default function BiometricDeviceDetail() {
   const [picked, setPicked] = useState(null);
   const [deviceNumber, setDeviceNumber] = useState("");
   const [saving, setSaving] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sn]);
 
-  const load = async () => {
-    setLoading(true);
-    setError("");
+  // Auto-refresh the device facts / enrollments / commands every 5s (silent, no spinner)
+  // so new syncs + punches appear live during registration. Toggle off to stop polling.
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const t = setInterval(() => load(true), 5000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line
+  }, [autoRefresh, sn]);
+
+  const load = async (silent = false) => {
+    if (!silent) { setLoading(true); setError(""); }
     try { setData(await biometricService.getDevice(sn)); }
-    catch (err) { setError(err.response?.data?.error?.description || "Failed to load device"); }
-    finally { setLoading(false); }
+    catch (err) { if (!silent) setError(err.response?.data?.error?.description || "Failed to load device"); }
+    finally { if (!silent) setLoading(false); }
   };
 
   const toggleStatus = async (e) => {
@@ -100,6 +110,11 @@ export default function BiometricDeviceDetail() {
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 2 }}>
         <Typography variant="h4">{d.name || d.serialNumber}</Typography>
         <Stack direction="row" spacing={1} alignItems="center">
+          <FormControlLabel
+            control={<Switch size="small" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />}
+            label="Auto-refresh (5s)"
+          />
+          <Button size="small" startIcon={<RefreshIcon />} onClick={() => load()}>Refresh</Button>
           {canManage && <FormControlLabel control={<Switch checked={d.status === "active"} onChange={toggleStatus} />} label={d.status === "active" ? "Active" : "Disabled"} />}
           {canSync && <Button startIcon={<SyncIcon />} variant="contained" onClick={openSync}>Sync staff</Button>}
         </Stack>
