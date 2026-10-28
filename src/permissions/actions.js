@@ -111,6 +111,9 @@ export const ACTIONS = {
   // Force an employee to sign out and back in (bumps the login's session version). God-only by
   // default (listed on no role; god's '*' covers it) — grant to admin from the Permissions grid.
   EMPLOYEE_SESSION_RESET: "employee.session.reset",
+  // Assign/change an employee's roles. Split out of employee.manage so admins can add/edit
+  // employees but not grant roles. God-only by default; grantable from the Permissions grid.
+  EMPLOYEE_ROLES_MANAGE: "employee.roles.manage",
   // Staff document handbook authoring — god-only by default (god grants via grid). The /me
   // read-&-sign endpoints self-authorize; documents.sign below is frontend menu visibility only.
   DOCUMENTS_HANDBOOK_MANAGE: "documents.handbook.manage",
@@ -558,6 +561,10 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.EMPLOYEE_SESSION_RESET,
     description: "Force an employee to sign out and back in (e.g. after a role change) — god-only by default",
+  },
+  {
+    action: ACTIONS.EMPLOYEE_ROLES_MANAGE,
+    description: "Assign or change an employee's roles (admins can add/edit employees but not roles) — god-only by default",
   },
   {
     action: ACTIONS.DOCUMENTS_HANDBOOK_MANAGE,

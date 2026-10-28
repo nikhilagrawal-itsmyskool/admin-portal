@@ -30,6 +30,8 @@ export default function EmployeeForm() {
   const isEdit = Boolean(id);
   const can = useCan();
   const isAdmin = can(ACTIONS.EMPLOYEE_MANAGE);
+  // Roles are a god-only sub-permission: admins can add/edit employees but not change roles.
+  const canManageRoles = can(ACTIONS.EMPLOYEE_ROLES_MANAGE);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -105,8 +107,10 @@ export default function EmployeeForm() {
       const payload = {
         name: formData.name,
         familyUniqueNumber: formData.familyUniqueNumber,
-        roleIds: selectedRoles.map((r) => r.uuid),
       };
+      // Only send roleIds when the user may change roles; otherwise leave roles untouched
+      // (the backend also ignores roleIds from callers without employee.roles.manage).
+      if (canManageRoles) payload.roleIds = selectedRoles.map((r) => r.uuid);
       [
         "employeeNumber",
         "code",
@@ -278,6 +282,7 @@ export default function EmployeeForm() {
               <Grid item xs={12}>
                 <Autocomplete
                   multiple
+                  readOnly={!canManageRoles}
                   options={allRoles}
                   getOptionLabel={(option) => option.name}
                   isOptionEqualToValue={(option, value) =>
@@ -298,7 +303,12 @@ export default function EmployeeForm() {
                     <TextField
                       {...params}
                       label="Roles"
-                      placeholder="Assign roles"
+                      placeholder={canManageRoles ? "Assign roles" : ""}
+                      helperText={
+                        canManageRoles
+                          ? undefined
+                          : "Only a god user can assign or change roles."
+                      }
                     />
                   )}
                 />
