@@ -35,11 +35,17 @@ import {
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 
+// Parse a device/presence last_seen timestamp to epoch ms (0 if absent/invalid).
+function lastSeenMs(iso) {
+  if (!iso) return 0;
+  const t = new Date(String(iso).replace(' ', 'T')).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
 // Rough "last active" label from a device last_seen timestamp.
 function timeAgo(iso) {
-  if (!iso) return null;
-  const t = new Date(String(iso).replace(' ', 'T')).getTime();
-  if (Number.isNaN(t)) return null;
+  const t = lastSeenMs(iso);
+  if (!t) return null;
   const s = Math.max(0, (Date.now() - t) / 1000);
   if (s < 90) return 'just now';
   const m = s / 60;
@@ -48,6 +54,13 @@ function timeAgo(iso) {
   if (h < 36) return `${Math.round(h)} hr ago`;
   return `${Math.round(h / 24)} days ago`;
 }
+
+const isInstalled = (l) => (l.deviceCount || 0) > 0;
+const activeWithinDays = (l, days) => {
+  const t = lastSeenMs(l.lastSeen);
+  return t > 0 && Date.now() - t <= days * 86400000;
+};
+const pct = (n, d) => (d ? `${Math.round((n / d) * 100)}%` : '0%');
 
 // Central "App Access" screen: every parent-app family login (username = family mobile),
 // the children it opens, reveal the password, and reset it (auto or manual). No force-change —
@@ -62,6 +75,7 @@ export default function AppLogins() {
   const [featuresTarget, setFeaturesTarget] = useState(null);
   const [classFilter, setClassFilter] = useState('');
   const [sortBy, setSortBy] = useState('roll');
+  const [installFilter, setInstallFilter] = useState('all'); // all | installed | notInstalled | active
 
   const classes = useMemo(() => {
     const set = new Set();
@@ -69,10 +83,35 @@ export default function AppLogins() {
     return [...set].sort((a, b) => classRank(a) - classRank(b) || a.localeCompare(b));
   }, [logins]);
 
-  const filtered = useMemo(
+  // Scope = the class filter (search is applied server-side). The summary tiles and the
+  // install filter both work over this scope.
+  const scoped = useMemo(
     () => (classFilter ? logins.filter((l) => (l.students || []).some((s) => s.className === classFilter)) : logins),
     [logins, classFilter],
   );
+
+  // Install analytics over the current scope. "Students with app" counts children whose
+  // family login has the app installed (class-scoped when a class is picked).
+  const stats = useMemo(() => {
+    let installed = 0, active7 = 0, studentsInScope = 0, studentsInstalled = 0;
+    for (const l of scoped) {
+      const inst = isInstalled(l);
+      if (inst) installed++;
+      if (activeWithinDays(l, 7)) active7++;
+      const kids = classFilter ? (l.students || []).filter((s) => s.className === classFilter) : (l.students || []);
+      studentsInScope += kids.length;
+      if (inst) studentsInstalled += kids.length;
+    }
+    const families = scoped.length;
+    return { families, installed, notInstalled: families - installed, active7, studentsInScope, studentsInstalled };
+  }, [scoped, classFilter]);
+
+  const filtered = useMemo(() => scoped.filter((l) => {
+    if (installFilter === 'installed') return isInstalled(l);
+    if (installFilter === 'notInstalled') return !isInstalled(l);
+    if (installFilter === 'active') return activeWithinDays(l, 7);
+    return true;
+  }), [scoped, installFilter]);
 
   // The child a family is sorted/labelled by: when a class is picked, that child; else the first.
   const focusChild = useCallback((l) => {
@@ -81,9 +120,9 @@ export default function AppLogins() {
     return kids[0] || null;
   }, [classFilter]);
 
-  // Roll-number sort is only meaningful within a selected class (keyed to the in-class child);
-  // with no class we always sort by name.
-  const effectiveSort = classFilter ? sortBy : 'name';
+  // Roll-number sort is only meaningful within a selected class; fall back to name when no
+  // class is picked. "Last active" and name work in any scope.
+  const effectiveSort = (!classFilter && sortBy === 'roll') ? 'name' : sortBy;
   const sortedFiltered = useMemo(() => {
     const arr = [...filtered];
     if (effectiveSort === 'roll') {
@@ -94,6 +133,8 @@ export default function AppLogins() {
         if (rb == null) return -1;
         return ra - rb;
       });
+    } else if (effectiveSort === 'lastActive') {
+      arr.sort((a, b) => lastSeenMs(b.lastSeen) - lastSeenMs(a.lastSeen)); // most-recent first
     } else {
       arr.sort((a, b) => (focusChild(a)?.name || a.username || '').toLowerCase()
         .localeCompare((focusChild(b)?.name || b.username || '').toLowerCase()));
@@ -136,12 +177,30 @@ export default function AppLogins() {
         Parent-app logins — one per family, keyed by the family&apos;s unique login number (here set to match their mobile). See the children each login opens, whether the app is installed, reveal the password, or reset it.
       </Typography>
       {!loading && logins.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          <Chip
-            size="small"
-            color="success"
-            variant="outlined"
-            label={`📱 ${logins.filter((l) => l.deviceCount > 0).length} of ${logins.length} families have the app installed`}
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
+          <StatTile
+            label={classFilter ? `Families · ${classFilter}` : 'Total families'}
+            value={stats.families} color="#334155"
+            active={installFilter === 'all'} onClick={() => setInstallFilter('all')}
+          />
+          <StatTile
+            label="App installed" value={stats.installed} sub={`${pct(stats.installed, stats.families)} of families`}
+            color="#16a34a" active={installFilter === 'installed'}
+            onClick={() => setInstallFilter(installFilter === 'installed' ? 'all' : 'installed')}
+          />
+          <StatTile
+            label="Not installed" value={stats.notInstalled} sub="tap to follow up"
+            color="#dc2626" active={installFilter === 'notInstalled'}
+            onClick={() => setInstallFilter(installFilter === 'notInstalled' ? 'all' : 'notInstalled')}
+          />
+          <StatTile
+            label="Active in 7 days" value={stats.active7} color="#2563eb"
+            active={installFilter === 'active'}
+            onClick={() => setInstallFilter(installFilter === 'active' ? 'all' : 'active')}
+          />
+          <StatTile
+            label="Students with app" value={stats.studentsInstalled} sub={`of ${stats.studentsInScope}`}
+            color="#7c3aed"
           />
         </Box>
       )}
@@ -163,9 +222,10 @@ export default function AppLogins() {
         />
         <FormControl sx={{ minWidth: 150 }}>
           <InputLabel>Sort by</InputLabel>
-          <Select label="Sort by" value={effectiveSort} onChange={(e) => setSortBy(e.target.value)} disabled={!classFilter}>
+          <Select label="Sort by" value={effectiveSort} onChange={(e) => setSortBy(e.target.value)}>
             {classFilter && <MenuItem value="roll">Roll number</MenuItem>}
             <MenuItem value="name">Name</MenuItem>
+            <MenuItem value="lastActive">Last active</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -175,7 +235,9 @@ export default function AppLogins() {
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
       ) : sortedFiltered.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>No logins found.</Typography>
+        <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+          {installFilter === 'all' ? 'No logins found.' : 'No families match this filter.'}
+        </Typography>
       ) : (
         <Stack spacing={1.5}>
           {sortedFiltered.map((l) => (
@@ -194,6 +256,30 @@ export default function AppLogins() {
       <ResetDialog login={resetTarget} onClose={() => setResetTarget(null)} onDone={afterReset} />
       <FeaturesDialog login={featuresTarget} onClose={() => setFeaturesTarget(null)} onDone={afterFeatures} />
     </Box>
+  );
+}
+
+// Clickable summary tile. When onClick is given it doubles as an install filter; the
+// active tile is outlined/tinted in its colour.
+function StatTile({ label, value, sub, color, active, onClick }) {
+  return (
+    <Paper
+      variant="outlined"
+      onClick={onClick}
+      sx={{
+        px: 2, py: 1.25, minWidth: 124, flex: '1 1 auto',
+        cursor: onClick ? 'pointer' : 'default',
+        borderColor: active ? color : 'divider',
+        borderWidth: active ? 2 : 1,
+        bgcolor: active ? `${color}14` : 'transparent',
+        transition: 'border-color .15s, background-color .15s',
+        '&:hover': onClick ? { borderColor: color } : undefined,
+      }}
+    >
+      <Typography sx={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{label}</Typography>
+      {sub && <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled' }}>{sub}</Typography>}
+    </Paper>
   );
 }
 
