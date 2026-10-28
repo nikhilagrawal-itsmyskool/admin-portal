@@ -12,6 +12,7 @@ import {
   Stack,
   Alert,
   CircularProgress,
+  Avatar,
 } from '@mui/material';
 import { employeeService } from '../../../services/employeeService';
 import { fmtDate } from '../../../utils/date';
@@ -32,6 +33,7 @@ function Field({ label, value }) {
 // viewing themselves). Management actions stay on EmployeeList behind employee.manage.
 export default function EmployeeDetailDialog({ open, employee, onClose }) {
   const [detail, setDetail] = useState(null);
+  const [photo, setPhoto] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,6 +42,7 @@ export default function EmployeeDetailDialog({ open, employee, onClose }) {
       loadDetail();
     } else {
       setDetail(null);
+      setPhoto('');
       setError('');
     }
   }, [open, employee]);
@@ -47,9 +50,14 @@ export default function EmployeeDetailDialog({ open, employee, onClose }) {
   const loadDetail = async () => {
     setLoading(true);
     setError('');
+    setPhoto(employee?.photoUrl || '');
     try {
       const data = await employeeService.getEmployee(employee.uuid);
       setDetail(data);
+      try {
+        const p = await employeeService.getPhoto(employee.uuid);
+        if (p?.data && p?.mimeType) setPhoto(`data:${p.mimeType};base64,${p.data}`);
+      } catch { /* no photo */ }
     } catch (err) {
       // Fall back to the row data we already have if the fetch fails.
       setError(err.response?.data?.error?.description || 'Failed to load full details');
@@ -72,6 +80,11 @@ export default function EmployeeDetailDialog({ open, employee, onClose }) {
           </Box>
         ) : (
           <Grid container spacing={2} sx={{ mt: 0 }}>
+            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+              <Avatar src={photo || undefined} sx={{ width: 96, height: 96 }}>
+                {(e.name || '?').charAt(0).toUpperCase()}
+              </Avatar>
+            </Grid>
             <Field label="Name" value={e.name} />
             <Field label="Login ID" value={e.familyUniqueNumber} />
             <Field label="Employee Number" value={e.employeeNumber} />

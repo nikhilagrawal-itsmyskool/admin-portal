@@ -13,10 +13,15 @@ import {
   CircularProgress,
   Autocomplete,
   Chip,
+  Avatar,
+  Stack,
 } from "@mui/material";
 import { employeeService } from "../../services/employeeService";
 import { useCan } from "../../permissions/can";
 import { ACTIONS } from "../../permissions/actions";
+
+const PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+const PHOTO_MIME = ["image/jpeg", "image/png"];
 
 const GENDERS = [
   { value: "M", label: "Male" },
@@ -51,6 +56,9 @@ export default function EmployeeForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [editProtectedRoles, setEditProtectedRoles] = useState([]);
+  const [photoPreview, setPhotoPreview] = useState(""); // dataURL for display
+  const [photoFile, setPhotoFile] = useState(null); // { fileName, mimeType, base64Data } to upload
+  const [photoRemoved, setPhotoRemoved] = useState(false);
 
   useEffect(() => {
     loadRoles();
@@ -95,11 +103,39 @@ export default function EmployeeForm() {
         email: employee.email || "",
       });
       setSelectedRoles(employee.roles || []);
+      // Load an existing photo for preview (404 = none).
+      try {
+        const p = await employeeService.getPhoto(id);
+        if (p?.data && p?.mimeType) setPhotoPreview(`data:${p.mimeType};base64,${p.data}`);
+      } catch { /* no photo */ }
     } catch (err) {
       setError("Failed to load employee");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePhotoPick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    if (!PHOTO_MIME.includes(file.type)) { setError("Photo must be a JPG or PNG"); return; }
+    if (file.size > PHOTO_MAX_BYTES) { setError("Photo too large (max 2 MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      setPhotoPreview(dataUrl);
+      setPhotoFile({ fileName: file.name, mimeType: file.type, base64Data: dataUrl.split(",")[1] });
+      setPhotoRemoved(false);
+      setError("");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoRemove = () => {
+    setPhotoPreview("");
+    setPhotoFile(null);
+    setPhotoRemoved(true);
   };
 
   const handleChange = (e) => {
@@ -136,10 +172,17 @@ export default function EmployeeForm() {
           payload[key] = formData[key];
       });
 
+      let targetId = id;
       if (isEdit) {
         await employeeService.updateEmployee(id, payload);
       } else {
-        await employeeService.createEmployee(payload);
+        const created = await employeeService.createEmployee(payload);
+        targetId = created?.uuid;
+      }
+      // Apply photo changes after the record exists.
+      if (targetId) {
+        if (photoFile) await employeeService.uploadPhoto(targetId, photoFile);
+        else if (photoRemoved && isEdit) await employeeService.deletePhoto(targetId);
       }
       navigate("/employees");
     } catch (err) {
@@ -190,6 +233,25 @@ export default function EmployeeForm() {
         <CardContent>
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar src={photoPreview || undefined} sx={{ width: 72, height: 72 }}>
+                    {(formData.name || "?").charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Stack spacing={1}>
+                    <Button variant="outlined" component="label" size="small" disabled={roleProtected}>
+                      {photoPreview ? "Change photo" : "Upload photo"}
+                      <input hidden type="file" accept="image/jpeg,image/png" onChange={handlePhotoPick} />
+                    </Button>
+                    {photoPreview && (
+                      <Button variant="text" color="error" size="small" onClick={handlePhotoRemove} disabled={roleProtected}>
+                        Remove photo
+                      </Button>
+                    )}
+                    <Typography variant="caption" color="text.secondary">JPG or PNG, up to 2 MB.</Typography>
+                  </Stack>
+                </Stack>
+              </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth

@@ -72,4 +72,18 @@ export const employeeService = {
     const response = await api.put('/employees/config', payload);
     return response.data;
   },
+
+  // ---- Photo (shared file_storage, entity_type 'employee'; variant 'original' | 'thumb') ----
+  getPhoto: async (id, variant) => {
+    const response = await api.get(`/employees/photos/${id}`, { params: variant ? { variant } : {} });
+    return response.data; // { data: base64, mimeType, ... }
+  },
+  uploadPhoto: async (id, { fileName, mimeType, base64Data }, variant) => {
+    const response = await api.post(`/employees/photos/${id}`, { fileName, mimeType, base64Data }, { params: variant ? { variant } : {} });
+    return response.data;
+  },
+  deletePhoto: async (id, variant) => {
+    const response = await api.delete(`/employees/photos/${id}`, { params: variant ? { variant } : {} });
+    return response.data;
+  },
 };

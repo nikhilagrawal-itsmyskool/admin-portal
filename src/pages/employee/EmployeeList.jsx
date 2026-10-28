@@ -14,6 +14,7 @@ import {
   FormControlLabel,
   Switch,
   Autocomplete,
+  Avatar,
 } from "@mui/material";
 import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
 import usePersistedPaginationModel from "../../hooks/usePersistedPaginationModel";
@@ -26,6 +27,8 @@ import {
   Restore as RestoreIcon,
   Visibility as ViewIcon,
   Logout as LogoutIcon,
+  Block as BlockIcon,
+  CheckCircle as ActivateIcon,
 } from "@mui/icons-material";
 import { employeeService } from "../../services/employeeService";
 import { useAuth } from "../../context/AuthContext";
@@ -75,6 +78,8 @@ export default function EmployeeList() {
   const [restoring, setRestoring] = useState(false);
   const [reloginDialog, setReloginDialog] = useState({ open: false, item: null });
   const [reloggingIn, setReloggingIn] = useState(false);
+  const [activeDialog, setActiveDialog] = useState({ open: false, item: null });
+  const [togglingActive, setTogglingActive] = useState(false);
   const [credentialsDialog, setCredentialsDialog] = useState({
     open: false,
     item: null,
@@ -111,7 +116,7 @@ export default function EmployeeList() {
     setLoading(true);
     setError("");
     try {
-      const params = {};
+      const params = { withPhotos: true };
       if (showDeleted) params.includeDeleted = true;
       if (selectedRoles.length) params.roles = selectedRoles.map((r) => r.code).join(",");
       const data = await employeeService.searchEmployees(params);
@@ -161,6 +166,20 @@ export default function EmployeeList() {
     }
   };
 
+  const handleToggleActive = async () => {
+    setTogglingActive(true);
+    try {
+      const item = activeDialog.item;
+      await employeeService.updateEmployee(item.uuid, { loginDisabled: !item.loginDisabled });
+      setActiveDialog({ open: false, item: null });
+      loadEmployees();
+    } catch (err) {
+      setError("Failed to update status");
+    } finally {
+      setTogglingActive(false);
+    }
+  };
+
   const term = searchTerm.toLowerCase();
   const filteredEmployees = employees.filter(
     (e) =>
@@ -181,6 +200,18 @@ export default function EmployeeList() {
   }, [filteredEmployees.length, paginationModel.pageSize]);
 
   const columns = [
+    {
+      field: "photo",
+      headerName: "",
+      width: 56,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Avatar src={params.row.photoUrl || undefined} sx={{ width: 32, height: 32 }}>
+          {(params.row.name || "?").charAt(0).toUpperCase()}
+        </Avatar>
+      ),
+    },
     { field: "name", headerName: "Name", flex: 1, minWidth: 180 },
     { field: "familyUniqueNumber", headerName: "Login ID", width: 150 },
     { field: "employeeNumber", headerName: "Employee No.", width: 140 },
@@ -215,18 +246,18 @@ export default function EmployeeList() {
       field: "status",
       headerName: "Status",
       width: 110,
-      renderCell: (params) => (
-        <Chip
-          label={params.value === "deleted" ? "Deleted" : "Active"}
-          size="small"
-          color={params.value === "deleted" ? "default" : "success"}
-        />
-      ),
+      renderCell: (params) => {
+        if (params.value === "deleted")
+          return <Chip label="Deleted" size="small" color="default" />;
+        if (params.row.loginDisabled)
+          return <Chip label="Inactive" size="small" color="warning" />;
+        return <Chip label="Active" size="small" color="success" />;
+      },
     },
     {
       field: "actions",
       headerName: "Actions",
-      width: 200,
+      width: 240,
       sortable: false,
       renderCell: (params) => {
         const isDeleted = params.row.status === "deleted";
@@ -289,6 +320,17 @@ export default function EmployeeList() {
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
+                )}
+                {/* Activate / deactivate (block login) — hidden for roled-protected employees. */}
+                {!isRoleProtected(params.row) && (
+                  <IconButton
+                    size="small"
+                    color={params.row.loginDisabled ? "success" : "warning"}
+                    onClick={() => setActiveDialog({ open: true, item: params.row })}
+                    title={params.row.loginDisabled ? "Make active (allow login)" : "Make inactive (block login)"}
+                  >
+                    {params.row.loginDisabled ? <ActivateIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
+                  </IconButton>
                 )}
               </>
             )}
@@ -480,6 +522,22 @@ export default function EmployeeList() {
         onConfirm={handleForceReLogin}
         onCancel={() => setReloginDialog({ open: false, item: null })}
         loading={reloggingIn}
+      />
+
+      <ConfirmDialog
+        open={activeDialog.open}
+        title={activeDialog.item?.loginDisabled ? "Make employee active" : "Make employee inactive"}
+        message={
+          activeDialog.item?.loginDisabled
+            ? `Allow "${activeDialog.item?.name}" to log in again?`
+            : `Block "${activeDialog.item?.name}" from logging in? Their record stays and they can be reactivated anytime.`
+        }
+        confirmLabel={activeDialog.item?.loginDisabled ? "Make active" : "Make inactive"}
+        loadingLabel="Applying..."
+        confirmColor={activeDialog.item?.loginDisabled ? "success" : "warning"}
+        onConfirm={handleToggleActive}
+        onCancel={() => setActiveDialog({ open: false, item: null })}
+        loading={togglingActive}
       />
 
       <CredentialsDialog
