@@ -578,6 +578,7 @@ const menuItems = [
       { title: 'Config', icon: AsmSettingsIcon, path: '/staff-attendance/config', perm: 'staff-attendance.config.manage', admin: true },
       { title: 'My Attendance', icon: AttendanceIcon, path: '/staff-attendance/me', perm: 'staff-attendance.regularization.apply', notPerm: 'staff-attendance.regularization.approve' },
       { title: 'Dashboard', icon: PeopleIcon, path: '/staff-attendance', perm: 'staff-attendance.record.view' },
+      { title: 'Report', icon: ReportIcon, path: '/staff-attendance/report', perm: 'staff-attendance.record.view' },
       { title: 'Regularizations', icon: DutyIcon, path: '/staff-attendance/regularizations', perm: 'staff-attendance.regularization.approve' },
       { title: 'Biometric Devices', icon: BioImportIcon, path: '/staff-attendance/devices', perm: 'biometric.device.view' },
     ],
