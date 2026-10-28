@@ -18,7 +18,7 @@ import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 import { fmtDateTime } from '../../utils/date';
 import {
-  outreachService, filesToUploads, uploadVideo, validateVideo,
+  outreachService, fileToUpload, uploadVideo, validateVideo,
   REACTION_EMOJI, PHOTO_ACCEPT, PHOTO_MAX_BYTES, VIDEO_ACCEPT, VIDEO_MAX_SECONDS,
 } from '../../services/outreachService';
 
@@ -165,13 +165,12 @@ export default function MyMoments() {
     setBusy(true);
     try {
       const created = await outreachService.create({ title: title.trim() || undefined, body: body.trim() || undefined, audience });
-      if (files.length) {
-        setProgress(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
-        const uploads = await filesToUploads(files, (d, t) => setProgress(`Preparing photos… ${d}/${t}`));
-        for (let i = 0; i < uploads.length; i++) {
-          setProgress(`Uploading photo ${i + 1}/${uploads.length}…`);
-          await outreachService.addPhoto(created.uuid, { image: uploads[i].image, thumb: uploads[i].thumb });
-        }
+      // One photo at a time: decode → resize → upload → free. Keeps memory flat on phones
+      // even for large 16+ photo batches (decoding them all up front is what crashed before).
+      for (let i = 0; i < files.length; i++) {
+        setProgress(`Uploading photo ${i + 1}/${files.length}…`);
+        const up = await fileToUpload(files[i]);
+        await outreachService.addPhoto(created.uuid, { image: up.image, thumb: up.thumb });
       }
       for (let i = 0; i < videoUrls.length; i++) {
         setProgress(`Adding video ${i + 1}/${videoUrls.length}…`);

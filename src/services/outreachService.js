@@ -107,27 +107,43 @@ export const PHOTO_MAX_BYTES = 40 * 1024 * 1024;
 const DOWNSCALE_MAX_EDGE = 1920;
 const DOWNSCALE_QUALITY = 0.85;
 
-// Resize one image file in-browser and return the { fileName, mimeType, base64Data } payload.
-export function downscaleImage(file, maxEdge = DOWNSCALE_MAX_EDGE, quality = DOWNSCALE_QUALITY) {
+// Decode a file ONCE and render it to one or more target sizes. Re-decoding a 12MP photo
+// per size is what exhausts a phone's canvas memory on a big batch (16+ photos) and makes
+// the whole upload throw — so every variant comes from a single decode here. Each canvas is
+// zeroed right after export to prompt the browser to release its backing store (iOS Safari).
+function renderSizes(file, sizes) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL('image/jpeg', quality);
-      const base64Data = dataUrl.split(',')[1];
       const fileName = (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg';
-      resolve({ fileName, mimeType: 'image/jpeg', base64Data });
+      try {
+        const out = sizes.map(({ maxEdge, quality }) => {
+          const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const base64Data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+          canvas.width = 0; canvas.height = 0; // free the backing store promptly
+          return { fileName, mimeType: 'image/jpeg', base64Data };
+        });
+        resolve(out);
+      } catch (e) {
+        reject(new Error(`Could not process "${file.name}" — try fewer photos at once.`));
+      }
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(`Could not read "${file.name}"`)); };
     img.src = url;
   });
+}
+
+// Resize one image file in-browser and return the { fileName, mimeType, base64Data } payload.
+export async function downscaleImage(file, maxEdge = DOWNSCALE_MAX_EDGE, quality = DOWNSCALE_QUALITY) {
+  const [image] = await renderSizes(file, [{ maxEdge, quality }]);
+  return image;
 }
 
 // Turn selected File[] into downscaled image payloads. onProgress(done, total) optional.
@@ -140,19 +156,14 @@ export async function filesToImages(files, onProgress) {
   return out;
 }
 
-// A display image (~1920px) + a tiny cover thumb (~320px) per file, so list covers are light.
+// A display image (~1920px) + a tiny cover thumb (~320px) per file — both from ONE decode.
+// If the thumb step somehow fails, the display image still goes up (never block a photo on it).
 export async function fileToUpload(file) {
-  const image = await downscaleImage(file, DOWNSCALE_MAX_EDGE, DOWNSCALE_QUALITY);
-  const thumb = await downscaleImage(file, 320, 0.7);
+  const [image, thumb] = await renderSizes(file, [
+    { maxEdge: DOWNSCALE_MAX_EDGE, quality: DOWNSCALE_QUALITY },
+    { maxEdge: 320, quality: 0.7 },
+  ]);
   return { image, thumb };
-}
-export async function filesToUploads(files, onProgress) {
-  const out = [];
-  for (let i = 0; i < files.length; i++) {
-    out.push(await fileToUpload(files[i]));
-    if (onProgress) onProgress(i + 1, files.length);
-  }
-  return out;
 }
 
 // ── Uploaded video (direct-to-R2) ──────────────────────────────────────────────────
