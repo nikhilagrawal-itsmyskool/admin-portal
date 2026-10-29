@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   Box, Typography, TextField, Chip, Alert, Stack, Button, Card, CardContent,
-  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem,
+  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { staffAttendanceService, STATUS_META, REG_KINDS } from "../../services/staffAttendanceService";
 import { todayIso, fmtDate, fmtDateDow } from "../../utils/date";
 
@@ -125,9 +126,12 @@ export default function MyAttendance() {
                   {d.firstIn ? `${d.firstIn}${d.lastOut ? " – " + d.lastOut : " – (no out)"}` : ""}
                   {d.lateByMin ? `  · late ${d.lateByMin}m` : ""}
                 </Typography>
-                {dayReg && (
-                  <Chip size="small" clickable variant="outlined" color={REG_COLOR[dayReg.status] || "default"}
-                    label={REG_LABEL[dayReg.status] || dayReg.status} onClick={() => setView(dayReg)} />
+                {dayReg && (dayReg.status === "approved"
+                  // Day status already shows "Regularized" — avoid a redundant "Approved" chip
+                  // (it overflows the narrow PWA row). Just a small arrow to view the request.
+                  ? <IconButton size="small" title="View regularization" onClick={() => setView(dayReg)}><ChevronRightIcon fontSize="small" /></IconButton>
+                  : <Chip size="small" clickable variant="outlined" color={REG_COLOR[dayReg.status] || "default"}
+                      label={REG_LABEL[dayReg.status] || dayReg.status} onClick={() => setView(dayReg)} />
                 )}
                 {canReg && <Button size="small" onClick={() => openRequest(d)}>Regularize</Button>}
               </CardContent>
