@@ -190,7 +190,7 @@ export const MOBILE_FEATURES = [
   // Leave — self-service (staff only). Collapses into one "Leave" hub tile under Mine.
   // notPerm hides it from an oversight user (god) who never applies for their own leave.
   { title: "Request", icon: LeaveIcon, path: "/leave/me", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me"] },
-  { title: "My Attendance", icon: AttendanceIcon, path: "/staff-attendance/me", perm: "staff-attendance.regularization.apply", notPerm: "staff-attendance.regularization.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/staff-attendance/me"] },
+  { title: "My Attendance", icon: AttendanceIcon, path: "/staff-attendance/me", perm: "staff-attendance.regularization.apply", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/staff-attendance/me"] },
   { title: "Penalties", icon: DuesIcon, path: "/leave/me/penalty", perm: "leave.application.apply", notPerm: "leave.application.approve", section: "mine", group: "Leave", color: "#3d5afe", routes: ["/leave/me/penalty"] },
   // Staff documents — self-service (read & sign own policies). Hidden from the managing
   // user (god) who reads compliance via the office tile below instead.
