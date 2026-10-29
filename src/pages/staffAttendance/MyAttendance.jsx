@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box, Typography, TextField, Chip, Alert, Stack, Button, Card, CardContent, Divider,
-  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, IconButton,
+  Box, Typography, TextField, Chip, Alert, Stack, Button, Card, CardContent,
+  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import CloseIcon from "@mui/icons-material/Close";
 import { staffAttendanceService, STATUS_META, REG_KINDS } from "../../services/staffAttendanceService";
 import { todayIso, fmtDate, fmtDateDow } from "../../utils/date";
 
 const KIND_LABEL = Object.fromEntries(REG_KINDS.map((k) => [k.value, k.label]));
+const REG_COLOR = { open: "warning", approved: "success", rejected: "error", cancelled: "default" };
+const REG_LABEL = { open: "Requested", approved: "Approved", rejected: "Rejected", cancelled: "Cancelled" };
 
 function monthRange(month) {
   const from = `${month}-01`;
@@ -24,6 +25,7 @@ export default function MyAttendance() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dialog, setDialog] = useState(null);
+  const [view, setView] = useState(null); // viewing an existing regularization request
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [month]);
@@ -77,8 +79,13 @@ export default function MyAttendance() {
     return <Chip size="small" label={m.label} color={m.color} variant={m.color === "default" ? "outlined" : "filled"} />;
   };
 
+  // Latest request per day (backend lists open-first, then newest) — drives the inline
+  // status chip and blocks a second request while one is open/approved.
+  const regByDate = {};
+  for (const r of regs) if (!regByDate[r.attDate]) regByDate[r.attDate] = r;
+
   return (
-    <Box sx={{ maxWidth: 760 }}>
+    <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 2 }}>
         <Typography variant="h4">My Attendance</Typography>
         <Stack direction="row" spacing={1}>
@@ -105,7 +112,10 @@ export default function MyAttendance() {
       <Stack spacing={1}>
         {(data?.days || []).map((d) => {
           const working = !["weekly_off", "holiday", "on_leave"].includes(d.status);
-          const canReg = working && ["absent", "missing_punch", "late"].includes(d.status);
+          const dayReg = regByDate[d.date];
+          // A pending (open) or approved request locks the day — no second request.
+          const blocked = dayReg && (dayReg.status === "open" || dayReg.status === "approved");
+          const canReg = working && ["absent", "missing_punch", "late"].includes(d.status) && !blocked;
           return (
             <Card key={d.date} variant="outlined">
               <CardContent sx={{ py: 1, display: "flex", alignItems: "center", gap: 1, "&:last-child": { pb: 1 } }}>
@@ -115,6 +125,10 @@ export default function MyAttendance() {
                   {d.firstIn ? `${d.firstIn}${d.lastOut ? " – " + d.lastOut : " – (no out)"}` : ""}
                   {d.lateByMin ? `  · late ${d.lateByMin}m` : ""}
                 </Typography>
+                {dayReg && (
+                  <Chip size="small" clickable variant="outlined" color={REG_COLOR[dayReg.status] || "default"}
+                    label={REG_LABEL[dayReg.status] || dayReg.status} onClick={() => setView(dayReg)} />
+                )}
                 {canReg && <Button size="small" onClick={() => openRequest(d)}>Regularize</Button>}
               </CardContent>
             </Card>
@@ -122,25 +136,6 @@ export default function MyAttendance() {
         })}
         {!loading && !(data?.days || []).length && <Typography color="text.secondary" sx={{ py: 3, textAlign: "center" }}>No data.</Typography>}
       </Stack>
-
-      {regs.length > 0 && (
-        <Box sx={{ mt: 3 }}>
-          <Divider sx={{ mb: 1 }} />
-          <Typography variant="h6" sx={{ mb: 1 }}>My requests</Typography>
-          <Stack spacing={1}>
-            {regs.map((r) => (
-              <Card key={r.uuid} variant="outlined">
-                <CardContent sx={{ py: 1, display: "flex", alignItems: "center", gap: 1, "&:last-child": { pb: 1 } }}>
-                  <Typography variant="body2" sx={{ minWidth: 110 }}>{fmtDate(r.attDate)}</Typography>
-                  <Typography variant="caption" sx={{ flex: 1 }}>{KIND_LABEL[r.kind] || r.kind} · {r.reason}</Typography>
-                  <Chip size="small" label={r.status} color={r.status === "approved" ? "success" : r.status === "rejected" ? "error" : r.status === "open" ? "warning" : "default"} variant={r.status === "open" ? "filled" : "outlined"} />
-                  {r.status === "open" && <IconButton size="small" title="Cancel" onClick={() => cancelReg(r.uuid)}><CloseIcon fontSize="small" /></IconButton>}
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-        </Box>
-      )}
 
       <Dialog open={!!dialog} onClose={() => !saving && setDialog(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Request regularization</DialogTitle>
@@ -164,6 +159,28 @@ export default function MyAttendance() {
           <Button variant="contained" onClick={submit} disabled={saving || !dialog?.reason?.trim()}>{saving ? "Submitting…" : "Submit"}</Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={!!view} onClose={() => setView(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Regularization request</DialogTitle>
+        <DialogContent>
+          {view && (
+            <Stack spacing={1.2} sx={{ mt: 0.5 }}>
+              <ViewRow label="Date" value={fmtDate(view.attDate)} />
+              <ViewRow label="Type" value={KIND_LABEL[view.kind] || view.kind} />
+              <ViewRow label="Claimed" value={`${view.claimedIn || "—"}  –  ${view.claimedOut || "—"}`} />
+              <ViewRow label="Reason" value={view.reason} />
+              <ViewRow label="Status" value={REG_LABEL[view.status] || view.status} />
+              {view.decisionComment && <ViewRow label="Decision note" value={view.decisionComment} />}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {view?.status === "open" && (
+            <Button color="error" onClick={() => { cancelReg(view.uuid); setView(null); }}>Cancel request</Button>
+          )}
+          <Button onClick={() => setView(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -173,6 +190,15 @@ function Stat({ label, value }) {
     <Box sx={{ textAlign: "center" }}>
       <Typography variant="h6">{value ?? 0}</Typography>
       <Typography variant="caption" color="text.secondary">{label}</Typography>
+    </Box>
+  );
+}
+
+function ViewRow({ label, value }) {
+  return (
+    <Box sx={{ display: "flex", gap: 2 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>{label}</Typography>
+      <Typography variant="body2" sx={{ flex: 1 }}>{value || "—"}</Typography>
     </Box>
   );
 }
