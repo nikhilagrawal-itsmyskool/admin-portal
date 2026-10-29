@@ -7,7 +7,8 @@ export const MODULE_GROUPS = [
   { key: 'academics', label: 'Academics', titles: ['Academic Calendar', 'Examinations', 'Homework', 'Syllabus', 'Timetable'] },
   { key: 'enrichment', label: 'Enrichment', titles: ['Assembly', 'Clubs & Activities', 'Library', 'Programmes'] },
   { key: 'finance', label: 'Finance', titles: ['Fees', 'Fines'] },
-  { key: 'operations', label: 'Operations', titles: ['Attendance', 'Communication', 'Feedback', 'Leave', 'Moments', 'Staff Attendance', 'Transport', 'Website'] },
+  { key: 'engagement', label: 'Engagement', titles: ['Communication', 'Feedback', 'Moments', 'Website'] },
+  { key: 'operations', label: 'Operations', titles: ['Attendance', 'Leave', 'Staff Attendance', 'Transport'] },
   { key: 'stores', label: 'Stores & Inventory', titles: ['Assets', 'Laboratory', 'Medical', 'Shop', 'Sports', 'Supplies', 'Uniform'] },
 ];
 
