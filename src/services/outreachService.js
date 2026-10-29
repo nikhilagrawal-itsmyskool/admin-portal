@@ -16,6 +16,12 @@ export const outreachService = {
     return response.data;
   },
 
+  // Who reacted (names) — admin only: { reactors: [{ emoji, reactorType, name, familyNumber, at }] }.
+  getReactions: async (id) => {
+    const response = await api.get(`/outreach/moments/${id}/reactions`);
+    return response.data;
+  },
+
   // Grades + base classes for the audience picker: { grades:[{grade}], classes:[{classId,name,grade}] }.
   audienceOptions: async () => {
     const response = await api.get('/outreach/audience-options');

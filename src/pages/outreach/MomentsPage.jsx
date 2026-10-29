@@ -77,6 +77,7 @@ export default function MomentsPage() {
   // View dialog + delete confirm
   const [viewing, setViewing] = useState(null);       // full MomentView
   const [viewLoading, setViewLoading] = useState(false);
+  const [reactors, setReactors] = useState([]);        // who reacted (names) on the viewed moment
   const [confirmUnpub, setConfirmUnpub] = useState(null);
 
   const loadList = useCallback(async () => {
@@ -177,10 +178,12 @@ export default function MomentsPage() {
   };
 
   const openView = async (id) => {
-    setViewLoading(true); setViewing({ uuid: id });
+    setViewLoading(true); setViewing({ uuid: id }); setReactors([]);
     try {
       const full = await outreachService.getById(id);
       setViewing(full);
+      // Who reacted (names) — best-effort; empty on failure.
+      try { const r = await outreachService.getReactions(id); setReactors(r.reactors || []); } catch { setReactors([]); }
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to open moment');
       setViewing(null);
@@ -432,6 +435,17 @@ export default function MomentsPage() {
                     ))
                   : <Typography variant="caption" color="text.secondary">none yet</Typography>}
               </Stack>
+              {reactors.length > 0 && (
+                <Stack spacing={0.25} sx={{ pl: 0.5 }}>
+                  {reactors.map((r, i) => (
+                    <Typography key={i} variant="caption" color="text.secondary">
+                      {REACTION_EMOJI[r.emoji] || r.emoji}&nbsp; {r.name || 'Unknown'}
+                      {r.reactorType === 'student' ? ' · parent' : ''}
+                      {r.familyNumber ? ` (${r.familyNumber})` : ''}
+                    </Typography>
+                  ))}
+                </Stack>
+              )}
             </Stack>
           )}
         </DialogContent>
