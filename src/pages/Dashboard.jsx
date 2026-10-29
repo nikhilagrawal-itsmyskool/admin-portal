@@ -37,6 +37,8 @@ import {
   EventBusy as LeaveIcon,
   EditCalendar as ExamIcon,
   Event as CalendarIcon,
+  PhotoLibrary as MomentsIcon,
+  Language as WebsiteIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useCan } from "../permissions/can";
@@ -241,6 +243,22 @@ const modules = [
     path: "/feedback",
     color: "#0097a7",
     perm: "feedback.ticket.review",
+  },
+  {
+    title: "Moments",
+    description: "Parent-facing photo feed of school moments",
+    icon: MomentsIcon,
+    path: "/outreach",
+    color: "#8e24aa",
+    perm: "outreach.moment.view",
+  },
+  {
+    title: "Website",
+    description: "Publish curated Moments photos to the school website",
+    icon: WebsiteIcon,
+    path: "/website",
+    color: "#1e88e5",
+    perm: "website.publish",
   },
   {
     title: "Leave",
