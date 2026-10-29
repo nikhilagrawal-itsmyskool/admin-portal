@@ -9,7 +9,8 @@ export const MODULE_GROUPS = [
   { key: 'finance', label: 'Finance', titles: ['Fees', 'Fines'] },
   { key: 'engagement', label: 'Engagement', titles: ['Communication', 'Feedback', 'Moments', 'Website'] },
   { key: 'operations', label: 'Operations', titles: ['Attendance', 'Leave', 'Staff Attendance', 'Transport'] },
-  { key: 'stores', label: 'Stores & Inventory', titles: ['Assets', 'Laboratory', 'Medical', 'Shop', 'Sports', 'Supplies', 'Uniform'] },
+  { key: 'inventory', label: 'Inventory', titles: ['Assets', 'Laboratory', 'Medical', 'Sports', 'Supplies'] },
+  { key: 'store', label: 'School Store', titles: ['Shop', 'Uniform'] },
 ];
 
 // Group a list of { title, ... } items into ordered groups. Within each group items follow

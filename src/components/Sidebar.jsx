@@ -811,16 +811,21 @@ export default function Sidebar({ open, onClose, isDesktop, collapsed = false, o
           }
           if (entry.type === 'label') {
             return (
+              // Quiet, wide-tracked caption: dimmer than the (brighter, icon-led) menu
+              // rows and with extra space above, so a group header reads as a section
+              // marker while scrolling, not as another clickable item.
               <ListSubheader
                 key={entry.key}
                 sx={{
                   bgcolor: 'transparent',
-                  color: sidebarStyles.text,
-                  fontSize: 11,
+                  color: 'rgba(143,155,179,0.55)',
+                  fontSize: 10,
                   fontWeight: 700,
-                  letterSpacing: 1,
+                  letterSpacing: 1.8,
                   textTransform: 'uppercase',
-                  lineHeight: '2.4',
+                  lineHeight: '1.6',
+                  mt: 0.75,
+                  mb: 0.25,
                 }}
               >
                 {entry.label}
