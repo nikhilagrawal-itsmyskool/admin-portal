@@ -23,6 +23,7 @@ export const leaveService = {
   getCovering: async (id) => (await api.get(`/leave/me/covering/${id}`)).data,
   coveringFile: async (id, fileId) => (await api.get(`/leave/me/covering/${id}/file/${fileId}`)).data,
   myDeductions: async (month) => (await api.get('/leave/me/deductions', { params: { month } })).data,
+  myPenalty: async (month) => (await api.get('/leave/me/penalty', { params: { month } })).data,
 
   // ── Oversight: applications + decisions ───────────────────────────────────────
   listApplications: async (params = {}) => (await api.get('/leave/applications', { params })).data,
