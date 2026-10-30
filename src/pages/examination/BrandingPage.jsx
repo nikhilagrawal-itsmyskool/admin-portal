@@ -16,7 +16,7 @@ function toBase64(file) {
   });
 }
 
-const EMPTY = { schoolName: '', motto: '', address: '', affiliationNo: '', schoolCode: '', contact: '', email: '', website: '' };
+const EMPTY = { schoolName: '', motto: '', address: '', affiliationNo: '', cbseRegNo: '', schoolCode: '', contact: '', email: '', website: '' };
 
 // School branding — the printed header for the datesheet, admit cards and report cards: the two
 // crests, office stamp, school name / motto / address and the report-card masthead line
@@ -38,7 +38,7 @@ export default function BrandingPage() {
       setBranding(b);
       setForm({
         schoolName: b.schoolName || '', motto: b.motto || '', address: b.address || '',
-        affiliationNo: b.affiliationNo || '', schoolCode: b.schoolCode || '',
+        affiliationNo: b.affiliationNo || '', cbseRegNo: b.cbseRegNo || '', schoolCode: b.schoolCode || '',
         contact: b.contact || '', email: b.email || '', website: b.website || '',
       });
       setDirty(false);
@@ -112,6 +112,9 @@ export default function BrandingPage() {
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="Affiliation No." fullWidth value={form.affiliationNo} disabled={!canManage}
                 onChange={(e) => upd('affiliationNo', e.target.value)} placeholder="2133499" />
+              <TextField label="CBSE Reg No." fullWidth value={form.cbseRegNo} disabled={!canManage}
+                onChange={(e) => upd('cbseRegNo', e.target.value)} placeholder="2133499"
+                helperText="Printed on the Transfer Certificate" />
               <TextField label="School Code" fullWidth value={form.schoolCode} disabled={!canManage}
                 onChange={(e) => upd('schoolCode', e.target.value)} placeholder="71638" />
             </Stack>

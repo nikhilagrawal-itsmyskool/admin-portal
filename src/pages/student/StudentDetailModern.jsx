@@ -12,6 +12,7 @@ import StudentTimetableToday from './StudentTimetableToday';
 import StudentFeesPanel from './StudentFeesPanel';
 import { attendanceService } from '../../services/attendanceService';
 import { feesService } from '../../services/feesService';
+import { openTc } from '../../services/transferService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { maskContact } from '../../utils/mask';
 import { fmtDate } from '../../utils/date';
@@ -344,7 +345,7 @@ export default function StudentDetailModern({ ctx }) {
             {tcs.length === 0 ? <Typography variant="body2" color="text.secondary">No transfer certificate records.</Typography> : (
               <Table size="small">
                 <TableHead><TableRow>
-                  <TableCell>Status</TableCell><TableCell>SRN</TableCell><TableCell>Applied</TableCell><TableCell>Issued</TableCell><TableCell>Attendance/Working</TableCell>{canTransferManage && <TableCell align="right">Action</TableCell>}
+                  <TableCell>Status</TableCell><TableCell>SRN</TableCell><TableCell>Applied</TableCell><TableCell>Issued</TableCell><TableCell>Attendance/Working</TableCell><TableCell align="right">Action</TableCell>
                 </TableRow></TableHead>
                 <TableBody>
                   {tcs.map((tc) => (
@@ -354,7 +355,10 @@ export default function StudentDetailModern({ ctx }) {
                       <TableCell>{tc.applicationDate ? fmtDate(tc.applicationDate) : '—'}</TableCell>
                       <TableCell>{tc.issueDate ? fmtDate(tc.issueDate) : '—'}</TableCell>
                       <TableCell>{tc.totalAttendanceDays != null || tc.totalWorkingDays != null ? `${tc.totalAttendanceDays ?? '—'} / ${tc.totalWorkingDays ?? '—'}` : '—'}</TableCell>
-                      {canTransferManage && <TableCell align="right">{tc.status !== 'issued' && tc.status !== 'cancelled' && <Button size="small" onClick={() => setTcDialog({ open: true, initial: tc })}>Update</Button>}</TableCell>}
+                      <TableCell align="right">
+                        <Button size="small" onClick={() => openTc(id, tc.uuid)}>Print</Button>
+                        {canTransferManage && tc.status !== 'issued' && tc.status !== 'cancelled' && <Button size="small" onClick={() => setTcDialog({ open: true, initial: tc })}>Update</Button>}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

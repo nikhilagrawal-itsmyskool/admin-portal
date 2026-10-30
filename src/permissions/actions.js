@@ -148,6 +148,8 @@ export const ACTIONS = {
   TRANSPORT_ATTENDANCE_FINALIZE: "transport.attendance.finalize",
   TRANSFER_VIEW: "transfer.certificate.view",
   TRANSFER_MANAGE: "transfer.certificate.manage",
+  TRANSFER_CONFIG_MANAGE: "transfer.config.manage",
+  TRANSFER_DUES_OVERRIDE: "transfer.dues.override",
   SYLLABUS_VIEW: "syllabus.plan.view",
   SYLLABUS_MANAGE: "syllabus.plan.manage",
   SYLLABUS_PROGRESS_MARK: "syllabus.progress.mark",
@@ -666,6 +668,14 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.TRANSFER_MANAGE,
     description: "Apply for and issue transfer certificates (issuing withdraws the student)",
+  },
+  {
+    action: ACTIONS.TRANSFER_CONFIG_MANAGE,
+    description: "Manage Transfer Certificate config — dropdown defaults, book no, dues gate (god-only by default)",
+  },
+  {
+    action: ACTIONS.TRANSFER_DUES_OVERRIDE,
+    description: "Override the dues gate to issue a TC despite outstanding fees (god-only by default)",
   },
   {
     action: ACTIONS.SYLLABUS_VIEW,

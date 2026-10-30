@@ -157,6 +157,7 @@ import StudentPermissions from './pages/student/Permissions';
 import TimetablePermissions from './pages/timetable/Permissions';
 import SyllabusPermissions from './pages/syllabus/Permissions';
 import TransferPermissions from './pages/transfer/Permissions';
+import TransferConfig from './pages/transfer/Config';
 import AssistantPermissions from './pages/assistant/Permissions';
 import TemplateList from './pages/communication/templates/TemplateList';
 import TemplateForm from './pages/communication/templates/TemplateForm';
@@ -445,6 +446,7 @@ export default function App() {
         <Route path="students/:id" element={<StudentDetail />} />
         <Route path="students/:id/edit" element={<StudentForm />} />
         <Route path="transfer/permissions" element={<TransferPermissions />} />
+        <Route path="transfer/config" element={<TransferConfig />} />
         <Route path="transfer" element={<TransferList />} />
         <Route path="employees/permissions" element={<EmployeePermissions />} />
         <Route path="employees/config" element={<EmployeeConfig />} />

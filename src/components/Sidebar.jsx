@@ -369,6 +369,7 @@ const menuItems = [
     icon: TransferIcon,
     children: [
       { title: 'Permissions', icon: PermissionsIcon, path: '/transfer/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/transfer/config', perm: 'transfer.config.manage', admin: true },
       { title: 'Transfer Certs', icon: TransferIcon, path: '/transfer', perm: 'transfer.certificate.view' },
     ],
   },

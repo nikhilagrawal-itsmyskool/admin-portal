@@ -42,7 +42,7 @@ import {
   SwapHoriz as MoveIcon,
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
-import { transferService } from '../../services/transferService';
+import { transferService, openTc } from '../../services/transferService';
 import StudentAttendancePanel from './StudentAttendancePanel';
 import StudentTimetableToday from './StudentTimetableToday';
 import StudentFeesPanel from './StudentFeesPanel';
@@ -266,71 +266,197 @@ function AddressDialog({ open, onClose, onSave, initial, lookups, onSuggestPinco
 }
 
 const EMPTY_TC = {
-  applicationDate: '', srnNumber: '', issueDate: '', reasonForLeaving: '',
-  totalAttendanceDays: '', totalWorkingDays: '', status: 'applied',
+  applicationDate: '', status: 'applied', reasonForLeaving: '',
+  srnNumber: '', tcNumber: '', bookNo: '', issueDate: '',
+  result: '', failedInClass: 'no', subjectsStudied: '', qualifiedForPromotion: 'yes',
+  duesPaidUpto: '', feeConcession: '', nccScoutGuide: '', gamesActivities: '',
+  generalConduct: '', remarks: '', totalAttendanceDays: '', totalWorkingDays: '',
+  overrideDues: false,
 };
 
-function TcDialog({ open, onClose, onSave, initial }) {
+// Add the current value to a dropdown's options if it isn't already listed (so an
+// edited/legacy value never silently disappears).
+const withCurrent = (opts, val) => {
+  const a = Array.isArray(opts) ? [...opts] : [];
+  if (val && !a.includes(val)) a.unshift(val);
+  return a;
+};
+
+function TcDialog({ open, onClose, onSave, initial, studentId }) {
   const [t, setT] = useState(EMPTY_TC);
+  const [derived, setDerived] = useState(null);
+  const [config, setConfig] = useState(null);
+  const [dues, setDues] = useState(0);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    if (open) {
-      setT(initial ? {
-        applicationDate: initial.applicationDate ? String(initial.applicationDate).slice(0, 10) : '',
-        srnNumber: initial.srnNumber || '',
-        issueDate: initial.issueDate ? String(initial.issueDate).slice(0, 10) : '',
-        reasonForLeaving: initial.reasonForLeaving || '',
-        totalAttendanceDays: initial.totalAttendanceDays ?? '',
-        totalWorkingDays: initial.totalWorkingDays ?? '',
-        status: initial.status || 'applied',
-      } : EMPTY_TC);
-    }
-  }, [open, initial]);
+    if (!open) return;
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      let pf = null;
+      try { pf = studentId ? await transferService.prefillTc(studentId) : null; } catch { pf = null; }
+      if (!alive) return;
+      setDerived(pf?.derived || null);
+      setConfig(pf?.config || null);
+      setDues(pf?.duesOutstanding || 0);
+      const sug = pf?.suggested || {};
+      const pick = (field, sugKey) => (initial && initial[field] != null && initial[field] !== '' ? initial[field] : (sug[sugKey ?? field] ?? ''));
+      if (initial) {
+        setT({
+          applicationDate: initial.applicationDate ? String(initial.applicationDate).slice(0, 10) : '',
+          status: initial.status || 'applied',
+          reasonForLeaving: initial.reasonForLeaving || '',
+          srnNumber: initial.srnNumber || '',
+          tcNumber: initial.tcNumber || '',
+          bookNo: pick('bookNo'),
+          issueDate: initial.issueDate ? String(initial.issueDate).slice(0, 10) : '',
+          result: pick('result'),
+          failedInClass: pick('failedInClass') || 'no',
+          subjectsStudied: pick('subjectsStudied'),
+          qualifiedForPromotion: pick('qualifiedForPromotion') || 'yes',
+          duesPaidUpto: pick('duesPaidUpto'),
+          feeConcession: pick('feeConcession'),
+          nccScoutGuide: pick('nccScoutGuide'),
+          gamesActivities: initial.gamesActivities || '',
+          generalConduct: pick('generalConduct'),
+          remarks: initial.remarks || '',
+          totalAttendanceDays: initial.totalAttendanceDays ?? '',
+          totalWorkingDays: initial.totalWorkingDays ?? '',
+          overrideDues: false,
+        });
+      } else {
+        setT({
+          ...EMPTY_TC,
+          bookNo: sug.bookNo || '',
+          result: sug.result || '',
+          failedInClass: sug.failedInClass || 'no',
+          subjectsStudied: sug.subjectsStudied || '',
+          qualifiedForPromotion: sug.qualifiedForPromotion || 'yes',
+          duesPaidUpto: sug.duesPaidUpto || '',
+          feeConcession: sug.feeConcession || '',
+          nccScoutGuide: sug.nccScoutGuide || '',
+          generalConduct: sug.generalConduct || '',
+        });
+      }
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [open, initial, studentId]);
+
   const set = (k) => (e) => setT((p) => ({ ...p, [k]: e.target.value }));
   const issuing = t.status === 'issued';
+  const resultOpts = withCurrent(config?.resultOptions, t.result);
+  const conductOpts = withCurrent(config?.conductOptions, t.generalConduct);
+
+  const submit = () => onSave({
+    ...t,
+    uuid: initial?.uuid, // thread the id so an edit UPDATES instead of creating a duplicate
+    totalAttendanceDays: t.totalAttendanceDays === '' ? undefined : Number(t.totalAttendanceDays),
+    totalWorkingDays: t.totalWorkingDays === '' ? undefined : Number(t.totalWorkingDays),
+  });
+
+  const field = (label, key, extra = {}) => (
+    <TextField fullWidth size="small" label={label} value={t[key] ?? ''} onChange={set(key)} {...extra} />
+  );
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>{initial ? 'Update Transfer Certificate' : 'Apply for Transfer Certificate'}</DialogTitle>
       <DialogContent>
+        {loading && <Typography variant="caption" color="text.secondary">Loading defaults…</Typography>}
+        {derived && (
+          <Alert severity="info" sx={{ mb: 2, mt: 1 }}>
+            <strong>Printed from the student record:</strong>{' '}
+            {derived.name}
+            {derived.fatherName ? ` · Father: ${derived.fatherName}` : ''}
+            {derived.motherName ? ` · Mother: ${derived.motherName}` : ''}
+            {derived.dob ? ` · DOB: ${fmtDate(derived.dob)}` : ''}
+            {derived.classWords ? ` · Class: ${derived.classWords}` : ''}
+            {derived.admissionNumber ? ` · Adm#: ${derived.admissionNumber}` : ''}
+            {derived.category ? ` · ${derived.category}` : ''}
+            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+              Edit the student profile to change these. The fields below are TC-specific.
+            </Typography>
+          </Alert>
+        )}
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Application date" type="date" value={t.applicationDate} onChange={set('applicationDate')} size="small" InputLabelProps={{ shrink: true }} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth select label="Status" value={t.status} onChange={set('status')} size="small">
+          <Grid item xs={12} sm={4}>{field('Application date', 'applicationDate', { type: 'date', InputLabelProps: { shrink: true } })}</Grid>
+          <Grid item xs={12} sm={4}>{field('Date of TC issue', 'issueDate', { type: 'date', InputLabelProps: { shrink: true } })}</Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth select size="small" label="Status" value={t.status} onChange={set('status')}>
               <MenuItem value="applied">Applied</MenuItem>
               <MenuItem value="issued">Issued</MenuItem>
               <MenuItem value="cancelled">Cancelled</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="Reason for leaving" value={t.reasonForLeaving} onChange={set('reasonForLeaving')} size="small" />
+
+          <Grid item xs={12} sm={4}>{field('Book No.', 'bookNo')}</Grid>
+          <Grid item xs={12} sm={4}>{field('S.R.N.', 'srnNumber')}</Grid>
+          <Grid item xs={12} sm={4}>{field('TC No.', 'tcNumber')}</Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth select size="small" label="Result (field 9)" value={t.result} onChange={set('result')}>
+              {resultOpts.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+            </TextField>
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="SRN number" value={t.srnNumber} onChange={set('srnNumber')} size="small" />
+            <TextField fullWidth select size="small" label="General conduct (field 19)" value={t.generalConduct} onChange={set('generalConduct')}>
+              {conductOpts.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+            </TextField>
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Date of TC issue" type="date" value={t.issueDate} onChange={set('issueDate')} size="small" InputLabelProps={{ shrink: true }} />
+
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth select size="small" label="Failed in class (field 10)" value={t.failedInClass} onChange={set('failedInClass')}>
+              <MenuItem value="no">No</MenuItem>
+              <MenuItem value="once">Once</MenuItem>
+              <MenuItem value="twice">Twice</MenuItem>
+            </TextField>
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Total attendance days" type="number" value={t.totalAttendanceDays} onChange={set('totalAttendanceDays')} size="small" />
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth select size="small" label="Qualified for promotion (field 12)" value={t.qualifiedForPromotion} onChange={set('qualifiedForPromotion')}>
+              <MenuItem value="yes">Yes</MenuItem>
+              <MenuItem value="no">No</MenuItem>
+            </TextField>
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Total working days" type="number" value={t.totalWorkingDays} onChange={set('totalWorkingDays')} size="small" />
-          </Grid>
+          <Grid item xs={12} sm={4}>{field('Dues paid up to (field 13)', 'duesPaidUpto')}</Grid>
+
+          <Grid item xs={12}>{field('Subjects studied (field 11)', 'subjectsStudied', { multiline: true, minRows: 2 })}</Grid>
+
+          <Grid item xs={12} sm={6}>{field('Fee concession (field 14)', 'feeConcession')}</Grid>
+          <Grid item xs={12} sm={6}>{field('NCC / Scout / Guide (field 17)', 'nccScoutGuide')}</Grid>
+          <Grid item xs={12}>{field('Games / extra-curricular (field 18)', 'gamesActivities', { multiline: true, minRows: 2 })}</Grid>
+
+          <Grid item xs={12} sm={6}>{field('Total working days (field 15)', 'totalWorkingDays', { type: 'number' })}</Grid>
+          <Grid item xs={12} sm={6}>{field('Total presence / attendance days (field 16)', 'totalAttendanceDays', { type: 'number' })}</Grid>
+
+          <Grid item xs={12}>{field('Reason for leaving (field 22)', 'reasonForLeaving')}</Grid>
+          <Grid item xs={12}>{field('Any other remarks (field 23)', 'remarks', { multiline: true, minRows: 2 })}</Grid>
+
+          {dues > 0 && (
+            <Grid item xs={12}>
+              <Alert severity={issuing ? 'warning' : 'info'}>
+                Outstanding dues: ₹{Number(dues).toLocaleString('en-IN')}.
+                {issuing ? ' Depending on school config, issuing may be blocked until dues are cleared.' : ''}
+              </Alert>
+            </Grid>
+          )}
           {issuing && (
             <Grid item xs={12}>
-              <Alert severity="warning">Issuing a TC withdraws the student (status becomes inactive).</Alert>
+              <Alert severity="warning" sx={{ mb: 1 }}>Issuing a TC withdraws the student (status becomes inactive).</Alert>
+              {dues > 0 && (
+                <FormControlLabel
+                  control={<Checkbox checked={!!t.overrideDues} onChange={(e) => setT((p) => ({ ...p, overrideDues: e.target.checked }))} />}
+                  label="Override the dues gate (super-admin only) — issue despite outstanding dues"
+                />
+              )}
             </Grid>
           )}
         </Grid>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={() => onSave({
-          ...t,
-          totalAttendanceDays: t.totalAttendanceDays === '' ? undefined : Number(t.totalAttendanceDays),
-          totalWorkingDays: t.totalWorkingDays === '' ? undefined : Number(t.totalWorkingDays),
-        })}>Save</Button>
+        <Button variant="contained" onClick={submit}>Save</Button>
       </DialogActions>
     </Dialog>
   );
@@ -1039,7 +1165,7 @@ export default function StudentDetail() {
                       <TableCell>Applied</TableCell>
                       <TableCell>Issued</TableCell>
                       <TableCell>Attendance/Working</TableCell>
-                      {canTransferManage && <TableCell align="right">Action</TableCell>}
+                      <TableCell align="right">Action</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1050,13 +1176,12 @@ export default function StudentDetail() {
                         <TableCell>{tc.applicationDate ? fmtDate(tc.applicationDate) : '—'}</TableCell>
                         <TableCell>{tc.issueDate ? fmtDate(tc.issueDate) : '—'}</TableCell>
                         <TableCell>{tc.totalAttendanceDays != null || tc.totalWorkingDays != null ? `${tc.totalAttendanceDays ?? '—'} / ${tc.totalWorkingDays ?? '—'}` : '—'}</TableCell>
-                        {canTransferManage && (
-                          <TableCell align="right">
-                            {tc.status !== 'issued' && tc.status !== 'cancelled' && (
-                              <Button size="small" onClick={() => setTcDialog({ open: true, initial: tc })}>Update</Button>
-                            )}
-                          </TableCell>
-                        )}
+                        <TableCell align="right">
+                          <Button size="small" onClick={() => openTc(id, tc.uuid)}>Print</Button>
+                          {canTransferManage && tc.status !== 'issued' && tc.status !== 'cancelled' && (
+                            <Button size="small" onClick={() => setTcDialog({ open: true, initial: tc })}>Update</Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1130,6 +1255,7 @@ export default function StudentDetail() {
       <TcDialog
         open={tcDialog.open}
         initial={tcDialog.initial}
+        studentId={id}
         onClose={() => setTcDialog({ open: false, initial: null })}
         onSave={saveTc}
       />
