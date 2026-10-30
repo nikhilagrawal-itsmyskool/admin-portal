@@ -1,0 +1,52 @@
+/* Long-press tile "edit mode" visuals — shared by the mobile home and the desktop dashboard.
+   The jiggle lives on an INNER wrapper so it (rotate) never fights dnd-kit's drag transform
+   (translate) applied to the outer draggable node. */
+
+@keyframes ims-tile-jiggle {
+  0% {
+    transform: rotate(-1.1deg);
+  }
+  50% {
+    transform: rotate(1.1deg);
+  }
+  100% {
+    transform: rotate(-1.1deg);
+  }
+}
+
+.ims-tile {
+  position: relative;
+}
+
+.ims-tile__jig {
+  transform-origin: 50% 50%;
+}
+
+.ims-tile--jiggle {
+  animation: ims-tile-jiggle 0.26s ease-in-out infinite;
+  animation-delay: var(--jiggle-delay, 0ms);
+}
+
+/* The ✕ delete badge, pinned to the corner like an uninstall affordance. */
+.ims-tile__remove.ims-tile__remove {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background-color: #e53935;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.ims-tile__remove.ims-tile__remove:hover {
+  background-color: #c62828;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ims-tile--jiggle {
+    animation: none;
+  }
+}

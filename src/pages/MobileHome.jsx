@@ -9,21 +9,51 @@ import { useCan } from "../permissions/can";
 import { ACTIONS } from "../permissions/actions";
 import TileGrid from "../mobile/TileGrid";
 import InstallButton from "../components/InstallButton";
+import useTileLayout from "../hooks/useTileLayout";
+import EditTilesBar from "../components/EditTilesBar";
 
 // Mobile landing: the role's mobile features, organised into a pinned "Today" band and
 // grouped module hubs (see buildMobileTiles). Rendered at "/" on small screens
 // (App.jsx HomeScreen). Tiles either navigate straight to a page or open a hub screen.
+// Long-press a tile to rearrange/hide them (see useTileLayout).
 export default function MobileHome() {
   const navigate = useNavigate();
   const can = useCan();
   const { visible } = useMobileVisibility();
   const sections = buildMobileTiles(visible);
+  const layout = useTileLayout("mobile");
+  const getId = (t) => t.id ?? t.path;
+
+  // Apply the user's saved order + hidden set, then drop any band/group left empty by hides.
+  const laidOut = sections
+    .map((sec) => ({
+      ...sec,
+      tiles: layout.applyLayout(sec.key, sec.tiles, getId),
+      groups: sec.groups
+        .map((g) => ({
+          ...g,
+          tiles: layout.applyLayout(`${sec.key}::${g.label}`, g.tiles, getId),
+        }))
+        .filter((g) => g.tiles.length > 0),
+    }))
+    .filter((sec) => sec.tiles.length > 0 || sec.groups.length > 0);
+
+  const gridProps = {
+    editable: true,
+    editMode: layout.editMode,
+    onEnterEdit: layout.enterEdit,
+    onHide: layout.hide,
+    onReorder: layout.setGroupOrder,
+  };
 
   return (
     <Box>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
         ItsMySkool
       </Typography>
+      {layout.editMode && (
+        <EditTilesBar onReset={layout.reset} onDone={layout.exitEdit} canReset={layout.isCustomised} />
+      )}
       {/* Director's Cockpit / School Pulse — pinned hero above the module bands (director + god). */}
       {can(ACTIONS.COCKPIT_VIEW) && (
         <Card variant="outlined" sx={{ mb: 2, borderColor: "#e4e9f2", borderRadius: 2 }}>
@@ -40,13 +70,13 @@ export default function MobileHome() {
         </Card>
       )}
       <InstallButton variant="contained" fullWidth sx={{ mb: 2 }} />
-      {sections.length === 0 ? (
+      {laidOut.length === 0 ? (
         <Typography color="text.secondary">
           No mobile features are available for your role. Use a desktop for the full
           portal.
         </Typography>
       ) : (
-        sections.map((sec) => (
+        laidOut.map((sec) => (
           <Box key={sec.key} sx={{ mb: 3 }}>
             <Typography
               variant="overline"
@@ -62,7 +92,9 @@ export default function MobileHome() {
             >
               {sec.label}
             </Typography>
-            {sec.tiles.length > 0 && <TileGrid tiles={sec.tiles} onOpen={(t) => navigate(t.path)} />}
+            {sec.tiles.length > 0 && (
+              <TileGrid tiles={sec.tiles} onOpen={(t) => navigate(t.path)} groupId={sec.key} {...gridProps} />
+            )}
             {sec.groups.map((g) => (
               <Box key={g.label} sx={{ mt: 2, pl: 1.5, borderLeft: "2px solid rgba(51,102,255,0.22)" }}>
                 <Typography
@@ -78,7 +110,7 @@ export default function MobileHome() {
                 >
                   {g.label}
                 </Typography>
-                <TileGrid tiles={g.tiles} onOpen={(t) => navigate(t.path)} />
+                <TileGrid tiles={g.tiles} onOpen={(t) => navigate(t.path)} groupId={`${sec.key}::${g.label}`} {...gridProps} />
               </Box>
             ))}
           </Box>

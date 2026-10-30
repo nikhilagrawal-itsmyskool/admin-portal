@@ -40,10 +40,21 @@ import {
   PhotoLibrary as MomentsIcon,
   Language as WebsiteIcon,
 } from "@mui/icons-material";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { useAuth } from "../context/AuthContext";
 import { useCan } from "../permissions/can";
 import { getFirstName } from "../utils/userDisplay";
 import { groupByModule } from "../config/moduleGroups";
+import useTileLayout from "../hooks/useTileLayout";
+import EditTilesBar from "../components/EditTilesBar";
+import SortableTile from "../components/SortableTile";
 
 // `perm` mirrors the left-menu gating in Sidebar.jsx — cards lead into a module, so a
 // user only sees the card if they can reach that module. Cards with no `perm` are open
@@ -299,8 +310,62 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const can = useCan();
 
+  const layout = useTileLayout("dashboard");
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
   const firstName = getFirstName(user?.displayName) || user?.loginName;
   const visibleModules = modules.filter((m) => !m.perm || can(m.perm));
+
+  // Apply the user's saved order + hidden set per group, dropping any group emptied by hides.
+  const groups = groupByModule(visibleModules)
+    .map((group) => ({
+      ...group,
+      items: layout.applyLayout(group.key, group.items, (m) => m.title),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const renderCard = (module) => (
+    <Card>
+      <CardActionArea
+        onClick={
+          layout.editMode
+            ? undefined
+            : () => navigate(typeof module.path === "function" ? module.path(can) : module.path)
+        }
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: 2,
+              backgroundColor: `${module.color}15`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 2,
+            }}
+          >
+            <module.icon sx={{ fontSize: 28, color: module.color }} />
+          </Box>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            {module.title}
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#8f9bb3" }}>
+            {module.description}
+          </Typography>
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  );
+
+  const handleDragEnd = (groupKey, ids) => ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(active.id);
+    const to = ids.indexOf(over.id);
+    if (from === -1 || to === -1) return;
+    layout.setGroupOrder(groupKey, arrayMove(ids, from, to));
+  };
 
   return (
     <Box>
@@ -311,61 +376,51 @@ export default function Dashboard() {
         Select a module to get started
       </Typography>
 
-      {groupByModule(visibleModules).map((group) => (
-        <Box key={group.key} sx={{ mb: 4 }}>
-          {group.label && (
-            <>
-              <Typography
-                variant="overline"
-                sx={{ color: "#8f9bb3", fontWeight: 700, letterSpacing: 1 }}
-              >
-                {group.label}
-              </Typography>
-              <Divider sx={{ mb: 2, mt: 0.5 }} />
-            </>
-          )}
-          <Grid container spacing={3}>
-            {group.items.map((module) => (
-              <Grid item xs={12} sm={6} md={4} key={module.title}>
-                <Card>
-                  <CardActionArea
-                    onClick={() =>
-                      navigate(
-                        typeof module.path === "function"
-                          ? module.path(can)
-                          : module.path,
-                      )
-                    }
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 2,
-                          backgroundColor: `${module.color}15`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          mb: 2,
-                        }}
+      {layout.editMode && (
+        <EditTilesBar onReset={layout.reset} onDone={layout.exitEdit} canReset={layout.isCustomised} />
+      )}
+
+      {groups.map((group) => {
+        const ids = group.items.map((m) => m.title);
+        return (
+          <Box key={group.key} sx={{ mb: 4 }}>
+            {group.label && (
+              <>
+                <Typography
+                  variant="overline"
+                  sx={{ color: "#8f9bb3", fontWeight: 700, letterSpacing: 1 }}
+                >
+                  {group.label}
+                </Typography>
+                <Divider sx={{ mb: 2, mt: 0.5 }} />
+              </>
+            )}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd(group.key, ids)}
+            >
+              <SortableContext items={ids} strategy={rectSortingStrategy}>
+                <Grid container spacing={3}>
+                  {group.items.map((module, i) => (
+                    <Grid item xs={12} sm={6} md={4} key={module.title}>
+                      <SortableTile
+                        id={module.title}
+                        index={i}
+                        editMode={layout.editMode}
+                        onEnterEdit={layout.enterEdit}
+                        onHide={layout.hide}
                       >
-                        <module.icon sx={{ fontSize: 28, color: module.color }} />
-                      </Box>
-                      <Typography variant="h6" sx={{ mb: 1 }}>
-                        {module.title}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: "#8f9bb3" }}>
-                        {module.description}
-                      </Typography>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      ))}
+                        {renderCard(module)}
+                      </SortableTile>
+                    </Grid>
+                  ))}
+                </Grid>
+              </SortableContext>
+            </DndContext>
+          </Box>
+        );
+      })}
     </Box>
   );
 }
