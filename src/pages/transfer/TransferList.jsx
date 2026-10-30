@@ -21,11 +21,12 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon, Visibility as ViewIcon, Add as AddIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Clear as ClearIcon, Person as PersonIcon, Add as AddIcon, Print as PrintIcon, Edit as EditIcon } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import usePersistedPaginationModel from '../../hooks/usePersistedPaginationModel';
-import { transferService } from '../../services/transferService';
+import { transferService, openTc } from '../../services/transferService';
 import { studentService } from '../../services/studentService';
+import TcDialog from './TcDialog';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 
@@ -50,6 +51,7 @@ export default function TransferList() {
   const [stuInput, setStuInput] = useState('');
   const [stuOptions, setStuOptions] = useState([]);
   const [stuLoading, setStuLoading] = useState(false);
+  const [tcDialog, setTcDialog] = useState({ open: false, studentId: null, initial: null });
 
   // Page guard: only transfer.view (admin/god) reaches here via direct URL.
   useEffect(() => {
@@ -73,11 +75,32 @@ export default function TransferList() {
     return () => { clearTimeout(t); ctrl.abort(); };
   }, [stuInput, newOpen]);
 
-  // Pick a student → land on their detail with the Apply TC form open.
+  // Pick a student → open the Apply form in-place (stay on the Transfer Certs page).
   const pickStudent = (stu) => {
     if (!stu?.uuid) return;
     setNewOpen(false);
-    navigate(`/students/${stu.uuid}`, { state: { openTc: true } });
+    setTcDialog({ open: true, studentId: stu.uuid, initial: null });
+  };
+
+  // View / edit an existing TC without leaving the page (fetch the full row first).
+  const openEdit = async (row) => {
+    try {
+      const full = await transferService.getTc(row.uuid);
+      setTcDialog({ open: true, studentId: row.studentId, initial: full });
+    } catch {
+      setError('Failed to open transfer certificate');
+    }
+  };
+
+  const saveTc = async (data) => {
+    try {
+      if (data.uuid) await transferService.updateTc(tcDialog.studentId, data.uuid, data);
+      else await transferService.createTc(tcDialog.studentId, data);
+      setTcDialog({ open: false, studentId: null, initial: null });
+      load();
+    } catch (err) {
+      setError(err?.response?.data?.error?.description || 'Failed to save transfer certificate');
+    }
   };
 
   useEffect(() => {
@@ -125,12 +148,18 @@ export default function TransferList() {
     {
       field: 'actions',
       headerName: '',
-      width: 60,
+      width: 130,
       sortable: false,
       renderCell: (params) => (
-        <IconButton size="small" title="Open student" onClick={() => navigate(`/students/${params.row.studentId}`)}>
-          <ViewIcon fontSize="small" />
-        </IconButton>
+        <Box sx={{ display: 'flex', gap: 0.25 }}>
+          {params.row.status === 'issued' && (
+            <IconButton size="small" title="Print" onClick={() => openTc(params.row.studentId, params.row.uuid)}><PrintIcon fontSize="small" /></IconButton>
+          )}
+          {canManage && (
+            <IconButton size="small" title="View / edit" onClick={() => openEdit(params.row)}><EditIcon fontSize="small" /></IconButton>
+          )}
+          <IconButton size="small" title="Open student profile" onClick={() => navigate(`/students/${params.row.studentId}`)}><PersonIcon fontSize="small" /></IconButton>
+        </Box>
       ),
     },
   ];
@@ -194,7 +223,7 @@ export default function TransferList() {
         rows={rows}
         columns={columns}
         getRowId={(row) => row.uuid}
-        onCardClick={(row) => navigate(`/students/${row.studentId}`)}
+        onCardClick={(row) => openEdit(row)}
         loading={loading}
         autoHeight
         pageSizeOptions={[10, 25, 50, 100]}
@@ -245,6 +274,14 @@ export default function TransferList() {
           <Button onClick={() => setNewOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
+
+      <TcDialog
+        open={tcDialog.open}
+        initial={tcDialog.initial}
+        studentId={tcDialog.studentId}
+        onClose={() => setTcDialog({ open: false, studentId: null, initial: null })}
+        onSave={saveTc}
+      />
     </Box>
   );
 }

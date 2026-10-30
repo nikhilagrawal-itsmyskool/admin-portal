@@ -14,6 +14,12 @@ export const transferService = {
     return response.data; // { tcs: [...] }
   },
 
+  // Full TC row (all fields) for the self-contained view/edit on the Transfer Certs page.
+  getTc: async (tcId) => {
+    const response = await api.get(`/transfer/tc/${tcId}`);
+    return response.data;
+  },
+
   // Derived identity + config defaults to prefill a new TC form.
   prefillTc: async (studentId) => {
     const response = await api.get(`/transfer/students/${studentId}/tc/prefill`);

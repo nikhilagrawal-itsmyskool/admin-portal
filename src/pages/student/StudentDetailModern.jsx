@@ -356,8 +356,8 @@ export default function StudentDetailModern({ ctx }) {
                       <TableCell>{tc.issueDate ? fmtDate(tc.issueDate) : '—'}</TableCell>
                       <TableCell>{tc.totalAttendanceDays != null || tc.totalWorkingDays != null ? `${tc.totalAttendanceDays ?? '—'} / ${tc.totalWorkingDays ?? '—'}` : '—'}</TableCell>
                       <TableCell align="right">
-                        <Button size="small" onClick={() => openTc(id, tc.uuid)}>Print</Button>
-                        {canTransferManage && tc.status !== 'issued' && tc.status !== 'cancelled' && <Button size="small" onClick={() => setTcDialog({ open: true, initial: tc })}>Update</Button>}
+                        {tc.status === 'issued' && <Button size="small" onClick={() => openTc(id, tc.uuid)}>Print</Button>}
+                        {canTransferManage && tc.status !== 'cancelled' && <Button size="small" onClick={() => setTcDialog({ open: true, initial: tc })}>{tc.status === 'issued' ? 'View' : 'Update'}</Button>}
                       </TableCell>
                     </TableRow>
                   ))}
