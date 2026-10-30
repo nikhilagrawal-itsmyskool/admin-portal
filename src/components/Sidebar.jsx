@@ -575,6 +575,7 @@ const menuItems = [
     title: 'Staff Attendance',
     icon: AttendanceIcon,
     children: [
+      { title: 'Permissions', icon: PermissionsIcon, path: '/staff-attendance/permissions', perm: 'authz.manage', admin: true },
       { title: 'Config', icon: AsmSettingsIcon, path: '/staff-attendance/config', perm: 'staff-attendance.config.manage', admin: true },
       { title: 'My Attendance', icon: AttendanceIcon, path: '/staff-attendance/me', perm: 'staff-attendance.regularization.apply' },
       { title: 'Dashboard', icon: PeopleIcon, path: '/staff-attendance', perm: 'staff-attendance.record.view' },

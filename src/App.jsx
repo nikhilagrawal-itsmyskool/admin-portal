@@ -255,6 +255,7 @@ import StaffAttendanceDashboard from './pages/staffAttendance/Dashboard';
 import StaffAttendanceReport from './pages/staffAttendance/Report';
 import StaffRegularizations from './pages/staffAttendance/Regularizations';
 import StaffAttendanceConfig from './pages/staffAttendance/Config';
+import StaffAttendancePermissions from './pages/staffAttendance/Permissions';
 import StaffMyAttendance from './pages/staffAttendance/MyAttendance';
 import BiometricDevices from './pages/biometric/Devices';
 import BiometricDeviceDetail from './pages/biometric/DeviceDetail';
@@ -602,6 +603,7 @@ export default function App() {
         <Route path="staff-attendance/report" element={<StaffAttendanceReport />} />
         <Route path="staff-attendance/regularizations" element={<StaffRegularizations />} />
         <Route path="staff-attendance/config" element={<StaffAttendanceConfig />} />
+        <Route path="staff-attendance/permissions" element={<StaffAttendancePermissions />} />
         <Route path="staff-attendance/me" element={<StaffMyAttendance />} />
         <Route path="staff-attendance/devices" element={<BiometricDevices />} />
         <Route path="staff-attendance/devices/:id" element={<BiometricDeviceDetail />} />
