@@ -12,11 +12,20 @@ import {
   Grid,
   MenuItem,
   Button,
+  Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon, Visibility as ViewIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Clear as ClearIcon, Visibility as ViewIcon, Add as AddIcon } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import usePersistedPaginationModel from '../../hooks/usePersistedPaginationModel';
 import { transferService } from '../../services/transferService';
+import { studentService } from '../../services/studentService';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
 
@@ -34,10 +43,42 @@ export default function TransferList() {
   const [status, setStatus] = useState('');
   const [paginationModel, setPaginationModel] = usePersistedPaginationModel('transferList', { page: 0, pageSize: 25 });
 
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const canManage = can(ACTIONS.TRANSFER_MANAGE) && isDesktop; // apply/issue is desktop-only
+  const [newOpen, setNewOpen] = useState(false);
+  const [stuInput, setStuInput] = useState('');
+  const [stuOptions, setStuOptions] = useState([]);
+  const [stuLoading, setStuLoading] = useState(false);
+
   // Page guard: only transfer.view (admin/god) reaches here via direct URL.
   useEffect(() => {
     if (!can(ACTIONS.TRANSFER_VIEW)) navigate('/', { replace: true });
   }, [can, navigate]);
+
+  // Student type-ahead for the "New TC" picker (name / admission / parent / phone).
+  useEffect(() => {
+    if (!newOpen) return;
+    const q = stuInput.trim();
+    if (q.length < 2) { setStuOptions([]); return; }
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      setStuLoading(true);
+      try {
+        const data = await studentService.omniSearch(q, ctrl.signal, { academicYearId: 'all' });
+        setStuOptions(data?.results || []);
+      } catch { /* aborted or failed — leave prior options */ }
+      finally { setStuLoading(false); }
+    }, 300);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [stuInput, newOpen]);
+
+  // Pick a student → land on their detail with the Apply TC form open.
+  const pickStudent = (stu) => {
+    if (!stu?.uuid) return;
+    setNewOpen(false);
+    navigate(`/students/${stu.uuid}`, { state: { openTc: true } });
+  };
 
   useEffect(() => {
     load({});
@@ -96,9 +137,14 @@ export default function TransferList() {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        Transfer Certificates
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">Transfer Certificates</Typography>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setStuInput(''); setStuOptions([]); setNewOpen(true); }}>
+            New TC
+          </Button>
+        )}
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
@@ -160,6 +206,45 @@ export default function TransferList() {
           '& .MuiDataGrid-cell': { borderBottom: '1px solid #e4e9f2' },
         }}
       />
+
+      <Dialog open={newOpen} onClose={() => setNewOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>New Transfer Certificate</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Search for the student. You'll be taken to their profile with the Apply form open.
+          </Typography>
+          <Autocomplete
+            options={stuOptions}
+            loading={stuLoading}
+            filterOptions={(x) => x}
+            getOptionLabel={(o) => (o?.name ? `${o.name}${o.admissionNumber ? ` (#${o.admissionNumber})` : ''}${o.className ? ` · ${o.className}` : ''}` : '')}
+            isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+            onInputChange={(_, val) => setStuInput(val)}
+            onChange={(_, val) => pickStudent(val)}
+            noOptionsText={stuInput.trim().length < 2 ? 'Type a name or admission number' : 'No matching students'}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                autoFocus
+                label="Student"
+                placeholder="Name / admission # / parent"
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {stuLoading ? <CircularProgress size={18} /> : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+              />
+            )}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -465,6 +465,7 @@ function TcDialog({ open, onClose, onSave, initial, studentId }) {
 export default function StudentDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const fileRef = useRef(null);
   const guardianFileRef = useRef(null);
   const can = useCan();
@@ -504,6 +505,15 @@ export default function StudentDetail() {
   const [siblingSearch, setSiblingSearch] = useState(false);
   const [delSibling, setDelSibling] = useState({ open: false, item: null });
   const [tcDialog, setTcDialog] = useState({ open: false, initial: null });
+
+  // Deep-link from the "New TC" button on the Transfer Certs page: open the Apply form.
+  useEffect(() => {
+    if (location.state?.openTc && canTransferManage) {
+      setTcDialog({ open: true, initial: null });
+      navigate(location.pathname, { replace: true, state: {} }); // clear so it won't re-open
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key, canTransferManage]);
   const [moveSection, setMoveSection] = useState(false);
 
   useEffect(() => {
