@@ -5,8 +5,9 @@ import {
   DialogContent, DialogActions, Stack, Tooltip,
 } from '@mui/material';
 import {
-  Search as SearchIcon, PhotoCamera as PhotoIcon, Delete as DeleteIcon,
+  Search as SearchIcon, UploadFile as UploadIcon, Delete as DeleteIcon,
   Edit as EditIcon, Publish as PublishIcon, Unpublished as UnpublishIcon,
+  OpenInNew as OpenInNewIcon, ErrorOutline as ErrorIcon,
 } from '@mui/icons-material';
 import { homeworkService } from '../../services/homeworkService';
 import { academicCalendarService } from '../../services/academicCalendarService';
@@ -15,7 +16,14 @@ import { todayIso } from '../../utils/date';
 
 const today = () => todayIso();
 
-// Read a File to raw base64 (no data: URI prefix), for the image upload payload.
+// Accepted upload types: photos, PDF, and Word (converted to PDF server-side).
+const HW_ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const isWordFile = (file) =>
+  file && (/\.docx?$/i.test(file.name || '') ||
+    file.type === 'application/msword' ||
+    file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+// Read a File to raw base64 (no data: URI prefix), for the upload payload.
 function readFileB64(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -25,30 +33,54 @@ function readFileB64(file) {
   });
 }
 
-// One photo thumbnail: uses the presigned imageUrl (prod) or lazily fetches the
-// base64 fallback (local dev / when no bucket is configured).
-function HomeworkImage({ item }) {
-  const [src, setSrc] = useState(item.imageUrl || null);
+// One item preview. Images render inline; PDFs (incl. converted Word docs) render in
+// an <iframe>. A Word doc still converting shows "Preparing…"; a failed one shows an
+// error. Uses the presigned URL (prod) or lazily fetches the base64 fallback (local).
+function ItemPreview({ item }) {
+  const status = item.conversionStatus || 'ready';
+  const isImage = item.mimeType ? item.mimeType.startsWith('image/') : !!item.imageUrl;
+  const [src, setSrc] = useState(item.imageUrl || item.fileUrl || null);
   useEffect(() => {
     let alive = true;
-    if (item.imageUrl) { setSrc(item.imageUrl); return; }
+    const url = item.imageUrl || item.fileUrl;
+    if (url) { setSrc(url); return; }
+    if (status !== 'ready') return; // nothing to render while converting/failed
     homeworkService.getItemImage(item.uuid)
       .then((r) => { if (alive) setSrc(r.dataUri); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [item.uuid, item.imageUrl]);
-  return (
+  }, [item.uuid, item.imageUrl, item.fileUrl, status]);
+
+  const box = (children) => (
     <Box
       sx={{
         width: '100%', height: 220, borderRadius: 1, bgcolor: 'action.hover',
         display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
       }}
     >
-      {src
-        ? <Box component="img" src={src} alt="Homework" sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-        : <Typography variant="caption" color="text.secondary">Loading photo…</Typography>}
+      {children}
     </Box>
   );
+
+  if (status === 'pending') {
+    return box(
+      <Stack alignItems="center" spacing={1}>
+        <CircularProgress size={22} />
+        <Typography variant="caption" color="text.secondary">Preparing PDF…</Typography>
+      </Stack>,
+    );
+  }
+  if (status === 'failed') {
+    return box(
+      <Stack alignItems="center" spacing={1}>
+        <ErrorIcon color="error" />
+        <Typography variant="caption" color="error">Couldn't process this file</Typography>
+      </Stack>,
+    );
+  }
+  if (!src) return box(<Typography variant="caption" color="text.secondary">Loading…</Typography>);
+  if (isImage) return box(<Box component="img" src={src} alt="Homework" sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />);
+  return box(<Box component="iframe" src={src} title={item.fileName || 'Document'} sx={{ width: '100%', height: '100%', border: 0 }} />);
 }
 
 export default function HomeworkPage() {
@@ -105,6 +137,7 @@ export default function HomeworkPage() {
   const hw = day?.day || null;
   const published = hw?.status === 'published';
   const items = hw?.items || [];
+  const anyPending = items.some((it) => it.conversionStatus === 'pending');
 
   const load = async () => {
     if (!selectedClass || !academicYearId || !date) {
@@ -129,10 +162,20 @@ export default function HomeworkPage() {
     setDay(res);
   };
 
+  // While a Word item is converting (pdf still being generated), poll the day until
+  // every item is ready so the preview flips from "Preparing…" to the PDF on its own.
+  useEffect(() => {
+    if (!anyPending) return undefined;
+    const t = setInterval(() => { refresh().catch(() => {}); }, 3000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anyPending, selectedClass, date, academicYearId]);
+
   const addPhoto = async () => {
-    if (!file) { setError('Choose a photo first'); return; }
+    if (!file) { setError('Choose a file first'); return; }
     setBusy(true); setError(''); setSuccess('');
     try {
+      const word = isWordFile(file);
       const base64Data = await readFileB64(file);
       const res = await homeworkService.addItem({
         classId: selectedClass.uuid,
@@ -144,9 +187,9 @@ export default function HomeworkPage() {
       });
       setDay(res);
       setFile(null); setSubjectLabel(''); setNote('');
-      setSuccess('Photo added');
+      setSuccess(word ? 'Added — the Word file is being converted to a PDF' : 'Added');
     } catch (err) {
-      setError(err.response?.data?.error?.description || 'Failed to add photo');
+      setError(err.response?.data?.error?.description || 'Failed to add file');
     } finally {
       setBusy(false);
     }
@@ -242,23 +285,27 @@ export default function HomeworkPage() {
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Chip label={published ? 'PUBLISHED' : 'DRAFT'} color={published ? 'success' : 'default'} size="small" />
                 <Typography variant="body2" color="text.secondary">
-                  {day.className || 'Class'} · {date} · {items.length} photo{items.length === 1 ? '' : 's'}
+                  {day.className || 'Class'} · {date} · {items.length} item{items.length === 1 ? '' : 's'}
                 </Typography>
               </Box>
-              <Button
-                variant="contained"
-                color={published ? 'inherit' : 'primary'}
-                startIcon={published ? <UnpublishIcon /> : <PublishIcon />}
-                onClick={togglePublish}
-                disabled={busy || (!published && items.length === 0)}
-              >
-                {published ? 'Unpublish' : 'Publish'}
-              </Button>
+              <Tooltip title={!published && anyPending ? 'A document is still being prepared' : ''}>
+                <span>
+                  <Button
+                    variant="contained"
+                    color={published ? 'inherit' : 'primary'}
+                    startIcon={published ? <UnpublishIcon /> : <PublishIcon />}
+                    onClick={togglePublish}
+                    disabled={busy || (!published && (items.length === 0 || anyPending))}
+                  >
+                    {published ? 'Unpublish' : 'Publish'}
+                  </Button>
+                </span>
+              </Tooltip>
             </Box>
 
             {published && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                Published homework is read-only. Unpublish to add, edit or remove photos.
+                Published homework is read-only. Unpublish to add, edit or remove items.
               </Alert>
             )}
 
@@ -268,9 +315,9 @@ export default function HomeworkPage() {
                 <CardContent>
                   <Grid container spacing={2} alignItems="center">
                     <Grid item xs={12} md={3}>
-                      <Button component="label" variant="outlined" startIcon={<PhotoIcon />} fullWidth>
-                        {file ? file.name : 'Choose photo'}
-                        <input hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                      <Button component="label" variant="outlined" startIcon={<UploadIcon />} fullWidth>
+                        {file ? file.name : 'Choose file'}
+                        <input hidden type="file" accept={HW_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] || null)} />
                       </Button>
                     </Grid>
                     <Grid item xs={12} md={3}>
@@ -287,21 +334,28 @@ export default function HomeworkPage() {
               </Card>
             )}
 
-            {/* Photo grid */}
+            {/* Item grid */}
             {items.length === 0 ? (
               <Typography align="center" color="text.secondary" sx={{ py: 3 }}>
-                No photos yet. Add the day's homework above, then Publish.
+                Nothing yet. Add the day's homework (photo, PDF or Word) above, then Publish.
               </Typography>
             ) : (
               <Grid container spacing={2}>
                 {items.map((it) => (
                   <Grid item xs={12} sm={6} md={4} key={it.uuid}>
                     <Card variant="outlined">
-                      <HomeworkImage item={it} />
+                      <ItemPreview item={it} />
                       <CardContent sx={{ pb: 1 }}>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                           {it.subjectLabel && <Chip label={it.subjectLabel} size="small" color="primary" variant="outlined" />}
                           <Box sx={{ flex: 1 }} />
+                          {it.fileUrl && it.mimeType && !it.mimeType.startsWith('image/') && (
+                            <Tooltip title="Open PDF">
+                              <IconButton size="small" component="a" href={it.fileUrl} target="_blank" rel="noopener">
+                                <OpenInNewIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           {!published && (
                             <>
                               <Tooltip title="Edit label / note">
@@ -309,7 +363,7 @@ export default function HomeworkPage() {
                                   <EditIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Remove photo">
+                              <Tooltip title="Remove item">
                                 <IconButton size="small" color="error" onClick={() => setRemoveTarget(it)}>
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
@@ -330,7 +384,7 @@ export default function HomeworkPage() {
 
       {/* Edit label/note dialog */}
       <Dialog open={Boolean(editItem)} onClose={() => setEditItem(null)} fullWidth maxWidth="sm">
-        <DialogTitle>Edit photo</DialogTitle>
+        <DialogTitle>Edit item</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth margin="dense" label="Subject" value={editItem?.subjectLabel || ''}
@@ -349,8 +403,8 @@ export default function HomeworkPage() {
 
       <ConfirmDialog
         open={Boolean(removeTarget)}
-        title="Remove this photo?"
-        message="The photo will be deleted from this homework. This can't be undone."
+        title="Remove this item?"
+        message="This item will be deleted from this homework. This can't be undone."
         confirmLabel="Remove"
         confirmColor="error"
         onConfirm={doRemove}
