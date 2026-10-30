@@ -284,10 +284,12 @@ const withCurrent = (opts, val) => {
 
 function TcDialog({ open, onClose, onSave, initial, studentId }) {
   const [t, setT] = useState(EMPTY_TC);
+  const [baseline, setBaseline] = useState('');
   const [derived, setDerived] = useState(null);
   const [config, setConfig] = useState(null);
   const [dues, setDues] = useState(0);
   const [loading, setLoading] = useState(false);
+  const dirty = JSON.stringify(t) !== baseline;
 
   useEffect(() => {
     if (!open) return;
@@ -302,43 +304,41 @@ function TcDialog({ open, onClose, onSave, initial, studentId }) {
       setDues(pf?.duesOutstanding || 0);
       const sug = pf?.suggested || {};
       const pick = (field, sugKey) => (initial && initial[field] != null && initial[field] !== '' ? initial[field] : (sug[sugKey ?? field] ?? ''));
-      if (initial) {
-        setT({
-          applicationDate: initial.applicationDate ? String(initial.applicationDate).slice(0, 10) : '',
-          status: initial.status || 'applied',
-          reasonForLeaving: initial.reasonForLeaving || '',
-          srnNumber: initial.srnNumber || '',
-          tcNumber: initial.tcNumber || '',
-          bookNo: pick('bookNo'),
-          issueDate: initial.issueDate ? String(initial.issueDate).slice(0, 10) : '',
-          result: pick('result'),
-          failedInClass: pick('failedInClass') || 'no',
-          subjectsStudied: pick('subjectsStudied'),
-          qualifiedForPromotion: pick('qualifiedForPromotion') || 'yes',
-          duesPaidUpto: pick('duesPaidUpto'),
-          feeConcession: pick('feeConcession'),
-          nccScoutGuide: pick('nccScoutGuide'),
-          gamesActivities: initial.gamesActivities || '',
-          generalConduct: pick('generalConduct'),
-          remarks: initial.remarks || '',
-          totalAttendanceDays: initial.totalAttendanceDays ?? '',
-          totalWorkingDays: initial.totalWorkingDays ?? '',
-          overrideDues: false,
-        });
-      } else {
-        setT({
-          ...EMPTY_TC,
-          bookNo: sug.bookNo || '',
-          result: sug.result || '',
-          failedInClass: sug.failedInClass || 'no',
-          subjectsStudied: sug.subjectsStudied || '',
-          qualifiedForPromotion: sug.qualifiedForPromotion || 'yes',
-          duesPaidUpto: sug.duesPaidUpto || '',
-          feeConcession: sug.feeConcession || '',
-          nccScoutGuide: sug.nccScoutGuide || '',
-          generalConduct: sug.generalConduct || '',
-        });
-      }
+      const seed = initial ? {
+        applicationDate: initial.applicationDate ? String(initial.applicationDate).slice(0, 10) : '',
+        status: initial.status || 'applied',
+        reasonForLeaving: initial.reasonForLeaving || '',
+        srnNumber: initial.srnNumber || '',
+        tcNumber: initial.tcNumber || '',
+        bookNo: pick('bookNo'),
+        issueDate: initial.issueDate ? String(initial.issueDate).slice(0, 10) : '',
+        result: pick('result'),
+        failedInClass: pick('failedInClass') || 'no',
+        subjectsStudied: pick('subjectsStudied'),
+        qualifiedForPromotion: pick('qualifiedForPromotion') || 'yes',
+        duesPaidUpto: pick('duesPaidUpto'),
+        feeConcession: pick('feeConcession'),
+        nccScoutGuide: pick('nccScoutGuide'),
+        gamesActivities: initial.gamesActivities || '',
+        generalConduct: pick('generalConduct'),
+        remarks: initial.remarks || '',
+        totalAttendanceDays: initial.totalAttendanceDays ?? '',
+        totalWorkingDays: initial.totalWorkingDays ?? '',
+        overrideDues: false,
+      } : {
+        ...EMPTY_TC,
+        bookNo: sug.bookNo || '',
+        result: sug.result || '',
+        failedInClass: sug.failedInClass || 'no',
+        subjectsStudied: sug.subjectsStudied || '',
+        qualifiedForPromotion: sug.qualifiedForPromotion || 'yes',
+        duesPaidUpto: sug.duesPaidUpto || '',
+        feeConcession: sug.feeConcession || '',
+        nccScoutGuide: sug.nccScoutGuide || '',
+        generalConduct: sug.generalConduct || '',
+      };
+      setT(seed);
+      setBaseline(JSON.stringify(seed));
       setLoading(false);
     })();
     return () => { alive = false; };
@@ -456,7 +456,7 @@ function TcDialog({ open, onClose, onSave, initial, studentId }) {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={submit}>Save</Button>
+        <Button variant="contained" onClick={submit} disabled={!dirty || loading}>Save</Button>
       </DialogActions>
     </Dialog>
   );

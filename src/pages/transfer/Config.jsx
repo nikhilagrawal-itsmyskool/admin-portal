@@ -24,23 +24,28 @@ export default function TransferConfig() {
   const canManage = can(ACTIONS.TRANSFER_CONFIG_MANAGE);
 
   const [c, setC] = useState(null);
+  const [baseline, setBaseline] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
 
+  const dirty = c && JSON.stringify(c) !== baseline;
+
   useEffect(() => {
     if (!canManage) { setLoading(false); return; }
     (async () => {
       try {
-        setC(await transferService.getConfig());
+        const cfg = await transferService.getConfig();
+        setC(cfg);
+        setBaseline(JSON.stringify(cfg));
       } catch (e) {
         setErr(e.response?.data?.error?.description || 'Failed to load config');
       } finally { setLoading(false); }
     })();
   }, [canManage]);
 
-  const set = (k) => (e) => setC((p) => ({ ...p, [k]: e.target.value }));
+  const set = (k) => (e) => { setC((p) => ({ ...p, [k]: e.target.value })); setMsg(''); };
 
   const save = async () => {
     setSaving(true); setErr(''); setMsg('');
@@ -51,6 +56,7 @@ export default function TransferConfig() {
         conductOptions: Array.isArray(c.conductOptions) ? c.conductOptions : parseCsv(c.conductOptions),
       });
       setC(saved);
+      setBaseline(JSON.stringify(saved));
       setMsg('Transfer Certificate config saved.');
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save config');
@@ -145,7 +151,9 @@ export default function TransferConfig() {
       </Card>
 
       <Stack direction="row" justifyContent="flex-end">
-        <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={saving}>Save</Button>
+        <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={!dirty || saving}>
+          {dirty ? (saving ? 'Saving…' : 'Save') : 'Saved'}
+        </Button>
       </Stack>
     </Box>
   );
