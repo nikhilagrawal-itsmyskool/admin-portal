@@ -327,6 +327,8 @@ function TcDialog({ open, onClose, onSave, initial, studentId }) {
         overrideDues: false,
       } : {
         ...EMPTY_TC,
+        srnNumber: sug.srnNumber || '',
+        tcNumber: sug.tcNumber || '',
         bookNo: sug.bookNo || '',
         result: sug.result || '',
         failedInClass: sug.failedInClass || 'no',
@@ -336,6 +338,8 @@ function TcDialog({ open, onClose, onSave, initial, studentId }) {
         feeConcession: sug.feeConcession || '',
         nccScoutGuide: sug.nccScoutGuide || '',
         generalConduct: sug.generalConduct || '',
+        totalWorkingDays: sug.totalWorkingDays ?? '',
+        totalAttendanceDays: sug.totalAttendanceDays ?? '',
       };
       setT(seed);
       setBaseline(JSON.stringify(seed));
