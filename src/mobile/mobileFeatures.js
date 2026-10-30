@@ -85,6 +85,9 @@ export const MOBILE_FEATURES = [
   // Read-only academic calendar (month view + holidays). No operations on mobile —
   // the page forces read-only and hides Import/Manage columns below the sm breakpoint.
   { title: "Academic Calendar", icon: AcademicCalendarIcon, path: "/academic-calendar", perm: "academic-calendar.view", section: "mine", color: "#3366ff", routes: ["/academic-calendar"] },
+  // Moments (read-only) — EVERY staff member browses what's been shared with parents
+  // (published only, school-wide). No perm = all staff. Composing lives in "Share Moment" (Now).
+  { title: "Moments", icon: MomentsIcon, path: "/outreach/feed", section: "mine", color: "#ec407a", routes: ["/outreach/feed"] },
   // Assembly: "Today's assembly" + Leaderboard are the shared views (loose in Now). The house
   // member's Roster/Checklist and the evaluator's Grading are personal duty → Mine, grouped
   // under an "Assembly" subheading, still gated by the runtime `derived` house/evaluator role.
@@ -104,11 +107,12 @@ export const MOBILE_FEATURES = [
   },
   // My Homework — the class teacher posts the day's homework photos (pick class + date).
   { title: "Post Homework", icon: HomeworkIcon, path: "/homework", perm: "homework.day.post", section: "today", color: "#d97706" },
-  // Moments — god / admin / moments-incharge compose photos + a note for an audience
-  // (whole school / grade / class) and publish. NOT class-teacher scoped. Gated on
+  // Share Moment — god / admin / moments-incharge compose photos/videos + a note for an
+  // audience (whole school / grade / class) and publish. NOT class-teacher scoped. Gated on
   // moment.manage (held by admin, moments-incharge, god). Desktop /outreach is the same
-  // console on a laptop; this is the phone-first composer.
-  { title: "Moments", icon: MomentsIcon, path: "/outreach/me", perm: "outreach.moment.manage", section: "today", color: "#ec407a", routes: ["/outreach/me"] },
+  // console on a laptop; this is the phone-first composer. (The read-only "Moments" feed for
+  // ALL staff lives in the Mine band — see below.)
+  { title: "Share Moment", icon: MomentsIcon, path: "/outreach/me", perm: "outreach.moment.manage", section: "today", color: "#ec407a", routes: ["/outreach/me"] },
   // Clubs & Activities — teacher conduct only on mobile. The admin consoles (clubs, bank,
   // planning board, review, settings, permissions) are desktop/admin-portal only, so they
   // are deliberately NOT listed here.

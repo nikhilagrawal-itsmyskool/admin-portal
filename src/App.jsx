@@ -192,6 +192,7 @@ import HomeworkPermissions from './pages/homework/Permissions';
 import HomeworkMappingPage from './pages/homework/HomeworkMappingPage';
 import MomentsPage from './pages/outreach/MomentsPage';
 import MyMoments from './pages/outreach/MyMoments';
+import StaffMoments from './pages/outreach/StaffMoments';
 import OutreachPermissions from './pages/outreach/Permissions';
 import WebsitePublish from './pages/website/WebsitePublish';
 import WebsitePermissions from './pages/website/Permissions';
@@ -537,6 +538,7 @@ export default function App() {
         <Route path="homework/class-teachers" element={<HomeworkMappingPage />} />
         <Route path="outreach/permissions" element={<OutreachPermissions />} />
         <Route path="outreach/me" element={<MyMoments />} />
+        <Route path="outreach/feed" element={<StaffMoments />} />
         <Route path="outreach" element={<MomentsPage />} />
         <Route path="website/permissions" element={<WebsitePermissions />} />
         <Route path="website" element={<WebsitePublish />} />

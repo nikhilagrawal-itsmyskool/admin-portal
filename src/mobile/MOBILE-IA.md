@@ -62,10 +62,10 @@ Names below are the live titles. `·` separates a hub's children.
   - Leave Approvals — `leave.application.approve` · Staff Attendance — `leave.attendance.view`
 - **Now**
   - Take Attendance `attendance.session.mark` · Bus Attendance `transport.attendance.mark`
-  - Post Homework `homework.day.post` · Send Message `communication.message.send` · Record Feedback `feedback.ticket.record` · My Activities `club.plan.conduct` (club conduct; admin club consoles are desktop-only)
+  - Post Homework `homework.day.post` · Send Message `communication.message.send` · Record Feedback `feedback.ticket.record` · My Activities `club.plan.conduct` (club conduct; admin club consoles are desktop-only) · Share Moment `outreach.moment.manage` (compose photos/videos for an audience → publish)
   - Assembly `[hub]` · Today's assembly `assembly.view` · My Roster / My Checklist `+derived houseMember` · Grade Assembly `+derived evaluator` · Leaderboard `assembly.view`
 - **Mine**
-  - My Timetable `timetable.view` · My Syllabus `syllabus.view` · Academic Calendar `academic-calendar.view`
+  - My Timetable `timetable.view` · My Syllabus `syllabus.view` · Academic Calendar `academic-calendar.view` · Moments *(all staff, read-only — browse what's shared with parents; compose = "Share Moment" in Now)*
   - Exam Schedule *(all staff)* · My Exam Duties *(all staff)* · Enter Marks *(all staff)* · Co-Scholastic *(all staff)*
   - My Feedback `feedback.ticket.respond` / not `feedback.ticket.review` · My Documents `documents.sign` / not `documents.handbook.manage`
   - Leave `[hub]` · My Leave `leave.application.apply` / not `leave.application.approve` · Leave Calendar `leave.calendar.view` · My Attendance · My Penalty

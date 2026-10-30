@@ -85,6 +85,11 @@ export const outreachService = {
   schedule: async (id, publishAt) => (await api.post(`/outreach/moments/${id}/schedule`, { publishAt })).data,
   unschedule: async (id) => (await api.post(`/outreach/moments/${id}/unschedule`)).data,
 
+  // ── Staff read-only feed — any logged-in staff member; all published moments ──
+  // List is lightweight (cover + counts); detail fetches the full gallery.
+  staffFeed: async (params = {}) => (await api.get('/outreach/staff/feed', { params })).data,
+  staffFeedMoment: async (id) => (await api.get(`/outreach/staff/feed/${id}`)).data,
+
   // ── Teacher PWA (own-class) — the /me surface used on phones ──────────────────
   me: {
     // Classes this teacher is the class teacher of (can post for).
