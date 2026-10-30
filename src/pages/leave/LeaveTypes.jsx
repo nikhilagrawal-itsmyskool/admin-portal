@@ -26,6 +26,8 @@ export default function LeaveTypes() {
   const [editType, setEditType] = useState(null); // { code, name, annualQuota, attachmentOverDays, requiresAttachment, paid }
   const [capOpen, setCapOpen] = useState(false);
   const [capValue, setCapValue] = useState('');
+  const [penOpen, setPenOpen] = useState(false);
+  const [penForm, setPenForm] = useState({ halfDayLopWeight: '', lateLopEvery: '', lateLopDays: '' });
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -74,6 +76,28 @@ export default function LeaveTypes() {
     } finally { setBusy(false); }
   };
 
+  const openPen = () => {
+    setPenForm({
+      halfDayLopWeight: String(config.halfDayLopWeight ?? 0.5),
+      lateLopEvery: String(config.lateLopEvery ?? 3),
+      lateLopDays: String(config.lateLopDays ?? 0.5),
+    });
+    setPenOpen(true);
+  };
+  const savePen = async () => {
+    setBusy(true); setError('');
+    try {
+      await leaveService.updateConfig({
+        halfDayLopWeight: Number(penForm.halfDayLopWeight),
+        lateLopEvery: Number(penForm.lateLopEvery),
+        lateLopDays: Number(penForm.lateLopDays),
+      });
+      setPenOpen(false); setToast('Penalty rules updated'); load();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Could not save');
+    } finally { setBusy(false); }
+  };
+
   const quotaLabel = (t) => (t.annualQuota != null ? `${t.annualQuota}/yr` : '—');
   const certLabel = (t) => (t.attachmentOverDays != null ? `if > ${t.attachmentOverDays}d` : (t.requiresAttachment ? 'Always' : '—'));
 
@@ -106,6 +130,25 @@ export default function LeaveTypes() {
                 </CardContent></Card>
               </Grid>
             </Grid>
+          )}
+
+          {config && (
+            <Card variant="outlined" sx={{ mb: 3, position: 'relative' }}>
+              <CardContent sx={{ py: 1.5 }}>
+                {canManage && (
+                  <IconButton size="small" sx={{ position: 'absolute', top: 4, right: 4 }} onClick={openPen}><EditIcon fontSize="small" /></IconButton>
+                )}
+                <Typography sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', mb: 0.5 }}>Penalty rules (LOP days)</Typography>
+                <Typography sx={{ fontSize: 14 }}>
+                  Half-day = <b>{config.halfDayLopWeight}</b> LOP · {config.lateLopEvery > 0
+                    ? <>every <b>{config.lateLopEvery}</b> late days = <b>{config.lateLopDays}</b> LOP</>
+                    : <>lates don’t penalize</>}
+                </Typography>
+                <Typography sx={{ fontSize: 11, color: 'text.disabled', mt: 0.5 }}>
+                  Half-day detection (worked-hours threshold) + late grace live in Staff Attendance → Config.
+                </Typography>
+              </CardContent>
+            </Card>
           )}
 
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary', mb: 1 }}>Leave types</Typography>
@@ -214,6 +257,28 @@ export default function LeaveTypes() {
         <DialogActions>
           <Button onClick={() => setCapOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={saveCap} disabled={busy}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit penalty rules */}
+      <Dialog open={penOpen} onClose={() => setPenOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Penalty rules (LOP days)</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField type="number" size="small" label="Half-day = LOP days" value={penForm.halfDayLopWeight}
+              onChange={(e) => setPenForm((f) => ({ ...f, halfDayLopWeight: e.target.value }))}
+              InputProps={{ inputProps: { min: 0, step: 0.5 } }} helperText="What a half-day costs (e.g. 0.5)." />
+            <TextField type="number" size="small" label="Late → LOP: every N late days" value={penForm.lateLopEvery}
+              onChange={(e) => setPenForm((f) => ({ ...f, lateLopEvery: e.target.value }))}
+              InputProps={{ inputProps: { min: 0, step: 1 } }} helperText="0 = lates don't penalize." />
+            <TextField type="number" size="small" label="= LOP days (per block of N lates)" value={penForm.lateLopDays}
+              onChange={(e) => setPenForm((f) => ({ ...f, lateLopDays: e.target.value }))}
+              InputProps={{ inputProps: { min: 0, step: 0.5 } }} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPenOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={savePen} disabled={busy}>Save</Button>
         </DialogActions>
       </Dialog>
 

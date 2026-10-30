@@ -71,12 +71,19 @@ export default function MyPenalty() {
             <Alert severity="success" sx={{ mb: 2 }}>No penalty this month — all clear. 🎉</Alert>
           ) : (
             <Card sx={{ mb: 2 }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h5" color="error.main">{total}</Typography>
-                <Typography variant="body1">LOP day{total === 1 ? '' : 's'} this month</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-                  {data.penaltyDayCount} day{data.penaltyDayCount === 1 ? '' : 's'} with a deduction
-                </Typography>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                  <Typography variant="h5" color="error.main">{total}</Typography>
+                  <Typography variant="body1">LOP day{total === 1 ? '' : 's'} this month</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                    {data.penaltyDayCount} day{data.penaltyDayCount === 1 ? '' : 's'} with a deduction
+                  </Typography>
+                </Box>
+                {data.latePenaltyDays > 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    Includes lates: {data.lateCount} late day{data.lateCount === 1 ? '' : 's'} → +{data.latePenaltyDays} LOP
+                  </Typography>
+                )}
               </CardContent>
             </Card>
           )}
