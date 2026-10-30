@@ -27,7 +27,7 @@ export default function LeaveTypes() {
   const [capOpen, setCapOpen] = useState(false);
   const [capValue, setCapValue] = useState('');
   const [penOpen, setPenOpen] = useState(false);
-  const [penForm, setPenForm] = useState({ halfDayLopWeight: '', lateLopEvery: '', lateLopDays: '' });
+  const [penForm, setPenForm] = useState({ halfDayLopWeight: '', lateLopEvery: '', lateLopDays: '', unauthorizedLadder: false });
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -81,6 +81,7 @@ export default function LeaveTypes() {
       halfDayLopWeight: String(config.halfDayLopWeight ?? 0.5),
       lateLopEvery: String(config.lateLopEvery ?? 3),
       lateLopDays: String(config.lateLopDays ?? 0.5),
+      unauthorizedLadder: !!config.unauthorizedLadder,
     });
     setPenOpen(true);
   };
@@ -91,6 +92,7 @@ export default function LeaveTypes() {
         halfDayLopWeight: Number(penForm.halfDayLopWeight),
         lateLopEvery: Number(penForm.lateLopEvery),
         lateLopDays: Number(penForm.lateLopDays),
+        unauthorizedLadder: !!penForm.unauthorizedLadder,
       });
       setPenOpen(false); setToast('Penalty rules updated'); load();
     } catch (err) {
@@ -143,6 +145,7 @@ export default function LeaveTypes() {
                   Half-day = <b>{config.halfDayLopWeight}</b> LOP · {config.lateLopEvery > 0
                     ? <>every <b>{config.lateLopEvery}</b> late days = <b>{config.lateLopDays}</b> LOP</>
                     : <>lates don’t penalize</>}
+                  {' · '}unauthorized ladder <b>{config.unauthorizedLadder ? 'on' : 'off'}</b>
                 </Typography>
                 <Typography sx={{ fontSize: 11, color: 'text.disabled', mt: 0.5 }}>
                   Half-day detection (worked-hours threshold) + late grace live in Staff Attendance → Config.
@@ -274,6 +277,10 @@ export default function LeaveTypes() {
             <TextField type="number" size="small" label="= LOP days (per block of N lates)" value={penForm.lateLopDays}
               onChange={(e) => setPenForm((f) => ({ ...f, lateLopDays: e.target.value }))}
               InputProps={{ inputProps: { min: 0, step: 0.5 } }} />
+            <FormControlLabel
+              control={<Switch checked={penForm.unauthorizedLadder} onChange={(e) => setPenForm((f) => ({ ...f, unauthorizedLadder: e.target.checked }))} />}
+              label="Escalate repeated unauthorized-absence spells (ladder)"
+            />
           </Stack>
         </DialogContent>
         <DialogActions>

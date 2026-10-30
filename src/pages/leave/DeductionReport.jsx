@@ -9,7 +9,7 @@ import { leaveService } from '../../services/leaveService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { thisMonth } from './LeaveShared';
 
-const COLS = ['Employee', 'Present', 'CL', 'Counted', 'Plain', 'Ladder', 'Applied', 'Status'];
+const COLS = ['Employee', 'Present', 'CL', 'Counted', 'Late', 'Half', 'Plain', 'Ladder', 'Applied', 'Status'];
 
 export default function DeductionReport() {
   const isMobile = useIsMobile();
@@ -62,11 +62,11 @@ export default function DeductionReport() {
   };
 
   const exportCsv = () => {
-    const header = ['Employee', 'Present', 'CL used', 'Counted absences', 'Unauthorized', 'Plain LWP days', 'Ladder days', 'Applied days', 'Status'];
+    const header = ['Employee', 'Present', 'CL used', 'Counted absences', 'Unauthorized', 'Late LOP', 'Half-day LOP', 'Plain LWP days', 'Ladder days', 'Applied days', 'Status'];
     const lines = rows.map((r) => [
       `"${(r.employeeName || r.employeeId).replace(/"/g, '""')}"`,
       r.paidDays, r.clUsed, r.authorizedUnpaidAbsences + r.unauthorizedAbsences, r.unauthorizedAbsences,
-      r.plainLwpDays, r.ladderDeductionDays, r.appliedDeductionDays, r.status,
+      r.lateLopDays || 0, r.halfDayLopDays || 0, r.plainLwpDays, r.ladderDeductionDays, r.appliedDeductionDays, r.status,
     ].join(','));
     const csv = [header.join(','), ...lines].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -108,7 +108,7 @@ export default function DeductionReport() {
                 <Chip size="small" label={r.status} color={r.status === 'finalized' ? 'success' : 'default'} sx={{ textTransform: 'capitalize' }} />
               </Box>
               <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>
-                {r.paidDays} present · {r.unauthorizedAbsences + r.authorizedUnpaidAbsences} counted · applied <b>{r.appliedDeductionDays}d</b> (plain {r.plainLwpDays} / ladder {r.ladderDeductionDays})
+                {r.paidDays} present · {r.unauthorizedAbsences + r.authorizedUnpaidAbsences} counted{r.lateLopDays > 0 ? ` · late ${r.lateLopDays}` : ''}{r.halfDayLopDays > 0 ? ` · half ${r.halfDayLopDays}` : ''} · applied <b>{r.appliedDeductionDays}d</b> (plain {r.plainLwpDays} / ladder {r.ladderDeductionDays})
               </Typography>
               {r.status !== 'finalized' && (
                 <Button size="small" variant="contained" sx={{ mt: 1 }} onClick={() => setFinalizeTarget(r)}>Finalize</Button>
@@ -128,6 +128,8 @@ export default function DeductionReport() {
                     <TableCell>{r.paidDays}</TableCell>
                     <TableCell>{r.clUsed}</TableCell>
                     <TableCell>{r.unauthorizedAbsences + r.authorizedUnpaidAbsences}</TableCell>
+                    <TableCell>{r.lateLopDays || 0}</TableCell>
+                    <TableCell>{r.halfDayLopDays || 0}</TableCell>
                     <TableCell>{r.plainLwpDays}</TableCell>
                     <TableCell sx={{ color: '#d99400' }}>{r.ladderDeductionDays}</TableCell>
                     <TableCell sx={{ fontWeight: 800 }}>{r.appliedDeductionDays}</TableCell>
@@ -150,14 +152,17 @@ export default function DeductionReport() {
         <DialogTitle>Finalize — {finalizeTarget?.employeeName}</DialogTitle>
         <DialogContent>
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>
-            {finalizeTarget?.unauthorizedAbsences + finalizeTarget?.authorizedUnpaidAbsences} counted absence(s). Choose the deduction to lock in for payroll.
+            {finalizeTarget?.unauthorizedAbsences + finalizeTarget?.authorizedUnpaidAbsences} counted absence(s).
+            {(finalizeTarget?.lateLopDays > 0 || finalizeTarget?.halfDayLopDays > 0) && (
+              <> Late ({finalizeTarget?.lateLopDays || 0}) + half-day ({finalizeTarget?.halfDayLopDays || 0}) LOP are always included.</>
+            )} Choose the absence basis to lock in for payroll.
           </Typography>
           <Stack spacing={1} sx={{ mt: 1 }}>
             <Button variant="contained" onClick={() => finalize(false)} disabled={busy}>
-              Standard — {finalizeTarget?.plainLwpDays} day(s)' pay
+              Standard — {Math.round(((finalizeTarget?.plainLwpDays || 0) + (finalizeTarget?.lateLopDays || 0) + (finalizeTarget?.halfDayLopDays || 0)) * 10) / 10} day(s)' pay
             </Button>
             <Button variant="outlined" color="warning" onClick={() => finalize(true)} disabled={busy}>
-              Escalated ladder — {finalizeTarget?.ladderDeductionDays} day(s)' pay
+              Escalated ladder — {Math.round(((finalizeTarget?.ladderDeductionDays || 0) + (finalizeTarget?.lateLopDays || 0) + (finalizeTarget?.halfDayLopDays || 0)) * 10) / 10} day(s)' pay
             </Button>
           </Stack>
         </DialogContent>
