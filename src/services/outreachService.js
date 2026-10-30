@@ -86,7 +86,8 @@ export const outreachService = {
   unschedule: async (id) => (await api.post(`/outreach/moments/${id}/unschedule`)).data,
 
   // ── Staff read-only feed — any logged-in staff member; all published moments ──
-  // List is lightweight (cover + counts); detail fetches the full gallery.
+  // Returns { moments: MomentView[] } (full, with photos) — same shape as the parent feed,
+  // so the staff screen renders the identical inline gallery. staffFeedMoment = one by id.
   staffFeed: async (params = {}) => (await api.get('/outreach/staff/feed', { params })).data,
   staffFeedMoment: async (id) => (await api.get(`/outreach/staff/feed/${id}`)).data,
 
