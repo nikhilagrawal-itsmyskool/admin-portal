@@ -242,7 +242,6 @@ import MyGrade from './pages/assembly/MyGrade';
 import LeavePermissions from './pages/leave/Permissions';
 import MyLeave from './pages/leave/MyLeave';
 import CoveringDetail from './pages/leave/CoveringDetail';
-import LeaveMyAttendance from './pages/leave/MyAttendance';
 import MyPenalty from './pages/leave/MyPenalty';
 import LeaveApprovals from './pages/leave/Approvals';
 import StaffAttendance from './pages/leave/StaffAttendance';
@@ -592,7 +591,6 @@ export default function App() {
         <Route path="leave/permissions" element={<LeavePermissions />} />
         <Route path="leave/me" element={<MyLeave />} />
         <Route path="leave/covering/:id" element={<CoveringDetail />} />
-        <Route path="leave/me/attendance" element={<LeaveMyAttendance />} />
         <Route path="leave/me/penalty" element={<MyPenalty />} />
         <Route path="leave/approvals" element={<LeaveApprovals />} />
         <Route path="leave/staff" element={<StaffAttendance />} />
