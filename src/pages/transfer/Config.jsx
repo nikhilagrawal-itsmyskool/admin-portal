@@ -104,9 +104,9 @@ export default function TransferConfig() {
         <CardContent>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Numbering & register</Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="Default Book No." value={c.tcBookNo || ''} onChange={set('tcBookNo')} /></Grid>
-            <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="S.R.N. prefix" value={c.srnPrefix || ''} onChange={set('srnPrefix')} helperText="e.g. DBPASN TC/" /></Grid>
-            <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="TC No. prefix" value={c.tcNumberPrefix || ''} onChange={set('tcNumberPrefix')} helperText="e.g. DRBPASN/T.C." /></Grid>
+            <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="Default Book No. (optional)" value={c.tcBookNo || ''} onChange={set('tcBookNo')} helperText="Physical TC register book — leave blank if not used" /></Grid>
+            <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="S.R.N. prefix" value={c.srnPrefix || ''} onChange={set('srnPrefix')} helperText="Continuous serial, never resets · DBPASN TC/ → DBPASN TC/163" /></Grid>
+            <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="TC No. prefix" value={c.tcNumberPrefix || ''} onChange={set('tcNumberPrefix')} helperText="Resets each year; year appended · DBPASN/TC/ → DBPASN/TC/1/2026-27" /></Grid>
           </Grid>
         </CardContent>
       </Card>
