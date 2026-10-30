@@ -3,7 +3,8 @@ import {
   Box, Typography, Card, CardContent, Stack, Alert, CircularProgress, Button, IconButton,
   TextField, MenuItem, ToggleButton, ToggleButtonGroup, Chip, LinearProgress, Menu, ListSubheader, Tooltip,
 } from '@mui/material';
-import { ChevronLeft, ChevronRight, Add as AddIcon } from '@mui/icons-material';
+import { ChevronLeft, ChevronRight, Add as AddIcon, WarningAmber as WarnIcon } from '@mui/icons-material';
+import { nameClashHints } from './nameClash';
 import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -150,6 +151,8 @@ export default function ReportCoscholastic() {
   const scales = useMemo(() => ({ s100: grid?.scale || [], s10: grid?.scale10 || [] }), [grid]);
 
   const student = grid?.students?.[idx];
+  // Flag students sharing a first name in this class (the "two Jatins" mix-up guardrail).
+  const clash = useMemo(() => nameClashHints(grid?.students || []), [grid]);
   const d = student ? draft[student.studentId] : null;
   const setField = useCallback((sid, field, value) => { setDirty(true); setDraft((p) => ({ ...p, [sid]: { ...p[sid], [field]: value } })); }, []);
   const setCell = useCallback((sid, areaId, patch) => { setDirty(true); setDraft((p) => ({ ...p, [sid]: { ...p[sid], cells: { ...p[sid].cells, [areaId]: { ...p[sid].cells?.[areaId], ...patch } } } })); }, []);
@@ -250,7 +253,9 @@ export default function ReportCoscholastic() {
               <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
                 <IconButton size="small" disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}><ChevronLeft /></IconButton>
                 <Box sx={{ flex: 1, textAlign: 'center' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{student.name}</Typography>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{student.name}
+                    {clash.get(student.studentId) && <Tooltip title={clash.get(student.studentId)}><WarnIcon color="warning" sx={{ fontSize: 17, ml: 0.5, verticalAlign: 'text-bottom' }} /></Tooltip>}
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">{idx + 1} of {grid.students.length}{student.rollNumber != null ? ` · Roll ${student.rollNumber}` : ''}</Typography>
                 </Box>
                 <IconButton size="small" disabled={idx >= grid.students.length - 1} onClick={() => setIdx((i) => Math.min(grid.students.length - 1, i + 1))}><ChevronRight /></IconButton>

@@ -6,9 +6,10 @@ import {
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
   FormControlLabel, Switch, Tooltip,
 } from '@mui/material';
-import { Print as PrintIcon, Visibility as PreviewIcon, FileDownload as CsvIcon } from '@mui/icons-material';
+import { Print as PrintIcon, Visibility as PreviewIcon, FileDownload as CsvIcon, WarningAmber as WarnIcon } from '@mui/icons-material';
 import { examinationService } from '../../services/examinationService';
 import { printReportCards, buildReportCardsHtml } from './reportCardHtml';
+import { nameClashHints } from './nameClash';
 
 // Shrink a photo data URI to a print-sized JPEG (keeps the whole-class print payload small and
 // the printed image crisp). Resolves null on any decode failure so one bad photo can't block print.
@@ -93,6 +94,7 @@ export default function ReportCards() {
 
   // The rows actually shown: filtered by the overall-% window, then sorted. Default order (roll) is
   // the server order. Drives the table, select-all, and the CSV export.
+  const clash = useMemo(() => nameClashHints(data?.students || []), [data]);
   const displayed = useMemo(() => {
     let rows = [...(data?.students || [])];
     if (hasPct) {
@@ -299,7 +301,10 @@ export default function ReportCards() {
                     <TableRow key={s.studentId} hover selected={sel.has(s.studentId)}>
                       <TableCell padding="checkbox"><Checkbox size="small" checked={sel.has(s.studentId)} onChange={() => toggle(s.studentId)} /></TableCell>
                       <TableCell>{s.rollNumber ?? ''}</TableCell>
-                      <TableCell>{s.name}</TableCell>
+                      <TableCell>
+                        {s.name}
+                        {clash.get(s.studentId) && <Tooltip title={clash.get(s.studentId)}><WarnIcon color="warning" sx={{ fontSize: 16, ml: 0.5, verticalAlign: 'text-bottom' }} /></Tooltip>}
+                      </TableCell>
                       <TableCell>{s.admissionNumber}</TableCell>
                       {data.band !== 'pre-primary' && (
                         <TableCell align="right">

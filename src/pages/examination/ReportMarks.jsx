@@ -4,10 +4,12 @@ import {
   TextField, MenuItem, LinearProgress, Divider, ToggleButton, ToggleButtonGroup, Tooltip,
   Table, TableHead, TableBody, TableRow, TableCell, Paper,
 } from '@mui/material';
+import { WarningAmber as WarnIcon } from '@mui/icons-material';
 import { useSearchParams } from 'react-router-dom';
 import { examinationService } from '../../services/examinationService';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useCan } from '../../permissions/can';
+import { nameClashHints } from './nameClash';
 
 // Keep a box to a valid mark: '' (blank), 'A' (Absent — a/A only), or a number clamped to 0..max.
 // Any other character is dropped as typed, so an invalid value can never be entered.
@@ -33,11 +35,13 @@ function scaled(raw, denom, target) {
 // One student's row of mark inputs (desktop). Memoized on its own values so a keystroke in any
 // row re-renders ONLY that row — not the whole class grid. rowVals is vals[studentId], whose
 // reference changes only for the edited student (setCell spreads the rest by reference).
-const MarkRow = React.memo(function MarkRow({ student, components, rowVals, rowDenoms, onCell, onDenom }) {
+const MarkRow = React.memo(function MarkRow({ student, components, rowVals, rowDenoms, onCell, onDenom, clashHint }) {
   return (
     <TableRow hover>
       <TableCell>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>{student.name}</Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>{student.name}
+          {clashHint && <Tooltip title={clashHint}><WarnIcon color="warning" sx={{ fontSize: 15, ml: 0.5, verticalAlign: 'text-bottom' }} /></Tooltip>}
+        </Typography>
         <Typography variant="caption" color="text.secondary">
           {[student.rollNumber != null ? `Roll ${student.rollNumber}` : null, student.admissionNumber].filter(Boolean).join(' · ')}
         </Typography>
@@ -80,12 +84,14 @@ const MarkRow = React.memo(function MarkRow({ student, components, rowVals, rowD
 });
 
 // One student's card of mark inputs (mobile) — same per-row memoization.
-const MarkCard = React.memo(function MarkCard({ student, components, rowVals, rowDenoms, onCell, onDenom }) {
+const MarkCard = React.memo(function MarkCard({ student, components, rowVals, rowDenoms, onCell, onDenom, clashHint }) {
   return (
     <Card variant="outlined">
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>{student.name}</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>{student.name}
+            {clashHint && <Tooltip title={clashHint}><WarnIcon color="warning" sx={{ fontSize: 15, ml: 0.5, verticalAlign: 'text-bottom' }} /></Tooltip>}
+          </Typography>
           <Typography variant="caption" color="text.secondary">
             {[student.rollNumber != null ? `Roll ${student.rollNumber}` : null, student.admissionNumber].filter(Boolean).join(' · ')}
           </Typography>
@@ -198,6 +204,8 @@ export default function ReportMarks() {
   const effComps = useMemo(() => (grid?.components || []).map((c) => (
     c.denomEditable ? { ...c, target: c.max } : c
   )), [grid]);
+  // Flag students sharing a first name in this class (the "two Jatins" mix-up guardrail).
+  const clash = useMemo(() => nameClashHints(grid?.students || []), [grid]);
 
   // Stable callbacks + memoized rows so a keystroke re-renders ONLY the edited student's cells,
   // not the whole grid of ~200 inputs (that full re-render is what made entry laggy).
@@ -362,7 +370,7 @@ export default function ReportMarks() {
                     </CardContent>
                   </Card>
                   {grid.students.map((s) => (
-                    <MarkCard key={s.studentId} student={s} components={effComps} rowVals={vals[s.studentId]} rowDenoms={rowDenoms[s.studentId]} onCell={setCell} onDenom={setDenom} />
+                    <MarkCard key={s.studentId} student={s} components={effComps} rowVals={vals[s.studentId]} rowDenoms={rowDenoms[s.studentId]} onCell={setCell} onDenom={setDenom} clashHint={clash.get(s.studentId)} />
                   ))}
                 </Stack>
               ) : (
@@ -381,7 +389,7 @@ export default function ReportMarks() {
                     </TableHead>
                     <TableBody>
                       {grid.students.map((s) => (
-                        <MarkRow key={s.studentId} student={s} components={effComps} rowVals={vals[s.studentId]} rowDenoms={rowDenoms[s.studentId]} onCell={setCell} onDenom={setDenom} />
+                        <MarkRow key={s.studentId} student={s} components={effComps} rowVals={vals[s.studentId]} rowDenoms={rowDenoms[s.studentId]} onCell={setCell} onDenom={setDenom} clashHint={clash.get(s.studentId)} />
                       ))}
                     </TableBody>
                   </Table>
