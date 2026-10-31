@@ -142,8 +142,20 @@ export default function TransferList() {
     {
       field: 'status',
       headerName: 'Status',
-      width: 110,
+      width: 100,
       renderCell: (params) => <Chip label={params.value} size="small" color={TC_STATUS_COLORS[params.value] || 'default'} />,
+    },
+    {
+      field: 'dues',
+      headerName: 'Dues',
+      width: 120,
+      sortable: false,
+      renderCell: (params) => {
+        const due = Number(params.row.outstandingDues || 0);
+        return due > 0
+          ? <Chip size="small" color="error" label={`₹${due.toLocaleString('en-IN')}`} title="Outstanding across all years — issuing is blocked until cleared (god can override)" />
+          : <Chip size="small" color="success" variant="outlined" label="Cleared" />;
+      },
     },
     {
       field: 'actions',
@@ -152,9 +164,7 @@ export default function TransferList() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.25 }}>
-          {params.row.status === 'issued' && (
-            <IconButton size="small" title="Print" onClick={() => openTc(params.row.studentId, params.row.uuid)}><PrintIcon fontSize="small" /></IconButton>
-          )}
+          <IconButton size="small" title={params.row.status === 'issued' ? 'Print' : 'Preview (draft watermark)'} onClick={() => openTc(params.row.studentId, params.row.uuid)}><PrintIcon fontSize="small" /></IconButton>
           {canManage && (
             <IconButton size="small" title="View / edit" onClick={() => openEdit(params.row)}><EditIcon fontSize="small" /></IconButton>
           )}

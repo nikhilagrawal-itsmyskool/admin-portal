@@ -252,8 +252,8 @@ export default function TcDialog({ open, onClose, onSave, initial, studentId }) 
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'space-between' }}>
         <span>
-          {isIssued && (
-            <Button startIcon={<PrintIcon />} onClick={() => openTc(studentId, initial.uuid)}>Print</Button>
+          {initial?.uuid && (
+            <Button startIcon={<PrintIcon />} onClick={() => openTc(studentId, initial.uuid)}>{isIssued ? 'Print' : 'Preview'}</Button>
           )}
         </span>
         <span>
