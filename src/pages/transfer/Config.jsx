@@ -155,6 +155,14 @@ export default function TransferConfig() {
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 6, mt: -0.5 }}>
             Off by default — identity is entered on the student record and derived live. Turn on only to fill/correct it from the TC form.
           </Typography>
+          <FormControlLabel
+            sx={{ mt: 1, display: 'block' }}
+            control={<Switch checked={c.showBookNo !== false} onChange={(e) => setC((p) => ({ ...p, showBookNo: e.target.checked }))} />}
+            label="Show 'Book No.' on the printed certificate"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 6, mt: -0.5 }}>
+            Turn off if your school doesn't keep a TC register book (hides the Book No. line on the print and the form).
+          </Typography>
         </CardContent>
       </Card>
 

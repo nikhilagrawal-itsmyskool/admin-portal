@@ -192,7 +192,7 @@ export default function TcDialog({ open, onClose, onSave, initial, studentId }) 
               <MenuItem value="cancelled">Cancelled</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={4}>{field('Book No. (optional)', 'bookNo')}</Grid>
+          {config?.showBookNo !== false && <Grid item xs={12} sm={4}>{field('Book No. (optional)', 'bookNo')}</Grid>}
           <Grid item xs={12} sm={4}>{field('S.R.N.', 'srnNumber')}</Grid>
           <Grid item xs={12} sm={4}>{field('TC No.', 'tcNumber')}</Grid>
 
