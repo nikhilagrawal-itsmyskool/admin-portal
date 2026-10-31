@@ -143,10 +143,18 @@ export default function TransferConfig() {
           </Grid>
 
           <FormControlLabel
-            sx={{ mt: 1 }}
+            sx={{ mt: 1, display: 'block' }}
             control={<Switch checked={!!c.autoDeriveSubjects} onChange={(e) => setC((p) => ({ ...p, autoDeriveSubjects: e.target.checked }))} />}
             label="Auto-fill 'Subjects studied' from the class's academic subjects"
           />
+          <FormControlLabel
+            sx={{ mt: 0.5, display: 'block' }}
+            control={<Switch checked={!!c.allowIdentityOverride} onChange={(e) => setC((p) => ({ ...p, allowIdentityOverride: e.target.checked }))} />}
+            label="Allow editing student details (DOB, parents, category…) on the TC"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 6, mt: -0.5 }}>
+            Off by default — identity is entered on the student record and derived live. Turn on only to fill/correct it from the TC form.
+          </Typography>
         </CardContent>
       </Card>
 

@@ -159,15 +159,27 @@ export default function TcDialog({ open, onClose, onSave, initial, studentId }) 
           </Typography>
         )}
 
+        {/* When TC-level identity editing is OFF (default), flag an incomplete student record. */}
+        {!config?.allowIdentityOverride && derived && (!derived.motherName || !derived.fatherName || !derived.dob || !derived.category) && (
+          <Alert severity="warning" sx={{ mt: 1 }}>
+            This student's record is missing some details (parents / DOB / category). They'll print blank —
+            complete the student profile, or enable "edit student details on the TC" in Transfer Config.
+          </Alert>
+        )}
+
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
-          {/* Student details (editable overrides) */}
-          <Grid item xs={12}><Divider textAlign="left"><Typography variant="caption">Student details</Typography></Divider></Grid>
-          <Grid item xs={12} sm={6}>{field("Mother's name (2)", 'motherName')}</Grid>
-          <Grid item xs={12} sm={6}>{field("Father's / guardian's name (3)", 'fatherName')}</Grid>
-          <Grid item xs={12} sm={4}>{dateField('Date of birth (4)', 'dob')}</Grid>
-          <Grid item xs={12} sm={4}>{field('Nationality (5)', 'nationality')}</Grid>
-          <Grid item xs={12} sm={4}>{field('Category SC/ST/OBC (6)', 'category')}</Grid>
-          <Grid item xs={12} sm={4}>{dateField('First admission date (7)', 'firstAdmissionDate')}</Grid>
+          {/* Student details — editable overrides, only when the school enables it */}
+          {config?.allowIdentityOverride && (
+            <>
+              <Grid item xs={12}><Divider textAlign="left"><Typography variant="caption">Student details</Typography></Divider></Grid>
+              <Grid item xs={12} sm={6}>{field("Mother's name (2)", 'motherName')}</Grid>
+              <Grid item xs={12} sm={6}>{field("Father's / guardian's name (3)", 'fatherName')}</Grid>
+              <Grid item xs={12} sm={4}>{dateField('Date of birth (4)', 'dob')}</Grid>
+              <Grid item xs={12} sm={4}>{field('Nationality (5)', 'nationality')}</Grid>
+              <Grid item xs={12} sm={4}>{field('Category SC/ST/OBC (6)', 'category')}</Grid>
+              <Grid item xs={12} sm={4}>{dateField('First admission date (7)', 'firstAdmissionDate')}</Grid>
+            </>
+          )}
 
           {/* Certificate / numbering */}
           <Grid item xs={12}><Divider textAlign="left"><Typography variant="caption">Certificate</Typography></Divider></Grid>
