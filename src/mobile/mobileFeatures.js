@@ -298,8 +298,9 @@ export function buildMobileTiles(visible) {
   }).filter((s) => s.tiles.length > 0 || s.groups.length > 0);
 }
 
-// Home + profile are always reachable on mobile.
-const ALWAYS_ALLOWED = ["/", "/profile", "/hub/:key"];
+// Home + profile are always reachable on mobile. Cockpit too — it's the director's
+// landing (gated inside the page on cockpit.view), reached from the MobileHome hero.
+const ALWAYS_ALLOWED = ["/", "/profile", "/hub/:key", "/cockpit"];
 
 // Every route pattern permitted on the mobile surface (drives the route guard).
 export const MOBILE_ROUTES = [
