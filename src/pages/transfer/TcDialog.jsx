@@ -36,8 +36,10 @@ export default function TcDialog({ open, onClose, onSave, initial, studentId }) 
   const [derived, setDerived] = useState(null);
   const [config, setConfig] = useState(null);
   const [dues, setDues] = useState(0);
+  const [existingTc, setExistingTc] = useState(null);
   const [loading, setLoading] = useState(false);
   const dirty = JSON.stringify(t) !== baseline;
+  const blockedDup = !initial && !!existingTc; // creating a 2nd live TC for the student
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +53,7 @@ export default function TcDialog({ open, onClose, onSave, initial, studentId }) 
       setDerived(der);
       setConfig(pf?.config || null);
       setDues(pf?.duesOutstanding || 0);
+      setExistingTc(initial ? null : (pf?.existingTc || null));
       const sug = pf?.suggested || {};
       const pick = (field, sugKey) => (initial && initial[field] != null && initial[field] !== '' ? initial[field] : (sug[sugKey ?? field] ?? ''));
       // identity: stored override (edit) → derived → blank
@@ -152,6 +155,12 @@ export default function TcDialog({ open, onClose, onSave, initial, studentId }) 
       <DialogTitle>{initial ? 'Transfer Certificate' : 'Apply for Transfer Certificate'}</DialogTitle>
       <DialogContent>
         {loading && <Typography variant="caption" color="text.secondary">Loading defaults…</Typography>}
+        {blockedDup && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            This student already has a Transfer Certificate (status: <strong>{existingTc.status}</strong>).
+            Only one TC per student is allowed — close this and edit the existing one instead.
+          </Alert>
+        )}
         {derived && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
             {derived.name}{derived.admissionNumber ? ` · Adm# ${derived.admissionNumber}` : ''}{derived.classWords ? ` · ${derived.classWords}` : ''}
@@ -258,7 +267,7 @@ export default function TcDialog({ open, onClose, onSave, initial, studentId }) 
         </span>
         <span>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="contained" onClick={submit} disabled={!dirty || loading} sx={{ ml: 1 }}>Save</Button>
+          <Button variant="contained" onClick={submit} disabled={!dirty || loading || blockedDup} sx={{ ml: 1 }}>Save</Button>
         </span>
       </DialogActions>
     </Dialog>
