@@ -90,6 +90,7 @@ export default function EmployeeDetailDialog({ open, employee, onClose }) {
             <Field label="Employee Number" value={e.employeeNumber} />
             <Field label="Teacher Code" value={e.code} />
             <Field label="Gender" value={GENDER_LABELS[e.gender] || e.gender} />
+            <Field label="Date of Joining" value={fmtDate(e.dateOfJoining)} />
             <Field label="Date of Birth" value={fmtDate(e.dob)} />
             <Field label="Mobile" value={e.mobile} />
             <Field label="WhatsApp" value={e.whatsapp} />

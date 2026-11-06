@@ -44,6 +44,7 @@ export default function EmployeeForm() {
     employeeNumber: "",
     code: "",
     deviceNumber: "",
+    dateOfJoining: "",
     gender: "",
     dob: "",
     mobile: "",
@@ -96,6 +97,7 @@ export default function EmployeeForm() {
         employeeNumber: employee.employeeNumber || "",
         code: employee.code || "",
         deviceNumber: employee.deviceNumber || "",
+        dateOfJoining: employee.dateOfJoining ? String(employee.dateOfJoining).slice(0, 10) : "",
         gender: employee.gender || "",
         dob: employee.dob ? String(employee.dob).slice(0, 10) : "",
         mobile: employee.mobile || "",
@@ -162,6 +164,7 @@ export default function EmployeeForm() {
         "employeeNumber",
         "code",
         "deviceNumber",
+        "dateOfJoining",
         "gender",
         "dob",
         "mobile",
@@ -319,6 +322,17 @@ export default function EmployeeForm() {
                     </MenuItem>
                   ))}
                 </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Date of Joining"
+                  name="dateOfJoining"
+                  type="date"
+                  value={formData.dateOfJoining}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
