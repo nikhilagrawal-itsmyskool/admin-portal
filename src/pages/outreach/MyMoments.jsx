@@ -8,11 +8,12 @@ import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   AddPhotoAlternate as AddPhotoIcon, OndemandVideo as VideoIcon, Schedule as ScheduleIcon,
   Visibility as ViewIcon, Close as CloseIcon, Groups as AudienceIcon, FavoriteBorder as ReactionIcon,
-  Videocam as UploadVideoIcon,
+  Videocam as UploadVideoIcon, Edit as EditIcon,
 } from '@mui/icons-material';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SelectedThumbs from './SelectedThumbs';
 import PhotoLightbox from './PhotoLightbox';
+import MomentEditDialog from './MomentEditDialog';
 import { useAuth } from '../../context/AuthContext';
 import { can } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
@@ -89,6 +90,8 @@ export default function MyMoments() {
   const [viewing, setViewing] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(null);
+  const [editId, setEditId] = useState(null);       // moment being edited (draft)
+  const [editUnpub, setEditUnpub] = useState(null);  // published moment pending unpublish-to-edit
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -205,6 +208,30 @@ export default function MyMoments() {
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Action failed');
     } finally { setBusy(false); }
+  };
+
+  // Edit a draft directly; a published moment must be unpublished first (confirm).
+  const startEdit = (p) => {
+    setErr(''); setSuccess('');
+    if (p.status === 'published') setEditUnpub(p);
+    else setEditId(p.uuid);
+  };
+  const confirmEditUnpub = async () => {
+    const p = editUnpub;
+    setBusy(true); setErr('');
+    try {
+      await outreachService.unpublish(p.uuid);
+      setEditUnpub(null);
+      await loadPosts();
+      setEditId(p.uuid);
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Could not unpublish');
+    } finally { setBusy(false); }
+  };
+  const onEditSaved = async (msg) => {
+    setEditId(null);
+    await loadPosts();
+    setSuccess(msg || 'Changes saved.');
   };
 
   if (!allowed) {
@@ -367,6 +394,7 @@ export default function MyMoments() {
                 <Divider sx={{ my: 1.25 }} />
                 <Stack direction="row" spacing={1} justifyContent="flex-end">
                   <Button size="small" variant="outlined" startIcon={<ViewIcon />} onClick={() => openView(p.uuid)}>Preview</Button>
+                  <Button size="small" variant="text" startIcon={<EditIcon />} onClick={() => startEdit(p)} disabled={busy}>Edit</Button>
                   {p.status === 'published'
                     ? <Button size="small" variant="outlined" color="warning" startIcon={<UnpublishIcon />} onClick={() => setConfirmUnpub(p)} disabled={busy}>Unpublish</Button>
                     : <Button size="small" variant="contained" startIcon={<PublishIcon />} onClick={() => toggle(p, true)} disabled={busy || !(p.photoCount || p.videoCount)}>{p.scheduled ? 'Publish now' : 'Publish'}</Button>}
@@ -386,6 +414,24 @@ export default function MyMoments() {
         onConfirm={() => toggle(confirmUnpub, false)}
         onCancel={() => setConfirmUnpub(null)}
         loading={busy}
+      />
+
+      <ConfirmDialog
+        open={!!editUnpub}
+        title="Unpublish to edit?"
+        message="This moment is published. To edit it we'll unpublish it first — parents won't see it until you publish again."
+        confirmLabel="Unpublish & edit"
+        onConfirm={confirmEditUnpub}
+        onCancel={() => setEditUnpub(null)}
+        loading={busy}
+      />
+
+      <MomentEditDialog
+        open={!!editId}
+        momentId={editId}
+        options={options}
+        onClose={() => setEditId(null)}
+        onSaved={onEditSaved}
       />
 
       <Dialog open={!!viewing} onClose={() => setViewing(null)} fullScreen={fullScreen} maxWidth="sm" fullWidth>

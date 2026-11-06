@@ -8,10 +8,12 @@ import {
   PhotoLibrary as MomentsIcon, Publish as PublishIcon, VisibilityOff as UnpublishIcon,
   Visibility as ViewIcon, AddPhotoAlternate as AddPhotoIcon, Close as CloseIcon,
   OndemandVideo as VideoIcon, Schedule as ScheduleIcon, Videocam as UploadVideoIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import ResponsiveDataGrid from '../../components/common/ResponsiveDataGrid';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import SelectedThumbs from './SelectedThumbs';
+import MomentEditDialog from './MomentEditDialog';
 import { useAcademicYear } from '../../context/AcademicYearContext';
 import { useAuth } from '../../context/AuthContext';
 import { can } from '../../permissions/can';
@@ -79,6 +81,8 @@ export default function MomentsPage() {
   const [viewLoading, setViewLoading] = useState(false);
   const [reactors, setReactors] = useState([]);        // who reacted (names) on the viewed moment
   const [confirmUnpub, setConfirmUnpub] = useState(null);
+  const [editId, setEditId] = useState(null);
+  const [editUnpub, setEditUnpub] = useState(null);
 
   const loadList = useCallback(async () => {
     setLoading(true); setErr('');
@@ -204,6 +208,31 @@ export default function MomentsPage() {
     } finally { setBusy(false); }
   };
 
+  // Edit a draft directly; a published moment is unpublished first (confirm), then edited.
+  const startEdit = (row) => {
+    setErr(''); setSuccess('');
+    if (row.status === 'published') setEditUnpub(row);
+    else setEditId(row.uuid);
+  };
+  const confirmEditUnpub = async () => {
+    const row = editUnpub;
+    setBusy(true); setErr('');
+    try {
+      await outreachService.unpublish(row.uuid);
+      setEditUnpub(null);
+      await loadList();
+      setEditId(row.uuid);
+    } catch (e) {
+      setErr(e.response?.data?.error?.description || 'Could not unpublish');
+    } finally { setBusy(false); }
+  };
+  const onEditSaved = async (msg) => {
+    setEditId(null);
+    if (viewing?.uuid) setViewing(null);
+    await loadList();
+    setSuccess(msg || 'Changes saved.');
+  };
+
   const columns = [
     { field: 'title', headerName: 'Title', flex: 1, minWidth: 180,
       renderCell: (p) => p.value || <em style={{ color: '#888' }}>(no title)</em> },
@@ -218,10 +247,11 @@ export default function MomentsPage() {
     { field: 'reactionCount', headerName: 'Reactions', width: 90, align: 'center', headerAlign: 'center' },
     { field: 'publishedAt', headerName: 'When', width: 170,
       valueGetter: (v, row) => (row.scheduled ? `⏱ ${fmtDateTime(row.publishAt)}` : (v ? fmtDateTime(v) : '—')) },
-    { field: 'actions', headerName: 'Actions', width: 130, sortable: false,
+    { field: 'actions', headerName: 'Actions', width: 160, sortable: false,
       renderCell: (p) => (
         <Box>
           <Tooltip title="View"><IconButton size="small" onClick={() => openView(p.row.uuid)}><ViewIcon fontSize="small" /></IconButton></Tooltip>
+          {canManage && <Tooltip title="Edit"><IconButton size="small" onClick={() => startEdit(p.row)} disabled={busy}><EditIcon fontSize="small" /></IconButton></Tooltip>}
           {canManage && (p.row.status === 'published'
             ? <Tooltip title="Unpublish"><IconButton size="small" color="warning" onClick={() => setConfirmUnpub(p.row)}><UnpublishIcon fontSize="small" /></IconButton></Tooltip>
             : <Tooltip title="Publish now"><IconButton size="small" color="success" onClick={() => doPublishToggle(p.row, true)} disabled={busy || !(p.row.photoCount || p.row.videoCount)}><PublishIcon fontSize="small" /></IconButton></Tooltip>)}
@@ -467,6 +497,24 @@ export default function MomentsPage() {
         onConfirm={() => doPublishToggle(confirmUnpub, false)}
         onCancel={() => setConfirmUnpub(null)}
         loading={busy}
+      />
+
+      <ConfirmDialog
+        open={!!editUnpub}
+        title="Unpublish to edit?"
+        message="This moment is published. To edit it we'll unpublish it first — parents won't see it until you publish again."
+        confirmLabel="Unpublish & edit"
+        onConfirm={confirmEditUnpub}
+        onCancel={() => setEditUnpub(null)}
+        loading={busy}
+      />
+
+      <MomentEditDialog
+        open={!!editId}
+        momentId={editId}
+        options={options}
+        onClose={() => setEditId(null)}
+        onSaved={onEditSaved}
       />
     </Box>
   );
