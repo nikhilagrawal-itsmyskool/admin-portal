@@ -88,6 +88,10 @@ export default function EmployeeDetailDialog({ open, employee, onClose }) {
             <Field label="Name" value={e.name} />
             <Field label="Login ID" value={e.familyUniqueNumber} />
             <Field label="Employee Number" value={e.employeeNumber} />
+            <Field
+              label="Staff Type"
+              value={e.employeeType === 'teaching' ? 'Teaching' : e.employeeType === 'non_teaching' ? 'Non-teaching' : ''}
+            />
             <Field label="Teacher Code" value={e.code} />
             <Field label="Gender" value={GENDER_LABELS[e.gender] || e.gender} />
             <Field label="Date of Joining" value={fmtDate(e.dateOfJoining)} />

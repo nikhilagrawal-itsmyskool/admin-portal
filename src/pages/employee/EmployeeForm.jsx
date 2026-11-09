@@ -29,6 +29,11 @@ const GENDERS = [
   { value: "O", label: "Other" },
 ];
 
+const STAFF_TYPES = [
+  { value: "teaching", label: "Teaching" },
+  { value: "non_teaching", label: "Non-teaching" },
+];
+
 export default function EmployeeForm() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -45,6 +50,7 @@ export default function EmployeeForm() {
     code: "",
     deviceNumber: "",
     dateOfJoining: "",
+    employeeType: "",
     gender: "",
     dob: "",
     mobile: "",
@@ -98,6 +104,7 @@ export default function EmployeeForm() {
         code: employee.code || "",
         deviceNumber: employee.deviceNumber || "",
         dateOfJoining: employee.dateOfJoining ? String(employee.dateOfJoining).slice(0, 10) : "",
+        employeeType: employee.employeeType || "",
         gender: employee.gender || "",
         dob: employee.dob ? String(employee.dob).slice(0, 10) : "",
         mobile: employee.mobile || "",
@@ -146,6 +153,25 @@ export default function EmployeeForm() {
     setError("");
   };
 
+  // Picking the staff type on a NEW employee recommends the next number + device token
+  // (only when those fields are still blank, so a manual entry is never overwritten).
+  const handleTypeChange = async (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, employeeType: value }));
+    setError("");
+    if (isEdit || !value || formData.employeeNumber) return;
+    try {
+      const n = await employeeService.getNextNumber(value);
+      setFormData((prev) => ({
+        ...prev,
+        employeeNumber: prev.employeeNumber || n.employeeNumber || "",
+        deviceNumber: prev.deviceNumber || n.deviceNumber || "",
+      }));
+    } catch {
+      /* leave blank on failure — user can type manually */
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -165,6 +191,7 @@ export default function EmployeeForm() {
         "code",
         "deviceNumber",
         "dateOfJoining",
+        "employeeType",
         "gender",
         "dob",
         "mobile",
@@ -275,6 +302,23 @@ export default function EmployeeForm() {
                   required
                   helperText="Used as the employee's login username."
                 />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Staff Type"
+                  name="employeeType"
+                  value={formData.employeeType}
+                  onChange={handleTypeChange}
+                  helperText={!isEdit ? "Picking this suggests the next employee number." : undefined}
+                >
+                  {STAFF_TYPES.map((t) => (
+                    <MenuItem key={t.value} value={t.value}>
+                      {t.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField

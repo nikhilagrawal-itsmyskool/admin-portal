@@ -18,6 +18,12 @@ export const employeeService = {
     return response.data;
   },
 
+  // Recommend the next employee number + device token for a new hire of the given type.
+  getNextNumber: async (type) => {
+    const response = await api.get('/employees/next-number', { params: { type } });
+    return response.data; // { employeeNumber, deviceNumber }
+  },
+
   getEmployee: async (id) => {
     const response = await api.get(`/employees/${id}`);
     return response.data;
