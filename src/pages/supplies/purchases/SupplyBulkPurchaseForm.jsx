@@ -33,7 +33,6 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  ArrowBack as BackIcon,
   AttachFile as AttachFileIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
@@ -372,8 +371,7 @@ export default function SupplyBulkPurchaseForm() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <IconButton onClick={() => navigate('/supplies/purchases')}><BackIcon /></IconButton>
+      <Box sx={{ mb: 3 }}>
         <Typography variant="h4">{isEdit ? 'Edit Purchase' : 'New Purchase'}</Typography>
       </Box>
 
@@ -439,12 +437,12 @@ export default function SupplyBulkPurchaseForm() {
                     <Stack spacing={2}>
                       {categoryField(li, index, 'Category *')}
                       <Box>{itemField(li, index, isEdit ? 'Item *' : 'Item * (select or type new)')}</Box>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>{unitField(li, index, 'Unit')}</Grid>
-                        <Grid item xs={6}>{qtyField(li, index, 'Qty *')}</Grid>
-                        <Grid item xs={6}>{costField(li, index, 'Cost/Unit')}</Grid>
-                        <Grid item xs={6}>{batchField(li, index, 'Batch No.')}</Grid>
-                      </Grid>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                        {unitField(li, index, 'Unit')}
+                        {qtyField(li, index, 'Qty *')}
+                        {costField(li, index, 'Cost/Unit')}
+                        {batchField(li, index, 'Batch No.')}
+                      </Box>
                       {remarksField(li, index, 'Remarks')}
                     </Stack>
                   </CardContent>

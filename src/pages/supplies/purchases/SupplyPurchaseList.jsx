@@ -364,19 +364,21 @@ export default function SupplyPurchaseList() {
       </Card>
 
       <Card>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", px: 2, pt: 1 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={showDetails}
-                onChange={(e) => setShowDetails(e.target.checked)}
-                size="small"
-              />
-            }
-            label="Show additional details"
-            sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
-          />
-        </Box>
+        {!isMobile && (
+          <Box sx={{ display: "flex", justifyContent: "flex-end", px: 2, pt: 1 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showDetails}
+                  onChange={(e) => setShowDetails(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Show additional details"
+              sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
+            />
+          </Box>
+        )}
         {loading && <LinearProgress />}
         {isMobile ? (
           <Box sx={{ p: 2 }}>

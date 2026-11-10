@@ -176,7 +176,7 @@ export const MOBILE_FEATURES = [
   // gated sports.issue.manage inside the page.
   { title: "Sports Issues", hubLabel: "Issues", icon: SportsIcon, path: "/sports/issues", perm: "sports.issue.view", section: "stores", hub: "sports", routes: ["/sports/issues", "/sports/issues/add"] },
 
-  { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.inventory.view", section: "stores", hub: "supplies" },
+  { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.inventory.view", section: "stores", hub: "supplies", routes: ["/supplies/items", "/supplies/items/add", "/supplies/items/:id/edit"] },
   { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.issue.view", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add", "/supplies/issues/:id/edit"] },
   // Procurement (supplies-incharge / admin only — teachers lack purchase.manage so this hub
   // child is hidden from them). Photograph the bill + enter line items on the phone.
