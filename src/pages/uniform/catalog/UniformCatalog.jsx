@@ -11,6 +11,7 @@ import {
   ExpandMore as ExpandIcon, ExpandLess as CollapseIcon,
 } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 const CATEGORY_LABELS = { summer: 'Summer Dress', winter: 'Winter Dress', sports: 'Sports / PT', general: 'General' };
 const GENDER_LABELS = { male: 'Boys', female: 'Girls', unisex: 'Unisex' };
@@ -21,6 +22,7 @@ const SizeDialog = ({ open, onClose, onSave, itemId, size }) => {
   const [form, setForm] = useState({ sizeLabel: '', mrp: '', studentDiscountPct: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
@@ -56,7 +58,7 @@ const SizeDialog = ({ open, onClose, onSave, itemId, size }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
       <DialogTitle>{size ? 'Edit Size' : 'Add Size'}</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -84,6 +86,7 @@ const ItemDialog = ({ open, onClose, onSave, item, allItems, itemNameHints = [] 
   const [form, setForm] = useState({ name: '', category: 'summer', gender: 'unisex', sizingMode: 'sized', description: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
@@ -115,7 +118,7 @@ const ItemDialog = ({ open, onClose, onSave, item, allItems, itemNameHints = [] 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
       <DialogTitle>{item ? 'Edit Item' : 'Add Item'}</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -185,6 +188,7 @@ const BandDialog = ({ open, onClose, onSave, itemId, band }) => {
   const [form, setForm] = useState({ numberFrom: '', numberTo: '', mrp: '', studentDiscountPct: '', bulkDiscountPct: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
@@ -223,7 +227,7 @@ const BandDialog = ({ open, onClose, onSave, itemId, band }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
       <DialogTitle>{band ? 'Edit Price Band' : 'Add Price Band'}</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -259,6 +263,7 @@ const BreakDialog = ({ open, onClose, onSave, item, poolStock }) => {
   const [rows, setRows] = useState([{ sizeLabel: '', quantity: '' }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) { setRows([{ sizeLabel: '', quantity: '' }]); setError(''); }
@@ -287,7 +292,7 @@ const BreakDialog = ({ open, onClose, onSave, item, poolStock }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>Break “{item.name}” into numbers</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -349,6 +354,7 @@ const BulkStockDialog = ({ open, onClose, onSave, item }) => {
   const [rows, setRows] = useState([{ sizeLabel: '', quantity: '', mrp: '' }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
@@ -387,7 +393,7 @@ const BulkStockDialog = ({ open, onClose, onSave, item }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>Bulk stock entry — {item.name}</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -438,7 +444,7 @@ const BulkStockDialog = ({ open, onClose, onSave, item }) => {
   );
 };
 
-function ItemRow({ item, onRefresh, allItems }) {
+function ItemRow({ item, onRefresh, allItems, isMobile }) {
   const [expanded, setExpanded] = useState(false);
   const [sizeDialog, setSizeDialog] = useState({ open: false, size: null });
   const [bulkStockDialog, setBulkStockDialog] = useState(false);
@@ -478,6 +484,213 @@ function ItemRow({ item, onRefresh, allItems }) {
     } catch {}
   };
 
+  // ── Sizes: wide table on desktop, compact list on mobile ──────────────────────
+  const sizesTable = (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Last MRP</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc%</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Stock Value</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Discounted Value</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Stock</TableCell>
+          <TableCell />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {realSizes.map(size => {
+          const stockValue = size.mrp != null && size.currentStock != null ? (size.mrp * size.currentStock).toFixed(2) : null;
+          const discountedValue = size.mrp != null && size.currentStock != null ? (size.mrp * (1 - (size.studentDiscountPct || 0) / 100) * size.currentStock).toFixed(2) : null;
+          return (
+            <TableRow key={size.uuid} hover>
+              <TableCell>{size.sizeLabel}</TableCell>
+              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.mrp != null ? `₹${size.mrp}` : '—'}</TableCell>
+              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.studentDiscountPct != null ? `${size.studentDiscountPct}%` : '—'}</TableCell>
+              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{stockValue != null ? `₹${stockValue}` : '—'}</TableCell>
+              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{discountedValue != null ? `₹${discountedValue}` : '—'}</TableCell>
+              <TableCell align="right">{size.currentStock}</TableCell>
+              <TableCell align="right">
+                <IconButton size="small" onClick={() => setSizeDialog({ open: true, size })}><EditIcon fontSize="small" /></IconButton>
+                <IconButton size="small" color="error" onClick={() => handleDeleteSize(size)}><DeleteIcon fontSize="small" /></IconButton>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+
+  const sizesList = (
+    <Box>
+      {realSizes.map(size => (
+        <Box key={size.uuid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.75, borderBottom: '1px solid #eef1f6' }}>
+          <Box>
+            <Typography component="span" fontWeight={600}>{size.sizeLabel}</Typography>
+            <Typography component="span" variant="body2" sx={{ color: '#8f9bb3', ml: 1 }}>
+              {size.currentStock ?? 0} units{size.mrp != null ? ` · ₹${size.mrp}` : ''}
+            </Typography>
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>
+            <IconButton size="small" onClick={() => setSizeDialog({ open: true, size })}><EditIcon fontSize="small" /></IconButton>
+            <IconButton size="small" color="error" onClick={() => handleDeleteSize(size)}><DeleteIcon fontSize="small" /></IconButton>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
+
+  const bandsTable = (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell sx={{ fontWeight: 600 }}>Number Range</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">MRP</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc%</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Bulk Disc%</TableCell>
+          <TableCell />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {(item.bands || []).map(band => (
+          <TableRow key={band.uuid} hover>
+            <TableCell>{band.numberFrom} – {band.numberTo}</TableCell>
+            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.mrp != null ? `₹${band.mrp}` : '—'}</TableCell>
+            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.studentDiscountPct != null ? `${band.studentDiscountPct}%` : '—'}</TableCell>
+            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.bulkDiscountPct != null ? `${band.bulkDiscountPct}%` : '—'}</TableCell>
+            <TableCell align="right">
+              <IconButton size="small" onClick={() => setBandDialog({ open: true, band })}><EditIcon fontSize="small" /></IconButton>
+              <IconButton size="small" color="error" onClick={() => handleDeleteBand(band)}><DeleteIcon fontSize="small" /></IconButton>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
+  const bandsList = (
+    <Box>
+      {(item.bands || []).map(band => (
+        <Box key={band.uuid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.75, borderBottom: '1px solid #eef1f6' }}>
+          <Box>
+            <Typography component="span" fontWeight={600}>{band.numberFrom}–{band.numberTo}</Typography>
+            <Typography component="span" variant="body2" sx={{ color: '#8f9bb3', ml: 1 }}>
+              {band.mrp != null ? `₹${band.mrp}` : '—'}
+              {(band.studentDiscountPct != null || band.bulkDiscountPct != null) ? ` · ${band.studentDiscountPct ?? 0}%/${band.bulkDiscountPct ?? 0}%` : ''}
+            </Typography>
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>
+            <IconButton size="small" onClick={() => setBandDialog({ open: true, band })}><EditIcon fontSize="small" /></IconButton>
+            <IconButton size="small" color="error" onClick={() => handleDeleteBand(band)}><DeleteIcon fontSize="small" /></IconButton>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
+
+  const detailContent = isUnsized ? (
+    <>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
+        <Chip label={`Pool stock: ${poolStock} units`} color="warning" variant="outlined" />
+        <Button size="small" variant="outlined" disabled={poolStock <= 0} onClick={() => setBreakDialog(true)}>Break into numbers</Button>
+      </Box>
+      <Typography variant="subtitle2" sx={{ color: '#8f9bb3', mb: 0.5 }}>Price bands (number → price)</Typography>
+      {(item.bands || []).length > 0 && (isMobile ? bandsList : bandsTable)}
+      <Button size="small" startIcon={<AddIcon />} onClick={() => setBandDialog({ open: true, band: null })} sx={{ mt: (item.bands || []).length > 0 ? 1 : 0 }}>Add Band</Button>
+    </>
+  ) : (
+    <>
+      {realSizes.length > 0 && (isMobile ? sizesList : sizesTable)}
+      <Box sx={{ display: 'flex', gap: 1, mt: realSizes.length > 0 ? 1 : 0, flexWrap: 'wrap' }}>
+        <Button size="small" startIcon={<AddIcon />} onClick={() => setSizeDialog({ open: true, size: null })}>Add Size</Button>
+        <Button size="small" variant="outlined" onClick={() => setBulkStockDialog(true)}>Bulk stock entry</Button>
+      </Box>
+    </>
+  );
+
+  const dialogs = (
+    <>
+      <SizeDialog
+        open={sizeDialog.open}
+        onClose={() => setSizeDialog({ open: false, size: null })}
+        onSave={() => { setSizeDialog({ open: false, size: null }); onRefresh(); }}
+        itemId={item.uuid}
+        size={sizeDialog.size}
+      />
+      <BandDialog
+        open={bandDialog.open}
+        onClose={() => setBandDialog({ open: false, band: null })}
+        onSave={() => { setBandDialog({ open: false, band: null }); onRefresh(); }}
+        itemId={item.uuid}
+        band={bandDialog.band}
+      />
+      <BreakDialog
+        open={breakDialog}
+        onClose={() => setBreakDialog(false)}
+        onSave={() => { setBreakDialog(false); onRefresh(); }}
+        item={item}
+        poolStock={poolStock}
+      />
+      <BulkStockDialog
+        open={bulkStockDialog}
+        onClose={() => setBulkStockDialog(false)}
+        onSave={() => { setBulkStockDialog(false); onRefresh(); }}
+        item={item}
+      />
+      <ItemDialog
+        open={editItemDialog}
+        onClose={() => setEditItemDialog(false)}
+        onSave={() => { setEditItemDialog(false); onRefresh(); }}
+        item={item}
+        allItems={allItems}
+      />
+      <Dialog open={deleteConfirm} onClose={() => setDeleteConfirm(false)} maxWidth="xs">
+        <DialogTitle>Delete Item</DialogTitle>
+        <DialogContent>
+          <Typography>Delete <strong>{item.name}</strong> and all its sizes? This cannot be undone.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirm(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={() => { setDeleteConfirm(false); handleDeleteItem(); }}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+
+  // ── Mobile: a card per item (no wide table) ───────────────────────────────────
+  if (isMobile) {
+    return (
+      <>
+        <Card variant="outlined" sx={{ mb: 1.5 }}>
+          <CardContent sx={{ pb: '12px !important' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+              <Box sx={{ flex: 1, cursor: 'pointer', minWidth: 0 }} onClick={() => setExpanded(e => !e)}>
+                <Typography fontWeight={600}>
+                  {item.name}
+                  {isUnsized && <Chip label="Unsized" size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.75 }}>
+                  <Chip label={GENDER_LABELS[item.gender] || item.gender} size="small" color={GENDER_COLORS[item.gender] || 'default'} />
+                  <Chip label={isUnsized ? `${(item.bands || []).length} bands` : `${realSizes.length} sizes`} size="small" variant="outlined" />
+                  <Chip label={`${totalStock} units`} size="small" variant="outlined" />
+                  {itemStockValue != null && <Chip label={`₹${itemStockValue.toFixed(2)}`} size="small" variant="outlined" />}
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <IconButton size="small" onClick={() => setEditItemDialog(true)}><EditIcon fontSize="small" /></IconButton>
+                <IconButton size="small" color="error" onClick={() => setDeleteConfirm(true)}><DeleteIcon fontSize="small" /></IconButton>
+                <IconButton size="small" onClick={() => setExpanded(e => !e)}>{expanded ? <CollapseIcon fontSize="small" /> : <ExpandIcon fontSize="small" />}</IconButton>
+              </Box>
+            </Box>
+            <Collapse in={expanded}><Box sx={{ mt: 1.5 }}>{detailContent}</Box></Collapse>
+          </CardContent>
+        </Card>
+        {dialogs}
+      </>
+    );
+  }
+
+  // ── Desktop: expandable table row ─────────────────────────────────────────────
   return (
     <>
       <TableRow
@@ -510,156 +723,11 @@ function ItemRow({ item, onRefresh, allItems }) {
       <TableRow>
         <TableCell colSpan={8} sx={{ p: 0, border: 'none' }}>
           <Collapse in={expanded}>
-            <Box sx={{ m: 2, ml: 6 }}>
-              {isUnsized ? (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                    <Chip label={`Pool stock: ${poolStock} units`} color="warning" variant="outlined" />
-                    <Button size="small" variant="outlined" disabled={poolStock <= 0} onClick={() => setBreakDialog(true)}>
-                      Break into numbers
-                    </Button>
-                  </Box>
-                  <Typography variant="subtitle2" sx={{ color: '#8f9bb3', mb: 0.5 }}>Price bands (number → price)</Typography>
-                  {(item.bands || []).length > 0 && (
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 600 }}>Number Range</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">MRP</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc%</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">Bulk Disc%</TableCell>
-                          <TableCell />
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {item.bands.map(band => (
-                          <TableRow key={band.uuid} hover>
-                            <TableCell>{band.numberFrom} – {band.numberTo}</TableCell>
-                            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.mrp != null ? `₹${band.mrp}` : '—'}</TableCell>
-                            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.studentDiscountPct != null ? `${band.studentDiscountPct}%` : '—'}</TableCell>
-                            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.bulkDiscountPct != null ? `${band.bulkDiscountPct}%` : '—'}</TableCell>
-                            <TableCell align="right">
-                              <IconButton size="small" onClick={() => setBandDialog({ open: true, band })}><EditIcon fontSize="small" /></IconButton>
-                              <IconButton size="small" color="error" onClick={() => handleDeleteBand(band)}><DeleteIcon fontSize="small" /></IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                  <Button size="small" startIcon={<AddIcon />} onClick={() => setBandDialog({ open: true, band: null })} sx={{ mt: (item.bands || []).length > 0 ? 1 : 0 }}>
-                    Add Band
-                  </Button>
-                </>
-              ) : (
-                <>
-                  {realSizes.length > 0 && (
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">Last MRP</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc%</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">Stock Value</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">Discounted Value</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }} align="right">Stock</TableCell>
-                          <TableCell />
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {realSizes.map(size => {
-                          const stockValue = size.mrp != null && size.currentStock != null
-                            ? (size.mrp * size.currentStock).toFixed(2)
-                            : null;
-                          const discountedValue = size.mrp != null && size.currentStock != null
-                            ? (size.mrp * (1 - (size.studentDiscountPct || 0) / 100) * size.currentStock).toFixed(2)
-                            : null;
-                          return (
-                            <TableRow key={size.uuid} hover>
-                              <TableCell>{size.sizeLabel}</TableCell>
-                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.mrp != null ? `₹${size.mrp}` : '—'}</TableCell>
-                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.studentDiscountPct != null ? `${size.studentDiscountPct}%` : '—'}</TableCell>
-                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{stockValue != null ? `₹${stockValue}` : '—'}</TableCell>
-                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{discountedValue != null ? `₹${discountedValue}` : '—'}</TableCell>
-                              <TableCell align="right">{size.currentStock}</TableCell>
-                              <TableCell align="right">
-                                <IconButton size="small" onClick={() => setSizeDialog({ open: true, size })}>
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small" color="error" onClick={() => handleDeleteSize(size)}>
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  )}
-                  <Box sx={{ display: 'flex', gap: 1, mt: realSizes.length > 0 ? 1 : 0 }}>
-                    <Button size="small" startIcon={<AddIcon />} onClick={() => setSizeDialog({ open: true, size: null })}>
-                      Add Size
-                    </Button>
-                    <Button size="small" variant="outlined" onClick={() => setBulkStockDialog(true)}>
-                      Bulk stock entry
-                    </Button>
-                  </Box>
-                </>
-              )}
-            </Box>
+            <Box sx={{ m: 2, ml: 6 }}>{detailContent}</Box>
           </Collapse>
         </TableCell>
       </TableRow>
-
-      <SizeDialog
-        open={sizeDialog.open}
-        onClose={() => setSizeDialog({ open: false, size: null })}
-        onSave={() => { setSizeDialog({ open: false, size: null }); onRefresh(); }}
-        itemId={item.uuid}
-        size={sizeDialog.size}
-      />
-
-      <BandDialog
-        open={bandDialog.open}
-        onClose={() => setBandDialog({ open: false, band: null })}
-        onSave={() => { setBandDialog({ open: false, band: null }); onRefresh(); }}
-        itemId={item.uuid}
-        band={bandDialog.band}
-      />
-
-      <BreakDialog
-        open={breakDialog}
-        onClose={() => setBreakDialog(false)}
-        onSave={() => { setBreakDialog(false); onRefresh(); }}
-        item={item}
-        poolStock={poolStock}
-      />
-
-      <BulkStockDialog
-        open={bulkStockDialog}
-        onClose={() => setBulkStockDialog(false)}
-        onSave={() => { setBulkStockDialog(false); onRefresh(); }}
-        item={item}
-      />
-
-      <ItemDialog
-        open={editItemDialog}
-        onClose={() => setEditItemDialog(false)}
-        onSave={() => { setEditItemDialog(false); onRefresh(); }}
-        item={item}
-        allItems={allItems}
-      />
-
-      <Dialog open={deleteConfirm} onClose={() => setDeleteConfirm(false)} maxWidth="xs">
-        <DialogTitle>Delete Item</DialogTitle>
-        <DialogContent>
-          <Typography>Delete <strong>{item.name}</strong> and all its sizes? This cannot be undone.</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirm(false)}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={() => { setDeleteConfirm(false); handleDeleteItem(); }}>Delete</Button>
-        </DialogActions>
-      </Dialog>
+      {dialogs}
     </>
   );
 }
@@ -672,6 +740,7 @@ export default function UniformCatalog() {
   const [filterGender, setFilterGender] = useState('');
   const [addItemDialog, setAddItemDialog] = useState(false);
   const [itemNameHints, setItemNameHints] = useState([]);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadItems();
@@ -745,6 +814,17 @@ export default function UniformCatalog() {
         CATEGORIES.filter(cat => grouped[cat].length > 0 || !filterCategory).map(cat => {
           const catItems = grouped[cat];
           if (catItems.length === 0) return null;
+          // Mobile: category heading + a card per item (no wide table).
+          if (isMobile) {
+            return (
+              <Box key={cat} sx={{ mb: 2 }}>
+                <Typography variant="h6" sx={{ mb: 1 }}>{CATEGORY_LABELS[cat]}</Typography>
+                {catItems.map(item => (
+                  <ItemRow key={item.uuid} item={item} onRefresh={loadItems} allItems={items} isMobile />
+                ))}
+              </Box>
+            );
+          }
           return (
             <Card key={cat} sx={{ mb: 2 }}>
               <CardContent sx={{ pb: '0 !important' }}>
@@ -765,7 +845,7 @@ export default function UniformCatalog() {
                 </TableHead>
                 <TableBody>
                   {catItems.map(item => (
-                    <ItemRow key={item.uuid} item={item} onRefresh={loadItems} allItems={items} />
+                    <ItemRow key={item.uuid} item={item} onRefresh={loadItems} allItems={items} isMobile={false} />
                   ))}
                 </TableBody>
               </Table>
