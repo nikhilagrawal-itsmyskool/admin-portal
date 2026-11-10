@@ -99,6 +99,7 @@ export const ROLE_PERMISSIONS = {
     "library.catalog.view", // Browse the library catalog
     "supplies.inventory.view", // See supply stock
     "supplies.issue.view", // See what supplies have been issued
+    "supplies.issue.me", // See the supplies issued to ME (the /me PWA surface)
     "timetable.grid.view", // Published timetable only (menu gates the rest)
     "student.record.view",
     "student.contacts.view", // Teachers may see un-masked parent/student & staff numbers
@@ -111,6 +112,7 @@ export const ROLE_PERMISSIONS = {
     "programme.source.view", // Download the class-module reference docs
     "assembly.plan.view", // Read the assembly plan for their wing
     "assembly.week.conduct", // Run their assigned assembly week (/me; scoped in-handler by house/evaluator)
+    "exam.schedule.view", // See the Examinations menu — exam schedule/datesheet + own invigilation duties
     "academic-calendar.view", // Read the school's academic calendar
     "leave.calendar.view", // See the shared who's-on-leave calendar
     "leave.application.apply", // Apply for own leave; see own attendance & penalty
