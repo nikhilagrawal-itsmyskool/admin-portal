@@ -217,11 +217,11 @@ const menuItems = [
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/uniform', perm: 'uniform.inventory.view' },
       { title: 'Permissions', icon: PermissionsIcon, path: '/uniform/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/uniform/config', perm: 'uniform.inventory.manage', admin: true },
       { title: 'Catalog', icon: CheckroomIcon, path: '/uniform/catalog', perm: 'uniform.inventory.view' },
       { title: 'Purchases', icon: PurchaseIcon, path: '/uniform/purchases', perm: 'uniform.purchase.view' },
       { title: 'Sets', icon: SetsIcon, path: '/uniform/sets', perm: 'uniform.set.view' },
       { title: 'Sales', icon: IssueIcon, path: '/uniform/sales', perm: 'uniform.sale.view' },
-      { title: 'Config', icon: AsmSettingsIcon, path: '/uniform/config', perm: 'uniform.inventory.manage', admin: true },
     ],
   },
   {
