@@ -136,14 +136,14 @@ export const MOBILE_FEATURES = [
   { title: "Spoken English", hubLabel: "Spoken English", icon: ProgrammesIcon, path: "/programmes/selc", perm: "programme.unit.view", section: "programmes", hub: "programmes", routes: ["/programmes", "/programmes/selc", "/programmes/selc/:grade/:month"] },
 
   // ── Examinations ─────────────────────────────────────────────────────────────
-  // Schedule + duties are open to all staff (no perm); management is exam.view only.
-  // Exams subheading (Mine): the teacher's exam→report-card surfaces. Duties/Schedule/Enter
-  // Marks are open to all staff (row-scoped server-side); Co-Scholastic is class-teacher-only
-  // (backend enforces isClassTeacher), gated by `derived: "classTeacher"` — resolved from
-  // /me/report/classes in useMobileVisibility — so only actual class teachers see the tile.
-  { title: "Schedule", icon: ScheduleIcon, path: "/exam/schedule", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/schedule"] },
-  { title: "Duties", icon: DutyIcon, path: "/exam/my-invigilations", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
-  { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/marks"] },
+  // Schedule/Duties/Enter Marks are teacher-facing — gated on exam.schedule.view (teachers hold it)
+  // so non-teaching staff (e.g. uniform-incharge) don't see the Exams tiles; management is exam.view.
+  // Exams subheading (Mine): the teacher's exam→report-card surfaces (row-scoped server-side);
+  // Co-Scholastic/Report Card Review are additionally class-teacher-only via `derived: "classTeacher"`
+  // (backend enforces isClassTeacher) — resolved from /me/report/classes in useMobileVisibility.
+  { title: "Schedule", icon: ScheduleIcon, path: "/exam/schedule", perm: "exam.schedule.view", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/schedule"] },
+  { title: "Duties", icon: DutyIcon, path: "/exam/my-invigilations", perm: "exam.schedule.view", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/my-invigilations", "/exam/roster/:examId/:paperId/:sectionId", "/exam/room-roster/:examId/:roomId/:date"] },
+  { title: "Enter Marks", icon: MarksIcon, path: "/exam/marks", perm: "exam.schedule.view", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/marks"] },
   { title: "Co-Scholastic", icon: CoscholasticIcon, path: "/exam/coscholastic", derived: "classTeacher", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/coscholastic"] },
   { title: "Report Card Review", icon: AssemblyGradeIcon, path: "/exam/report-review", derived: "classTeacher", section: "mine", group: "Exams", color: "#5e35b1", routes: ["/exam/report-review"] },
   { title: "Progress", icon: ProgressIcon, path: "/exam/report-progress", perm: "exam.progress.view", section: "manage", color: "#5e35b1", routes: ["/exam/report-progress"] },
