@@ -70,6 +70,7 @@ import HiringCandidateDetail from './pages/hiring/HiringCandidateDetail';
 import TransferList from './pages/transfer/TransferList';
 import UniformDashboard from './pages/uniform/UniformDashboard';
 import UniformPermissions from './pages/uniform/Permissions';
+import UniformConfig from './pages/uniform/UniformConfig';
 import UniformCatalog from './pages/uniform/catalog/UniformCatalog';
 import UniformPurchaseList from './pages/uniform/purchases/UniformPurchaseList';
 import UniformPurchaseForm from './pages/uniform/purchases/UniformPurchaseForm';
@@ -402,6 +403,7 @@ export default function App() {
         <Route path="hiring/:id" element={<HiringCandidateDetail />} />
         <Route path="hiring/:id/edit" element={<HiringCandidateForm />} />
         <Route path="uniform/permissions" element={<UniformPermissions />} />
+        <Route path="uniform/config" element={<UniformConfig />} />
         <Route path="uniform" element={<UniformDashboard />} />
         <Route path="uniform/catalog" element={<UniformCatalog />} />
         <Route path="uniform/purchases" element={<UniformPurchaseList />} />

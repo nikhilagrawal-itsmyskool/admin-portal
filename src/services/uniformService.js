@@ -12,6 +12,17 @@ const uniformService = {
     return response.data;
   },
 
+  // Per-school module settings (Config screen)
+  getConfig: async () => {
+    const response = await api.get('/uniform/config');
+    return response.data;
+  },
+
+  updateConfig: async (data) => {
+    const response = await api.put('/uniform/config', data);
+    return response.data;
+  },
+
   // Items & Sizes
   getItems: async (filters = {}) => {
     const response = await api.get('/uniform/items', { params: filters });

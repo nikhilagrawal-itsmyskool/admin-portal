@@ -221,6 +221,7 @@ const menuItems = [
       { title: 'Purchases', icon: PurchaseIcon, path: '/uniform/purchases', perm: 'uniform.purchase.view' },
       { title: 'Sets', icon: SetsIcon, path: '/uniform/sets', perm: 'uniform.set.view' },
       { title: 'Sales', icon: IssueIcon, path: '/uniform/sales', perm: 'uniform.sale.view' },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/uniform/config', perm: 'uniform.inventory.manage', admin: true },
     ],
   },
   {
