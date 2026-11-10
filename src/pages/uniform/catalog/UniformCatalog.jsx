@@ -3,12 +3,13 @@ import {
   Box, Typography, Button, Card, CardContent, Grid, MenuItem, TextField,
   Alert, CircularProgress, Chip, IconButton, Collapse, Table, TableBody,
   TableCell, TableHead, TableRow, Dialog, DialogTitle, DialogContent,
-  DialogActions,
+  DialogActions, Checkbox, FormControlLabel, Tooltip,
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
   ExpandMore as ExpandIcon, ExpandLess as CollapseIcon,
+  LowPriority as MoveIcon,
 } from '@mui/icons-material';
 import uniformService from '../../../services/uniformService';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -19,7 +20,7 @@ const GENDER_COLORS = { male: 'primary', female: 'secondary', unisex: 'default' 
 const CATEGORIES = Object.keys(CATEGORY_LABELS);
 
 const SizeDialog = ({ open, onClose, onSave, itemId, size }) => {
-  const [form, setForm] = useState({ sizeLabel: '', mrp: '', studentDiscountPct: '' });
+  const [form, setForm] = useState({ sizeLabel: '', mrp: '', studentDiscountPct: '', isUnknown: false, note: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const isMobile = useIsMobile();
@@ -30,19 +31,24 @@ const SizeDialog = ({ open, onClose, onSave, itemId, size }) => {
         sizeLabel: size?.sizeLabel || '',
         mrp: size?.mrp != null ? String(size.mrp) : '',
         studentDiscountPct: size?.studentDiscountPct != null ? String(size.studentDiscountPct) : '',
+        isUnknown: size?.isUnknown === true,
+        note: size?.note || '',
       });
       setError('');
     }
   }, [open, size]);
 
   const handleSave = async () => {
-    if (!form.sizeLabel.trim()) { setError('Size label is required'); return; }
+    const label = form.sizeLabel.trim() || (form.isUnknown ? 'Unknown' : '');
+    if (!label) { setError('Size label is required'); return; }
     setSaving(true);
     try {
       const payload = {
-        sizeLabel: form.sizeLabel.trim(),
+        sizeLabel: label,
         mrp: form.mrp !== '' ? parseFloat(form.mrp) : undefined,
         studentDiscountPct: form.studentDiscountPct !== '' ? parseFloat(form.studentDiscountPct) : undefined,
+        isUnknown: form.isUnknown,
+        note: form.isUnknown ? (form.note.trim() || undefined) : '',
       };
       if (size) {
         await uniformService.updateSize(itemId, size.uuid, payload);
@@ -64,13 +70,22 @@ const SizeDialog = ({ open, onClose, onSave, itemId, size }) => {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2} sx={{ pt: 1 }}>
           <Grid item xs={12}>
-            <TextField fullWidth label="Size Label" value={form.sizeLabel} onChange={e => setForm(p => ({ ...p, sizeLabel: e.target.value }))} size="small" placeholder="e.g. 26, 28, S, M, UK7" />
+            <TextField fullWidth label="Size Label" value={form.sizeLabel} onChange={e => setForm(p => ({ ...p, sizeLabel: e.target.value }))} size="small" placeholder={form.isUnknown ? 'Unknown' : 'e.g. 26, 28, S, M, UK7'} />
           </Grid>
           <Grid item xs={6}>
             <TextField fullWidth label="MRP (₹)" type="number" value={form.mrp} onChange={e => setForm(p => ({ ...p, mrp: e.target.value }))} size="small" inputProps={{ step: '0.01', min: 0 }} />
           </Grid>
           <Grid item xs={6}>
             <TextField fullWidth label="Student Disc %" type="number" value={form.studentDiscountPct} onChange={e => setForm(p => ({ ...p, studentDiscountPct: e.target.value }))} size="small" inputProps={{ step: '0.01', min: 0, max: 100 }} />
+          </Grid>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={<Checkbox checked={form.isUnknown} onChange={e => setForm(p => ({ ...p, sizeLabel: p.sizeLabel || (e.target.checked ? 'Unknown' : ''), isUnknown: e.target.checked }))} />}
+              label="Unknown number (e.g. tailor-stitched)"
+            />
+            {form.isUnknown && (
+              <TextField fullWidth label="Why unknown? (note)" value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} size="small" placeholder="e.g. tailor stitched" sx={{ mt: 1 }} />
+            )}
           </Grid>
         </Grid>
       </DialogContent>
@@ -444,9 +459,103 @@ const BulkStockDialog = ({ open, onClose, onSave, item }) => {
   );
 };
 
+// Move units out of one size into another (assign an Unknown-bucket piece to a number).
+// Target is an existing size or a new number (+ optional MRP).
+const MoveStockDialog = ({ open, onClose, onSave, item, fromSize }) => {
+  const [mode, setMode] = useState('new');
+  const [toSizeId, setToSizeId] = useState('');
+  const [toLabel, setToLabel] = useState('');
+  const [mrp, setMrp] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const isMobile = useIsMobile();
+
+  const others = (item.sizes || []).filter(s => !s.isPool && s.uuid !== fromSize?.uuid);
+  const maxQty = fromSize?.currentStock || 0;
+
+  useEffect(() => {
+    if (open) {
+      setMode(others.length > 0 ? 'existing' : 'new');
+      setToSizeId(''); setToLabel(''); setMrp(''); setQuantity(''); setError('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, fromSize]);
+
+  const handleSave = async () => {
+    const qty = parseInt(quantity, 10);
+    if (!(qty > 0)) { setError('Enter a quantity to move'); return; }
+    if (qty > maxQty) { setError(`Only ${maxQty} available to move`); return; }
+    const payload = { fromSizeId: fromSize.uuid, quantity: qty };
+    if (mode === 'existing') {
+      if (!toSizeId) { setError('Pick a target size'); return; }
+      payload.toSizeId = toSizeId;
+    } else {
+      if (!toLabel.trim()) { setError('Enter the number to assign to'); return; }
+      payload.toSizeLabel = toLabel.trim();
+      if (mrp !== '') payload.mrp = parseFloat(mrp);
+    }
+    setSaving(true);
+    try {
+      await uniformService.moveStock(item.uuid, payload);
+      onSave();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to move stock');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
+      <DialogTitle>Move / assign from “{fromSize?.sizeLabel}”</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Typography variant="body2" sx={{ color: '#8f9bb3', mb: 1.5 }}>
+          Available to move: <strong>{maxQty}</strong>
+          {fromSize?.isUnknown ? ' (unknown-number bucket)' : ''}
+        </Typography>
+        <Grid container spacing={2} sx={{ pt: 0.5 }}>
+          <Grid item xs={12}>
+            <TextField fullWidth select size="small" label="Assign to" value={mode} onChange={e => setMode(e.target.value)}>
+              <MenuItem value="new">A new number</MenuItem>
+              {others.length > 0 && <MenuItem value="existing">An existing size</MenuItem>}
+            </TextField>
+          </Grid>
+          {mode === 'existing' ? (
+            <Grid item xs={12}>
+              <TextField fullWidth select size="small" label="Target size" value={toSizeId} onChange={e => setToSizeId(e.target.value)}>
+                <MenuItem value="">Select size...</MenuItem>
+                {others.map(s => <MenuItem key={s.uuid} value={s.uuid}>{s.sizeLabel} ({s.currentStock ?? 0})</MenuItem>)}
+              </TextField>
+            </Grid>
+          ) : (
+            <>
+              <Grid item xs={6}>
+                <TextField fullWidth size="small" label="New number" value={toLabel} onChange={e => setToLabel(e.target.value)} placeholder="e.g. 38" />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth size="small" label="MRP (₹) optional" type="number" value={mrp} onChange={e => setMrp(e.target.value)} inputProps={{ step: '0.01', min: 0 }} />
+              </Grid>
+            </>
+          )}
+          <Grid item xs={12}>
+            <TextField fullWidth size="small" label="Quantity to move" type="number" value={quantity} onChange={e => setQuantity(e.target.value)} inputProps={{ min: 1, max: maxQty }} />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving}>{saving ? 'Moving...' : 'Move'}</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 function ItemRow({ item, onRefresh, allItems, isMobile }) {
   const [expanded, setExpanded] = useState(false);
   const [sizeDialog, setSizeDialog] = useState({ open: false, size: null });
+  const [moveDialog, setMoveDialog] = useState({ open: false, size: null });
   const [bulkStockDialog, setBulkStockDialog] = useState(false);
   const [bandDialog, setBandDialog] = useState({ open: false, band: null });
   const [breakDialog, setBreakDialog] = useState(false);
@@ -504,13 +613,23 @@ function ItemRow({ item, onRefresh, allItems, isMobile }) {
           const discountedValue = size.mrp != null && size.currentStock != null ? (size.mrp * (1 - (size.studentDiscountPct || 0) / 100) * size.currentStock).toFixed(2) : null;
           return (
             <TableRow key={size.uuid} hover>
-              <TableCell>{size.sizeLabel}</TableCell>
+              <TableCell>
+                {size.sizeLabel}
+                {size.isUnknown && (
+                  <Tooltip title={size.note || 'Unknown number'}>
+                    <Chip label={size.note || 'unknown'} size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />
+                  </Tooltip>
+                )}
+              </TableCell>
               <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.mrp != null ? `₹${size.mrp}` : '—'}</TableCell>
               <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.studentDiscountPct != null ? `${size.studentDiscountPct}%` : '—'}</TableCell>
               <TableCell align="right" sx={{ color: '#8f9bb3' }}>{stockValue != null ? `₹${stockValue}` : '—'}</TableCell>
               <TableCell align="right" sx={{ color: '#8f9bb3' }}>{discountedValue != null ? `₹${discountedValue}` : '—'}</TableCell>
               <TableCell align="right">{size.currentStock}</TableCell>
               <TableCell align="right">
+                <Tooltip title="Move / assign to a number">
+                  <span><IconButton size="small" disabled={(size.currentStock || 0) <= 0} onClick={() => setMoveDialog({ open: true, size })}><MoveIcon fontSize="small" /></IconButton></span>
+                </Tooltip>
                 <IconButton size="small" onClick={() => setSizeDialog({ open: true, size })}><EditIcon fontSize="small" /></IconButton>
                 <IconButton size="small" color="error" onClick={() => handleDeleteSize(size)}><DeleteIcon fontSize="small" /></IconButton>
               </TableCell>
@@ -525,13 +644,15 @@ function ItemRow({ item, onRefresh, allItems, isMobile }) {
     <Box>
       {realSizes.map(size => (
         <Box key={size.uuid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.75, borderBottom: '1px solid #eef1f6' }}>
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography component="span" fontWeight={600}>{size.sizeLabel}</Typography>
+            {size.isUnknown && <Chip label={size.note || 'unknown'} size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />}
             <Typography component="span" variant="body2" sx={{ color: '#8f9bb3', ml: 1 }}>
               {size.currentStock ?? 0} units{size.mrp != null ? ` · ₹${size.mrp}` : ''}
             </Typography>
           </Box>
           <Box sx={{ flexShrink: 0 }}>
+            <IconButton size="small" disabled={(size.currentStock || 0) <= 0} onClick={() => setMoveDialog({ open: true, size })}><MoveIcon fontSize="small" /></IconButton>
             <IconButton size="small" onClick={() => setSizeDialog({ open: true, size })}><EditIcon fontSize="small" /></IconButton>
             <IconButton size="small" color="error" onClick={() => handleDeleteSize(size)}><DeleteIcon fontSize="small" /></IconButton>
           </Box>
@@ -636,6 +757,13 @@ function ItemRow({ item, onRefresh, allItems, isMobile }) {
         onClose={() => setBulkStockDialog(false)}
         onSave={() => { setBulkStockDialog(false); onRefresh(); }}
         item={item}
+      />
+      <MoveStockDialog
+        open={moveDialog.open}
+        onClose={() => setMoveDialog({ open: false, size: null })}
+        onSave={() => { setMoveDialog({ open: false, size: null }); onRefresh(); }}
+        item={item}
+        fromSize={moveDialog.size}
       />
       <ItemDialog
         open={editItemDialog}

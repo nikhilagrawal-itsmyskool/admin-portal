@@ -80,6 +80,12 @@ const uniformService = {
     return response.data;
   },
 
+  // Move units from one size to another (assign an Unknown-bucket piece to a number).
+  moveStock: async (itemId, data) => {
+    const response = await api.post(`/uniform/items/${itemId}/move-stock`, data);
+    return response.data;
+  },
+
   // Purchases
   getPurchases: async (filters = {}) => {
     const response = await api.get('/uniform/purchases', { params: filters });
