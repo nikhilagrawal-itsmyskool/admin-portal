@@ -12,6 +12,17 @@ export const suppliesService = {
     return response.data;
   },
 
+  // Per-school module config (settings)
+  getConfig: async () => {
+    const response = await api.get('/supplies/config');
+    return response.data; // { schoolId, hideSeededItems }
+  },
+
+  updateConfig: async (data) => {
+    const response = await api.put('/supplies/config', data);
+    return response.data;
+  },
+
   // Categories (user-defined, per-school; seeded on first list)
   getCategories: async () => {
     const response = await api.get('/supplies/categories');

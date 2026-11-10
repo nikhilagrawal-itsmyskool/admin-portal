@@ -284,6 +284,7 @@ const menuItems = [
     children: [
       { title: 'Overview', icon: OverviewIcon, path: '/supplies', perm: 'supplies.purchase.view' },
       { title: 'Permissions', icon: PermissionsIcon, path: '/supplies/permissions', perm: 'authz.manage', admin: true },
+      { title: 'Config', icon: AsmSettingsIcon, path: '/supplies/config', perm: 'supplies.inventory.manage', admin: true },
       { title: 'Categories', icon: CategoryIcon, path: '/supplies/categories', perm: 'supplies.category.view' },
       { title: 'Inventory Items', icon: InventoryIcon, path: '/supplies/items', perm: 'supplies.inventory.view' },
       { title: 'Purchase Log', icon: PurchaseIcon, path: '/supplies/purchases', perm: 'supplies.purchase.view' },

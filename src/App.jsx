@@ -110,6 +110,7 @@ import FineList from './pages/library/fines/FineList';
 import LibrarySettings from './pages/library/settings/LibrarySettings';
 import SuppliesDashboard from './pages/supplies/SuppliesDashboard';
 import SuppliesPermissions from './pages/supplies/Permissions';
+import SuppliesConfig from './pages/supplies/SuppliesConfig';
 import SupplyCategoryList from './pages/supplies/categories/SupplyCategoryList';
 import SupplyItemList from './pages/supplies/items/SupplyItemList';
 import SupplyItemForm from './pages/supplies/items/SupplyItemForm';
@@ -464,6 +465,7 @@ export default function App() {
         <Route path="library/fines" element={<FineList />} />
         <Route path="library/settings" element={<LibrarySettings />} />
         <Route path="supplies/permissions" element={<SuppliesPermissions />} />
+        <Route path="supplies/config" element={<SuppliesConfig />} />
         <Route path="supplies" element={<SuppliesDashboard />} />
         <Route path="supplies/categories" element={<SupplyCategoryList />} />
         <Route path="supplies/items" element={<SupplyItemList />} />

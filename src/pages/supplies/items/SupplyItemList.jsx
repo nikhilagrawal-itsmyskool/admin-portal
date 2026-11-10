@@ -110,6 +110,7 @@ export default function SupplyItemList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [lowStock, setLowStock] = useState(false);
   const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [showSeeded, setShowSeeded] = useState(true); // default from supply_config.hideSeededItems
 
   useEffect(() => {
     loadCategories();
@@ -130,13 +131,23 @@ export default function SupplyItemList() {
 
   const loadCategories = async () => {
     try {
-      const data = await suppliesService.getCategories();
+      const [data, config] = await Promise.all([
+        suppliesService.getCategories(),
+        suppliesService.getConfig().catch(() => ({ hideSeededItems: false })),
+      ]);
+      setShowSeeded(!config.hideSeededItems);
       setCategories(data.categories || []);
     } catch (err) {
       console.error('Failed to load categories:', err);
       setCategories([]);
       loadItemsWithFilters({});
     }
+  };
+
+  // Explicit toggle wins; otherwise the current showSeeded state decides.
+  const handleToggleSeeded = (checked) => {
+    setShowSeeded(checked);
+    loadItemsWithFilters({ hideSeeded: !checked });
   };
 
   const loadItemsWithFilters = async (overrideFilters = {}) => {
@@ -149,6 +160,7 @@ export default function SupplyItemList() {
       if (searchTerm) filters.search = searchTerm;
       if (lowStock || filters.lowStock) filters.lowStock = true;
       if (includeDeleted) filters.includeDeleted = true;
+      if (filters.hideSeeded === undefined) filters.hideSeeded = !showSeeded;
       const data = await suppliesService.getItems(filters);
       setItems(data);
     } catch (err) {
@@ -301,6 +313,13 @@ export default function SupplyItemList() {
               <FormControlLabel
                 control={<Checkbox checked={includeDeleted} onChange={(e) => setIncludeDeleted(e.target.checked)} size="small" />}
                 label="Deleted"
+                sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem' } }}
+              />
+            </Grid>
+            <Grid item xs={6} md={1.5}>
+              <FormControlLabel
+                control={<Checkbox checked={showSeeded} onChange={(e) => handleToggleSeeded(e.target.checked)} size="small" />}
+                label="Show seeded"
                 sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem' } }}
               />
             </Grid>
