@@ -74,6 +74,12 @@ const uniformService = {
     return response.data;
   },
 
+  // Bulk opening-stock entry (sized items): upsert sizes + set counts, price optional.
+  setStock: async (itemId, data) => {
+    const response = await api.post(`/uniform/items/${itemId}/stock`, data);
+    return response.data;
+  },
+
   // Purchases
   getPurchases: async (filters = {}) => {
     const response = await api.get('/uniform/purchases', { params: filters });

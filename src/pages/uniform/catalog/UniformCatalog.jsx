@@ -343,9 +343,105 @@ const BreakDialog = ({ open, onClose, onSave, item, poolStock }) => {
   );
 };
 
+// Bulk opening-stock entry for a sized item: one grid, many (size, qty, price-optional)
+// rows, one save. Prefilled with existing sizes so you can edit counts in place.
+const BulkStockDialog = ({ open, onClose, onSave, item }) => {
+  const [rows, setRows] = useState([{ sizeLabel: '', quantity: '', mrp: '' }]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      const existing = (item.sizes || []).filter(s => !s.isPool);
+      setRows(existing.length > 0
+        ? existing.map(s => ({ sizeLabel: s.sizeLabel, quantity: s.currentStock != null ? String(s.currentStock) : '', mrp: s.mrp != null ? String(s.mrp) : '' }))
+        : [{ sizeLabel: '', quantity: '', mrp: '' }]);
+      setError('');
+    }
+  }, [open, item]);
+
+  const addRow = () => setRows(prev => [...prev, { sizeLabel: '', quantity: '', mrp: '' }]);
+  const removeRow = (idx) => setRows(prev => prev.filter((_, i) => i !== idx));
+  const updateRow = (idx, field, value) => setRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+  const totalUnits = rows.reduce((acc, r) => acc + (parseInt(r.quantity, 10) || 0), 0);
+
+  const handleSave = async () => {
+    const payloadRows = rows
+      .filter(r => r.sizeLabel.trim() !== '' && r.quantity !== '')
+      .map(r => ({
+        sizeLabel: r.sizeLabel.trim(),
+        quantity: parseInt(r.quantity, 10),
+        ...(r.mrp !== '' ? { mrp: parseFloat(r.mrp) } : {}),
+      }));
+    if (payloadRows.length === 0) { setError('Enter at least one size with a quantity'); return; }
+    if (payloadRows.some(r => isNaN(r.quantity) || r.quantity < 0)) { setError('Quantities must be whole numbers ≥ 0'); return; }
+    setSaving(true);
+    try {
+      await uniformService.setStock(item.uuid, { rows: payloadRows });
+      onSave();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to save stock');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Bulk stock entry — {item.name}</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Typography variant="body2" sx={{ color: '#8f9bb3', mb: 1.5 }}>
+          Enter every size and its count in one go. Price is optional — add it later. Saving
+          sets the counts (overwrites existing stock for the sizes listed).
+        </Typography>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">Quantity</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">MRP (optional)</TableCell>
+              <TableCell width={40} />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((r, idx) => (
+              <TableRow key={idx}>
+                <TableCell>
+                  <TextField size="small" fullWidth value={r.sizeLabel} onChange={e => updateRow(idx, 'sizeLabel', e.target.value)} placeholder="e.g. 28" />
+                </TableCell>
+                <TableCell align="right">
+                  <TextField size="small" type="number" value={r.quantity} onChange={e => updateRow(idx, 'quantity', e.target.value)} inputProps={{ min: 0, style: { textAlign: 'right' } }} sx={{ width: 90 }} />
+                </TableCell>
+                <TableCell align="right">
+                  <TextField size="small" type="number" value={r.mrp} onChange={e => updateRow(idx, 'mrp', e.target.value)} inputProps={{ min: 0, step: '0.01', style: { textAlign: 'right' } }} sx={{ width: 100 }} placeholder="—" />
+                </TableCell>
+                <TableCell>
+                  <IconButton size="small" color="error" onClick={() => removeRow(idx)} disabled={rows.length === 1}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
+          <Button size="small" startIcon={<AddIcon />} onClick={addRow}>Add Size</Button>
+          <Typography variant="body2" color="text.secondary" fontWeight={600}>{totalUnits} units total</Typography>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save stock'}</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 function ItemRow({ item, onRefresh, allItems }) {
   const [expanded, setExpanded] = useState(false);
   const [sizeDialog, setSizeDialog] = useState({ open: false, size: null });
+  const [bulkStockDialog, setBulkStockDialog] = useState(false);
   const [bandDialog, setBandDialog] = useState({ open: false, band: null });
   const [breakDialog, setBreakDialog] = useState(false);
   const [editItemDialog, setEditItemDialog] = useState(false);
@@ -500,14 +596,14 @@ function ItemRow({ item, onRefresh, allItems }) {
                       </TableBody>
                     </Table>
                   )}
-                  <Button
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => setSizeDialog({ open: true, size: null })}
-                    sx={{ mt: realSizes.length > 0 ? 1 : 0 }}
-                  >
-                    Add Size
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1, mt: realSizes.length > 0 ? 1 : 0 }}>
+                    <Button size="small" startIcon={<AddIcon />} onClick={() => setSizeDialog({ open: true, size: null })}>
+                      Add Size
+                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => setBulkStockDialog(true)}>
+                      Bulk stock entry
+                    </Button>
+                  </Box>
                 </>
               )}
             </Box>
@@ -537,6 +633,13 @@ function ItemRow({ item, onRefresh, allItems }) {
         onSave={() => { setBreakDialog(false); onRefresh(); }}
         item={item}
         poolStock={poolStock}
+      />
+
+      <BulkStockDialog
+        open={bulkStockDialog}
+        onClose={() => setBulkStockDialog(false)}
+        onSave={() => { setBulkStockDialog(false); onRefresh(); }}
+        item={item}
       />
 
       <ItemDialog
