@@ -16,6 +16,8 @@ import { fmtDate, fmtDateLong, todayIso } from '../../../utils/date';
 const PAYMENT_COLORS = { paid: 'success', partial: 'warning', due: 'error' };
 const PAYMENT_LABELS = { paid: 'Fully Paid', partial: 'Partially Paid', due: 'Due' };
 const formatCurrency = (v) => v != null ? `₹${parseFloat(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—';
+// Unsized lines carry the counter-judged number in judgedSize; sized lines use the size row.
+const lineLabel = (row) => (row.judgedSize ? `No. ${row.judgedSize}` : row.sizeLabel);
 
 function PaymentDialog({ open, onClose, onSave, sale }) {
   const [form, setForm] = useState({ amount: '', paymentDate: todayIso(), notes: '' });
@@ -128,7 +130,7 @@ function ReturnDialog({ open, onClose, onSave, saleId, saleItem }) {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {saleItem && (
           <Typography variant="body2" sx={{ color: '#8f9bb3', mb: 2 }}>
-            {saleItem.itemName} — {saleItem.sizeLabel} | Available to return: {available}
+            {saleItem.itemName} — {lineLabel(saleItem)} | Available to return: {available}
           </Typography>
         )}
         <Grid container spacing={2}>
@@ -181,7 +183,7 @@ function EvidenceViewDialog({ open, onClose, saleId, returnItem }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Return Evidence — {returnItem?.itemName} ({returnItem?.sizeLabel})</DialogTitle>
+      <DialogTitle>Return Evidence — {returnItem?.itemName} ({returnItem ? lineLabel(returnItem) : ''})</DialogTitle>
       <DialogContent>
         {loading && <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>}
         {fetchError && <Alert severity="error">{fetchError}</Alert>}
@@ -221,7 +223,7 @@ function handlePrintReceipt(sale, schoolCode) {
     ${sale.returns.map(r => `<tr>
       <td>${fmtDateLong(r.returnDate)}</td>
       <td>${r.itemName}</td>
-      <td>${r.sizeLabel}</td>
+      <td>${lineLabel(r)}</td>
       <td>${r.quantity}</td>
       <td align="right" style="color:#c62828">- ₹${(r.refundAmount || 0).toFixed(2)}</td>
       <td>${r.reason || '—'}</td>
@@ -285,7 +287,7 @@ function handlePrintReceipt(sale, schoolCode) {
   <tbody>
     ${sale.items.map(item => `<tr>
       <td>${item.itemName}</td>
-      <td>${item.sizeLabel}</td>
+      <td>${lineLabel(item)}</td>
       <td>${item.quantity}</td>
       <td>${item.mrp != null ? `₹${item.mrp}` : '—'}</td>
       <td>${item.discountPct != null ? `${item.discountPct}%` : '—'}</td>
@@ -407,7 +409,7 @@ export default function UniformSaleDetail() {
                 return (
                   <TableRow key={item.uuid}>
                     <TableCell>{item.itemName}</TableCell>
-                    <TableCell>{item.sizeLabel}</TableCell>
+                    <TableCell>{lineLabel(item)}</TableCell>
                     <TableCell align="right">{item.quantity}</TableCell>
                     <TableCell align="right">{item.mrp != null ? `₹${item.mrp}` : '—'}</TableCell>
                     <TableCell align="right">{item.discountPct != null ? `${item.discountPct}%` : '—'}</TableCell>

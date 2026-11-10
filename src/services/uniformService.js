@@ -48,6 +48,32 @@ const uniformService = {
     return response.data;
   },
 
+  // Price bands (unsized items) + bulk split
+  createBand: async (itemId, data) => {
+    const response = await api.post(`/uniform/items/${itemId}/bands`, data);
+    return response.data;
+  },
+
+  updateBand: async (itemId, bandId, data) => {
+    const response = await api.put(`/uniform/items/${itemId}/bands/${bandId}`, data);
+    return response.data;
+  },
+
+  deleteBand: async (itemId, bandId) => {
+    const response = await api.delete(`/uniform/items/${itemId}/bands/${bandId}`);
+    return response.data;
+  },
+
+  suggestPrice: async (itemId, number) => {
+    const response = await api.get(`/uniform/items/${itemId}/suggest-price`, { params: { number } });
+    return response.data;
+  },
+
+  breakSizes: async (itemId, data) => {
+    const response = await api.post(`/uniform/items/${itemId}/break-sizes`, data);
+    return response.data;
+  },
+
   // Purchases
   getPurchases: async (filters = {}) => {
     const response = await api.get('/uniform/purchases', { params: filters });

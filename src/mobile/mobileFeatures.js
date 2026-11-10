@@ -14,6 +14,7 @@ import {
   Science as ScienceIcon,
   SportsCricket as SportsIcon,
   Widgets as SuppliesIcon,
+  Checkroom as UniformIcon,
   Tag as CountsIcon,
   AddAPhoto as InventoryAIIcon,
   Chair as AssetHubIcon,
@@ -88,6 +89,9 @@ export const MOBILE_FEATURES = [
   // Moments (read-only) — EVERY staff member browses what's been shared with parents
   // (published only, school-wide). No perm = all staff. Composing lives in "Share Moment" (Now).
   { title: "Moments", icon: MomentsIcon, path: "/outreach/feed", section: "mine", color: "#ec407a", routes: ["/outreach/feed"] },
+  // My Supplies — a teacher sees only the supplies issued TO them + return status
+  // (self-scoped /supplies/me/issues). Every teacher holds supplies.issue.me.
+  { title: "My Supplies", icon: SuppliesIcon, path: "/supplies/me/issues", perm: "supplies.issue.me", section: "mine", color: "#00acc1", routes: ["/supplies/me/issues"] },
   // Assembly: "Today's assembly" + Leaderboard are the shared views (loose in Now). The house
   // member's Roster/Checklist and the evaluator's Grading are personal duty → Mine, grouped
   // under an "Assembly" subheading, still gated by the runtime `derived` house/evaluator role.
@@ -173,7 +177,17 @@ export const MOBILE_FEATURES = [
   { title: "Sports Issues", hubLabel: "Issues", icon: SportsIcon, path: "/sports/issues", perm: "sports.issue.view", section: "stores", hub: "sports", routes: ["/sports/issues", "/sports/issues/add"] },
 
   { title: "Supplies Items", hubLabel: "Items", icon: SuppliesIcon, path: "/supplies/items", perm: "supplies.inventory.view", section: "stores", hub: "supplies" },
-  { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.issue.view", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add"] },
+  { title: "Supplies Issues", hubLabel: "Issues", icon: SuppliesIcon, path: "/supplies/issues", perm: "supplies.issue.view", section: "stores", hub: "supplies", routes: ["/supplies/issues", "/supplies/issues/add", "/supplies/issues/:id/edit"] },
+  // Procurement (supplies-incharge / admin only — teachers lack purchase.manage so this hub
+  // child is hidden from them). Photograph the bill + enter line items on the phone.
+  { title: "Supplies Purchases", hubLabel: "Purchases", icon: SuppliesIcon, path: "/supplies/purchases", perm: "supplies.purchase.manage", section: "stores", hub: "supplies", routes: ["/supplies/purchases", "/supplies/purchases/add", "/supplies/purchases/:id/edit"] },
+
+  // Uniform — the counter sale is the phone-first action (judge the number, suggest price,
+  // collect payment). Catalog is read/light-manage (sized stock, bands, break-into-numbers).
+  // Purchases/Sets stay desktop-only (bulk data entry). Sell = uniform.sale.manage, Catalog =
+  // uniform.inventory.view.
+  { title: "Sell Uniform", hubLabel: "Sell", icon: UniformIcon, path: "/uniform/sales/new", perm: "uniform.sale.manage", section: "stores", hub: "uniform", routes: ["/uniform/sales/new", "/uniform/sales", "/uniform/sales/:id"] },
+  { title: "Uniform Catalog", hubLabel: "Catalog", icon: UniformIcon, path: "/uniform/catalog", perm: "uniform.inventory.view", section: "stores", hub: "uniform", routes: ["/uniform/catalog"] },
 
   // Assets hub — the asset register (assets-incharge's job, asset.register.*, not teachers').
   // Counts = read the per-type tally; Inventory = photograph a room → AI draft → save buckets.
@@ -220,6 +234,7 @@ export const MOBILE_HUBS = {
   medical: { title: "Medical", icon: MedicalIcon, color: "#3366ff" },
   sports: { title: "Sports", icon: SportsIcon, color: "#0095ff" },
   supplies: { title: "Supplies", icon: SuppliesIcon, color: "#00acc1" },
+  uniform: { title: "Uniform", icon: UniformIcon, color: "#7b5ea7" },
   asset: { title: "Assets", icon: AssetHubIcon, color: "#8d6e63" },
   fees: { title: "Fees", icon: FeesIcon, color: "#00897b" },
   // Single programme today -> the collapsed hub card reads "Spoken English" (the band

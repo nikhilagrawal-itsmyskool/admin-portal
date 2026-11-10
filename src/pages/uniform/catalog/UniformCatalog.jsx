@@ -81,15 +81,15 @@ const SizeDialog = ({ open, onClose, onSave, itemId, size }) => {
 };
 
 const ItemDialog = ({ open, onClose, onSave, item, allItems, itemNameHints = [] }) => {
-  const [form, setForm] = useState({ name: '', category: 'summer', gender: 'unisex', description: '' });
+  const [form, setForm] = useState({ name: '', category: 'summer', gender: 'unisex', sizingMode: 'sized', description: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (open) {
       setForm(item
-        ? { name: item.name, category: item.category, gender: item.gender, description: item.description || '' }
-        : { name: '', category: 'summer', gender: 'unisex', description: '' }
+        ? { name: item.name, category: item.category, gender: item.gender, sizingMode: item.sizingMode || 'sized', description: item.description || '' }
+        : { name: '', category: 'summer', gender: 'unisex', sizingMode: 'sized', description: '' }
       );
       setError('');
     }
@@ -140,6 +140,28 @@ const ItemDialog = ({ open, onClose, onSave, item, allItems, itemNameHints = [] 
             </TextField>
           </Grid>
           <Grid item xs={12}>
+            {item ? (
+              <TextField
+                fullWidth label="Sizing" size="small"
+                value={form.sizingMode === 'unsized' ? 'Unsized (judge number at sale)' : 'Sized (number-wise stock)'}
+                InputProps={{ readOnly: true }}
+                helperText="Sizing mode is fixed at creation. Break an unsized item into numbers to convert it."
+              />
+            ) : (
+              <TextField
+                fullWidth select label="Sizing Mode" size="small"
+                value={form.sizingMode}
+                onChange={e => setForm(p => ({ ...p, sizingMode: e.target.value }))}
+                helperText={form.sizingMode === 'unsized'
+                  ? 'One bulk pool; the number is judged at the counter and priced from bands.'
+                  : 'Separate number-wise stock rows (blazer, sweater, shirt).'}
+              >
+                <MenuItem value="sized">Sized — number-wise stock</MenuItem>
+                <MenuItem value="unsized">Unsized — judge number at sale</MenuItem>
+              </TextField>
+            )}
+          </Grid>
+          <Grid item xs={12}>
             <TextField fullWidth label="Description (optional)" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} size="small" />
           </Grid>
         </Grid>
@@ -152,16 +174,197 @@ const ItemDialog = ({ open, onClose, onSave, item, allItems, itemNameHints = [] 
   );
 };
 
+// Covering band for a number (client-side mirror of the server's lookup).
+const bandForNumber = (bands, num) => {
+  const n = parseInt(num, 10);
+  if (isNaN(n)) return null;
+  return (bands || []).find(b => n >= b.numberFrom && n <= b.numberTo) || null;
+};
+
+const BandDialog = ({ open, onClose, onSave, itemId, band }) => {
+  const [form, setForm] = useState({ numberFrom: '', numberTo: '', mrp: '', studentDiscountPct: '', bulkDiscountPct: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        numberFrom: band?.numberFrom != null ? String(band.numberFrom) : '',
+        numberTo: band?.numberTo != null ? String(band.numberTo) : '',
+        mrp: band?.mrp != null ? String(band.mrp) : '',
+        studentDiscountPct: band?.studentDiscountPct != null ? String(band.studentDiscountPct) : '',
+        bulkDiscountPct: band?.bulkDiscountPct != null ? String(band.bulkDiscountPct) : '',
+      });
+      setError('');
+    }
+  }, [open, band]);
+
+  const handleSave = async () => {
+    const from = parseInt(form.numberFrom, 10);
+    const to = parseInt(form.numberTo, 10);
+    if (isNaN(from) || isNaN(to)) { setError('From and To numbers are required'); return; }
+    if (from > to) { setError('From must be ≤ To'); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        numberFrom: from, numberTo: to,
+        mrp: form.mrp !== '' ? parseFloat(form.mrp) : undefined,
+        studentDiscountPct: form.studentDiscountPct !== '' ? parseFloat(form.studentDiscountPct) : undefined,
+        bulkDiscountPct: form.bulkDiscountPct !== '' ? parseFloat(form.bulkDiscountPct) : undefined,
+      };
+      if (band) await uniformService.updateBand(itemId, band.uuid, payload);
+      else await uniformService.createBand(itemId, payload);
+      onSave();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to save band');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>{band ? 'Edit Price Band' : 'Add Price Band'}</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Grid container spacing={2} sx={{ pt: 1 }}>
+          <Grid item xs={6}>
+            <TextField fullWidth label="Number From" type="number" value={form.numberFrom} onChange={e => setForm(p => ({ ...p, numberFrom: e.target.value }))} size="small" />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth label="Number To" type="number" value={form.numberTo} onChange={e => setForm(p => ({ ...p, numberTo: e.target.value }))} size="small" />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth label="MRP (₹)" type="number" value={form.mrp} onChange={e => setForm(p => ({ ...p, mrp: e.target.value }))} size="small" inputProps={{ step: '0.01', min: 0 }} />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth label="Student Disc %" type="number" value={form.studentDiscountPct} onChange={e => setForm(p => ({ ...p, studentDiscountPct: e.target.value }))} size="small" inputProps={{ step: '0.01', min: 0, max: 100 }} />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth label="Bulk Disc %" type="number" value={form.bulkDiscountPct} onChange={e => setForm(p => ({ ...p, bulkDiscountPct: e.target.value }))} size="small" inputProps={{ step: '0.01', min: 0, max: 100 }} />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// Break an unsized pool into number-wise rows. Sum must equal the pool stock. Each
+// row's suggested price comes from the covering band (shown as a hint; the server fills it).
+const BreakDialog = ({ open, onClose, onSave, item, poolStock }) => {
+  const [rows, setRows] = useState([{ sizeLabel: '', quantity: '' }]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) { setRows([{ sizeLabel: '', quantity: '' }]); setError(''); }
+  }, [open]);
+
+  const sum = rows.reduce((acc, r) => acc + (parseInt(r.quantity, 10) || 0), 0);
+  const addRow = () => setRows(prev => [...prev, { sizeLabel: '', quantity: '' }]);
+  const removeRow = (idx) => setRows(prev => prev.filter((_, i) => i !== idx));
+  const updateRow = (idx, field, value) => setRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+
+  const handleSave = async () => {
+    const breakdown = rows
+      .filter(r => r.sizeLabel.trim() && parseInt(r.quantity, 10) > 0)
+      .map(r => ({ sizeLabel: r.sizeLabel.trim(), quantity: parseInt(r.quantity, 10) }));
+    if (breakdown.length === 0) { setError('Add at least one number with a quantity'); return; }
+    if (sum !== poolStock) { setError(`Total (${sum}) must equal pool stock (${poolStock})`); return; }
+    setSaving(true);
+    try {
+      await uniformService.breakSizes(item.uuid, { breakdown });
+      onSave();
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Failed to break into numbers');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Break “{item.name}” into numbers</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Pool stock: <strong>{poolStock}</strong> units. Distribute all of them across numbers — the
+          totals must match. This permanently converts the item to number-wise stock.
+        </Alert>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Number</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">Quantity</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">Price (from band)</TableCell>
+              <TableCell width={40} />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((r, idx) => {
+              const band = bandForNumber(item.bands, r.sizeLabel);
+              return (
+                <TableRow key={idx}>
+                  <TableCell>
+                    <TextField size="small" fullWidth value={r.sizeLabel} onChange={e => updateRow(idx, 'sizeLabel', e.target.value)} placeholder="e.g. 28" />
+                  </TableCell>
+                  <TableCell align="right">
+                    <TextField size="small" type="number" value={r.quantity} onChange={e => updateRow(idx, 'quantity', e.target.value)} inputProps={{ min: 1, style: { textAlign: 'right' } }} sx={{ width: 90 }} />
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band?.mrp != null ? `₹${band.mrp}` : '—'}</TableCell>
+                  <TableCell>
+                    <IconButton size="small" color="error" onClick={() => removeRow(idx)} disabled={rows.length === 1}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
+          <Button size="small" startIcon={<AddIcon />} onClick={addRow}>Add Number</Button>
+          <Typography variant="body2" color={sum === poolStock ? 'success.main' : 'error.main'} fontWeight={600}>
+            {sum} / {poolStock} allocated
+          </Typography>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving || sum !== poolStock}>
+          {saving ? 'Converting...' : 'Break into numbers'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 function ItemRow({ item, onRefresh, allItems }) {
   const [expanded, setExpanded] = useState(false);
   const [sizeDialog, setSizeDialog] = useState({ open: false, size: null });
+  const [bandDialog, setBandDialog] = useState({ open: false, band: null });
+  const [breakDialog, setBreakDialog] = useState(false);
   const [editItemDialog, setEditItemDialog] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  const isUnsized = item.sizingMode === 'unsized';
+  const poolSize = item.sizes.find(s => s.isPool) || null;
+  const poolStock = poolSize?.currentStock || 0;
+  // Real (non-pool) sizes shown in the number-wise table.
+  const realSizes = item.sizes.filter(s => !s.isPool);
+
   const totalStock = item.sizes.reduce((sum, s) => sum + (s.currentStock || 0), 0);
-  const itemStockValue = item.sizes.some(s => s.mrp != null)
-    ? item.sizes.reduce((sum, s) => sum + (s.mrp ?? 0) * (s.currentStock ?? 0), 0)
+  const itemStockValue = realSizes.some(s => s.mrp != null)
+    ? realSizes.reduce((sum, s) => sum + (s.mrp ?? 0) * (s.currentStock ?? 0), 0)
     : null;
+
+  const handleDeleteBand = async (band) => {
+    try { await uniformService.deleteBand(item.uuid, band.uuid); onRefresh(); } catch {}
+  };
 
   const handleDeleteItem = async () => {
     try {
@@ -189,10 +392,13 @@ function ItemRow({ item, onRefresh, allItems }) {
         <TableCell sx={{ pl: 2 }}>
           {expanded ? <CollapseIcon fontSize="small" sx={{ color: '#8f9bb3' }} /> : <ExpandIcon fontSize="small" sx={{ color: '#8f9bb3' }} />}
         </TableCell>
-        <TableCell sx={{ fontWeight: 500 }}>{item.name}</TableCell>
+        <TableCell sx={{ fontWeight: 500 }}>
+          {item.name}
+          {isUnsized && <Chip label="Unsized" size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />}
+        </TableCell>
         <TableCell><Chip label={CATEGORY_LABELS[item.category] || item.category} size="small" variant="outlined" /></TableCell>
         <TableCell><Chip label={GENDER_LABELS[item.gender] || item.gender} size="small" color={GENDER_COLORS[item.gender] || 'default'} /></TableCell>
-        <TableCell align="right">{item.sizes.length} sizes</TableCell>
+        <TableCell align="right">{isUnsized ? `${(item.bands || []).length} bands` : `${realSizes.length} sizes`}</TableCell>
         <TableCell align="right">{totalStock} units</TableCell>
         <TableCell align="right">{itemStockValue != null ? `₹${itemStockValue.toFixed(2)}` : '—'}</TableCell>
         <TableCell align="right">
@@ -209,57 +415,101 @@ function ItemRow({ item, onRefresh, allItems }) {
         <TableCell colSpan={8} sx={{ p: 0, border: 'none' }}>
           <Collapse in={expanded}>
             <Box sx={{ m: 2, ml: 6 }}>
-              {item.sizes.length > 0 && (
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">Last MRP</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc%</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">Stock Value</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">Discounted Value</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">Stock</TableCell>
-                      <TableCell />
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {item.sizes.map(size => {
-                      const stockValue = size.mrp != null && size.currentStock != null
-                        ? (size.mrp * size.currentStock).toFixed(2)
-                        : null;
-                      const discountedValue = size.mrp != null && size.currentStock != null
-                        ? (size.mrp * (1 - (size.studentDiscountPct || 0) / 100) * size.currentStock).toFixed(2)
-                        : null;
-                      return (
-                        <TableRow key={size.uuid} hover>
-                          <TableCell>{size.sizeLabel}</TableCell>
-                          <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.mrp != null ? `₹${size.mrp}` : '—'}</TableCell>
-                          <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.studentDiscountPct != null ? `${size.studentDiscountPct}%` : '—'}</TableCell>
-                          <TableCell align="right" sx={{ color: '#8f9bb3' }}>{stockValue != null ? `₹${stockValue}` : '—'}</TableCell>
-                          <TableCell align="right" sx={{ color: '#8f9bb3' }}>{discountedValue != null ? `₹${discountedValue}` : '—'}</TableCell>
-                          <TableCell align="right">{size.currentStock}</TableCell>
-                          <TableCell align="right">
-                            <IconButton size="small" onClick={() => setSizeDialog({ open: true, size })}>
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" color="error" onClick={() => handleDeleteSize(size)}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </TableCell>
+              {isUnsized ? (
+                <>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+                    <Chip label={`Pool stock: ${poolStock} units`} color="warning" variant="outlined" />
+                    <Button size="small" variant="outlined" disabled={poolStock <= 0} onClick={() => setBreakDialog(true)}>
+                      Break into numbers
+                    </Button>
+                  </Box>
+                  <Typography variant="subtitle2" sx={{ color: '#8f9bb3', mb: 0.5 }}>Price bands (number → price)</Typography>
+                  {(item.bands || []).length > 0 && (
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600 }}>Number Range</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">MRP</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc%</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">Bulk Disc%</TableCell>
+                          <TableCell />
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                      </TableHead>
+                      <TableBody>
+                        {item.bands.map(band => (
+                          <TableRow key={band.uuid} hover>
+                            <TableCell>{band.numberFrom} – {band.numberTo}</TableCell>
+                            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.mrp != null ? `₹${band.mrp}` : '—'}</TableCell>
+                            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.studentDiscountPct != null ? `${band.studentDiscountPct}%` : '—'}</TableCell>
+                            <TableCell align="right" sx={{ color: '#8f9bb3' }}>{band.bulkDiscountPct != null ? `${band.bulkDiscountPct}%` : '—'}</TableCell>
+                            <TableCell align="right">
+                              <IconButton size="small" onClick={() => setBandDialog({ open: true, band })}><EditIcon fontSize="small" /></IconButton>
+                              <IconButton size="small" color="error" onClick={() => handleDeleteBand(band)}><DeleteIcon fontSize="small" /></IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                  <Button size="small" startIcon={<AddIcon />} onClick={() => setBandDialog({ open: true, band: null })} sx={{ mt: (item.bands || []).length > 0 ? 1 : 0 }}>
+                    Add Band
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {realSizes.length > 0 && (
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">Last MRP</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">Student Disc%</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">Stock Value</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">Discounted Value</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }} align="right">Stock</TableCell>
+                          <TableCell />
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {realSizes.map(size => {
+                          const stockValue = size.mrp != null && size.currentStock != null
+                            ? (size.mrp * size.currentStock).toFixed(2)
+                            : null;
+                          const discountedValue = size.mrp != null && size.currentStock != null
+                            ? (size.mrp * (1 - (size.studentDiscountPct || 0) / 100) * size.currentStock).toFixed(2)
+                            : null;
+                          return (
+                            <TableRow key={size.uuid} hover>
+                              <TableCell>{size.sizeLabel}</TableCell>
+                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.mrp != null ? `₹${size.mrp}` : '—'}</TableCell>
+                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{size.studentDiscountPct != null ? `${size.studentDiscountPct}%` : '—'}</TableCell>
+                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{stockValue != null ? `₹${stockValue}` : '—'}</TableCell>
+                              <TableCell align="right" sx={{ color: '#8f9bb3' }}>{discountedValue != null ? `₹${discountedValue}` : '—'}</TableCell>
+                              <TableCell align="right">{size.currentStock}</TableCell>
+                              <TableCell align="right">
+                                <IconButton size="small" onClick={() => setSizeDialog({ open: true, size })}>
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" color="error" onClick={() => handleDeleteSize(size)}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setSizeDialog({ open: true, size: null })}
+                    sx={{ mt: realSizes.length > 0 ? 1 : 0 }}
+                  >
+                    Add Size
+                  </Button>
+                </>
               )}
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => setSizeDialog({ open: true, size: null })}
-                sx={{ mt: item.sizes.length > 0 ? 1 : 0 }}
-              >
-                Add Size
-              </Button>
             </Box>
           </Collapse>
         </TableCell>
@@ -271,6 +521,22 @@ function ItemRow({ item, onRefresh, allItems }) {
         onSave={() => { setSizeDialog({ open: false, size: null }); onRefresh(); }}
         itemId={item.uuid}
         size={sizeDialog.size}
+      />
+
+      <BandDialog
+        open={bandDialog.open}
+        onClose={() => setBandDialog({ open: false, band: null })}
+        onSave={() => { setBandDialog({ open: false, band: null }); onRefresh(); }}
+        itemId={item.uuid}
+        band={bandDialog.band}
+      />
+
+      <BreakDialog
+        open={breakDialog}
+        onClose={() => setBreakDialog(false)}
+        onSave={() => { setBreakDialog(false); onRefresh(); }}
+        item={item}
+        poolStock={poolStock}
       />
 
       <ItemDialog
