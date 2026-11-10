@@ -26,6 +26,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Stack,
+  Divider,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -49,6 +53,8 @@ const formatCurrency = (v) =>
 
 export default function SupplyPurchaseList() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const can = useCan();
   const canManage = can(ACTIONS.SUPPLIES_PURCHASE_MANAGE);
   const canEditPurchase = can(ACTIONS.PURCHASE_LOG_EDIT);
@@ -372,6 +378,98 @@ export default function SupplyPurchaseList() {
           />
         </Box>
         {loading && <LinearProgress />}
+        {isMobile ? (
+          <Box sx={{ p: 2 }}>
+            {!loading && paginatedBatches.length === 0 && (
+              <Typography align="center" sx={{ py: 4, color: "text.secondary" }}>
+                No purchases found
+              </Typography>
+            )}
+            <Stack spacing={2}>
+              {paginatedBatches.map((row) => {
+                const isDeleted = row.status === "deleted";
+                const isExpanded = expandedRows.has(row.uuid);
+                const isExpandLoading = expandLoading.has(row.uuid);
+                const lineItems = batchItemsCache[row.uuid] || [];
+                return (
+                  <Card
+                    key={row.uuid}
+                    variant="outlined"
+                    sx={isDeleted ? { opacity: 0.6, bgcolor: "rgba(244,67,54,0.04)" } : undefined}
+                  >
+                    <CardContent sx={{ pb: "12px !important" }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            {fmtDate(row.purchaseDate)}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" noWrap>
+                            {row.supplier || "No supplier"}
+                          </Typography>
+                        </Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                          ₹{row.totalCost != null ? parseFloat(row.totalCost).toFixed(2) : "—"}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                        <Chip
+                          label={`${row.itemCount ?? 0} item${(row.itemCount ?? 0) === 1 ? "" : "s"}`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          icon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          onClick={() => toggleExpand(row.uuid)}
+                          sx={{ cursor: "pointer" }}
+                        />
+                        {row.fileId && (
+                          <Button size="small" startIcon={<AttachFileIcon />} onClick={() => openBill(row.uuid)}>
+                            Bill
+                          </Button>
+                        )}
+                        <Box sx={{ flexGrow: 1 }} />
+                        {!isDeleted && canEditPurchase && (
+                          <IconButton size="small" color="primary" onClick={() => navigate(`/supplies/purchases/${row.uuid}/edit`)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {!isDeleted && canManage && (
+                          <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, item: row })}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {isDeleted && canRestorePurchase && (
+                          <IconButton size="small" color="primary" onClick={() => setRestoreDialog({ open: true, item: row })}>
+                            <RestoreIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+                      {isExpandLoading && <LinearProgress sx={{ mt: 1 }} />}
+                      {isExpanded && !isExpandLoading && (
+                        <Box sx={{ mt: 1 }}>
+                          <Divider sx={{ mb: 1 }} />
+                          {lineItems.map((item) => (
+                            <Box key={item.uuid} sx={{ display: "flex", justifyContent: "space-between", gap: 1, py: 0.25 }}>
+                              <Typography variant="body2" sx={{ minWidth: 0 }} noWrap>
+                                {item.itemName || item.itemId}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
+                                Qty {item.quantity}
+                                {item.costPerUnit ? ` @ ${formatCurrency(item.costPerUnit)}` : ""}
+                              </Typography>
+                            </Box>
+                          ))}
+                          {lineItems.length === 0 && (
+                            <Typography variant="body2" color="text.secondary">No line items</Typography>
+                          )}
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Stack>
+          </Box>
+        ) : (
         <Box sx={{ overflowX: "auto" }}>
           <Table size="small">
             <TableHead>
@@ -561,6 +659,7 @@ export default function SupplyPurchaseList() {
             </TableBody>
           </Table>
         </Box>
+        )}
         <TablePagination
           component="div"
           count={batches.length}

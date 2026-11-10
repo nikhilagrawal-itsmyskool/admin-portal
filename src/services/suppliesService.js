@@ -121,6 +121,12 @@ export const suppliesService = {
     return response.data;
   },
 
+  // Teacher PWA — only the supplies issued to the logged-in employee (self-scoped).
+  getMyIssues: async () => {
+    const response = await api.get('/supplies/me/issues');
+    return response.data;
+  },
+
   getIssueById: async (id) => {
     const response = await api.get(`/supplies/issues/${id}`);
     return response.data;

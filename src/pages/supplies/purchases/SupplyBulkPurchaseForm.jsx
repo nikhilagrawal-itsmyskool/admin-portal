@@ -27,6 +27,8 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Stack,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -59,6 +61,8 @@ export default function SupplyBulkPurchaseForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [categories, setCategories] = useState([]);
   const [allItems, setAllItems] = useState([]);
@@ -289,6 +293,79 @@ export default function SupplyBulkPurchaseForm() {
     setConflictDialog((prev) => ({ ...prev, resolutions: { ...prev.resolutions, [lineIndex]: value } }));
   };
 
+  // ---- Per-line field controls, shared by the desktop table + the mobile cards.
+  // `label` is set only on mobile (the desktop table has column headers instead).
+  const categoryField = (li, index, label) => (
+    <Autocomplete
+      options={categories}
+      getOptionLabel={(o) => o.name || ''}
+      isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
+      value={li.category}
+      onChange={(_, val) => handleCategoryChange(index, val)}
+      disabled={isEdit}
+      size="small"
+      fullWidth
+      renderInput={(params) => <TextField {...params} label={label} placeholder="Category" />}
+    />
+  );
+
+  const itemField = (li, index, label) => (
+    <>
+      <Autocomplete
+        freeSolo={!isEdit}
+        options={itemOptionsFor(li)}
+        getOptionLabel={(o) => (typeof o === 'string' ? o : o.name || '')}
+        value={li.item || (li.newName ? li.newName : null)}
+        onChange={(_, val) => {
+          if (typeof val === 'string') patchItem(index, { item: null, newName: val });
+          else if (val) patchItem(index, { item: val, newName: '', unit: '' });
+          else patchItem(index, { item: null, newName: '' });
+        }}
+        onInputChange={(_, val, reason) => {
+          if (reason === 'input' && !isEdit) patchItem(index, { item: null, newName: val });
+        }}
+        disabled={!li.category}
+        size="small"
+        fullWidth
+        renderInput={(params) => (
+          <TextField {...params} label={label} placeholder={li.category ? (isEdit ? 'Select item' : 'Select or type new') : 'Category first'} />
+        )}
+      />
+      {isNewLine(li) && <Chip label="New item" size="small" color="success" variant="outlined" sx={{ mt: 0.5, height: 18, fontSize: '0.65rem' }} />}
+    </>
+  );
+
+  const unitField = (li, index, label) => {
+    const newLine = isNewLine(li);
+    return (
+      <TextField
+        select
+        label={label}
+        value={newLine ? li.unit : (li.item?.unit || '')}
+        onChange={(e) => patchItem(index, { unit: e.target.value })}
+        disabled={!newLine}
+        size="small"
+        fullWidth
+      >
+        <MenuItem value="">—</MenuItem>
+        {units.map((u) => <MenuItem key={u.value} value={u.value}>{u.label}</MenuItem>)}
+      </TextField>
+    );
+  };
+
+  const qtyField = (li, index, label) => (
+    <TextField type="number" label={label} value={li.quantity} onChange={(e) => patchItem(index, { quantity: e.target.value })} size="small" fullWidth inputProps={{ min: 1 }} />
+  );
+  const costField = (li, index, label) => (
+    <TextField type="number" label={label} value={li.costPerUnit} onChange={(e) => patchItem(index, { costPerUnit: e.target.value })} size="small" fullWidth inputProps={{ min: 0, step: 0.01 }} />
+  );
+  const batchField = (li, index, label) => (
+    <TextField label={label} value={li.batchNo} onChange={(e) => patchItem(index, { batchNo: e.target.value })} size="small" fullWidth placeholder="uses default" />
+  );
+  const remarksField = (li, index, label) => (
+    <TextField label={label} value={li.remarks} onChange={(e) => patchItem(index, { remarks: e.target.value })} size="small" fullWidth />
+  );
+
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>;
   }
@@ -350,93 +427,64 @@ export default function SupplyBulkPurchaseForm() {
               Pick an existing item, or type a new name to add it to the catalog on save.
             </Typography>
           )}
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ '& th': { fontWeight: 600, whiteSpace: 'nowrap' } }}>
-                  <TableCell sx={{ minWidth: 170 }}>Category *</TableCell>
-                  <TableCell sx={{ minWidth: 200 }}>Item *</TableCell>
-                  <TableCell sx={{ minWidth: 110 }}>Unit</TableCell>
-                  <TableCell sx={{ minWidth: 80 }}>Qty *</TableCell>
-                  <TableCell sx={{ minWidth: 100 }}>Cost/Unit</TableCell>
-                  <TableCell sx={{ minWidth: 120 }}>Batch No. Override</TableCell>
-                  <TableCell sx={{ minWidth: 150 }}>Remarks</TableCell>
-                  <TableCell sx={{ width: 48 }} />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {lineItems.map((li, index) => {
-                  const newLine = isNewLine(li);
-                  return (
+          {isMobile ? (
+            <Stack spacing={2}>
+              {lineItems.map((li, index) => (
+                <Card key={li._key} variant="outlined">
+                  <CardContent sx={{ pb: '12px !important' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                      <Typography variant="subtitle2" color="text.secondary">Item {index + 1}</Typography>
+                      <IconButton size="small" color="error" onClick={() => removeItem(index)} disabled={lineItems.length === 1}><DeleteIcon fontSize="small" /></IconButton>
+                    </Box>
+                    <Stack spacing={2}>
+                      {categoryField(li, index, 'Category *')}
+                      <Box>{itemField(li, index, isEdit ? 'Item *' : 'Item * (select or type new)')}</Box>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>{unitField(li, index, 'Unit')}</Grid>
+                        <Grid item xs={6}>{qtyField(li, index, 'Qty *')}</Grid>
+                        <Grid item xs={6}>{costField(li, index, 'Cost/Unit')}</Grid>
+                        <Grid item xs={6}>{batchField(li, index, 'Batch No.')}</Grid>
+                      </Grid>
+                      {remarksField(li, index, 'Remarks')}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          ) : (
+            <Box sx={{ overflowX: 'auto' }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ '& th': { fontWeight: 600, whiteSpace: 'nowrap' } }}>
+                    <TableCell sx={{ minWidth: 170 }}>Category *</TableCell>
+                    <TableCell sx={{ minWidth: 200 }}>Item *</TableCell>
+                    <TableCell sx={{ minWidth: 110 }}>Unit</TableCell>
+                    <TableCell sx={{ minWidth: 80 }}>Qty *</TableCell>
+                    <TableCell sx={{ minWidth: 100 }}>Cost/Unit</TableCell>
+                    <TableCell sx={{ minWidth: 120 }}>Batch No. Override</TableCell>
+                    <TableCell sx={{ minWidth: 150 }}>Remarks</TableCell>
+                    <TableCell sx={{ width: 48 }} />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {lineItems.map((li, index) => (
                     <TableRow key={li._key}>
-                      <TableCell>
-                        <Autocomplete
-                          options={categories}
-                          getOptionLabel={(o) => o.name || ''}
-                          isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
-                          value={li.category}
-                          onChange={(_, val) => handleCategoryChange(index, val)}
-                          disabled={isEdit}
-                          size="small"
-                          renderInput={(params) => <TextField {...params} placeholder="Category" />}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Autocomplete
-                          freeSolo={!isEdit}
-                          options={itemOptionsFor(li)}
-                          getOptionLabel={(o) => (typeof o === 'string' ? o : o.name || '')}
-                          value={li.item || (li.newName ? li.newName : null)}
-                          onChange={(_, val) => {
-                            if (typeof val === 'string') patchItem(index, { item: null, newName: val });
-                            else if (val) patchItem(index, { item: val, newName: '', unit: '' });
-                            else patchItem(index, { item: null, newName: '' });
-                          }}
-                          onInputChange={(_, val, reason) => {
-                            if (reason === 'input' && !isEdit) patchItem(index, { item: null, newName: val });
-                          }}
-                          disabled={!li.category}
-                          size="small"
-                          renderInput={(params) => (
-                            <TextField {...params} placeholder={li.category ? (isEdit ? 'Select item' : 'Select or type new') : 'Category first'} />
-                          )}
-                        />
-                        {newLine && <Chip label="New item" size="small" color="success" variant="outlined" sx={{ mt: 0.5, height: 18, fontSize: '0.65rem' }} />}
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          select
-                          value={newLine ? li.unit : (li.item?.unit || '')}
-                          onChange={(e) => patchItem(index, { unit: e.target.value })}
-                          disabled={!newLine}
-                          size="small"
-                          sx={{ width: 100 }}
-                        >
-                          <MenuItem value="">—</MenuItem>
-                          {units.map((u) => <MenuItem key={u.value} value={u.value}>{u.label}</MenuItem>)}
-                        </TextField>
-                      </TableCell>
-                      <TableCell>
-                        <TextField type="number" value={li.quantity} onChange={(e) => patchItem(index, { quantity: e.target.value })} size="small" inputProps={{ min: 1, style: { width: 60 } }} />
-                      </TableCell>
-                      <TableCell>
-                        <TextField type="number" value={li.costPerUnit} onChange={(e) => patchItem(index, { costPerUnit: e.target.value })} size="small" inputProps={{ min: 0, step: 0.01, style: { width: 80 } }} />
-                      </TableCell>
-                      <TableCell>
-                        <TextField value={li.batchNo} onChange={(e) => patchItem(index, { batchNo: e.target.value })} size="small" placeholder="uses default" inputProps={{ style: { width: 100 } }} />
-                      </TableCell>
-                      <TableCell>
-                        <TextField value={li.remarks} onChange={(e) => patchItem(index, { remarks: e.target.value })} size="small" inputProps={{ style: { width: 130 } }} />
-                      </TableCell>
+                      <TableCell>{categoryField(li, index)}</TableCell>
+                      <TableCell>{itemField(li, index)}</TableCell>
+                      <TableCell>{unitField(li, index)}</TableCell>
+                      <TableCell>{qtyField(li, index)}</TableCell>
+                      <TableCell>{costField(li, index)}</TableCell>
+                      <TableCell>{batchField(li, index)}</TableCell>
+                      <TableCell>{remarksField(li, index)}</TableCell>
                       <TableCell>
                         <IconButton size="small" color="error" onClick={() => removeItem(index)} disabled={lineItems.length === 1}><DeleteIcon fontSize="small" /></IconButton>
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Box>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          )}
           <Button startIcon={<AddIcon />} onClick={addItem} sx={{ mt: 2 }} size="small">Add Item</Button>
         </CardContent>
       </Card>

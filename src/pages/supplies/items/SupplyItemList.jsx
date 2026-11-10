@@ -254,7 +254,7 @@ export default function SupplyItemList() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Supply Inventory Items</Typography>
         {canManage && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/items/add')} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>Add Item</Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/supplies/items/add')}>Add Item</Button>
         )}
       </Box>
 
@@ -318,7 +318,6 @@ export default function SupplyItemList() {
           primaryChipField="currentStock"
           rows={items}
           columns={columns}
-          hideActionsOnMobile
           getRowId={(row) => row.uuid}
           getRowClassName={(params) => (params.row.status === 'deleted' ? 'deleted-row' : '')}
           loading={loading}

@@ -100,6 +100,7 @@ export const ACTIONS = {
   SUPPLIES_PURCHASE_MANAGE: "supplies.purchase.manage",
   SUPPLIES_ISSUE_VIEW: "supplies.issue.view",
   SUPPLIES_ISSUE_MANAGE: "supplies.issue.manage",
+  SUPPLIES_ISSUE_ME: "supplies.issue.me",
   SUPPLIES_WASTAGE_VIEW: "supplies.wastage.view",
   SUPPLIES_WASTAGE_MANAGE: "supplies.wastage.manage",
   TIMETABLE_VIEW: "timetable.grid.view",
@@ -529,6 +530,10 @@ export const ACTION_CATALOG = [
   {
     action: ACTIONS.SUPPLIES_ISSUE_MANAGE,
     description: "Record / edit / delete / return supply issues",
+  },
+  {
+    action: ACTIONS.SUPPLIES_ISSUE_ME,
+    description: "See the supplies issued to me (teacher PWA 'My Issued Items')",
   },
   {
     action: ACTIONS.SUPPLIES_WASTAGE_VIEW,

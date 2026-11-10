@@ -118,6 +118,7 @@ import SupplyIssueList from './pages/supplies/issues/SupplyIssueList';
 import SupplyIssueForm from './pages/supplies/issues/SupplyIssueForm';
 import SupplyWastageList from './pages/supplies/wastages/SupplyWastageList';
 import SupplyWastageForm from './pages/supplies/wastages/SupplyWastageForm';
+import MyIssuedSupplies from './pages/supplies/me/MyIssuedSupplies';
 import TimetableDashboard from './pages/timetable/TimetableDashboard';
 import SubjectList from './pages/timetable/subjects/SubjectList';
 import ConfigList from './pages/timetable/config/ConfigList';
@@ -469,6 +470,7 @@ export default function App() {
         <Route path="supplies/purchases" element={<SupplyPurchaseList />} />
         <Route path="supplies/purchases/add" element={<SupplyBulkPurchaseForm />} />
         <Route path="supplies/purchases/:id/edit" element={<SupplyBulkPurchaseForm />} />
+        <Route path="supplies/me/issues" element={<MyIssuedSupplies />} />
         <Route path="supplies/issues" element={<SupplyIssueList />} />
         <Route path="supplies/issues/add" element={<SupplyIssueForm />} />
         <Route path="supplies/issues/:id/edit" element={<SupplyIssueForm />} />
