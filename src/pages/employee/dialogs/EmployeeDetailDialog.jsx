@@ -90,7 +90,7 @@ export default function EmployeeDetailDialog({ open, employee, onClose }) {
             <Field label="Employee Number" value={e.employeeNumber} />
             <Field
               label="Staff Type"
-              value={e.employeeType === 'teaching' ? 'Teaching' : e.employeeType === 'non_teaching' ? 'Non-teaching' : ''}
+              value={e.employeeType === 'teaching' ? 'Teaching' : e.employeeType === 'non_teaching' ? 'Non-teaching' : e.employeeType === 'management' ? 'Management' : ''}
             />
             <Field label="Teacher Code" value={e.code} />
             <Field label="Gender" value={GENDER_LABELS[e.gender] || e.gender} />

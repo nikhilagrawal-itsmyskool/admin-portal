@@ -32,6 +32,7 @@ const GENDERS = [
 const STAFF_TYPES = [
   { value: "teaching", label: "Teaching" },
   { value: "non_teaching", label: "Non-teaching" },
+  { value: "management", label: "Management" },
 ];
 
 export default function EmployeeForm() {
