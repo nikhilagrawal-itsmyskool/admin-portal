@@ -253,9 +253,9 @@ export default function UniformSaleForm() {
               <Stack spacing={1.5}>
                 <ItemSelect line={line} idx={idx} />
                 <Grid container spacing={1.5}>
-                  <Grid item xs={7}><SizeOrNumber line={line} idx={idx} /></Grid>
-                  <Grid item xs={5}>
-                    <TextField type="number" fullWidth size="small" label="Qty" value={line.quantity} onChange={e => updateLine(idx, 'quantity', e.target.value)} inputProps={{ min: 1 }} />
+                  <Grid item xs={8}><SizeOrNumber line={line} idx={idx} /></Grid>
+                  <Grid item xs={4}>
+                    <TextField type="number" fullWidth size="small" label="Qty" value={line.quantity} onChange={e => updateLine(idx, 'quantity', e.target.value)} inputProps={{ min: 1, style: { textAlign: 'left' } }} />
                   </Grid>
                 </Grid>
                 <UnitPriceCell line={line} idx={idx} />
