@@ -267,12 +267,12 @@ export default function UniformSaleForm() {
               </Box>
               <Stack spacing={1.5}>
                 <ItemSelect line={line} idx={idx} />
-                <Grid container spacing={1.5}>
-                  <Grid item xs={8}><SizeOrNumber line={line} idx={idx} /></Grid>
-                  <Grid item xs={4}>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                  <Box sx={{ flex: 2, minWidth: 0 }}><SizeOrNumber line={line} idx={idx} /></Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
                     <TextField type="number" fullWidth size="small" label="Qty" value={line.quantity} onChange={e => updateLine(idx, 'quantity', e.target.value)} inputProps={{ min: 1, style: { textAlign: 'left' } }} />
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
                 <UnitPriceCell line={line} idx={idx} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', color: '#8f9bb3' }}>
                   <Typography variant="body2">MRP {mrp != null ? `₹${mrp}` : '—'}{discountPct ? ` · ${discountPct}% off` : ''}</Typography>
