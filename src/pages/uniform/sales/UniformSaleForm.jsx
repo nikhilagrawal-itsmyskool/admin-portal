@@ -148,6 +148,16 @@ export default function UniformSaleForm() {
     const validLines = lines.filter(lineIsValid);
     if (validLines.length === 0) { setError('Add at least one item (pick a size, or enter a number for unsized items)'); return; }
 
+    // Block selling a sized line beyond its stock (0-stock sizes can't be sold).
+    for (const l of validLines) {
+      if (isUnsizedItem(l.itemId)) continue; // unsized judged against the pool (server-checked)
+      const size = getSizeData(l.itemId, l.sizeId);
+      const avail = size?.currentStock ?? 0;
+      const itemName = getItem(l.itemId)?.name || 'item';
+      if (avail <= 0) { setError(`${itemName} — size ${size?.sizeLabel} is out of stock. Add stock first (Catalog), or pick another size.`); return; }
+      if (parseInt(l.quantity, 10) > avail) { setError(`Only ${avail} in stock for ${itemName} size ${size?.sizeLabel}.`); return; }
+    }
+
     setSaving(true);
     setError('');
     try {
@@ -210,9 +220,14 @@ export default function UniformSaleForm() {
     return (
       <TextField select fullWidth size="small" label={isMobile ? 'Size' : undefined} value={line.sizeId} onChange={e => updateLine(idx, 'sizeId', e.target.value)} disabled={!line.itemId}>
         <MenuItem value="">Size...</MenuItem>
-        {getSizesForItem(line.itemId).map(s => (
-          <MenuItem key={s.uuid} value={s.uuid}>{s.sizeLabel} {s.currentStock != null ? `(${s.currentStock})` : ''}</MenuItem>
-        ))}
+        {getSizesForItem(line.itemId).map(s => {
+          const out = (s.currentStock ?? 0) <= 0;
+          return (
+            <MenuItem key={s.uuid} value={s.uuid} disabled={out}>
+              {s.sizeLabel} {s.currentStock != null ? `(${s.currentStock})` : ''}{out ? ' — out of stock' : ''}
+            </MenuItem>
+          );
+        })}
       </TextField>
     );
   };
