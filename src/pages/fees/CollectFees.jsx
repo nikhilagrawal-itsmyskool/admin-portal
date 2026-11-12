@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Grid, Alert, Chip, Divider,
   Table, TableHead, TableBody, TableRow, TableCell, TextField, MenuItem,
   Checkbox, FormControlLabel, CircularProgress, ToggleButtonGroup, ToggleButton, IconButton,
-  Accordion, AccordionSummary, AccordionDetails,
+  Accordion, AccordionSummary, AccordionDetails, Tooltip,
 } from '@mui/material';
 import { PersonSearch as PersonSearchIcon, Add as AddIcon, Delete as DeleteIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useAcademicYear } from '../../context/AcademicYearContext';
@@ -53,6 +53,25 @@ export default function CollectFees() {
   const [transport, setTransport] = useState({ amount: '', months: [], remark: '', mode: 'cash', date: today(), saving: false });
   const toggleMonth = (m) => setTransport((s) => ({ ...s, months: s.months.includes(m) ? s.months.filter((x) => x !== m) : [...s.months, m] }));
 
+  // this-year transport receipts for the selected student → drives the "already paid" month pills.
+  const [transportReceipts, setTransportReceipts] = useState([]);
+  const loadTransportReceipts = (studentId) =>
+    feesService.getReceipts({ studentId, academicYearId, type: 'transport' })
+      .then((r) => setTransportReceipts(r || [])).catch(() => setTransportReceipts([]));
+  // months already covered by an active transport receipt this year (+ the receipts, for the tooltip).
+  // Months are stored comma-joined in the receipt's cycleSet (matched back to the Apr…Mar labels).
+  const paidTransport = useMemo(() => {
+    const set = new Set(); const by = {};
+    (transportReceipts || []).forEach((r) => {
+      if (r.status === 'cancelled') return;
+      String(r.cycleSet || '').split(/[,/|]/).map((t) => t.trim()).filter(Boolean).forEach((t) => {
+        const m = TRANSPORT_MONTHS.find((x) => x.toLowerCase() === t.toLowerCase().slice(0, 3));
+        if (m) { set.add(m); (by[m] = by[m] || []).push(r); }
+      });
+    });
+    return { set, by };
+  }, [transportReceipts]);
+
   const saveTransport = async () => {
     if (!student) { setError('Pick a student first.'); return; }
     const amount = Number(transport.amount);
@@ -65,12 +84,14 @@ export default function CollectFees() {
       setOk(`Transport receipt ${receipt.receiptNo || ''} — ${inr(receipt.totalPaid)}.`);
       openReceipt(receipt.uuid);
       setTransport({ amount: '', months: [], remark: '', mode: 'cash', date: today(), saving: false });
+      loadTransportReceipts(student.uuid); // refresh so the just-paid months light up as paid
     } catch (err) { setError(errMsg(err)); setTransport((s) => ({ ...s, saving: false })); }
   };
 
   const chooseStudent = async (s) => {
     setPick(false); setStudent(s); setLedger(null); setSummary(null); setSel({}); setError(''); setOk('');
     setWaive({ on: false, reason: '' }); setExempt({}); setStoreAdvance(false); setShow360(false); setReceived(''); // never carry across students
+    setTransportReceipts([]); loadTransportReceipts(s.uuid); // transport paid-month pills
     feesService.getDuesByYear(s.uuid).then(setDuesByYear).catch(() => setDuesByYear([])); // cross-year "also owes" banner
     setLoadingLedger(true);
     try {
@@ -520,15 +541,29 @@ export default function CollectFees() {
               <Grid item xs={6} sm={4}><TextField fullWidth size="small" select label="Mode" value={transport.mode} onChange={(e) => setTransport((s) => ({ ...s, mode: e.target.value }))}>{PAY_MODES.map((m) => <MenuItem key={m} value={m}>{PAYMENT_MODE_LABELS[m] || m}</MenuItem>)}</TextField></Grid>
               <Grid item xs={12} sm={4}><TextField fullWidth size="small" type="date" label="Date" InputLabelProps={{ shrink: true }} value={transport.date} onChange={(e) => setTransport((s) => ({ ...s, date: e.target.value }))} /></Grid>
               <Grid item xs={12}>
-                <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted, mb: 0.5 }}>Months (select the period this covers)</Typography>
+                <Typography sx={{ fontSize: 12, color: FEE_COLORS.muted, mb: 0.5 }}>
+                  Months (select the period this covers) — <Box component="span" sx={{ color: FEE_COLORS.success }}>green ✓ = already paid</Box>
+                </Typography>
                 <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-                  {TRANSPORT_MONTHS.map((m) => (
-                    <Chip key={m} label={m} size="small" clickable
-                      color={transport.months.includes(m) ? 'primary' : 'default'}
-                      variant={transport.months.includes(m) ? 'filled' : 'outlined'}
-                      onClick={() => toggleMonth(m)} />
-                  ))}
+                  {TRANSPORT_MONTHS.map((m) => {
+                    const selected = transport.months.includes(m);
+                    const paid = paidTransport.set.has(m);
+                    const chip = (
+                      <Chip label={paid && !selected ? `${m} ✓` : m} size="small" clickable
+                        color={selected ? 'primary' : paid ? 'success' : 'default'}
+                        variant={selected || paid ? 'filled' : 'outlined'}
+                        onClick={() => toggleMonth(m)} />
+                    );
+                    return paid
+                      ? <Tooltip key={m} title={`Paid · ${(paidTransport.by[m] || []).map((r) => r.receiptNo || r.legacyReceiptNo || 'receipt').join(', ')}`}>{chip}</Tooltip>
+                      : <React.Fragment key={m}>{chip}</React.Fragment>;
+                  })}
                 </Box>
+                {paidTransport.set.size > 0 && (
+                  <Typography sx={{ fontSize: 11.5, color: FEE_COLORS.success, mt: 0.75 }}>
+                    ✓ Paid this year: {TRANSPORT_MONTHS.filter((m) => paidTransport.set.has(m)).join(', ')}
+                  </Typography>
+                )}
               </Grid>
               <Grid item xs={12}><TextField fullWidth size="small" label="Remark (optional)" value={transport.remark} onChange={(e) => setTransport((s) => ({ ...s, remark: e.target.value }))} /></Grid>
             </Grid>
