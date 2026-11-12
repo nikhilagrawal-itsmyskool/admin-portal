@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Alert, CircularProgress, Button, Stack,
-  Autocomplete, TextField, Chip,
+  Autocomplete, TextField, Chip, MenuItem,
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { employeeService } from '../../services/employeeService';
 import { useCan } from '../../permissions/can';
 import { ACTIONS } from '../../permissions/actions';
+
+const SESSION_DURATIONS = [
+  { value: 8, label: '8 hours' },
+  { value: 24, label: '1 day' },
+  { value: 72, label: '3 days' },
+  { value: 168, label: '7 days (default)' },
+  { value: 336, label: '14 days' },
+  { value: 720, label: '30 days' },
+];
 
 // God-only by default (employee.config.manage); god can grant others via the Permissions grid.
 export default function EmployeeConfig() {
@@ -15,6 +24,7 @@ export default function EmployeeConfig() {
 
   const [allRoles, setAllRoles] = useState([]);
   const [selectedRoles, setSelectedRoles] = useState([]); // role objects
+  const [sessionHours, setSessionHours] = useState(168); // staff-login token lifetime (default 7d)
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -29,6 +39,7 @@ export default function EmployeeConfig() {
         const { config } = await employeeService.getConfig();
         const codes = config?.editProtectedRoles || [];
         setSelectedRoles(roles.filter((r) => codes.includes(r.code)));
+        setSessionHours(config?.sessionTokenHours || 168);
       } catch (e) {
         setErr(e.response?.data?.error?.description || 'Failed to load config');
       } finally { setLoading(false); }
@@ -39,8 +50,9 @@ export default function EmployeeConfig() {
     setSaving(true); setErr(''); setMsg('');
     try {
       const codes = selectedRoles.map((r) => r.code);
-      const { config } = await employeeService.updateConfig({ editProtectedRoles: codes });
+      const { config } = await employeeService.updateConfig({ editProtectedRoles: codes, sessionTokenHours: sessionHours });
       setSelectedRoles(allRoles.filter((r) => (config.editProtectedRoles || []).includes(r.code)));
+      setSessionHours(config.sessionTokenHours || 168);
       setMsg('Employee config saved.');
     } catch (e) {
       setErr(e.response?.data?.error?.description || 'Failed to save config');
@@ -91,6 +103,24 @@ export default function EmployeeConfig() {
               <TextField {...params} label="Roles only god can edit" placeholder="Pick roles…" />
             )}
           />
+
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 3, mb: 1 }}>Staff session duration</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+            How long a staff member stays logged in before their session expires and they must sign
+            in again. Applies to new logins only (existing sessions keep their current expiry). The
+            “Force re-login” action can still sign someone out immediately at any time.
+          </Typography>
+          <TextField
+            select
+            label="Session duration"
+            value={sessionHours}
+            onChange={(e) => setSessionHours(Number(e.target.value))}
+            sx={{ minWidth: 220 }}
+          >
+            {SESSION_DURATIONS.map((d) => (
+              <MenuItem key={d.value} value={d.value}>{d.label}</MenuItem>
+            ))}
+          </TextField>
 
           <Stack direction="row" justifyContent="flex-end" sx={{ mt: 3 }}>
             <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={saving}>
