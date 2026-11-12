@@ -16,8 +16,11 @@ export const biometricService = {
   // Change a synced employee's device role. data: { deviceSn?, privilege: 0 | 14 }.
   setPrivilege: async (employeeId, data = {}) => (await api.post(`/biometric/employees/${employeeId}/privilege`, data)).data,
 
-  // Push all not-yet-synced active employees to a device. data: { privilege?: 0 | 14 }.
+  // Push all not-yet-synced active employees (who already have a device number) to a device.
+  // data: { privilege?: 0 | 14, dryRun?: boolean }. dryRun returns { candidates } without syncing.
   syncAll: async (sn, data = {}) => (await api.post(`/biometric/devices/${encodeURIComponent(sn)}/sync-all`, data)).data,
+  // Preview who "Sync all un-synced" would push, without syncing.
+  syncAllPreview: async (sn, data = {}) => (await api.post(`/biometric/devices/${encodeURIComponent(sn)}/sync-all`, { ...data, dryRun: true })).data,
   // Reconcile one device now (suspend inactive, restore reactivated employees).
   reconcileDevice: async (sn) => (await api.post(`/biometric/devices/${encodeURIComponent(sn)}/reconcile`)).data,
 

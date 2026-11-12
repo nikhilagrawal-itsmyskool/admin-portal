@@ -50,6 +50,8 @@ export default function BiometricDeviceDetail() {
   const [saving, setSaving] = useState(false);
   const [busyAll, setBusyAll] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [syncAllDialog, setSyncAllDialog] = useState(false);
+  const [candidates, setCandidates] = useState([]);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sn]);
 
@@ -97,18 +99,38 @@ export default function BiometricDeviceDetail() {
     }
   };
 
-  const doSyncAll = async () => {
-    if (!window.confirm("Push every not-yet-synced active staff member to this device?")) return;
+  // Preview first: fetch exactly who would be pushed (only staff who already have a device
+  // number — a bulk sync never invents one), show the list, then push on confirm.
+  const openSyncAll = async () => {
     setBusyAll(true); setError(""); setNotice("");
-    try { const r = await biometricService.syncAll(sn, {}); setNotice(`Queued ${r.synced} staff member(s).`); await load(); }
-    catch (err) { setError(err.response?.data?.error?.description || "Failed to sync all"); }
+    try {
+      const r = await biometricService.syncAllPreview(sn);
+      setCandidates(r.candidates || []);
+      setSyncAllDialog(true);
+    } catch (err) { setError(err.response?.data?.error?.description || "Failed to load candidates"); }
+    finally { setBusyAll(false); }
+  };
+
+  const confirmSyncAll = async () => {
+    setBusyAll(true); setError("");
+    try {
+      const r = await biometricService.syncAll(sn, {});
+      const names = (r.people || []).map((p) => `${p.name} (#${p.deviceNumber})`).join(", ");
+      setNotice(r.synced ? `Queued ${r.synced}: ${names}` : "Nobody to sync.");
+      setSyncAllDialog(false);
+      await load();
+    } catch (err) { setError(err.response?.data?.error?.description || "Failed to sync all"); }
     finally { setBusyAll(false); }
   };
 
   const doReconcile = async () => {
     setBusyAll(true); setError(""); setNotice("");
-    try { const r = await biometricService.reconcileDevice(sn); setNotice(`Reconcile: ${r.changed} change(s) queued.`); await load(); }
-    catch (err) { setError(err.response?.data?.error?.description || "Failed to reconcile"); }
+    try {
+      const r = await biometricService.reconcileDevice(sn);
+      const names = (r.actions || []).map((a) => `${a.name} ${a.action}`).join(", ");
+      setNotice(r.changed ? `Reconcile: ${r.changed} change(s) — ${names}` : "Reconcile: nothing to change.");
+      await load();
+    } catch (err) { setError(err.response?.data?.error?.description || "Failed to reconcile"); }
     finally { setBusyAll(false); }
   };
 
@@ -160,7 +182,7 @@ export default function BiometricDeviceDetail() {
           <Button size="small" startIcon={<RefreshIcon />} onClick={() => load()}>Refresh</Button>
           {canManage && <FormControlLabel control={<Switch checked={d.status === "active"} onChange={toggleStatus} />} label={d.status === "active" ? "Active" : "Disabled"} />}
           {canManage && <Button size="small" startIcon={<RuleIcon />} onClick={doReconcile} disabled={busyAll}>Reconcile now</Button>}
-          {canSync && <Button size="small" startIcon={<GroupAddIcon />} onClick={doSyncAll} disabled={busyAll}>Sync all un-synced</Button>}
+          {canSync && <Button size="small" startIcon={<GroupAddIcon />} onClick={openSyncAll} disabled={busyAll}>Sync all un-synced</Button>}
           {canSync && <Button startIcon={<SyncIcon />} variant="contained" onClick={openSync}>Sync staff</Button>}
         </Stack>
       </Box>
@@ -215,6 +237,36 @@ export default function BiometricDeviceDetail() {
         <DialogActions>
           <Button onClick={() => setSyncDialog(false)} disabled={saving}>Cancel</Button>
           <Button variant="contained" onClick={doSync} disabled={saving || !picked}>{saving ? "Syncing…" : "Sync"}</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={syncAllDialog} onClose={() => !busyAll && setSyncAllDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Sync all un-synced</DialogTitle>
+        <DialogContent>
+          {candidates.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Everyone with a device number is already on this device. Only staff who have a device
+              number assigned (and aren't yet synced) are pushed — assign a number on the employee
+              screen first.
+            </Typography>
+          ) : (
+            <>
+              <Typography variant="body2" sx={{ mt: 1, mb: 1 }}>
+                These {candidates.length} staff member(s) will be pushed to the device:
+              </Typography>
+              <Stack spacing={0.5} sx={{ maxHeight: 280, overflowY: "auto" }}>
+                {candidates.map((c) => (
+                  <Typography key={c.uuid} variant="body2">• {c.name} <Typography component="span" color="text.secondary">(#{c.deviceNumber})</Typography></Typography>
+                ))}
+              </Stack>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSyncAllDialog(false)} disabled={busyAll}>Cancel</Button>
+          <Button variant="contained" onClick={confirmSyncAll} disabled={busyAll || candidates.length === 0}>
+            {busyAll ? "Syncing…" : `Sync ${candidates.length}`}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
