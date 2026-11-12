@@ -64,6 +64,7 @@ export default function EmployeeForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [editProtectedRoles, setEditProtectedRoles] = useState([]);
+  const [autoSuggested, setAutoSuggested] = useState(false); // number was auto-filled (re-suggest on type change)
   const [photoPreview, setPhotoPreview] = useState(""); // dataURL for display
   const [photoFile, setPhotoFile] = useState(null); // { fileName, mimeType, base64Data } to upload
   const [photoRemoved, setPhotoRemoved] = useState(false);
@@ -151,25 +152,30 @@ export default function EmployeeForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // If the user hand-edits the number/device, stop auto-overwriting it on later type changes.
+    if (name === "employeeNumber" || name === "deviceNumber") setAutoSuggested(false);
     setError("");
   };
 
-  // Picking the staff type on a NEW employee recommends the next number + device token
-  // (only when those fields are still blank, so a manual entry is never overwritten).
+  // Picking the staff type on a NEW employee recommends the next number + device token. Changing
+  // the type RE-suggests (so a wrong pick is corrected), unless the user typed their own number.
   const handleTypeChange = async (e) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, employeeType: value }));
     setError("");
-    if (isEdit || !value || formData.employeeNumber) return;
+    if (isEdit || !value) return;
+    // Respect a manually-typed number (non-empty AND not one we auto-filled).
+    if (formData.employeeNumber && !autoSuggested) return;
     try {
       const n = await employeeService.getNextNumber(value);
       setFormData((prev) => ({
         ...prev,
-        employeeNumber: prev.employeeNumber || n.employeeNumber || "",
-        deviceNumber: prev.deviceNumber || n.deviceNumber || "",
+        employeeNumber: n.employeeNumber || "",
+        deviceNumber: n.deviceNumber || "",
       }));
+      setAutoSuggested(true);
     } catch {
-      /* leave blank on failure — user can type manually */
+      /* leave as-is on failure — user can type manually */
     }
   };
 
