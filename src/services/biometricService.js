@@ -23,6 +23,8 @@ export const biometricService = {
   syncAllPreview: async (sn, data = {}) => (await api.post(`/biometric/devices/${encodeURIComponent(sn)}/sync-all`, { ...data, dryRun: true })).data,
   // Reconcile one device now (suspend inactive, restore reactivated employees).
   reconcileDevice: async (sn) => (await api.post(`/biometric/devices/${encodeURIComponent(sn)}/reconcile`)).data,
+  // Preview what "Reconcile now" would change (suspend/restore), without applying it.
+  reconcilePreview: async (sn) => (await api.post(`/biometric/devices/${encodeURIComponent(sn)}/reconcile`, { dryRun: true })).data,
 
   listEnrollments: async (params = {}) => (await api.get('/biometric/enrollments', { params })).data,
   listPunches: async (params = {}) => (await api.get('/biometric/punches', { params })).data,

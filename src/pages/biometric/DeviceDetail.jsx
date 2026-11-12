@@ -52,6 +52,8 @@ export default function BiometricDeviceDetail() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [syncAllDialog, setSyncAllDialog] = useState(false);
   const [candidates, setCandidates] = useState([]);
+  const [reconcileDialog, setReconcileDialog] = useState(false);
+  const [reconcilePlan, setReconcilePlan] = useState([]);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sn]);
 
@@ -123,12 +125,26 @@ export default function BiometricDeviceDetail() {
     finally { setBusyAll(false); }
   };
 
-  const doReconcile = async () => {
+  // Preview first: compute what reconcile WOULD do (who gets suspended/restored), show it,
+  // then apply on confirm. If nothing would change, just say so — no dialog.
+  const openReconcile = async () => {
     setBusyAll(true); setError(""); setNotice("");
+    try {
+      const r = await biometricService.reconcilePreview(sn);
+      if (!r.changed) { setNotice("Reconcile: nothing to change — the device matches current staff status."); return; }
+      setReconcilePlan(r.actions || []);
+      setReconcileDialog(true);
+    } catch (err) { setError(err.response?.data?.error?.description || "Failed to preview reconcile"); }
+    finally { setBusyAll(false); }
+  };
+
+  const confirmReconcile = async () => {
+    setBusyAll(true); setError("");
     try {
       const r = await biometricService.reconcileDevice(sn);
       const names = (r.actions || []).map((a) => `${a.name} ${a.action}`).join(", ");
       setNotice(r.changed ? `Reconcile: ${r.changed} change(s) — ${names}` : "Reconcile: nothing to change.");
+      setReconcileDialog(false);
       await load();
     } catch (err) { setError(err.response?.data?.error?.description || "Failed to reconcile"); }
     finally { setBusyAll(false); }
@@ -181,7 +197,7 @@ export default function BiometricDeviceDetail() {
           />
           <Button size="small" startIcon={<RefreshIcon />} onClick={() => load()}>Refresh</Button>
           {canManage && <FormControlLabel control={<Switch checked={d.status === "active"} onChange={toggleStatus} />} label={d.status === "active" ? "Active" : "Disabled"} />}
-          {canManage && <Button size="small" startIcon={<RuleIcon />} onClick={doReconcile} disabled={busyAll}>Reconcile now</Button>}
+          {canManage && <Button size="small" startIcon={<RuleIcon />} onClick={openReconcile} disabled={busyAll}>Reconcile now</Button>}
           {canSync && <Button size="small" startIcon={<GroupAddIcon />} onClick={openSyncAll} disabled={busyAll}>Sync all un-synced</Button>}
           {canSync && <Button startIcon={<SyncIcon />} variant="contained" onClick={openSync}>Sync staff</Button>}
         </Stack>
@@ -266,6 +282,34 @@ export default function BiometricDeviceDetail() {
           <Button onClick={() => setSyncAllDialog(false)} disabled={busyAll}>Cancel</Button>
           <Button variant="contained" onClick={confirmSyncAll} disabled={busyAll || candidates.length === 0}>
             {busyAll ? "Syncing…" : `Sync ${candidates.length}`}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={reconcileDialog} onClose={() => !busyAll && setReconcileDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Reconcile this device</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mt: 1, mb: 1 }}>
+            {reconcilePlan.length} change(s) will be applied:
+          </Typography>
+          <Stack spacing={0.5} sx={{ maxHeight: 280, overflowY: "auto" }}>
+            {reconcilePlan.map((a, i) => (
+              <Typography key={`${a.deviceNumber}-${i}`} variant="body2">
+                <Chip size="small" sx={{ mr: 1 }} color={a.action === "restored" ? "success" : "warning"}
+                  label={a.action === "restored" ? "Restore" : "Remove"} />
+                {a.name} <Typography component="span" color="text.secondary">(#{a.deviceNumber})</Typography>
+              </Typography>
+            ))}
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: "block" }}>
+            Remove = employee is inactive/left (user deleted from device, fingerprints kept). Restore =
+            employee is active again (user + stored fingerprints pushed back).
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReconcileDialog(false)} disabled={busyAll}>Cancel</Button>
+          <Button variant="contained" onClick={confirmReconcile} disabled={busyAll || reconcilePlan.length === 0}>
+            {busyAll ? "Applying…" : `Apply ${reconcilePlan.length}`}
           </Button>
         </DialogActions>
       </Dialog>
