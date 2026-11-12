@@ -2,19 +2,25 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box, Typography, Card, CardContent, Grid, Chip, Alert, Button, Stack, Switch,
-  FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Autocomplete,
+  FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Autocomplete, MenuItem,
 } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import GroupAddIcon from "@mui/icons-material/GroupAdd";
+import RuleIcon from "@mui/icons-material/Rule";
 import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
 import { biometricService } from "../../services/biometricService";
 import { employeeService } from "../../services/employeeService";
 import { useCan } from "../../permissions/can";
 import { fmtDateTime } from "../../utils/date";
 
-const ENR_COLOR = { enrolled: "success", synced: "info", pending: "warning", removed: "default" };
+const ENR_COLOR = { enrolled: "success", synced: "info", pending: "warning", suspended: "secondary", removed: "default" };
 const CMD_COLOR = { confirmed: "success", sent: "info", queued: "warning", failed: "error", cancelled: "default" };
+// Statuses that mean the person is live on the device (vs removed/suspended).
+const LIVE = ["pending", "synced", "enrolled"];
+const PRIV_OPTIONS = [{ value: 0, label: "User" }, { value: 14, label: "Super admin" }];
 
 function Fact({ label, value }) {
   return (
@@ -35,11 +41,14 @@ export default function BiometricDeviceDetail() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [syncDialog, setSyncDialog] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [picked, setPicked] = useState(null);
   const [deviceNumber, setDeviceNumber] = useState("");
+  const [privilege, setPrivilege] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [busyAll, setBusyAll] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [sn]);
@@ -69,6 +78,7 @@ export default function BiometricDeviceDetail() {
     setSyncDialog(true);
     setPicked(null);
     setDeviceNumber("");
+    setPrivilege(0);
     try { setEmployees(await employeeService.searchEmployees({})); } catch { /* ignore */ }
   };
 
@@ -77,7 +87,7 @@ export default function BiometricDeviceDetail() {
     setSaving(true);
     setError("");
     try {
-      await biometricService.syncEmployee(picked.uuid, { deviceSn: sn, deviceNumber: deviceNumber.trim() || undefined });
+      await biometricService.syncEmployee(picked.uuid, { deviceSn: sn, deviceNumber: deviceNumber.trim() || undefined, privilege });
       setSyncDialog(false);
       await load();
     } catch (err) {
@@ -87,15 +97,48 @@ export default function BiometricDeviceDetail() {
     }
   };
 
+  const doSyncAll = async () => {
+    if (!window.confirm("Push every not-yet-synced active staff member to this device?")) return;
+    setBusyAll(true); setError(""); setNotice("");
+    try { const r = await biometricService.syncAll(sn, {}); setNotice(`Queued ${r.synced} staff member(s).`); await load(); }
+    catch (err) { setError(err.response?.data?.error?.description || "Failed to sync all"); }
+    finally { setBusyAll(false); }
+  };
+
+  const doReconcile = async () => {
+    setBusyAll(true); setError(""); setNotice("");
+    try { const r = await biometricService.reconcileDevice(sn); setNotice(`Reconcile: ${r.changed} change(s) queued.`); await load(); }
+    catch (err) { setError(err.response?.data?.error?.description || "Failed to reconcile"); }
+    finally { setBusyAll(false); }
+  };
+
+  const toggleRole = async (row) => {
+    const next = row.privilege === 14 ? 0 : 14;
+    setError("");
+    try { await biometricService.setPrivilege(row.employeeId, { deviceSn: sn, privilege: next }); await load(); }
+    catch (err) { setError(err.response?.data?.error?.description || "Failed to change role"); }
+  };
+
   if (loading || !data) return <Box sx={{ py: 8, textAlign: "center" }}><Typography color="text.secondary">Loading…</Typography></Box>;
 
   const d = data.device || {};
+  const enrollments = data.enrollments || [];
+  // Employee ids currently live on this device — used to mark them in the sync picker.
+  const liveEmpIds = new Set(enrollments.filter((e) => LIVE.includes(e.status)).map((e) => e.employeeId));
+
   const enrollCols = [
     { field: "deviceNumber", headerName: "PIN", width: 90 },
     { field: "employeeName", headerName: "Staff", flex: 1, minWidth: 140, renderCell: (p) => p.value || p.row.name },
-    { field: "status", headerName: "Status", width: 120, renderCell: (p) => <Chip size="small" label={p.value} color={ENR_COLOR[p.value] || "default"} variant={p.value === "removed" ? "outlined" : "filled"} /> },
-    { field: "fpCount", headerName: "Fingers", width: 90 },
+    { field: "status", headerName: "Status", width: 120, renderCell: (p) => <Chip size="small" label={p.value} color={ENR_COLOR[p.value] || "default"} variant={["removed", "suspended"].includes(p.value) ? "outlined" : "filled"} /> },
+    { field: "privilege", headerName: "Role", width: 120, renderCell: (p) => <Chip size="small" variant="outlined" color={p.value === 14 ? "secondary" : "default"} label={p.value === 14 ? "Super admin" : "User"} /> },
+    { field: "fpCount", headerName: "Fingers", width: 80 },
     { field: "syncedAt", headerName: "Synced", width: 150, renderCell: (p) => p.value ? fmtDateTime(p.value) : "" },
+    ...(canSync ? [{
+      field: "actions", headerName: "", width: 160, sortable: false, filterable: false,
+      renderCell: (p) => (LIVE.includes(p.row.status)
+        ? <Button size="small" onClick={() => toggleRole(p.row)}>{p.row.privilege === 14 ? "Make user" : "Make super-admin"}</Button>
+        : null),
+    }] : []),
   ];
   const cmdCols = [
     { field: "kind", headerName: "Command", width: 140 },
@@ -109,18 +152,21 @@ export default function BiometricDeviceDetail() {
       <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/staff-attendance/devices")} sx={{ mb: 1 }}>Devices</Button>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 2 }}>
         <Typography variant="h4">{d.name || d.serialNumber}</Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
           <FormControlLabel
             control={<Switch size="small" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />}
             label="Auto-refresh (5s)"
           />
           <Button size="small" startIcon={<RefreshIcon />} onClick={() => load()}>Refresh</Button>
           {canManage && <FormControlLabel control={<Switch checked={d.status === "active"} onChange={toggleStatus} />} label={d.status === "active" ? "Active" : "Disabled"} />}
+          {canManage && <Button size="small" startIcon={<RuleIcon />} onClick={doReconcile} disabled={busyAll}>Reconcile now</Button>}
+          {canSync && <Button size="small" startIcon={<GroupAddIcon />} onClick={doSyncAll} disabled={busyAll}>Sync all un-synced</Button>}
           {canSync && <Button startIcon={<SyncIcon />} variant="contained" onClick={openSync}>Sync staff</Button>}
         </Stack>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>{error}</Alert>}
+      {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice("")}>{notice}</Alert>}
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
@@ -139,7 +185,7 @@ export default function BiometricDeviceDetail() {
 
       <Typography variant="h6" sx={{ mb: 1 }}>Enrollments</Typography>
       <Box sx={{ mb: 3 }}>
-        <ResponsiveDataGrid rows={data.enrollments || []} columns={enrollCols} getRowId={(r) => r.deviceNumber} autoHeight disableRowSelectionOnClick titleField="employeeName" primaryChipField="status" emptyMessage="No one synced to this device yet." />
+        <ResponsiveDataGrid rows={enrollments} columns={enrollCols} getRowId={(r) => r.deviceNumber} autoHeight disableRowSelectionOnClick titleField="employeeName" primaryChipField="status" emptyMessage="No one synced to this device yet." />
       </Box>
 
       <Typography variant="h6" sx={{ mb: 1 }}>Recent commands</Typography>
@@ -151,15 +197,19 @@ export default function BiometricDeviceDetail() {
           <Stack spacing={2} sx={{ mt: 0.5 }}>
             <Autocomplete
               options={employees}
-              getOptionLabel={(o) => `${o.name}${o.deviceNumber ? ` (#${o.deviceNumber})` : ""}`}
+              getOptionLabel={(o) => `${o.name}${o.deviceNumber ? ` (#${o.deviceNumber})` : ""}${liveEmpIds.has(o.uuid) ? " • on device" : ""}`}
               isOptionEqualToValue={(o, v) => o.uuid === v.uuid}
               value={picked}
               onChange={(_e, v) => { setPicked(v); setDeviceNumber(v?.deviceNumber || ""); }}
-              renderInput={(params) => <TextField {...params} label="Staff member" />}
+              renderInput={(params) => <TextField {...params} label="Staff member" helperText="“• on device” = already synced here." />}
             />
             <TextField label="Device number (PIN)" value={deviceNumber} onChange={(e) => setDeviceNumber(e.target.value)}
               inputProps={{ inputMode: "numeric", maxLength: 9 }}
               helperText="Numeric. Leave blank to keep the employee's existing number (or auto-assign)." fullWidth />
+            <TextField select label="Role on device" value={privilege} onChange={(e) => setPrivilege(Number(e.target.value))}
+              helperText="Super admins can enrol others at the keypad." fullWidth>
+              {PRIV_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+            </TextField>
           </Stack>
         </DialogContent>
         <DialogActions>
