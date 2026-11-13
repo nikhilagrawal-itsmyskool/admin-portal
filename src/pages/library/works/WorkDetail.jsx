@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import {
   ArrowBack as BackIcon, ExpandMore as ExpandIcon, Add as AddIcon, QrCode2 as QrIcon,
-  LibraryAdd as EditionIcon, Print as PrintIcon,
+  LibraryAdd as EditionIcon, Print as PrintIcon, CallMerge as MergeIcon, Search as SearchIcon,
 } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
 import { useCan } from '../../../permissions/can';
@@ -32,6 +32,12 @@ export default function WorkDetail() {
   const [bulk, setBulk] = useState({ prefix: '', start: 1, count: 1, price: '', acquisitionYear: '', billNo: '' });
   const [labelDlg, setLabelDlg] = useState({ open: false, label: null, accessionNo: '' });
   const [saving, setSaving] = useState(false);
+
+  const [mergeDlg, setMergeDlg] = useState(false);
+  const [mergeQ, setMergeQ] = useState('');
+  const [mergeResults, setMergeResults] = useState([]);
+  const [mergeSel, setMergeSel] = useState(null);
+  const [mergeSearching, setMergeSearching] = useState(false);
 
   useEffect(() => { load(); }, [id]);
 
@@ -102,6 +108,40 @@ export default function WorkDetail() {
     }
   };
 
+  const searchMerge = async () => {
+    setMergeSearching(true);
+    try {
+      const data = await libraryService.searchWorks({ q: mergeQ.trim(), limit: 25 });
+      setMergeResults((data.works || []).filter((w) => w.uuid !== id));
+    } catch {
+      setError('Search failed');
+    } finally {
+      setMergeSearching(false);
+    }
+  };
+
+  const doMerge = async () => {
+    if (!mergeSel) return;
+    setSaving(true);
+    try {
+      // Backend keeps the lowest-accession work as primary and returns it.
+      const primary = await libraryService.mergeWork(id, mergeSel.uuid);
+      setMergeDlg(false);
+      setMergeSel(null);
+      setMergeResults([]);
+      setMergeQ('');
+      if (primary?.uuid && primary.uuid !== id) {
+        navigate(`/library/catalog/${primary.uuid}`);
+      } else {
+        load();
+      }
+    } catch (err) {
+      setError(err.response?.data?.error?.description || 'Merge failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const showLabel = async (copy) => {
     try {
       const label = await libraryService.getLabel(copy.uuid, 'qr');
@@ -118,7 +158,12 @@ export default function WorkDetail() {
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
         <IconButton onClick={() => navigate('/library/catalog')}><BackIcon /></IconButton>
-        <Typography variant="h4">{work.uniformTitle}</Typography>
+        <Typography variant="h4" sx={{ flexGrow: 1 }}>{work.uniformTitle}</Typography>
+        {canManage && (
+          <Button variant="outlined" size="small" startIcon={<MergeIcon />} onClick={() => setMergeDlg(true)}>
+            Merge another work in
+          </Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
@@ -238,6 +283,56 @@ export default function WorkDetail() {
         <DialogActions>
           <Button onClick={() => setCopiesDlg({ open: false, titleId: null })}>Cancel</Button>
           <Button variant="contained" onClick={submitCopies} disabled={saving}>Add copies</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Merge works dialog */}
+      <Dialog open={mergeDlg} onClose={() => setMergeDlg(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Merge another work into “{work.uniformTitle}”</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Find the other edition (e.g. the Hindi or English version). Its editions &amp; copies move under one work; the work with the lowest accession number is kept as primary and its DDC/colour apply.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <TextField
+              fullWidth size="small" autoFocus
+              placeholder="Search title or author (type in English, finds Hindi)…"
+              value={mergeQ}
+              onChange={(e) => setMergeQ(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchMerge()}
+            />
+            <Button variant="contained" size="small" startIcon={<SearchIcon />} onClick={searchMerge} disabled={mergeSearching || !mergeQ.trim()}>Search</Button>
+          </Box>
+          <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
+            {mergeResults.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                {mergeSearching ? 'Searching…' : 'Search above to find the work to merge in.'}
+              </Typography>
+            ) : (
+              mergeResults.map((w) => (
+                <Box
+                  key={w.uuid}
+                  onClick={() => setMergeSel(w)}
+                  sx={{
+                    p: 1, mb: 0.5, borderRadius: 1, cursor: 'pointer', border: '1px solid',
+                    borderColor: mergeSel?.uuid === w.uuid ? 'primary.main' : 'divider',
+                    bgcolor: mergeSel?.uuid === w.uuid ? 'action.selected' : 'transparent',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{w.uniformTitle}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {w.authorDisplay || '—'} · DDC {w.ddcNumber || '—'} · {w.totalCopies} copies
+                  </Typography>
+                </Box>
+              ))
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMergeDlg(false)}>Cancel</Button>
+          <Button variant="contained" color="warning" onClick={doMerge} disabled={saving || !mergeSel}>
+            Merge{mergeSel ? ` “${mergeSel.uniformTitle}”` : ''}
+          </Button>
         </DialogActions>
       </Dialog>
 

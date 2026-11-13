@@ -28,6 +28,7 @@ export const libraryService = {
   getWork: async (id) => (await api.get(`/library/works/${id}`)).data,
   createWork: async (data) => (await api.post('/library/works', data)).data,
   updateWork: async (id, data) => (await api.put(`/library/works/${id}`, data)).data,
+  mergeWork: async (id, sourceWorkId) => (await api.post(`/library/works/${id}/merge`, { sourceWorkId })).data,
   addTitle: async (workId, data) => (await api.post(`/library/works/${workId}/titles`, data)).data,
 
   getTitle: async (id) => (await api.get(`/library/titles/${id}`)).data,
