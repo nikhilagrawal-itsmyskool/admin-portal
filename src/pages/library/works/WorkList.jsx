@@ -204,7 +204,7 @@ export default function WorkList() {
             <Grid item xs={12} md={5}>
               <TextField
                 fullWidth
-                placeholder="Search by title or author..."
+                placeholder="Search title or author (type in English, finds Hindi too)…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
