@@ -37,6 +37,22 @@ const MISSING_OPTIONS = [
   { value: 'location', label: 'Missing shelf location' },
 ];
 
+// A muted em-dash so blank (missing) cells read as "needs filling" at a glance.
+const Blank = () => <Typography component="span" variant="body2" color="text.disabled">—</Typography>;
+
+// Price/year come back as a per-work min & max across copies: show one value when
+// uniform, a range when copies differ, and the Blank marker when unset.
+function fmtMoney(min, max) {
+  if (min == null) return <Blank />;
+  const lo = Number(min);
+  const hi = Number(max);
+  return lo === hi ? `₹${lo}` : `₹${lo}–${hi}`;
+}
+function fmtRange(min, max) {
+  if (min == null) return <Blank />;
+  return min === max ? String(min) : `${min}–${max}`;
+}
+
 export default function WorkList() {
   const navigate = useNavigate();
   const can = useCan();
@@ -44,6 +60,7 @@ export default function WorkList() {
 
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
+  const [totalCopies, setTotalCopies] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -68,6 +85,7 @@ export default function WorkList() {
       const data = await libraryService.searchWorks(params);
       setRows(data.works || []);
       setTotal(data.total ?? (data.works ? data.works.length : 0));
+      setTotalCopies(data.totalCopies ?? 0);
     } catch (err) {
       setError('Failed to load catalog');
     } finally {
@@ -129,6 +147,27 @@ export default function WorkList() {
       ),
     },
     {
+      field: 'price',
+      headerName: 'Price',
+      width: 110,
+      sortable: false,
+      renderCell: (p) => fmtMoney(p.row.priceMin, p.row.priceMax),
+    },
+    {
+      field: 'acq',
+      headerName: 'Acq. Yr',
+      width: 100,
+      sortable: false,
+      renderCell: (p) => fmtRange(p.row.acqMin, p.row.acqMax),
+    },
+    {
+      field: 'locations',
+      headerName: 'Location',
+      width: 140,
+      sortable: false,
+      renderCell: (p) => p.row.locations || <Blank />,
+    },
+    {
       field: 'actions',
       headerName: 'Actions',
       width: 90,
@@ -147,7 +186,7 @@ export default function WorkList() {
         <Typography variant="h4">
           Library Catalog
           <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1.5 }}>
-            {total.toLocaleString()} {total === 1 ? 'title' : 'titles'}
+            {total.toLocaleString()} {total === 1 ? 'title' : 'titles'} · {totalCopies.toLocaleString()} {totalCopies === 1 ? 'copy' : 'copies'}
           </Typography>
         </Typography>
         {canManage && (
