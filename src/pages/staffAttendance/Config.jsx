@@ -55,6 +55,8 @@ export default function StaffAttendanceConfig() {
         expectedOut: c.expectedOut || "15:00",
         graceMin: c.graceMin ?? 10,
         halfDayAfterMin: c.halfDayAfterMin ?? "",
+        missingPunchAfter: c.missingPunchAfter || "",
+        dedupGapMin: c.dedupGapMin ?? 5,
         enabled: c.enabled || "on",
         exemptRoleCodes: c.exemptRoleCodes || [],
         includeEmployeeIds: c.includeEmployeeIds || [],
@@ -74,11 +76,18 @@ export default function StaffAttendanceConfig() {
     setSaving(true);
     setError("");
     try {
-      const payload = { ...cfg, halfDayAfterMin: cfg.halfDayAfterMin === "" ? null : Number(cfg.halfDayAfterMin), graceMin: Number(cfg.graceMin) };
+      const payload = {
+        ...cfg,
+        halfDayAfterMin: cfg.halfDayAfterMin === "" ? null : Number(cfg.halfDayAfterMin),
+        graceMin: Number(cfg.graceMin),
+        missingPunchAfter: cfg.missingPunchAfter || null,
+        dedupGapMin: cfg.dedupGapMin === "" ? null : Number(cfg.dedupGapMin),
+      };
       const c = await staffAttendanceService.updateConfig(payload);
       const picked = {
         expectedIn: c.expectedIn, expectedOut: c.expectedOut, graceMin: c.graceMin ?? 10,
-        halfDayAfterMin: c.halfDayAfterMin ?? "", enabled: c.enabled || "on",
+        halfDayAfterMin: c.halfDayAfterMin ?? "", missingPunchAfter: c.missingPunchAfter || "", dedupGapMin: c.dedupGapMin ?? 5,
+        enabled: c.enabled || "on",
         exemptRoleCodes: c.exemptRoleCodes || [], includeEmployeeIds: c.includeEmployeeIds || [], exemptEmployeeIds: c.exemptEmployeeIds || [],
       };
       setCfg(picked);
@@ -155,8 +164,10 @@ export default function StaffAttendanceConfig() {
           <Grid container spacing={2}>
             <Grid item xs={6} md={3}><TextField fullWidth type="time" label="Expected in" value={cfg.expectedIn} onChange={(e) => setCfg({ ...cfg, expectedIn: e.target.value })} InputLabelProps={{ shrink: true }} /></Grid>
             <Grid item xs={6} md={3}><TextField fullWidth type="time" label="Expected out" value={cfg.expectedOut} onChange={(e) => setCfg({ ...cfg, expectedOut: e.target.value })} InputLabelProps={{ shrink: true }} /></Grid>
-            <Grid item xs={6} md={3}><TextField fullWidth type="number" label="Grace (min)" value={cfg.graceMin} onChange={(e) => setCfg({ ...cfg, graceMin: e.target.value })} /></Grid>
-            <Grid item xs={6} md={3}><TextField fullWidth type="number" label="Half-day if worked < (min)" value={cfg.halfDayAfterMin} onChange={(e) => setCfg({ ...cfg, halfDayAfterMin: e.target.value })} helperText="Blank = no half-day rule" /></Grid>
+            <Grid item xs={6} md={3}><TextField fullWidth type="number" label="Grace (min)" value={cfg.graceMin} onChange={(e) => setCfg({ ...cfg, graceMin: e.target.value })} helperText="Lateness allowed after check-in" /></Grid>
+            <Grid item xs={6} md={3}><TextField fullWidth type="number" label="Half-day if worked < (min)" value={cfg.halfDayAfterMin} onChange={(e) => setCfg({ ...cfg, halfDayAfterMin: e.target.value })} helperText="Short in+out → half day. Blank = off" /></Grid>
+            <Grid item xs={6} md={3}><TextField fullWidth type="time" label="Missing-punch after" value={cfg.missingPunchAfter} onChange={(e) => setCfg({ ...cfg, missingPunchAfter: e.target.value })} InputLabelProps={{ shrink: true }} helperText="Lone check-in = 'Checked in' until this time, then 'Missing punch'. Blank = end of shift." /></Grid>
+            <Grid item xs={6} md={3}><TextField fullWidth type="number" label="Collapse double-scans within (min)" value={cfg.dedupGapMin} onChange={(e) => setCfg({ ...cfg, dedupGapMin: e.target.value })} helperText="Two taps this close = one check-in" /></Grid>
             <Grid item xs={12}>
               <FormControlLabel control={<Switch checked={cfg.enabled === "on"} onChange={(e) => setCfg({ ...cfg, enabled: e.target.checked ? "on" : "off" })} />} label="Attendance tracking enabled" />
             </Grid>

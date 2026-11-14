@@ -33,6 +33,7 @@ export const staffAttendanceService = {
 // Shared status → MUI Chip color + label, used across the staff-attendance screens.
 export const STATUS_META = {
   present: { label: 'Present', color: 'success' },
+  checked_in: { label: 'Checked in', color: 'info' },
   late: { label: 'Late', color: 'warning' },
   half_day: { label: 'Half day', color: 'warning' },
   missing_punch: { label: 'Missing punch', color: 'error' },
