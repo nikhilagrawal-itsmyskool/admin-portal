@@ -130,6 +130,8 @@ export const feesService = {
   // Fee-caller call log (gated fee.manager.view, on /fees-ext). data: { academicYearId, status, note, promisedDate }
   getCallerFollowup: async (studentId, academicYearId) => (await api.get(`/fees-ext/students/${studentId}/followup`, { params: academicYearId ? { academicYearId } : {} })).data,
   setCallerFollowup: async (studentId, data) => (await api.post(`/fees-ext/students/${studentId}/followup`, data)).data,
+  // Call-activity report (admin oversight) — follow-up trend + per-day breakdown over a window of days.
+  getFollowupActivity: async (days = 30) => (await api.get('/fees-ext/reports/followup-activity', { params: { days } })).data,
   getDuesByYear: async (studentId) => (await api.get(`/fees/students/${studentId}/dues-by-year`)).data,
   getFineExemptions: async (params = {}) => (await api.get('/fees/reports/fine-exemptions', { params })).data,
   // Exam-only (studying elsewhere): list flagged students + their open demands; cancel their demands.

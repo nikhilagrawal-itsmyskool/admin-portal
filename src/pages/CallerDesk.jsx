@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, CircularProgress, Alert, Chip, Button,
-  IconButton, TextField, InputAdornment, Collapse, Divider,
+  IconButton, TextField, InputAdornment, Collapse, Divider, MenuItem,
 } from '@mui/material';
 import {
   Refresh, Search as SearchIcon, Clear as ClearIcon, Phone as PhoneIcon,
   ExpandMore, ExpandLess, Check as CheckIcon,
 } from '@mui/icons-material';
 import { feesService } from '../services/feesService';
-import { inr, errMsg } from './fees/feesUi';
+import { inr, errMsg, classRank } from './fees/feesUi';
 
 // Locked single-screen tele-caller desk (role `fee-caller`): the defaulter worklist with
 // tap-to-call father/mother numbers and a one-tap "log the call" under each card. Reuses the
@@ -30,12 +30,22 @@ const ago = (iso) => {
   return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d}d ago`;
 };
 
+// Module-level so it keeps a stable identity across renders. (Defined inside the component it would
+// be a NEW type every render → React remounts the whole tree each keystroke → the search box loses
+// focus after one character. This is the "type a letter and it goes away" bug.)
+const Shell = ({ children }) => (
+  <Box sx={{ minHeight: '100vh', bgcolor: C.bg }}>
+    <Box sx={{ maxWidth: 520, mx: 'auto', px: 1.5, pb: 6, pt: 1 }}>{children}</Box>
+  </Box>
+);
+
 export default function CallerDesk() {
   const [currentAy, setCurrentAy] = useState(null);
   const [data, setData] = useState(null); // topDues response
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
+  const [classFilter, setClassFilter] = useState(''); // '' = all classes
   const [hideSettled, setHideSettled] = useState(true);
   const [scope, setScope] = useState('year'); // 'year' = current AY dues | 'all' = accumulated across years
   const [openId, setOpenId] = useState(null); // expanded card
@@ -90,9 +100,15 @@ export default function CallerDesk() {
   const amt = (r) => (scope === 'all' ? Number(r.total || 0) : Number((curAyId && r.byYear?.[curAyId]) || 0));
   const prior = (r) => Math.max(0, Number(r.total || 0) - Number((curAyId && r.byYear?.[curAyId]) || 0));
 
+  const classList = useMemo(() => {
+    const set = new Set((data?.rows || []).map((r) => r.className).filter((c) => c && c !== '—'));
+    return [...set].sort((a, b) => classRank(a) - classRank(b));
+  }, [data]);
+
   const rows = useMemo(() => {
     let r = data?.rows || [];
     if (hideSettled) r = r.filter((x) => x.followup?.status !== 'settled');
+    if (classFilter) r = r.filter((x) => x.className === classFilter);
     const t = q.trim().toLowerCase();
     if (t) r = r.filter((x) => (x.name || '').toLowerCase().includes(t) || (x.className || '').toLowerCase().includes(t)
       || (x.admissionNumber || '').toLowerCase().includes(t)
@@ -100,15 +116,10 @@ export default function CallerDesk() {
     r = r.filter((x) => amt(x) > 0.5); // only those who owe in the chosen scope
     return [...r].sort((a, b) => amt(b) - amt(a));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, hideSettled, q, scope, curAyId]);
+  }, [data, hideSettled, classFilter, q, scope, curAyId]);
 
   const scopedTotal = rows.reduce((s, r) => s + amt(r), 0);
 
-  const Shell = ({ children }) => (
-    <Box sx={{ minHeight: '100vh', bgcolor: C.bg }}>
-      <Box sx={{ maxWidth: 520, mx: 'auto', px: 1.5, pb: 6, pt: 1 }}>{children}</Box>
-    </Box>
-  );
   if (loading) return <Shell><Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box></Shell>;
 
   return (
@@ -133,10 +144,17 @@ export default function CallerDesk() {
         </CardContent>
       </Card>
 
-      <TextField fullWidth size="small" value={q} onChange={(e) => setQ(e.target.value)}
-        placeholder="Find a name, class or phone…" sx={{ mb: 1.25, bgcolor: '#fff', borderRadius: 2 }}
-        InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
-          endAdornment: q ? <InputAdornment position="end"><IconButton size="small" onClick={() => setQ('')}><ClearIcon /></IconButton></InputAdornment> : null }} />
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.25 }}>
+        <TextField size="small" value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder="Name or phone…" sx={{ flex: 1, bgcolor: '#fff', borderRadius: 2 }}
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
+            endAdornment: q ? <InputAdornment position="end"><IconButton size="small" onClick={() => setQ('')}><ClearIcon /></IconButton></InputAdornment> : null }} />
+        <TextField select size="small" label="Class" value={classFilter} onChange={(e) => setClassFilter(e.target.value)}
+          sx={{ minWidth: 118, bgcolor: '#fff' }}>
+          <MenuItem value="">All classes</MenuItem>
+          {classList.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+        </TextField>
+      </Box>
 
       <Box sx={{ display: 'flex', gap: 0.75, mb: 1 }}>
         {[['year', curName], ['all', 'All years']].map(([v, label]) => (

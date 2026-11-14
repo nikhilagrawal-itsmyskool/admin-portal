@@ -194,6 +194,7 @@ const menuItems = [
       { title: 'Permissions', icon: PermissionsIcon, path: '/fees/permissions', perm: 'authz.manage', admin: true },
       { title: 'Dues Report', icon: DuesIcon, path: '/fees/dues', perm: 'fee.report.view' },
       { title: 'Accumulated Dues', icon: DuesIcon, path: '/fees/accumulated-dues', perm: 'fee.report.view' },
+      { title: 'Call Activity', icon: DuesIcon, path: '/fees/call-activity', perm: 'fee.report.view' },
       // Collection Desk — the manager's phone-first view; also opened by god/director here. Gated
       // latefine.exempt so only god + manager see the link (admins/clerks don't).
       { title: 'Collection Desk', icon: CollectIcon, path: '/fees/collection-desk', perm: 'fee.fine.exempt' },
