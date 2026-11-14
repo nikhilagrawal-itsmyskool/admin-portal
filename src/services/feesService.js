@@ -127,6 +127,9 @@ export const feesService = {
   // Bad-debt write-off / restore (god-only). data: { action: 'writeoff' | 'restore', reason }
   // Lives on the second fees stack (/fees-ext) — the primary fees stack is at the 500-resource limit.
   writeOffStudent: async (studentId, data) => (await api.post(`/fees-ext/students/${studentId}/write-off`, data)).data,
+  // Fee-caller call log (gated fee.manager.view, on /fees-ext). data: { academicYearId, status, note, promisedDate }
+  getCallerFollowup: async (studentId, academicYearId) => (await api.get(`/fees-ext/students/${studentId}/followup`, { params: academicYearId ? { academicYearId } : {} })).data,
+  setCallerFollowup: async (studentId, data) => (await api.post(`/fees-ext/students/${studentId}/followup`, data)).data,
   getDuesByYear: async (studentId) => (await api.get(`/fees/students/${studentId}/dues-by-year`)).data,
   getFineExemptions: async (params = {}) => (await api.get('/fees/reports/fine-exemptions', { params })).data,
   // Exam-only (studying elsewhere): list flagged students + their open demands; cancel their demands.

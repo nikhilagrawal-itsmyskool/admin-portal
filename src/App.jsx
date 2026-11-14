@@ -288,6 +288,7 @@ import ClubClose from './pages/club/mobile/ClubClose';
 import MobileHome from './pages/MobileHome';
 import HubPage from './pages/HubPage';
 import ManagerDesk from './pages/ManagerDesk';
+import CallerDesk from './pages/CallerDesk';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useAuth } from './context/AuthContext';
 
@@ -301,6 +302,9 @@ function HomeScreen() {
   // hatch to the normal home (for a user who also holds broader roles — a plain manager sees
   // an empty home there, which is the intended "just in case").
   if ((user?.roles || []).includes('manager') && !full) return <ManagerDesk />;
+  // The locked "fee-caller" (tele-caller) lands straight on the Fee Calls desk — defaulter
+  // worklist with tap-to-call + log-the-call. `?full=1` is the escape hatch (empty home for them).
+  if ((user?.roles || []).includes('fee-caller') && !full) return <CallerDesk />;
   // The education-director lands straight on the Cockpit / School Pulse (desktop + mobile).
   // `?full=1` is the escape hatch to the normal home for a director who also holds god/admin.
   if ((user?.roles || []).includes('education-director') && !full) return <Cockpit />;
@@ -385,6 +389,7 @@ export default function App() {
         <Route path="fees/dues" element={<DuesReport />} />
         <Route path="fees/accumulated-dues" element={<AccumulatedDues />} />
         <Route path="fees/collection-desk" element={<ManagerDesk />} />
+        <Route path="fees/caller-desk" element={<CallerDesk />} />
         <Route path="fees/permissions" element={<FeesPermissions />} />
         <Route path="fees/collect" element={<CollectFees />} />
         <Route path="fees/receipts" element={<ReceiptsSearch />} />

@@ -169,6 +169,9 @@ export const ROLE_PERMISSIONS = {
   // Collection-desk manager: a locked, read-only fee-collection view, plus the one-tap
   // late-fine exemption (the counter escape hatch — clerks can't skip/forgive fines).
   manager: ["fee.manager.view", "fee.fine.exempt"],
+  // Fee caller: locked single-screen tele-caller — reads the defaulter list + logs call outcomes
+  // (via the fee.manager.view-gated follow-up endpoints). No collect, no exempt, no menu.
+  "fee-caller": ["fee.manager.view"],
   // Education director: lands on the Cockpit / School Pulse and reviews the school's
   // heartbeat. Read-oriented oversight across the pulse domains (feedback review, assembly,
   // syllabus, students/houses, leave, calendar). Additive — a person can also hold `god`.
