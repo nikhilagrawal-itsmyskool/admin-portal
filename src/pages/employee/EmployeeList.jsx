@@ -15,7 +15,16 @@ import {
   Switch,
   Autocomplete,
   Avatar,
+  MenuItem,
 } from "@mui/material";
+
+const STAFF_TYPE_OPTIONS = [
+  { value: "", label: "All staff types" },
+  { value: "teaching", label: "Teaching" },
+  { value: "non_teaching", label: "Non-teaching" },
+  { value: "office", label: "Office Person" },
+  { value: "management", label: "Management" },
+];
 import ResponsiveDataGrid from "../../components/common/ResponsiveDataGrid";
 import usePersistedPaginationModel from "../../hooks/usePersistedPaginationModel";
 import {
@@ -66,6 +75,7 @@ export default function EmployeeList() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
+  const [typeFilter, setTypeFilter] = useState(""); // "" = all staff types
   // Server-side role filter (AND semantics: employee must hold every selected role).
   const [roleOptions, setRoleOptions] = useState([]);
   const [selectedRoles, setSelectedRoles] = useState([]);
@@ -183,9 +193,10 @@ export default function EmployeeList() {
   const term = searchTerm.toLowerCase();
   const filteredEmployees = employees.filter(
     (e) =>
-      e.name?.toLowerCase().includes(term) ||
-      e.familyUniqueNumber?.toLowerCase().includes(term) ||
-      e.employeeNumber?.toLowerCase().includes(term),
+      (!typeFilter || e.employeeType === typeFilter) &&
+      (e.name?.toLowerCase().includes(term) ||
+        e.familyUniqueNumber?.toLowerCase().includes(term) ||
+        e.employeeNumber?.toLowerCase().includes(term)),
   );
 
   // Never leave the user stranded past the last page (deletes, filter, search).
@@ -428,6 +439,23 @@ export default function EmployeeList() {
                   />
                 )}
               />
+            )}
+            {isAdmin && (
+              <TextField
+                select
+                size="small"
+                label="Staff type"
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value);
+                  setPaginationModel({ ...paginationModel, page: 0 });
+                }}
+                sx={{ minWidth: { xs: "100%", md: 180 } }}
+              >
+                {STAFF_TYPE_OPTIONS.map((t) => (
+                  <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                ))}
+              </TextField>
             )}
             {isAdmin && (
               <FormControlLabel
