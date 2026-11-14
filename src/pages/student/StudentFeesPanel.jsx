@@ -591,7 +591,7 @@ export default function StudentFeesPanel({ studentId, student }) {
           ) : (
             <>
               <Typography sx={{ fontSize: 13, color: FEE_COLORS.muted, mb: 1.5 }}>
-                Writes off this student&apos;s <b>entire outstanding</b> — <b>{inr(tot.remaining)}</b> across {lines.filter((l) => Number(l.remaining) > 0).length} charge{lines.filter((l) => Number(l.remaining) > 0).length === 1 ? '' : 's'} (all cycles, incl. upcoming) — as a <b>waiver</b>. Paid amounts are never touched. Posts a waiver entry per charge + a ₹0 receipt with your reason. This cannot be undone from here.
+                <b>Waives (forgives)</b> this student&apos;s <b>entire outstanding</b> — <b>{inr(tot.remaining)}</b> across {lines.filter((l) => Number(l.remaining) > 0).length} charge{lines.filter((l) => Number(l.remaining) > 0).length === 1 ? '' : 's'} (all cycles, incl. upcoming). Paid amounts are never touched. Posts a waiver entry per charge + a ₹0 receipt with your reason. This cannot be undone from here. <i>(To park a hopeless debt without forgiving it, use “Write off” instead.)</i>
               </Typography>
               <TextField autoFocus fullWidth size="small" label="Reason (required)" value={waiveAll.reason} onChange={(e) => setWaiveAll((s) => ({ ...s, reason: e.target.value }))} placeholder="e.g. management-approved full fee waiver" multiline minRows={2} sx={{ mb: 1.5 }} />
               <TextField fullWidth size="small" label={'Type "confirm" to waive all'} value={waiveAll.confirm} onChange={(e) => setWaiveAll((s) => ({ ...s, confirm: e.target.value }))} />

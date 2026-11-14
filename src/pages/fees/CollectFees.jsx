@@ -278,7 +278,7 @@ export default function CollectFees() {
     const fineWaivers = exemptList.map((e) => ({ ledgerId: e.id, amount: r2(e.amount), reason: e.reason.trim() || 'Fine exemption' }));
     const waivers = [...genericWaivers, ...fineWaivers];
     if (!allocations.length && !waivers.length) { setError('Tick at least one component to collect, exempt, or waive.'); return; }
-    if (genericWaivers.length && !waive.reason.trim()) { setError('Enter a reason for the write-off.'); return; }
+    if (genericWaivers.length && !waive.reason.trim()) { setError('Enter a reason for the waiver.'); return; }
     setCollecting(true); setError(''); setOk('');
     try {
       const receipt = await feesService.collect({
@@ -451,9 +451,9 @@ export default function CollectFees() {
                           control={<Checkbox size="small" checked={waive.on} onChange={(e) => setWaive((w) => ({ ...w, on: e.target.checked }))} />}
                           label={<span style={{ fontSize: 13 }}>Waive remaining on ticked rows{waiveTotal > 0 ? ` — ${inr(waiveTotal)}` : ''}</span>} />
                         {waive.on && waiveTotal === 0 && (
-                          <Typography sx={{ fontSize: 11.5, color: FEE_COLORS.muted, ml: 3.5, mt: -0.25 }}>Lower a “Pay now” below its due — the unpaid remainder on ticked rows gets written off.</Typography>
+                          <Typography sx={{ fontSize: 11.5, color: FEE_COLORS.muted, ml: 3.5, mt: -0.25 }}>Lower a “Pay now” below its due — the unpaid remainder on ticked rows gets waived (forgiven).</Typography>
                         )}
-                        {waive.on && <TextField fullWidth size="small" label="Write-off reason" value={waive.reason} onChange={(e) => setWaive((w) => ({ ...w, reason: e.target.value }))} sx={{ mt: 0.5 }} />}
+                        {waive.on && <TextField fullWidth size="small" label="Waiver reason" value={waive.reason} onChange={(e) => setWaive((w) => ({ ...w, reason: e.target.value }))} sx={{ mt: 0.5 }} />}
                       </Box>
                     )}
                     {waiveTotal > 0 && (
