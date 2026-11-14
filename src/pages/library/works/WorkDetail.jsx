@@ -8,12 +8,16 @@ import {
 import {
   ArrowBack as BackIcon, ExpandMore as ExpandIcon, Add as AddIcon, QrCode2 as QrIcon,
   LibraryAdd as EditionIcon, Print as PrintIcon, CallMerge as MergeIcon, Search as SearchIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { libraryService } from '../../../services/libraryService';
 import { useCan } from '../../../permissions/can';
 import { ACTIONS } from '../../../permissions/actions';
 
 const STATUS_COLORS = { available: 'success', issued: 'warning', lost: 'error', withdrawn: 'default', damaged: 'error' };
+const COPY_STATUSES = ['available', 'issued', 'lost', 'withdrawn', 'damaged'];
+const BOOK_CONDITIONS = ['new', 'good', 'fair', 'damaged', 'poor'];
+const num = (v) => (v === '' || v == null ? undefined : Number(v));
 
 export default function WorkDetail() {
   const { id } = useParams();
@@ -38,6 +42,11 @@ export default function WorkDetail() {
   const [mergeResults, setMergeResults] = useState([]);
   const [mergeSel, setMergeSel] = useState(null);
   const [mergeSearching, setMergeSearching] = useState(false);
+
+  // Edit existing work / title / copy.
+  const [editWork, setEditWork] = useState(null);
+  const [editTitle, setEditTitle] = useState(null);
+  const [editCopy, setEditCopy] = useState(null);
 
   useEffect(() => { load(); }, [id]);
 
@@ -142,6 +151,63 @@ export default function WorkDetail() {
     }
   };
 
+  const openEditWork = () => setEditWork({
+    uniformTitle: work.uniformTitle || '', author: work.authorDisplay || '', ddcNumber: work.ddcNumber || '',
+    subjectType: work.subjectType || '', topic: work.topic || '', keywords: work.keywords || '',
+    colorCode: work.colorCode || '', ageFrom: work.ageFrom ?? '', ageTo: work.ageTo ?? '',
+  });
+  const submitEditWork = async () => {
+    setSaving(true);
+    try {
+      const a = editWork.author.trim();
+      await libraryService.updateWork(id, {
+        uniformTitle: editWork.uniformTitle.trim(),
+        authorInput: a, authorDisplay: a, firstAuthorSurname: a ? a.split(',')[0].trim() : '',
+        ddcNumber: editWork.ddcNumber.trim(), subjectType: editWork.subjectType.trim(),
+        topic: editWork.topic.trim(), keywords: editWork.keywords.trim(), colorCode: editWork.colorCode.trim(),
+        ageFrom: num(editWork.ageFrom), ageTo: num(editWork.ageTo),
+      });
+      setEditWork(null); load();
+    } catch (err) { setError(err.response?.data?.error?.description || 'Failed to update work'); }
+    finally { setSaving(false); }
+  };
+
+  const openEditTitle = (t) => setEditTitle({
+    uuid: t.uuid, titleAsPrinted: t.titleAsPrinted || '', language: t.language || 'english', edition: t.edition || '',
+    yearOfPublication: t.yearOfPublication ?? '', publisher: t.publisher || '', pages: t.pages ?? '', localCallNo: t.localCallNo || '',
+  });
+  const submitEditTitle = async () => {
+    setSaving(true);
+    try {
+      await libraryService.updateTitle(editTitle.uuid, {
+        titleAsPrinted: editTitle.titleAsPrinted.trim(), language: editTitle.language, edition: editTitle.edition.trim(),
+        yearOfPublication: num(editTitle.yearOfPublication), publisher: editTitle.publisher.trim(),
+        pages: num(editTitle.pages), localCallNo: editTitle.localCallNo.trim(),
+      });
+      setEditTitle(null); load();
+    } catch (err) { setError(err.response?.data?.error?.description || 'Failed to update edition'); }
+    finally { setSaving(false); }
+  };
+
+  const openEditCopy = (c) => setEditCopy({
+    uuid: c.uuid, accessionNo: c.accessionNo, price: c.price ?? '', acquisitionYear: c.acquisitionYear ?? '',
+    almirah: c.almirah || '', shelf: c.shelf || '', bookCondition: c.bookCondition || '', status: c.status || 'available',
+    source: c.source || '', billNo: c.billNo || '', remarks: c.remarks || '',
+  });
+  const submitEditCopy = async () => {
+    setSaving(true);
+    try {
+      await libraryService.updateCopy(editCopy.uuid, {
+        price: num(editCopy.price), acquisitionYear: num(editCopy.acquisitionYear),
+        almirah: editCopy.almirah.trim(), shelf: editCopy.shelf.trim(),
+        bookCondition: editCopy.bookCondition || undefined, status: editCopy.status || undefined,
+        source: editCopy.source.trim(), billNo: editCopy.billNo.trim(), remarks: editCopy.remarks.trim(),
+      });
+      setEditCopy(null); load();
+    } catch (err) { setError(err.response?.data?.error?.description || 'Failed to update copy'); }
+    finally { setSaving(false); }
+  };
+
   const showLabel = async (copy) => {
     try {
       const label = await libraryService.getLabel(copy.uuid, 'qr');
@@ -160,6 +226,9 @@ export default function WorkDetail() {
         <IconButton onClick={() => navigate('/library/catalog')}><BackIcon /></IconButton>
         <Typography variant="h4" sx={{ flexGrow: 1 }}>{work.uniformTitle}</Typography>
         {canManage && (
+          <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={openEditWork}>Edit work</Button>
+        )}
+        {canManage && (
           <Button variant="outlined" size="small" startIcon={<MergeIcon />} onClick={() => setMergeDlg(true)}>
             Merge another work in
           </Button>
@@ -173,10 +242,14 @@ export default function WorkDetail() {
           <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap>
             <Typography variant="body2"><b>Author:</b> {work.authorDisplay || '—'}</Typography>
             <Typography variant="body2"><b>DDC:</b> {work.ddcNumber || '—'} {work.topic ? `(${work.topic})` : ''}</Typography>
+            {work.subjectType && <Typography variant="body2"><b>Subject:</b> {work.subjectType}</Typography>}
             {work.colorCode && <Chip label={work.colorCode} size="small" variant="outlined" />}
             <Chip label={`${work.totalCopies} copies`} size="small" color="primary" variant="outlined" />
             <Chip label={`${work.availableCopies} available`} size="small" color="success" variant="outlined" />
           </Stack>
+          <Typography variant="body2" sx={{ mt: 1 }} color={work.keywords ? 'text.primary' : 'text.secondary'}>
+            <b>Keywords:</b> {work.keywords || '— none yet (use Edit work to add)'}
+          </Typography>
         </CardContent>
       </Card>
 
@@ -196,6 +269,11 @@ export default function WorkDetail() {
               {t.edition && <Chip label={t.edition} size="small" variant="outlined" />}
               <Chip label={t.localCallNo} size="small" color="primary" variant="outlined" />
               <Chip label={`${t.availableCopies}/${t.totalCopies} avail`} size="small" color={t.availableCopies > 0 ? 'success' : 'default'} />
+              {canManage && (
+                <IconButton size="small" sx={{ ml: 'auto' }} onClick={(e) => { e.stopPropagation(); openEditTitle(t); }} title="Edit edition">
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              )}
             </Box>
           </AccordionSummary>
           <AccordionDetails>
@@ -229,6 +307,7 @@ export default function WorkDetail() {
                       <TableCell align="right">{c.price != null ? Number(c.price).toFixed(2) : '—'}</TableCell>
                       <TableCell>{c.isSpecimen ? 'Yes' : 'No'}</TableCell>
                       <TableCell align="right">
+                        {canManage && <IconButton size="small" onClick={() => openEditCopy(c)} title="Edit copy"><EditIcon fontSize="small" /></IconButton>}
                         <IconButton size="small" onClick={() => showLabel(c)} title="Print label"><QrIcon fontSize="small" /></IconButton>
                       </TableCell>
                     </TableRow>
@@ -283,6 +362,89 @@ export default function WorkDetail() {
         <DialogActions>
           <Button onClick={() => setCopiesDlg({ open: false, titleId: null })}>Cancel</Button>
           <Button variant="contained" onClick={submitCopies} disabled={saving}>Add copies</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit work dialog */}
+      <Dialog open={!!editWork} onClose={() => setEditWork(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit work</DialogTitle>
+        <DialogContent>
+          {editWork && (
+            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+              <Grid item xs={12}><TextField fullWidth size="small" required label="Uniform title" value={editWork.uniformTitle} onChange={(e) => setEditWork({ ...editWork, uniformTitle: e.target.value })} /></Grid>
+              <Grid item xs={12} md={7}><TextField fullWidth size="small" label="Author (Surname, First)" value={editWork.author} onChange={(e) => setEditWork({ ...editWork, author: e.target.value })} /></Grid>
+              <Grid item xs={6} md={2.5}><TextField fullWidth size="small" label="DDC" value={editWork.ddcNumber} onChange={(e) => setEditWork({ ...editWork, ddcNumber: e.target.value })} /></Grid>
+              <Grid item xs={6} md={2.5}><TextField fullWidth size="small" label="Colour" value={editWork.colorCode} onChange={(e) => setEditWork({ ...editWork, colorCode: e.target.value })} /></Grid>
+              <Grid item xs={6} md={4}><TextField fullWidth size="small" label="Subject / Type" value={editWork.subjectType} onChange={(e) => setEditWork({ ...editWork, subjectType: e.target.value })} /></Grid>
+              <Grid item xs={6} md={4}><TextField fullWidth size="small" label="Topic" value={editWork.topic} onChange={(e) => setEditWork({ ...editWork, topic: e.target.value })} /></Grid>
+              <Grid item xs={3} md={2}><TextField fullWidth size="small" type="number" label="Age from" value={editWork.ageFrom} onChange={(e) => setEditWork({ ...editWork, ageFrom: e.target.value })} /></Grid>
+              <Grid item xs={3} md={2}><TextField fullWidth size="small" type="number" label="Age to" value={editWork.ageTo} onChange={(e) => setEditWork({ ...editWork, ageTo: e.target.value })} /></Grid>
+              <Grid item xs={12}><TextField fullWidth size="small" multiline minRows={2} label="Keywords (comma-separated)" value={editWork.keywords} onChange={(e) => setEditWork({ ...editWork, keywords: e.target.value })} helperText="Powers content search" /></Grid>
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditWork(null)}>Cancel</Button>
+          <Button variant="contained" onClick={submitEditWork} disabled={saving || !editWork?.uniformTitle.trim()}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit edition dialog */}
+      <Dialog open={!!editTitle} onClose={() => setEditTitle(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit edition</DialogTitle>
+        <DialogContent>
+          {editTitle && (
+            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+              <Grid item xs={12} md={7}><TextField fullWidth size="small" required label="Title as printed" value={editTitle.titleAsPrinted} onChange={(e) => setEditTitle({ ...editTitle, titleAsPrinted: e.target.value })} /></Grid>
+              <Grid item xs={12} md={5}>
+                <TextField select fullWidth size="small" label="Language" value={editTitle.language} onChange={(e) => setEditTitle({ ...editTitle, language: e.target.value })}>
+                  {languages.map((l) => <MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>)}
+                </TextField>
+              </Grid>
+              <Grid item xs={6} md={4}><TextField fullWidth size="small" label="Edition" value={editTitle.edition} onChange={(e) => setEditTitle({ ...editTitle, edition: e.target.value })} /></Grid>
+              <Grid item xs={6} md={4}><TextField fullWidth size="small" type="number" label="Year" value={editTitle.yearOfPublication} onChange={(e) => setEditTitle({ ...editTitle, yearOfPublication: e.target.value })} /></Grid>
+              <Grid item xs={6} md={4}><TextField fullWidth size="small" type="number" label="Pages" value={editTitle.pages} onChange={(e) => setEditTitle({ ...editTitle, pages: e.target.value })} /></Grid>
+              <Grid item xs={12} md={8}><TextField fullWidth size="small" label="Publisher" value={editTitle.publisher} onChange={(e) => setEditTitle({ ...editTitle, publisher: e.target.value })} /></Grid>
+              <Grid item xs={12} md={4}><TextField fullWidth size="small" label="Call number" value={editTitle.localCallNo} onChange={(e) => setEditTitle({ ...editTitle, localCallNo: e.target.value })} /></Grid>
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditTitle(null)}>Cancel</Button>
+          <Button variant="contained" onClick={submitEditTitle} disabled={saving || !editTitle?.titleAsPrinted.trim()}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit copy dialog */}
+      <Dialog open={!!editCopy} onClose={() => setEditCopy(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit copy — {editCopy?.accessionNo}</DialogTitle>
+        <DialogContent>
+          {editCopy && (
+            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+              <Grid item xs={6} md={3}><TextField fullWidth size="small" type="number" label="Price" value={editCopy.price} onChange={(e) => setEditCopy({ ...editCopy, price: e.target.value })} /></Grid>
+              <Grid item xs={6} md={3}><TextField fullWidth size="small" type="number" label="Acq. year" value={editCopy.acquisitionYear} onChange={(e) => setEditCopy({ ...editCopy, acquisitionYear: e.target.value })} /></Grid>
+              <Grid item xs={6} md={3}><TextField fullWidth size="small" label="Almirah" value={editCopy.almirah} onChange={(e) => setEditCopy({ ...editCopy, almirah: e.target.value })} /></Grid>
+              <Grid item xs={6} md={3}><TextField fullWidth size="small" label="Shelf" value={editCopy.shelf} onChange={(e) => setEditCopy({ ...editCopy, shelf: e.target.value })} /></Grid>
+              <Grid item xs={6} md={4}>
+                <TextField select fullWidth size="small" label="Condition" value={editCopy.bookCondition} onChange={(e) => setEditCopy({ ...editCopy, bookCondition: e.target.value })}>
+                  <MenuItem value="">—</MenuItem>
+                  {BOOK_CONDITIONS.map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}
+                </TextField>
+              </Grid>
+              <Grid item xs={6} md={4}>
+                <TextField select fullWidth size="small" label="Status" value={editCopy.status} onChange={(e) => setEditCopy({ ...editCopy, status: e.target.value })}>
+                  {COPY_STATUSES.map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}
+                </TextField>
+              </Grid>
+              <Grid item xs={6} md={4}><TextField fullWidth size="small" label="Source" value={editCopy.source} onChange={(e) => setEditCopy({ ...editCopy, source: e.target.value })} /></Grid>
+              <Grid item xs={6} md={6}><TextField fullWidth size="small" label="Bill no" value={editCopy.billNo} onChange={(e) => setEditCopy({ ...editCopy, billNo: e.target.value })} /></Grid>
+              <Grid item xs={12}><TextField fullWidth size="small" label="Remarks" value={editCopy.remarks} onChange={(e) => setEditCopy({ ...editCopy, remarks: e.target.value })} /></Grid>
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditCopy(null)}>Cancel</Button>
+          <Button variant="contained" onClick={submitEditCopy} disabled={saving}>Save</Button>
         </DialogActions>
       </Dialog>
 
