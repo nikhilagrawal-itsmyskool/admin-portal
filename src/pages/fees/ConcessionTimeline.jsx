@@ -76,7 +76,7 @@ export default function ConcessionTimeline({ studentId, academicYearId, canManag
         </Box>
         {canManage && (
           <Button size="small" variant="outlined" startIcon={<ChangeIcon />} onClick={() => setChangeOpen(true)}>
-            Change concession
+            Change / stop concession
           </Button>
         )}
       </Box>

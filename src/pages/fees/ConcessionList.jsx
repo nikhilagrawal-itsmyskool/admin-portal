@@ -275,7 +275,13 @@ export default function ConcessionList() {
                     {r.cycleScope && <Tooltip title={`Only these cycles: ${r.cycleScope}`}><Chip size="small" color="info" variant="outlined" label={`${String(r.cycleScope).split(',').filter(Boolean).length} cycles`} /></Tooltip>}
                     {(r.effectiveFromCycle || r.effectiveToCycle) && <Tooltip title="Cycle-bounded discount"><Chip size="small" color="info" variant="outlined" label={`${r.effectiveFromCycle ? (cycleName[r.effectiveFromCycle] || 'start') : 'start'} → ${r.effectiveToCycle ? (cycleName[r.effectiveToCycle] || 'end') : 'ongoing'}`} /></Tooltip>}
                     {!r.enrolledThisYear && <Chip size="small" color="warning" variant="outlined" label="not this year" />}
-                    <Tooltip title="Change / stop this scheme from a cycle"><IconButton size="small" onClick={() => setChg({ open: true, studentId: r.studentId, name: r.studentName || '' })}><ChangeIcon fontSize="small" /></IconButton></Tooltip>
+                    <Tooltip title="Change to another scheme, or stop this one, from a chosen fee cycle">
+                      <Button size="small" variant="outlined" startIcon={<ChangeIcon fontSize="small" />}
+                        sx={{ textTransform: 'none', py: 0.1, px: 0.9, minWidth: 0, whiteSpace: 'nowrap' }}
+                        onClick={() => setChg({ open: true, studentId: r.studentId, name: r.studentName || '' })}>
+                        Change / stop
+                      </Button>
+                    </Tooltip>
                     <IconButton size="small" color="error" onClick={() => setRmStu({ open: true, studentId: r.studentId, name: r.studentName || '', loading: false })}><DeleteIcon fontSize="small" /></IconButton>
                   </Box>
                 </Box>
