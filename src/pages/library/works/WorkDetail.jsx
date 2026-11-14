@@ -458,7 +458,7 @@ export default function WorkDetail() {
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
             <TextField
               fullWidth size="small" autoFocus
-              placeholder="Search title or author (type in English, finds Hindi)…"
+              placeholder="Search works by title or author (type in English, finds Hindi)…"
               value={mergeQ}
               onChange={(e) => setMergeQ(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && searchMerge()}
