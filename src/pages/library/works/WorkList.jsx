@@ -186,7 +186,7 @@ export default function WorkList() {
         <Typography variant="h4">
           Library Catalog
           <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1.5 }}>
-            {total.toLocaleString()} {total === 1 ? 'title' : 'titles'} · {totalCopies.toLocaleString()} {totalCopies === 1 ? 'copy' : 'copies'}
+            {total.toLocaleString()} {total === 1 ? 'work' : 'works'} · {totalCopies.toLocaleString()} {totalCopies === 1 ? 'copy' : 'copies'}
           </Typography>
         </Typography>
         {canManage && (
