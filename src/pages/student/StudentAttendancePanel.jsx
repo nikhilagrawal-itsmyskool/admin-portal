@@ -7,6 +7,7 @@ import { attendanceService } from '../../services/attendanceService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { activityCalendarService } from '../../services/activityCalendarService';
 import { useCan } from '../../permissions/can';
+import LastPresentChip from '../../components/LastPresentChip';
 
 // Semantic status palette (consistent everywhere attendance is shown).
 const STATUS = {
@@ -79,6 +80,7 @@ export default function StudentAttendancePanel({ studentId }) {
   const [summary, setSummary] = useState(null); // server rollup — honours the school's half-day policy
   const [nt, setNt] = useState({});
   const [yearName, setYearName] = useState('');
+  const [lastPresent, setLastPresent] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -92,7 +94,7 @@ export default function StudentAttendancePanel({ studentId }) {
         if (alive) setYearName(cur?.name || '');
         const data = await attendanceService.getStudentAttendance(studentId, cur?.uuid ? { academicYearId: cur.uuid } : {});
         const rows = data.days || [];
-        if (alive) { setDays(rows); setSummary(data.summary || null); }
+        if (alive) { setDays(rows); setSummary(data.summary || null); setLastPresent(data.lastPresentDate || null); }
         // Overlay the year's non-teaching days (holidays + weekly-offs) across the
         // span the heatmap covers, so they're shaded even where there's no record.
         let ntMap = {};
@@ -149,6 +151,8 @@ export default function StudentAttendancePanel({ studentId }) {
           <AttIcon color="primary" fontSize="small" />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>Attendance</Typography>
           {yearName && <Chip size="small" variant="outlined" label={yearName} />}
+          <Box sx={{ flex: 1 }} />
+          {!loading && !error && <LastPresentChip date={lastPresent} />}
         </Stack>
 
         {loading ? (

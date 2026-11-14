@@ -16,6 +16,7 @@ import { openTc } from '../../services/transferService';
 import { academicCalendarService } from '../../services/academicCalendarService';
 import { maskContact } from '../../utils/mask';
 import { fmtDate } from '../../utils/date';
+import LastPresentChip from '../../components/LastPresentChip';
 
 const TC_STATUS_COLOR = { applied: 'warning', issued: 'success', cancelled: 'default' };
 const inr = (n) => `₹${Math.round(Number(n || 0)).toLocaleString('en-IN')}`;
@@ -97,7 +98,7 @@ export default function StudentDetailModern({ ctx }) {
         for (const d of days) if (t[d.status] !== undefined) t[d.status]++;
         const working = t.present + t.absent + t.late;
         const percent = working > 0 ? Math.round(((t.present + t.late) / working) * 100) : null;
-        if (alive) setAttn({ percent, present: t.present, absent: t.absent });
+        if (alive) setAttn({ percent, present: t.present, absent: t.absent, lastPresent: data?.lastPresentDate || null });
         if (canFees) {
           const s = await feesService.getStudentSummary(student.uuid, ayId).catch(() => null);
           if (alive && s) setFees(s);
@@ -147,6 +148,7 @@ export default function StudentDetailModern({ ctx }) {
               {student.examOnly && <Chip size="small" color="warning" label="Exam only" />}
               <Chip size="small" color={student.status === 'active' ? 'success' : 'default'} label={student.status} />
               <Chip size="small" color={reachable ? 'success' : 'warning'} variant="outlined" label={reachable ? 'Reachable' : 'No contact'} />
+              {attn && <LastPresentChip date={attn.lastPresent} showIcon={false} />}
             </Stack>
             <Stack direction="row" sx={{ flexWrap: 'wrap', gap: '4px 20px', mt: 1.25 }}>
               <Typography variant="body2" color="text.secondary">Admission <b style={{ color: 'inherit' }}>{student.admissionNumber || '—'}</b></Typography>

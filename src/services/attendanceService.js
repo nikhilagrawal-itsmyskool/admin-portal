@@ -61,10 +61,17 @@ export const attendanceService = {
     return response.data;
   },
 
-  // A student's attendance for the 360 view: { summary, days:[{date,status,remark,className}] }
+  // A student's attendance for the 360 view: { summary, days:[{date,status,remark,className}], lastPresentDate }
   getStudentAttendance: async (studentId, params = {}) => {
     // params: { academicYearId, from, to }
     const response = await api.get(`/attendance/student/${studentId}`, { params });
+    return response.data;
+  },
+
+  // Batch "last present" date per student (across all years). → { lastPresent: { studentId: 'YYYY-MM-DD'|undefined } }
+  getLastPresent: async (studentIds) => {
+    if (!studentIds || studentIds.length === 0) return { lastPresent: {} };
+    const response = await api.post('/attendance/last-present', { studentIds });
     return response.data;
   },
 

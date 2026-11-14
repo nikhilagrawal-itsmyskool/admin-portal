@@ -38,6 +38,8 @@ import {
 } from '@mui/icons-material';
 import { studentService } from '../../services/studentService';
 import { classService } from '../../services/classService';
+import { attendanceService } from '../../services/attendanceService';
+import LastPresentChip from '../../components/LastPresentChip';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import PromoteDialog from './PromoteDialog';
 import AssignHouseDialog from './AssignHouseDialog';
@@ -56,6 +58,7 @@ export default function StudentList() {
   const isAdminGod = (user?.roles || []).some((r) => r === 'admin' || r === 'god');
   const { academicYearId, years } = useAcademicYear(); // portal-wide year — student search scopes to this
   const [students, setStudents] = useState([]);
+  const [lastPresentMap, setLastPresentMap] = useState({});
   const [houses, setHouses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -144,8 +147,16 @@ export default function StudentList() {
     try {
       const filters = overrideFilters !== undefined ? overrideFilters : buildFilters();
       const data = await studentService.searchStudents({ ...filters, withPhotos: true });
-      setStudents(Array.isArray(data) ? data : data.students || []);
+      const rows = Array.isArray(data) ? data : data.students || [];
+      setStudents(rows);
       setSelection([]);
+      // Best-effort "last present" per row (one batch call; doesn't block the list).
+      setLastPresentMap({});
+      const ids = rows.map((r) => r.uuid).filter(Boolean);
+      attendanceService
+        .getLastPresent(ids)
+        .then((res) => setLastPresentMap(res?.lastPresent || {}))
+        .catch(() => setLastPresentMap({}));
       // Breakdown covers the whole cohort — drop the unreachable toggle so the
       // summary doesn't collapse to just the unreachable rows. Never blocks the list.
       const { unreachable: _drop, ...cohort } = filters;
@@ -271,6 +282,13 @@ export default function StudentList() {
       renderCell: (params) => (
         <Chip label={params.value || 'active'} size="small" color={STATUS_COLORS[params.value] || 'default'} />
       ),
+    },
+    {
+      field: 'lastPresent',
+      headerName: 'Last present',
+      width: 120,
+      sortable: false,
+      renderCell: (params) => <LastPresentChip date={lastPresentMap[params.row.uuid]} compact />,
     },
     {
       field: 'actions',
