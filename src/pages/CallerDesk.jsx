@@ -37,6 +37,7 @@ export default function CallerDesk() {
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [hideSettled, setHideSettled] = useState(true);
+  const [scope, setScope] = useState('year'); // 'year' = current AY dues | 'all' = accumulated across years
   const [openId, setOpenId] = useState(null); // expanded card
   const [history, setHistory] = useState({}); // studentId -> {entries} call-log peek
   const [log, setLog] = useState({ status: '', note: '', promisedDate: '', saving: false });
@@ -82,6 +83,13 @@ export default function CallerDesk() {
     } catch (e) { setError(errMsg(e, 'Could not save')); setLog((l) => ({ ...l, saving: false })); }
   };
 
+  const cols = data?.columns || [];
+  const curAyId = data?.currentAcademicYearId || cols.find((c) => c.isCurrent)?.academicYearId || null;
+  const curName = cols.find((c) => c.isCurrent)?.name || 'This year';
+  // amount shown depends on scope: current academic year's dues, or the accumulated all-years total.
+  const amt = (r) => (scope === 'all' ? Number(r.total || 0) : Number((curAyId && r.byYear?.[curAyId]) || 0));
+  const prior = (r) => Math.max(0, Number(r.total || 0) - Number((curAyId && r.byYear?.[curAyId]) || 0));
+
   const rows = useMemo(() => {
     let r = data?.rows || [];
     if (hideSettled) r = r.filter((x) => x.followup?.status !== 'settled');
@@ -89,11 +97,12 @@ export default function CallerDesk() {
     if (t) r = r.filter((x) => (x.name || '').toLowerCase().includes(t) || (x.className || '').toLowerCase().includes(t)
       || (x.admissionNumber || '').toLowerCase().includes(t)
       || (x.contacts || []).some((c) => (c.mobile || '').includes(t) || (c.name || '').toLowerCase().includes(t)));
-    return r;
-  }, [data, hideSettled, q]);
+    r = r.filter((x) => amt(x) > 0.5); // only those who owe in the chosen scope
+    return [...r].sort((a, b) => amt(b) - amt(a));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, hideSettled, q, scope, curAyId]);
 
-  const cols = data?.columns || [];
-  const pending = (data?.rows || []).filter((x) => x.followup?.status !== 'settled').length;
+  const scopedTotal = rows.reduce((s, r) => s + amt(r), 0);
 
   const Shell = ({ children }) => (
     <Box sx={{ minHeight: '100vh', bgcolor: C.bg }}>
@@ -115,11 +124,11 @@ export default function CallerDesk() {
         <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 2 }}>
           <Box>
             <Typography sx={{ fontSize: 13, color: '#94a3b8', fontWeight: 700, letterSpacing: 0.5 }}>TO CALL</Typography>
-            <Typography sx={{ fontSize: 30, fontWeight: 800, color: '#e2e8f0' }}>{pending}</Typography>
+            <Typography sx={{ fontSize: 30, fontWeight: 800, color: '#e2e8f0' }}>{rows.length}</Typography>
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>total dues</Typography>
-            <Typography sx={{ fontSize: 22, fontWeight: 800, color: '#fca5a5' }}>{inr(data?.grandTotal || 0)}</Typography>
+            <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>{scope === 'all' ? 'dues · all years' : `dues · ${curName}`}</Typography>
+            <Typography sx={{ fontSize: 22, fontWeight: 800, color: '#fca5a5' }}>{inr(scopedTotal)}</Typography>
           </Box>
         </CardContent>
       </Card>
@@ -128,6 +137,16 @@ export default function CallerDesk() {
         placeholder="Find a name, class or phone…" sx={{ mb: 1.25, bgcolor: '#fff', borderRadius: 2 }}
         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
           endAdornment: q ? <InputAdornment position="end"><IconButton size="small" onClick={() => setQ('')}><ClearIcon /></IconButton></InputAdornment> : null }} />
+
+      <Box sx={{ display: 'flex', gap: 0.75, mb: 1 }}>
+        {[['year', curName], ['all', 'All years']].map(([v, label]) => (
+          <Box key={v} onClick={() => setScope(v)}
+            sx={{ flex: 1, textAlign: 'center', py: 0.75, borderRadius: 2, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+              bgcolor: scope === v ? C.ink : '#eef2f7', color: scope === v ? '#fff' : C.ink }}>
+            {label}
+          </Box>
+        ))}
+      </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, px: 0.5 }}>
         <Typography sx={{ fontSize: 12, color: C.muted }}>{rows.length} student{rows.length === 1 ? '' : 's'} · biggest first</Typography>
@@ -154,7 +173,8 @@ export default function CallerDesk() {
                   <Typography sx={{ fontSize: 12.5, color: C.muted }}>{r.className}{r.admissionNumber ? ` · ${r.admissionNumber}` : ''}</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'right', flex: 'none' }}>
-                  <Typography sx={{ fontSize: 19, fontWeight: 800, color: C.due, whiteSpace: 'nowrap' }}>{inr(r.total)}</Typography>
+                  <Typography sx={{ fontSize: 19, fontWeight: 800, color: C.due, whiteSpace: 'nowrap' }}>{inr(amt(r))}</Typography>
+                  {scope === 'year' && prior(r) > 0.5 && <Typography sx={{ fontSize: 10.5, color: C.muted, whiteSpace: 'nowrap', lineHeight: 1.2 }}>+ {inr(prior(r))} earlier yrs</Typography>}
                   {sm && <Chip size="small" label={`${sm.label}${r.followup?.at ? ` · ${ago(r.followup.at)}` : ''}`} sx={{ height: 19, fontSize: 10.5, fontWeight: 700, color: sm.color, bgcolor: sm.bg, mt: 0.25 }} />}
                 </Box>
                 <Box sx={{ alignSelf: 'center', color: C.muted }}>{open ? <ExpandLess /> : <ExpandMore />}</Box>
